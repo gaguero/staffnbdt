@@ -2,30 +2,19 @@
   "name": "staffnbdt",
   "version": "0.0.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "typecheck": "turbo run typecheck",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "db:generate": "turbo run db:generate",
-    "db:push": "turbo run db:push",
-    "db:migrate": "turbo run db:migrate",
-    "db:studio": "turbo run db:studio"
+    "dev": "echo 'Run npm run dev:bff or npm run dev:web'",
+    "dev:bff": "cd apps/bff && npm run dev",
+    "dev:web": "cd apps/web && npm run dev",
+    "install:all": "npm install && cd packages/database && npm install",
+    "db:generate": "cd packages/database && npx prisma generate",
+    "db:push": "cd packages/database && npx prisma db push",
+    "db:studio": "cd packages/database && npx prisma studio"
   },
   "devDependencies": {
-    "@types/node": "^20.11.24",
-    "prettier": "^3.2.5",
-    "turbo": "^2.0.0",
-    "typescript": "^5.3.3"
+    "turbo": "latest"
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "packageManager": "npm@10.2.4"
+  }
 }
