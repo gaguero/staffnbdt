@@ -194,6 +194,123 @@ NOTIFICATION_PROVIDER=sendgrid|twilio
 3. Edits create new version, don't modify existing
 4. FORM grading happens asynchronously via worker
 
+## Development Methodology - Using Subagents
+
+### IMPORTANT: Always Use Specialized Subagents
+
+This project uses specialized engineering subagents located in `.claude/agents/engineering/`. You MUST use these agents for complex tasks to ensure high-quality, efficient development.
+
+### Available Subagents
+
+1. **backend-architect**: API design, database architecture, server-side logic, microservices
+2. **frontend-developer**: React components, UI/UX implementation, responsive design, state management
+3. **test-writer-fixer**: Writing new tests, fixing failing tests, maintaining test coverage
+4. **devops-automator**: CI/CD setup, Docker configuration, deployment automation
+5. **rapid-prototyper**: Quick MVPs, proof-of-concepts, initial implementations
+6. **ai-engineer**: ML/AI integrations, data processing pipelines
+7. **mobile-app-builder**: React Native or mobile web optimizations
+
+### Mandatory Subagent Usage
+
+**ALWAYS use subagents for:**
+- Building complete feature modules → Use the relevant specialist agent
+- After ANY code changes → Use test-writer-fixer to ensure tests pass
+- Complex architectural decisions → Use backend-architect
+- UI component development → Use frontend-developer
+- Deployment and infrastructure → Use devops-automator
+
+### Subagent Implementation Examples for This Project
+
+#### User Management Module
+```
+Use backend-architect agent with prompt:
+"Implement the complete user management module for the NestJS BFF in apps/bff including:
+- User CRUD operations with Prisma using the schema in packages/database
+- Role-based access control (RBAC) with SUPERADMIN, DEPARTMENT_ADMIN, and STAFF roles
+- Department scoping for admin operations
+- DTOs with class-validator for all endpoints
+- JWT authentication guards
+- Audit logging for sensitive operations
+- Soft delete functionality with deleted_at timestamps"
+```
+
+#### Frontend Dashboard
+```
+Use frontend-developer agent with prompt:
+"Build the React dashboard in apps/web with:
+- Mobile-first responsive layout using Tailwind CSS
+- Role-based UI elements (hide/show based on user role)
+- Design system colors: Sand #F5EBD7, Charcoal #4A4A4A, Warm Gold #AA8E67
+- React Query for data fetching from the BFF
+- TypeScript types from packages/types
+- Loading states, error boundaries, and offline support
+- Accessibility WCAG AA compliance"
+```
+
+#### Payroll System
+```
+Use backend-architect agent with prompt:
+"Implement the payroll system in apps/bff/src/modules/payroll with:
+- CSV import endpoint with validation
+- Bulk payslip generation with idempotent batch IDs
+- Immutable payslip records (append-only)
+- Pre-signed S3 URLs for CSV uploads
+- Background job queuing for processing
+- Row-level error reporting for CSV validation
+- PDF generation for payslips"
+```
+
+#### Test Coverage
+```
+Use test-writer-fixer agent after each module with prompt:
+"Write comprehensive tests for the [module name] including:
+- Unit tests for all services with > 80% coverage
+- Integration tests for API endpoints
+- E2E tests for critical user flows
+- Fix any failing tests from recent changes
+- Ensure all tests follow existing patterns in the codebase"
+```
+
+### Integration with Todo List
+
+When using TodoWrite, specify which subagent to use in brackets:
+- "Build user management module [backend-architect]"
+- "Create responsive navigation [frontend-developer]"
+- "Fix failing tests [test-writer-fixer]"
+- "Setup Railway deployment [devops-automator]"
+
+### Subagent Workflow
+
+1. **Plan**: Break down the task and identify which subagent to use
+2. **Execute**: Use the Task tool to launch the appropriate subagent with detailed prompts
+3. **Test**: Always follow up with test-writer-fixer agent
+4. **Review**: Check the subagent's output and integrate changes
+
+### Example Task Tool Usage
+
+```typescript
+// For backend development
+Task({
+  subagent_type: "general-purpose",
+  description: "Build user module",
+  prompt: "Acting as a backend-architect agent, implement the complete user management module..."
+})
+
+// For frontend development
+Task({
+  subagent_type: "general-purpose", 
+  description: "Create dashboard UI",
+  prompt: "Acting as a frontend-developer agent, build the dashboard with React and Tailwind..."
+})
+
+// For test maintenance
+Task({
+  subagent_type: "general-purpose",
+  description: "Fix test suite",
+  prompt: "Acting as a test-writer-fixer agent, run all tests and fix any failures..."
+})
+```
+
 ## Testing Strategy
 
 - **Unit Tests**: Services, utilities, validation logic
