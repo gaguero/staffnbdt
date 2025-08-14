@@ -4,17 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the Nayara Bocas del Toro HR Portal - a mobile-first staff management system with role-based access control, document management, payroll, vacation tracking, training modules, and commercial benefits directory.
+This is the Nayara Bocas del Toro HR Portal - a mobile-first staff management system with role-based access control, document management, payroll, vacation tracking, training modules, and commercial benefits directory. This is a Turborepo monorepo with three main applications currently being implemented.
 
 ## Architecture
 
 ### System Design
-- **Frontend**: React SPA with TypeScript, Tailwind CSS, React Query
-- **Backend**: Node.js BFF (Backend-for-Frontend) pattern, preferably NestJS
-- **Database**: PostgreSQL on Railway
+- **Frontend**: React SPA with TypeScript, Vite, Tailwind CSS, TanStack Query (React Query)
+- **Backend**: NestJS BFF (Backend-for-Frontend) pattern with Passport JWT
+- **Worker**: Bull queue processor with Redis for background jobs
+- **Database**: PostgreSQL with Prisma ORM
 - **Storage**: S3-compatible object storage (R2/S3) for documents, IDs, training assets
-- **Deployment**: Railway services (web, worker, postgres, optional redis)
-- **Auth**: OIDC/Magic-link with role-based access control (RBAC)
+- **Deployment**: Railway services with Nixpacks (web, worker, postgres, redis)
+- **Auth**: JWT/Magic-link with role-based access control (RBAC)
+
+### Monorepo Structure (Actual)
+```
+apps/
+  bff/          # NestJS backend-for-frontend API
+  web/          # React SPA with Vite, TypeScript, Tailwind CSS
+  worker/       # Background job processor (Bull/Redis)
+packages/
+  database/     # Prisma ORM and shared database client
+  types/        # Shared TypeScript types (to be created)
+  ui/           # Shared UI components (to be created)
+```
 
 ### Role Hierarchy
 1. **Superadmin**: Full system access, manages departments/positions
@@ -28,73 +41,102 @@ This is the Nayara Bocas del Toro HR Portal - a mobile-first staff management sy
 - **Training Sessions**: Modular content blocks (TEXT/FILE/VIDEO/LINK/FORM) with grading
 - **Commercial Benefits**: Partner perks directory
 - **Profile Management**: PII-safe profile with ID verification
+- **Notifications**: In-app notification system
+- **Audit Logging**: Complete audit trail for sensitive operations
 
 ## Development Commands
 
-Since this is a specification project without implementation yet, here are the recommended commands for when development begins:
-
-### Initial Setup (once codebase exists)
+### Initial Setup
 ```bash
-# Install dependencies
-npm install
+# Install all dependencies including workspace packages
+npm run install:all
 
-# Database setup
-npm run db:migrate
-npm run db:seed
+# Generate Prisma client
+npm run db:generate
 
-# Environment setup
-cp .env.example .env.local
+# Push database schema (development)
+npm run db:push
+
+# Run database migrations
+cd packages/database && npm run db:migrate
+
+# Open Prisma Studio
+npm run db:studio
 ```
 
-### Development
+### Development Servers
 ```bash
-# Start development servers
-npm run dev           # Runs both frontend and backend in dev mode
-npm run dev:frontend  # Frontend only
-npm run dev:backend   # Backend only
-npm run dev:worker    # Background worker
+# Backend (NestJS BFF)
+npm run dev:bff
+# or
+cd apps/bff && npm run dev
 
-# Database operations
-npm run db:migrate    # Run pending migrations
-npm run db:generate   # Generate Prisma client
-npm run db:studio     # Open Prisma Studio
+# Frontend (React/Vite)
+npm run dev:web
+# or  
+cd apps/web && npm run dev
+
+# Worker (Background jobs)
+cd apps/worker && npm run dev
 ```
 
-### Testing & Quality
+### Testing
 ```bash
-# Run tests
-npm run test          # All tests
-npm run test:unit     # Unit tests only
-npm run test:e2e      # E2E tests
-npm run test:watch    # Watch mode
+# Backend tests
+cd apps/bff
+npm run test           # Run all tests
+npm run test:watch     # Watch mode
+npm run test:cov       # Coverage report
+npm run test:e2e       # E2E tests
 
-# Code quality
-npm run lint          # ESLint
-npm run typecheck     # TypeScript type checking
-npm run format        # Prettier formatting
+# Frontend tests
+cd apps/web
+npm run test           # Run Vitest tests
+
+# Worker tests
+cd apps/worker
+npm run test           # Run all tests
+npm run test:watch     # Watch mode
+npm run test:cov       # Coverage report
 ```
 
-### Build & Deploy
+### Code Quality
 ```bash
-# Build for production
-npm run build
+# Backend linting
+cd apps/bff && npm run lint
 
-# Deploy to Railway
-npm run deploy:staging
-npm run deploy:production
+# Frontend linting and type checking
+cd apps/web
+npm run lint           # ESLint
+npm run typecheck      # TypeScript checking
+
+# Worker linting
+cd apps/worker && npm run lint
 ```
 
-## Project Structure (Recommended)
+### Build & Production
+```bash
+# Backend build
+cd apps/bff && npm run build
+npm run start:prod     # Run production build
 
+# Frontend build
+cd apps/web && npm run build
+npm run preview        # Preview production build
+
+# Worker build
+cd apps/worker && npm run build
+npm run start          # Run production build
 ```
-apps/
-  web/          # React SPA frontend
-  bff/          # NestJS backend-for-frontend
-  worker/       # Background jobs (CSV, PDF, grading)
-packages/
-  ui/           # Shared UI components & Tailwind config
-  types/        # Shared TypeScript types & Zod schemas
-  config/       # Shared configs (ESLint, TSConfig)
+
+### Database Operations
+```bash
+# From packages/database directory
+npm run db:generate         # Generate Prisma Client
+npm run db:push            # Push schema changes (dev)
+npm run db:migrate         # Create migration
+npm run db:migrate:deploy  # Deploy migrations (production)
+npm run db:studio          # Open Prisma Studio GUI
 ```
 
 ## Key Technical Decisions
@@ -106,10 +148,11 @@ packages/
 - PII data (IDs, payslips) encrypted at rest with audit logging
 
 ### Data Management
-- Soft deletes with `deleted_at` timestamps
+- Soft deletes with `deletedAt` timestamps
 - Immutable payslips (append-only, versioned)
 - Training session versioning (edits create new versions)
 - Idempotent CSV payroll ingestion with batch IDs
+- Audit logging with AuditLog model tracking all sensitive operations
 
 ### File Handling
 - Pre-signed URLs for uploads/downloads via BFF
@@ -128,6 +171,8 @@ packages/
 - FORM blocks use JSON schema for questions
 - Grading worker processes submissions
 - Completion rules: view all blocks + pass score
+- Version tracking: New edits create new versions
+- Progress tracking via JSON field
 
 ## Design System
 
@@ -152,47 +197,68 @@ packages/
 ## Environment Variables
 
 ```bash
-# Auth
+# Common
+NODE_ENV=development|production
+DATABASE_URL=postgresql://...
+
+# BFF specific
+JWT_SECRET=
+JWT_EXPIRES_IN=7d
+PORT=3000
 AUTH_PROVIDER=auth0|cognito|magic-link
 AUTH_DOMAIN=
 AUTH_CLIENT_ID=
 AUTH_CLIENT_SECRET=
 
-# Database
-DATABASE_URL=postgresql://...
-
-# Storage
+# S3 Storage
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
 S3_BUCKET=
-S3_REGION=
-S3_ACCESS_KEY=
-S3_SECRET_KEY=
 
-# Services
-REDIS_URL=
+# Email (for magic links)
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
+EMAIL_FROM=
 NOTIFICATION_PROVIDER=sendgrid|twilio
+
+# Worker specific
+REDIS_URL=redis://...
+
+# Frontend specific
+VITE_API_URL=http://localhost:3000
 ```
 
 ## Common Development Tasks
 
-### Adding a New Feature Module
-1. Create module in `bff/src/modules/[feature]/`
-2. Define DTOs and validation schemas
-3. Implement service with repository pattern
-4. Add controller with proper guards
-5. Create corresponding frontend components
-6. Add e2e tests covering the flow
+### Adding a New API Module
+1. Generate module: `cd apps/bff && nest g module modules/[name]`
+2. Generate service: `nest g service modules/[name]`
+3. Generate controller: `nest g controller modules/[name]`
+4. Create DTOs with class-validator decorators
+5. Add to app.module.ts imports
+6. Implement repository pattern with Prisma
 
 ### Implementing Department-Scoped Operations
-1. Check user's role and department in guard/middleware
-2. Filter queries by department_id in repository
+1. Add `@UseGuards(DepartmentGuard)` to controller
+2. Filter queries by user's departmentId in service
 3. Validate cross-department operations return 403
-4. Add audit log entries for sensitive operations
+4. Add audit log entry for sensitive operations
 
 ### Working with Training Sessions
 1. Sessions have versioned content blocks
 2. Active enrollments pinned to specific version
 3. Edits create new version, don't modify existing
 4. FORM grading happens asynchronously via worker
+
+### Adding Background Jobs
+1. Define job processor in apps/worker/src/processors/
+2. Register processor with queue manager
+3. Add job to queue from BFF service
+4. Handle success/failure callbacks
+5. Implement retry logic and error handling
 
 ## Development Methodology - Using Subagents
 
@@ -231,7 +297,7 @@ Use backend-architect agent with prompt:
 - DTOs with class-validator for all endpoints
 - JWT authentication guards
 - Audit logging for sensitive operations
-- Soft delete functionality with deleted_at timestamps"
+- Soft delete functionality with deletedAt timestamps"
 ```
 
 #### Frontend Dashboard
@@ -241,7 +307,7 @@ Use frontend-developer agent with prompt:
 - Mobile-first responsive layout using Tailwind CSS
 - Role-based UI elements (hide/show based on user role)
 - Design system colors: Sand #F5EBD7, Charcoal #4A4A4A, Warm Gold #AA8E67
-- React Query for data fetching from the BFF
+- TanStack Query (React Query) for data fetching from the BFF
 - TypeScript types from packages/types
 - Loading states, error boundaries, and offline support
 - Accessibility WCAG AA compliance"
@@ -314,10 +380,24 @@ Task({
 ## Testing Strategy
 
 - **Unit Tests**: Services, utilities, validation logic
-- **Integration Tests**: API endpoints with mocked dependencies
+- **Integration Tests**: API endpoints with mocked dependencies (supertest)
 - **E2E Tests**: Critical user flows (login, document upload, payroll import)
 - **Performance Tests**: CSV ingestion, bulk operations
 - **Security Tests**: Authorization boundaries, input validation
+
+## Deployment Notes
+
+### Railway Deployment
+- Uses Nixpacks configuration (nixpacks.toml)
+- Monorepo support with workspace packages
+- Environment variables set in Railway dashboard
+- PostgreSQL and Redis provisioned as Railway services
+
+### Build Process
+1. Install all dependencies (including dev for build)
+2. Generate Prisma client
+3. Build TypeScript applications
+4. Run production with compiled JavaScript
 
 ## Deployment Checklist
 

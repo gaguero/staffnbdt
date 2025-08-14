@@ -1,0 +1,23 @@
+{
+  "name": "@staffnbdt/types",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./api": "./api/index.ts",
+    "./schemas": "./schemas/index.ts",
+    "./enums": "./enums/index.ts"
+  },
+  "scripts": {
+    "build": "echo 'TypeScript types package - no build needed'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

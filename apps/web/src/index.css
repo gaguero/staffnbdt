@@ -1,0 +1,244 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom font imports */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Base styles */
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply bg-sand text-charcoal font-body antialiased;
+    font-feature-settings: 'cv01', 'cv03', 'cv04', 'cv11';
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-lg;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-lg;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+}
+
+/* Component layer for reusable styles */
+@layer components {
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply btn bg-warm-gold text-white hover:bg-primary-600 focus:ring-warm-gold;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-gray-100 text-charcoal hover:bg-gray-200 focus:ring-gray-400;
+  }
+  
+  .btn-outline {
+    @apply btn border border-warm-gold text-warm-gold hover:bg-warm-gold hover:text-white focus:ring-warm-gold;
+  }
+  
+  .btn-success {
+    @apply btn bg-success text-white hover:bg-green-700 focus:ring-success;
+  }
+  
+  .btn-warning {
+    @apply btn bg-warning text-white hover:bg-orange-700 focus:ring-warning;
+  }
+  
+  .btn-error {
+    @apply btn bg-error text-white hover:bg-red-700 focus:ring-error;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  
+  /* Form inputs */
+  .form-input {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-warm-gold focus:border-warm-gold sm:text-sm transition-colors;
+  }
+  
+  .form-input-error {
+    @apply form-input border-error focus:ring-error focus:border-error;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-charcoal mb-1;
+  }
+  
+  .form-error {
+    @apply mt-1 text-sm text-error;
+  }
+  
+  /* Card styles */
+  .card {
+    @apply bg-white rounded-lg shadow-soft border border-gray-100;
+  }
+  
+  .card-header {
+    @apply px-6 py-4 border-b border-gray-100;
+  }
+  
+  .card-body {
+    @apply px-6 py-4;
+  }
+  
+  .card-footer {
+    @apply px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-lg;
+  }
+  
+  /* Layout utilities */
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .section {
+    @apply py-8 sm:py-12 lg:py-16;
+  }
+  
+  /* Text styles */
+  .heading-1 {
+    @apply text-3xl sm:text-4xl font-heading font-black text-charcoal uppercase tracking-tight;
+  }
+  
+  .heading-2 {
+    @apply text-2xl sm:text-3xl font-heading font-black text-charcoal uppercase tracking-tight;
+  }
+  
+  .heading-3 {
+    @apply text-xl sm:text-2xl font-heading font-black text-charcoal uppercase tracking-tight;
+  }
+  
+  .subheading {
+    @apply text-lg sm:text-xl font-subheading italic text-gray-600;
+  }
+  
+  /* Status badges */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-success {
+    @apply badge bg-green-100 text-green-800;
+  }
+  
+  .badge-warning {
+    @apply badge bg-yellow-100 text-yellow-800;
+  }
+  
+  .badge-error {
+    @apply badge bg-red-100 text-red-800;
+  }
+  
+  .badge-info {
+    @apply badge bg-blue-100 text-blue-800;
+  }
+  
+  .badge-neutral {
+    @apply badge bg-gray-100 text-gray-800;
+  }
+  
+  /* Loading states */
+  .loading {
+    @apply animate-pulse;
+  }
+  
+  .skeleton {
+    @apply bg-gray-200 rounded loading;
+  }
+  
+  /* Mobile-first responsive grid */
+  .grid-responsive {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  
+  .grid-responsive-2 {
+    @apply grid grid-cols-1 gap-4 md:grid-cols-2;
+  }
+  
+  .grid-responsive-3 {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  /* Focus visible styles for better accessibility */
+  .focus-visible {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-warm-gold focus-visible:ring-offset-2;
+  }
+}
+
+/* Utility layer for one-off styles */
+@layer utilities {
+  /* Safe area padding for mobile devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-before: always;
+  }
+  
+  body {
+    @apply text-black bg-white;
+  }
+}
