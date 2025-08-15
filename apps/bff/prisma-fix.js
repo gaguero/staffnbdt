@@ -53,14 +53,23 @@ console.log('✅ Schema copied to local directory');
 // Step 4: Generate Prisma Client with local schema
 console.log('\n4. Generating Prisma Client locally...');
 try {
+  // Set a dummy DATABASE_URL for generation if not present
+  // Prisma needs this during generation but will use the runtime value
+  const env = {
+    ...process.env,
+    PRISMA_GENERATE_DATAPROXY: 'false'
+  };
+  
+  if (!env.DATABASE_URL) {
+    console.log('⚠️  DATABASE_URL not set during build, using dummy URL for generation');
+    env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/db';
+  }
+  
   // Generate with local schema - this ensures it goes to the right place
   execSync('npx prisma generate', {
     stdio: 'inherit',
     cwd: bffDir,
-    env: {
-      ...process.env,
-      PRISMA_GENERATE_DATAPROXY: 'false'
-    }
+    env: env
   });
   console.log('✅ Prisma Client generated');
 } catch (error) {
