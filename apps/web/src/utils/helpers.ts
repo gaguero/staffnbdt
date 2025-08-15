@@ -84,7 +84,7 @@ export function getRelativeTime(date: date): string {
  */
 export function hasPermission(userRole: UserRole, permission: string): boolean {
   const rolePermissions = ROLE_PERMISSIONS[userRole] || []
-  return rolePermissions.includes(permission)
+  return rolePermissions.includes(permission as any)
 }
 
 /**
@@ -175,7 +175,7 @@ export function generateSlug(text: string): string {
     .replace(/[^a-z0-9 -]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
-    .trim('-')
+    .replace(/^-+|-+$/g, '')
 }
 
 /**
@@ -185,7 +185,7 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null
+  let timeout: ReturnType<typeof setTimeout> | null = null
   
   return (...args: Parameters<T>) => {
     if (timeout) clearTimeout(timeout)
