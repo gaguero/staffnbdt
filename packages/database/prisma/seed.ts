@@ -5,31 +5,28 @@ const prisma = new PrismaClient();
 async function main() {
   // Create test departments
   const hrDepartment = await prisma.department.upsert({
-    where: { code: 'HR' },
+    where: { name: 'Human Resources' },
     update: {},
     create: {
       name: 'Human Resources',
-      code: 'HR',
       description: 'Human Resources Department',
     },
   });
 
   const opsDepartment = await prisma.department.upsert({
-    where: { code: 'OPS' },
+    where: { name: 'Operations' },
     update: {},
     create: {
       name: 'Operations',
-      code: 'OPS',
       description: 'Operations Department',
     },
   });
 
   const salesDepartment = await prisma.department.upsert({
-    where: { code: 'SALES' },
+    where: { name: 'Sales' },
     update: {},
     create: {
       name: 'Sales',
-      code: 'SALES',
       description: 'Sales Department',
     },
   });
