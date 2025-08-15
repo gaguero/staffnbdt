@@ -9,7 +9,7 @@ export class EmailService {
 
   constructor(private readonly configService: ConfigService) {
     // Configure nodemailer based on environment
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: this.configService.get('SMTP_HOST'),
       port: this.configService.get('SMTP_PORT'),
       secure: this.configService.get('SMTP_SECURE') === 'true',

@@ -100,7 +100,7 @@ export class DocumentsService {
     const { limit, offset, scope, departmentId, tags, search } = filterDto;
 
     // Build where clause based on user permissions
-    let whereClause: any = applySoftDelete({}).where;
+    let whereClause: any = applySoftDelete({ where: {} }).where || {};
 
     // Apply scope-based filtering
     whereClause.OR = this.buildAccessibleScopesFilter(currentUser);
@@ -164,7 +164,7 @@ export class DocumentsService {
 
   async findOne(id: string, currentUser: User): Promise<Document> {
     const document = await this.prisma.document.findFirst({
-      where: applySoftDelete({ id }).where,
+      where: applySoftDelete({ where: { id } }).where,
       include: {
         department: true,
         user: {
@@ -340,7 +340,7 @@ export class DocumentsService {
         }
         if (
           currentUser.role === Role.DEPARTMENT_ADMIN &&
-          document.user?.departmentId !== currentUser.departmentId
+          (document as any).user?.departmentId !== currentUser.departmentId
         ) {
           throw new ForbiddenException('Cannot access user documents from other departments');
         }

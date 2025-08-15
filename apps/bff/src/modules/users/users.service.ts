@@ -65,7 +65,7 @@ export class UsersService {
     const { limit, offset, role, departmentId, search } = filterDto;
 
     // Build where clause based on user role and filters
-    let whereClause: any = applySoftDelete({}).where;
+    let whereClause: any = applySoftDelete({ where: {} }).where || {};
 
     // Apply role-based filtering
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
@@ -123,7 +123,7 @@ export class UsersService {
     }
 
     const user = await this.prisma.user.findFirst({
-      where: applySoftDelete({ id }).where,
+      where: applySoftDelete({ where: { id } }).where,
       include: {
         department: true,
       },
@@ -229,7 +229,7 @@ export class UsersService {
     }
 
     const existingUser = await this.prisma.user.findFirst({
-      where: applySoftDelete({ id }).where,
+      where: applySoftDelete({ where: { id } }).where,
     });
 
     if (!existingUser) {
@@ -302,7 +302,7 @@ export class UsersService {
     }
 
     return this.prisma.user.findMany({
-      where: applySoftDelete({ departmentId }).where,
+      where: applySoftDelete({ where: { departmentId } }).where,
       include: {
         department: true,
       },
@@ -318,7 +318,7 @@ export class UsersService {
       throw new ForbiddenException('Staff cannot access user statistics');
     }
 
-    const whereClause = applySoftDelete({}).where;
+    const whereClause = applySoftDelete({ where: {} }).where || {};
     
     // Department admins only see their department
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
