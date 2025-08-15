@@ -15,9 +15,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prisma:generate": "cd ../../packages/database && npx prisma generate",
-    "prebuild": "cd ../../packages/database && npx prisma generate",
-    "postinstall": "cd ../../packages/database && npx prisma generate || echo 'Prisma generate failed, continuing...'"
+    "prisma:generate": "npx prisma generate --schema=../../packages/database/prisma/schema.prisma",
+    "prebuild": "npx prisma generate --schema=../../packages/database/prisma/schema.prisma || echo 'Prisma generate skipped'",
+    "postinstall": "npx prisma generate --schema=../../packages/database/prisma/schema.prisma || echo 'Prisma generate skipped'"
   },
   "dependencies": {
     "@angular-devkit/schematics-cli": "^20.1.6",
