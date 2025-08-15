@@ -4,8 +4,8 @@ nixPkgs = ["nodejs_18", "npm-9_x"]
 [phases.install]
 cmds = [
   "npm ci --production=false",
-  "cd packages/database && npm ci && npx prisma generate",
-  "cd apps/bff && npm ci --production=false && npx prisma generate --schema=../../packages/database/prisma/schema.prisma"
+  "cd packages/database && npm ci",
+  "cd apps/bff && npm ci --production=false"
 ]
 
 [phases.build]
