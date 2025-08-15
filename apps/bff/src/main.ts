@@ -9,6 +9,19 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   
+  // Debug DATABASE_URL at startup
+  console.log('=== Environment Check at Startup ===');
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+  if (process.env.DATABASE_URL) {
+    const url = process.env.DATABASE_URL;
+    const masked = url.replace(/:([^@]+)@/, ':****@');
+    console.log('DATABASE_URL format:', masked);
+  } else {
+    console.log('⚠️  DATABASE_URL is not set!');
+  }
+  console.log('=====================================');
+  
   try {
     const app = await NestFactory.create(AppModule, {
       logger: ['log', 'error', 'warn', 'debug', 'verbose'],

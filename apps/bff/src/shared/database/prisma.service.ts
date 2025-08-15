@@ -6,6 +6,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
+    // Debug DATABASE_URL before calling super
+    console.log('=== PrismaService Constructor ===');
+    console.log('DATABASE_URL from env:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+    if (process.env.DATABASE_URL) {
+      const url = process.env.DATABASE_URL;
+      const masked = url.replace(/:([^@]+)@/, ':****@');
+      console.log('DATABASE_URL value:', masked);
+    }
+    console.log('================================');
+    
     super({
       log: ['query', 'info', 'warn', 'error'],
     });
