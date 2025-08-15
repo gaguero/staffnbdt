@@ -53,7 +53,8 @@ model Document {
   id           String    @id @default(cuid())
   title        String
   description  String?
-  fileUrl      String
+  fileUrl      String?   // Legacy field for backwards compatibility
+  fileKey      String?   // New field for local storage file paths
   fileSize     Int
   mimeType     String
   scope        DocumentScope
@@ -83,7 +84,8 @@ model Payslip {
   deductions   Json
   netSalary    Decimal   @db.Decimal(10, 2)
   currency     String    @default("USD")
-  pdfUrl       String?
+  pdfUrl       String?   // Legacy field for backwards compatibility
+  fileKey      String?   // New field for local storage file paths
   importBatch  String?   // For tracking CSV imports
   createdAt    DateTime  @default(now())
   viewedAt     DateTime?

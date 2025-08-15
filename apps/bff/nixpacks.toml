@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["nodejs_18", "npm-9_x"]
+
+[phases.install]
+# Install from root to get all workspace dependencies
+cmds = [
+  "cd ../.. && npm ci --production=false",
+  "cd ../.. && npm run db:generate"
+]
+
+[phases.build]
+# Build from root using workspace command
+cmds = ["cd ../.. && npm run build -w @staffnbdt/bff"]
+
+[start]
+# Verify storage volume is accessible at /a and start the application
+cmd = "ls -la /a 2>/dev/null && echo 'Storage volume accessible at /a' || echo 'Warning: Volume /a not mounted'; npm run start:prod"

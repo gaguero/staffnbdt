@@ -20,6 +20,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { FilesModule } from './modules/files/files.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { VacationModule } from './modules/vacation/vacation.module';
 import { TrainingModule } from './modules/training/training.module';
@@ -64,6 +65,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     UsersModule,
     DepartmentsModule,
     DocumentsModule,
+    FilesModule,
     PayrollModule,
     VacationModule,
     TrainingModule,

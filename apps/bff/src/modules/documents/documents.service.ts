@@ -4,7 +4,8 @@ import { AuditService } from '../../shared/audit/audit.service';
 import { StorageService } from '../../shared/storage/storage.service';
 import { PaginatedResponse } from '../../shared/dto/pagination.dto';
 import { applySoftDelete } from '../../shared/utils/soft-delete';
-import { CreateDocumentDto, UpdateDocumentDto, DocumentFilterDto, UploadDocumentDto } from './dto';
+import { CreateDocumentDto, UpdateDocumentDto, DocumentFilterDto } from './dto';
+import { Express } from 'express';
 import { User, Document, DocumentScope, Role } from '@prisma/client';
 
 @Injectable()
@@ -15,44 +16,69 @@ export class DocumentsService {
     private readonly storageService: StorageService,
   ) {}
 
-  async createUploadUrl(
-    uploadDocumentDto: UploadDocumentDto,
+  async uploadDocument(
+    file: Express.Multer.File,
+    createDocumentDto: CreateDocumentDto,
     currentUser: User,
-  ): Promise<{ uploadUrl: string; downloadUrl: string; key: string }> {
+  ): Promise<Document> {
     // Validate permissions based on scope
-    if (uploadDocumentDto.scope === DocumentScope.DEPARTMENT) {
-      if (currentUser.role === Role.STAFF || !currentUser.departmentId) {
-        throw new ForbiddenException('Only department admins can upload department documents');
-      }
-    } else if (uploadDocumentDto.scope === DocumentScope.GENERAL) {
-      if (currentUser.role !== Role.SUPERADMIN) {
-        throw new ForbiddenException('Only superadmins can upload general documents');
-      }
-    }
+    this.validateDocumentPermissions(createDocumentDto, currentUser);
 
     // Generate storage key based on scope
     let prefix = '';
-    switch (uploadDocumentDto.scope) {
+    switch (createDocumentDto.scope) {
       case DocumentScope.GENERAL:
         prefix = 'documents/general';
         break;
       case DocumentScope.DEPARTMENT:
-        prefix = `documents/departments/${uploadDocumentDto.departmentId || currentUser.departmentId}`;
+        prefix = `documents/departments/${createDocumentDto.departmentId || currentUser.departmentId}`;
         break;
       case DocumentScope.USER:
-        prefix = `documents/users/${uploadDocumentDto.userId || currentUser.id}`;
+        prefix = `documents/users/${createDocumentDto.userId || currentUser.id}`;
         break;
     }
 
-    const key = this.storageService.generateFileKey(prefix, uploadDocumentDto.fileName);
+    const fileKey = this.storageService.generateFileKey(prefix, file.originalname);
 
-    const presignedUrls = await this.storageService.generatePresignedUploadUrl({
-      key,
-      contentType: uploadDocumentDto.mimeType,
-      expiresIn: 300, // 5 minutes
+    // Save file to storage
+    const fileMetadata = await this.storageService.saveFile(file.buffer, {
+      key: fileKey,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
     });
 
-    return presignedUrls;
+    // Create document record
+    const document = await this.prisma.document.create({
+      data: {
+        title: createDocumentDto.title,
+        description: createDocumentDto.description,
+        fileKey: fileMetadata.key, // Store the file key instead of URL
+        fileUrl: null, // Set legacy field to null
+        fileSize: fileMetadata.size,
+        mimeType: fileMetadata.mimeType || 'application/octet-stream',
+        scope: createDocumentDto.scope,
+        departmentId: createDocumentDto.departmentId,
+        userId: createDocumentDto.userId,
+        uploadedBy: currentUser.id,
+        tags: createDocumentDto.tags || [],
+      },
+      include: {
+        department: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Log document creation
+    await this.auditService.logCreate(currentUser.id, 'Document', document.id, document);
+
+    return document;
   }
 
   async create(
@@ -62,15 +88,25 @@ export class DocumentsService {
     // Validate permissions and scope consistency
     this.validateDocumentPermissions(createDocumentDto, currentUser);
 
-    // Verify file exists in storage
-    const fileExists = await this.storageService.checkFileExists(createDocumentDto.fileUrl.split('/').pop() || '');
-    if (!fileExists) {
-      throw new BadRequestException('File not found in storage');
+    // Verify file exists in storage using fileKey
+    if (createDocumentDto.fileKey) {
+      const fileExists = await this.storageService.checkFileExists(createDocumentDto.fileKey);
+      if (!fileExists) {
+        throw new BadRequestException('File not found in storage');
+      }
     }
 
     const document = await this.prisma.document.create({
       data: {
-        ...createDocumentDto,
+        title: createDocumentDto.title,
+        description: createDocumentDto.description,
+        fileKey: createDocumentDto.fileKey,
+        fileUrl: null, // Legacy field set to null for new uploads
+        fileSize: createDocumentDto.fileSize!,
+        mimeType: createDocumentDto.mimeType!,
+        scope: createDocumentDto.scope,
+        departmentId: createDocumentDto.departmentId,
+        userId: createDocumentDto.userId,
         uploadedBy: currentUser.id,
         tags: createDocumentDto.tags || [],
       },
@@ -194,10 +230,14 @@ export class DocumentsService {
   async getDownloadUrl(id: string, currentUser: User): Promise<{ downloadUrl: string }> {
     const document = await this.findOne(id, currentUser);
 
-    const downloadUrl = await this.storageService.generatePresignedDownloadUrl(
-      document.fileUrl,
-      300, // 5 minutes
-    );
+    // Determine the file identifier (prefer fileKey over legacy fileUrl)
+    const fileIdentifier = document.fileKey || document.fileUrl;
+    if (!fileIdentifier) {
+      throw new BadRequestException('Document has no associated file');
+    }
+
+    // Return the serving endpoint path instead of presigned URL
+    const downloadUrl = `/api/files/serve/${encodeURIComponent(fileIdentifier)}`;
 
     return { downloadUrl };
   }

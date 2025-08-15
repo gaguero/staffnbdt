@@ -8,7 +8,12 @@ import {
   Delete,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { DocumentsService } from './documents.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
@@ -17,7 +22,7 @@ import { DepartmentGuard } from '../../shared/guards/department.guard';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Audit } from '../../shared/decorators/audit.decorator';
 import { ApiResponse as CustomApiResponse } from '../../shared/dto/response.dto';
-import { CreateDocumentDto, UpdateDocumentDto, DocumentFilterDto, UploadDocumentDto } from './dto';
+import { CreateDocumentDto, UpdateDocumentDto, DocumentFilterDto } from './dto';
 import { User } from '@prisma/client';
 
 @ApiTags('Documents')
@@ -27,15 +32,22 @@ import { User } from '@prisma/client';
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
-  @Post('upload-url')
-  @ApiOperation({ summary: 'Get pre-signed URL for document upload' })
-  @ApiResponse({ status: 200, description: 'Upload URL generated successfully' })
-  async getUploadUrl(
-    @Body() uploadDocumentDto: UploadDocumentDto,
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @Audit({ action: 'UPLOAD', entity: 'Document' })
+  @ApiOperation({ summary: 'Upload a new document' })
+  @ApiResponse({ status: 201, description: 'Document uploaded successfully' })
+  async uploadDocument(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() createDocumentDto: CreateDocumentDto,
     @CurrentUser() currentUser: User,
   ) {
-    const result = await this.documentsService.createUploadUrl(uploadDocumentDto, currentUser);
-    return CustomApiResponse.success(result, 'Upload URL generated successfully');
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    const document = await this.documentsService.uploadDocument(file, createDocumentDto, currentUser);
+    return CustomApiResponse.success(document, 'Document uploaded successfully');
   }
 
   @Post()

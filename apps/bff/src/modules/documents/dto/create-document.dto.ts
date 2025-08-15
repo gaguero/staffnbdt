@@ -12,18 +12,26 @@ export class CreateDocumentDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ example: 'documents/general/1234567890-handbook.pdf' })
+  @ApiPropertyOptional({ example: 'documents/general/1234567890-handbook.pdf' })
+  @IsOptional()
   @IsString()
-  fileUrl: string;
+  fileKey?: string;
 
-  @ApiProperty({ example: 1024000 })
+  @ApiPropertyOptional({ example: 'https://s3.example.com/documents/handbook.pdf' })
+  @IsOptional()
+  @IsString()
+  fileUrl?: string; // Legacy field for backward compatibility
+
+  @ApiPropertyOptional({ example: 1024000 })
+  @IsOptional()
   @IsNumber()
   @Min(1)
-  fileSize: number;
+  fileSize?: number;
 
-  @ApiProperty({ example: 'application/pdf' })
+  @ApiPropertyOptional({ example: 'application/pdf' })
+  @IsOptional()
   @IsString()
-  mimeType: string;
+  mimeType?: string;
 
   @ApiProperty({ enum: DocumentScope, example: DocumentScope.GENERAL })
   @IsEnum(DocumentScope)
