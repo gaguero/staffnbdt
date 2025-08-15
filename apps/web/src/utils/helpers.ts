@@ -83,8 +83,9 @@ export function getRelativeTime(date: date): string {
  * Check if user has permission
  */
 export function hasPermission(userRole: UserRole, permission: string): boolean {
-  const rolePermissions = ROLE_PERMISSIONS[userRole] || []
-  return rolePermissions.includes(permission as any)
+  const rolePermissions = ROLE_PERMISSIONS[userRole as keyof typeof ROLE_PERMISSIONS] as readonly string[]
+  if (!rolePermissions) return false
+  return rolePermissions.includes(permission)
 }
 
 /**
