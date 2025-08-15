@@ -29,7 +29,7 @@ try {
   console.log('✅ @prisma/client already installed');
 } catch {
   console.log('Installing @prisma/client...');
-  execSync('npm install @prisma/client@5.11.0', { 
+  execSync('npm install @prisma/client@^5.11.0', { 
     stdio: 'inherit',
     cwd: bffDir 
   });
@@ -45,7 +45,7 @@ try {
   console.log('✅ Prisma CLI available');
 } catch {
   console.log('Installing Prisma CLI...');
-  execSync('npm install prisma@5.11.0', { 
+  execSync('npm install prisma@^5.11.0', { 
     stdio: 'inherit',
     cwd: bffDir 
   });
@@ -96,10 +96,22 @@ if (fs.existsSync(prismaPath)) {
   const indexPath = path.join(prismaPath, 'index.d.ts');
   if (fs.existsSync(indexPath)) {
     const content = fs.readFileSync(indexPath, 'utf8');
-    if (content.includes('export type User')) {
-      console.log('✅ Types verified: User type found in index.d.ts');
+    // Check for key Prisma types from our schema
+    const typesToCheck = ['User', 'Department', 'Document', 'Payslip', 'Role'];
+    const foundTypes = typesToCheck.filter(type => 
+      content.includes(`export type ${type}`) || 
+      content.includes(`interface ${type}`) ||
+      content.includes(`export interface ${type}`)
+    );
+    
+    if (foundTypes.length > 0) {
+      console.log(`✅ Types verified: Found ${foundTypes.length}/${typesToCheck.length} types:`, foundTypes.join(', '));
     } else {
-      console.warn('⚠️  Warning: User type not found in generated client');
+      console.warn('⚠️  Warning: Expected types not found in generated client');
+      console.log('   Checking for Prisma namespace...');
+      if (content.includes('namespace Prisma')) {
+        console.log('   ✅ Prisma namespace found - types may be nested');
+      }
     }
   }
 } else {

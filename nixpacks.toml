@@ -11,7 +11,7 @@ cmds = [
 [phases.build]
 cmds = [
   "cd apps/bff && node ensure-prisma.js",
-  "cd apps/bff && nest build"
+  "cd apps/bff && npx nest build"
 ]
 
 [start]
