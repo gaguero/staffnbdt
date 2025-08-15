@@ -7,8 +7,8 @@ import {
   TOKEN_STORAGE_KEY, 
   ERROR_MESSAGES,
   REFRESH_TOKEN_THRESHOLD 
-} from '@/utils/constants'
-import { ApiResponse, AuthTokens, ApiError } from '@/types'
+} from '../utils/constants'
+import { ApiResponse, AuthTokens, ApiError } from '../types'
 
 // Create axios instance
 const api: AxiosInstance = axios.create({

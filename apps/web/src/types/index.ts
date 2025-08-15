@@ -205,6 +205,7 @@ export interface MagicLinkRequest {
 export interface AuthTokens {
   accessToken: string
   refreshToken: string
+  expiresIn: number
 }
 
 export interface AuthUser extends User {
