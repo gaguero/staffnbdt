@@ -7,7 +7,6 @@ import { Toaster } from 'react-hot-toast'
 
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
-import { registerSW } from './utils/registerSW'
 import './index.css'
 
 // Create a query client
@@ -23,11 +22,6 @@ const queryClient = new QueryClient({
     },
   },
 })
-
-// Register service worker for PWA functionality
-if ('serviceWorker' in navigator) {
-  registerSW()
-}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
