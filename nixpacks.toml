@@ -10,7 +10,7 @@ cmds = [
 
 [phases.build]
 cmds = [
-  "cd apps/bff && node ensure-prisma.js",
+  "cd apps/bff && node prisma-fix.js",
   "cd apps/bff && npx nest build"
 ]
 
