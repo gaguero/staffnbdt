@@ -2,12 +2,27 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+console.log('=== Prisma Client Generation for BFF ===');
+console.log('Current directory:', __dirname);
+console.log('Environment DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+
+// Ensure @prisma/client is installed
+try {
+  require.resolve('@prisma/client');
+  console.log('✅ @prisma/client is installed');
+} catch (e) {
+  console.log('📦 Installing @prisma/client...');
+  execSync('npm install @prisma/client@5.11.0 --no-save', { 
+    stdio: 'inherit',
+    cwd: __dirname 
+  });
+}
+
 // Paths
 const schemaPath = path.join(__dirname, '../../packages/database/prisma/schema.prisma');
 const outputPath = path.join(__dirname, 'node_modules/.prisma/client');
 const clientPath = path.join(__dirname, 'node_modules/@prisma/client');
 
-console.log('=== Prisma Client Generation for BFF ===');
 console.log('Schema path:', schemaPath);
 console.log('Output path:', outputPath);
 console.log('Client path:', clientPath);
