@@ -15,4 +15,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd apps/bff && (ls -la /a 2>/dev/null && echo 'Storage volume accessible at /a' || echo 'Warning: Volume /a not mounted') && npm run start:prod"
+cmd = "cd /app/apps/bff && node dist/main.js"
