@@ -10,7 +10,7 @@ cmds = [
 
 [phases.build]
 cmds = [
-  "cd apps/bff && node prisma-fix.js",
+  "export DATABASE_URL='postgresql://user:pass@localhost:5432/db' && cd apps/bff && node prisma-railway-fix.js",
   "cd apps/bff && npx nest build"
 ]
 
