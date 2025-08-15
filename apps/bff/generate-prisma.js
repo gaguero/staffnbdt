@@ -47,6 +47,17 @@ ensureDir(path.dirname(clientPath));
 try {
   console.log('\nGenerating Prisma Client...');
   
+  // First, ensure Prisma CLI is available
+  try {
+    execSync('npx prisma --version', { stdio: 'ignore' });
+  } catch (e) {
+    console.log('Installing Prisma CLI...');
+    execSync('npm install prisma@5.11.0 --no-save', { 
+      stdio: 'inherit',
+      cwd: __dirname 
+    });
+  }
+  
   // Generate with explicit schema path
   const command = `npx prisma generate --schema="${schemaPath}"`;
   console.log('Running:', command);
