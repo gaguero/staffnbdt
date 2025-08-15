@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { user, accessToken } = response.data;
+      const { user, accessToken } = response.data.data;
       
       // Store auth data
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));

@@ -1,0 +1,29 @@
+# Playwright MCP Commands to Test UI Login
+
+# Test SUPERADMIN Login
+playwright.navigate("https://frontend-production-55d3.up.railway.app")
+playwright.screenshot("login-page.png")
+playwright.fill("#email", "admin@nayara.com")
+playwright.fill("#password", "password123")
+playwright.screenshot("login-filled-admin.png")
+playwright.click("button[type='submit']")
+playwright.waitForNavigation()
+playwright.screenshot("after-login-admin.png")
+playwright.getUrl()
+playwright.getText("body")
+
+# Test DEPARTMENT_ADMIN Login
+playwright.navigate("https://frontend-production-55d3.up.railway.app")
+playwright.fill("#email", "hr@nayara.com")
+playwright.fill("#password", "password123")
+playwright.click("button[type='submit']")
+playwright.waitForNavigation()
+playwright.screenshot("after-login-hr.png")
+
+# Test STAFF Login
+playwright.navigate("https://frontend-production-55d3.up.railway.app")
+playwright.fill("#email", "staff@nayara.com")
+playwright.fill("#password", "password123")
+playwright.click("button[type='submit']")
+playwright.waitForNavigation()
+playwright.screenshot("after-login-staff.png")
