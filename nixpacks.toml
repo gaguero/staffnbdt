@@ -2,10 +2,13 @@
 nixPkgs = ["nodejs_18", "npm-9_x"]
 
 [phases.install]
-cmds = ["npm ci --production=false"]
+cmds = [
+  "npm ci --production=false",
+  "npm run db:generate"
+]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["npm run build -w @staffnbdt/bff"]
 
 [start]
-cmd = "npm run start:prod"
+cmd = "cd apps/bff && ls -la /a 2>/dev/null && echo 'Storage volume accessible at /a' || echo 'Warning: Volume /a not mounted'; npm run start:prod"
