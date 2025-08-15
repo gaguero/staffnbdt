@@ -15,4 +15,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd /app/apps/bff && node dist/main.js"
+cmd = "npm run start:prod"
