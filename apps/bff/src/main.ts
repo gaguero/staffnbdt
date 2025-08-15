@@ -26,13 +26,31 @@ async function bootstrap() {
     app.use(compression());
 
     // CORS configuration for Railway deployment
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://frontend-production-55d3.up.railway.app', // Explicit frontend URL
+      ...(configService.get('FRONTEND_URL') ? [configService.get('FRONTEND_URL')] : []),
+    ];
+    
     app.enableCors({
-      origin: [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'https://*.railway.app',
-        ...(configService.get('FRONTEND_URL') ? [configService.get('FRONTEND_URL')] : []),
-      ],
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or Postman)
+        if (!origin) return callback(null, true);
+        
+        // Check if origin is in allowed list
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // Check if origin is a Railway app
+        if (origin.endsWith('.railway.app')) {
+          return callback(null, true);
+        }
+        
+        // Reject other origins
+        callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
