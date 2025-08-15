@@ -5,9 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Toaster } from 'react-hot-toast'
 
-import App from './App.tsx'
-import { AuthProvider } from './contexts/AuthContext.tsx'
-import { registerSW } from './utils/registerSW.ts'
+import App from './App'
+import { AuthProvider } from './contexts/AuthContext'
+import { registerSW } from './utils/registerSW'
 import './index.css'
 
 // Create a query client
@@ -16,7 +16,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
     },
     mutations: {
       retry: 1,
