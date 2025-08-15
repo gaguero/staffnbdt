@@ -318,7 +318,7 @@ export class UsersService {
       throw new ForbiddenException('Staff cannot access user statistics');
     }
 
-    const whereClause = applySoftDelete({ where: {} }).where || {};
+    const whereClause: any = applySoftDelete({ where: {} }).where || {};
     
     // Department admins only see their department
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
