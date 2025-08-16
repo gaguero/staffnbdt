@@ -66,10 +66,15 @@ export class UsersService {
     filterDto: UserFilterDto,
     currentUser: User,
   ): Promise<PaginatedResponse<UserWithDepartment>> {
-    const { limit, offset, role, departmentId, search } = filterDto;
+    const { limit, offset, role, departmentId, search, includeInactive } = filterDto;
 
     // Build where clause based on user role and filters
-    let whereClause: any = applySoftDelete({ where: {} }).where || {};
+    let whereClause: any = {};
+
+    // Apply soft delete filtering conditionally
+    if (!includeInactive) {
+      whereClause = applySoftDelete({ where: whereClause }).where || {};
+    }
 
     // Apply role-based filtering
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
