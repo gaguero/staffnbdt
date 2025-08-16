@@ -137,10 +137,10 @@ const UsersPage: React.FC = () => {
     try {
       setLoading(true);
       const result = await userService.importUsersFromCsv(csvFile, validateOnly, sendInvitations);
-      setImportResults(result.data);
+      setImportResults(result);
       setShowImportResults(true);
       
-      if (!validateOnly && result.data?.successCount > 0) {
+      if (!validateOnly && result?.successCount > 0) {
         await loadUsers();
         setShowBulkImport(false);
       }

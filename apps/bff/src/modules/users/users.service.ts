@@ -5,9 +5,7 @@ import { PaginatedResponse } from '../../shared/dto/pagination.dto';
 import { applySoftDelete } from '../../shared/utils/soft-delete';
 import { CreateUserDto, UpdateUserDto, UserFilterDto, ChangeRoleDto, ChangeStatusDto, BulkImportDto, BulkImportResultDto, BulkImportUserDto } from './dto';
 import { UserWithDepartment, UserStats, UserPermissions } from './interfaces';
-import { User, Role, InvitationStatus } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { User, Role } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -722,26 +720,8 @@ export class UsersService {
           },
         });
 
-        // Create invitation if requested
-        if (userData.sendInvitation !== false) {
-          const token = randomBytes(32).toString('hex');
-          const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
-
-          await this.prisma.invitation.create({
-            data: {
-              email: userData.email,
-              token,
-              role: userData.role,
-              departmentId: userData.departmentId,
-              invitedBy: currentUser.id,
-              status: InvitationStatus.PENDING,
-              expiresAt,
-            },
-          });
-
-          // TODO: Send invitation email
-        }
+        // TODO: Create invitation if requested via invitation service
+        // This should be handled by a separate invitation service method
 
         // Log user creation
         await this.auditService.logCreate(currentUser.id, 'User', user.id, user);
