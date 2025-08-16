@@ -635,10 +635,21 @@ export class DepartmentsService {
     // Get all departments in hierarchical order
     let whereClause = {};
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
-      // Get department admin's department and all its descendants
-      const departmentWithDescendants = await this.getDescendants(currentUser.departmentId!, currentUser);
-      const allowedIds = [currentUser.departmentId!, ...departmentWithDescendants.map(d => d.id)];
-      whereClause = { id: { in: allowedIds } };
+      // Check if department admin has a valid department
+      if (!currentUser.departmentId) {
+        // Return empty array if department admin has no department assigned
+        return [];
+      }
+      
+      try {
+        // Get department admin's department and all its descendants
+        const departmentWithDescendants = await this.getDescendants(currentUser.departmentId, currentUser);
+        const allowedIds = [currentUser.departmentId, ...departmentWithDescendants.map(d => d.id)];
+        whereClause = { id: { in: allowedIds } };
+      } catch (error) {
+        // If department doesn't exist, return empty array
+        return [];
+      }
     }
 
     const departments = await this.prisma.department.findMany({
@@ -783,20 +794,38 @@ export class DepartmentsService {
     let whereClause: any = {};
     
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
-      // Department admins can only select from their department and its descendants
-      const allowedIds = [currentUser.departmentId!];
-      const descendants = await this.getDescendants(currentUser.departmentId!, currentUser);
-      allowedIds.push(...descendants.map(d => d.id));
-      whereClause.id = { in: allowedIds };
+      // Check if department admin has a valid department
+      if (!currentUser.departmentId) {
+        // Return empty array if department admin has no department assigned
+        return [];
+      }
+      
+      try {
+        // Department admins can only select from their department and its descendants
+        const allowedIds = [currentUser.departmentId];
+        const descendants = await this.getDescendants(currentUser.departmentId, currentUser);
+        allowedIds.push(...descendants.map(d => d.id));
+        whereClause.id = { in: allowedIds };
+      } catch (error) {
+        // If department doesn't exist, return empty array
+        return [];
+      }
     }
 
     if (excludeId) {
-      // Exclude the department itself and its descendants to prevent circular references
-      const descendants = await this.getDescendants(excludeId, currentUser);
-      const excludeIds = [excludeId, ...descendants.map(d => d.id)];
-      whereClause.id = whereClause.id 
-        ? { in: whereClause.id.in.filter((id: string) => !excludeIds.includes(id)) }
-        : { notIn: excludeIds };
+      try {
+        // Exclude the department itself and its descendants to prevent circular references
+        const descendants = await this.getDescendants(excludeId, currentUser);
+        const excludeIds = [excludeId, ...descendants.map(d => d.id)];
+        whereClause.id = whereClause.id 
+          ? { in: whereClause.id.in.filter((id: string) => !excludeIds.includes(id)) }
+          : { notIn: excludeIds };
+      } catch (error) {
+        // If excludeId department doesn't exist, just exclude the single ID
+        whereClause.id = whereClause.id 
+          ? { in: whereClause.id.in.filter((id: string) => id !== excludeId) }
+          : { not: excludeId };
+      }
     }
 
     return this.prisma.department.findMany({
