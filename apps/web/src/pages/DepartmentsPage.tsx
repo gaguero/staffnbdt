@@ -199,14 +199,6 @@ const DepartmentsPage: React.FC = () => {
     return department._count?.users || 0;
   };
 
-  const getTrainingCount = (department: Department) => {
-    return department._count?.trainingSessions || 0;
-  };
-
-  const getDocumentCount = (department: Department) => {
-    return department._count?.documents || 0;
-  };
-
   const getManagerName = (department: Department) => {
     if (department.manager) {
       return `${department.manager.firstName} ${department.manager.lastName}`;
