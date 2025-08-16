@@ -987,6 +987,101 @@ const UsersPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* View User Modal */}
+      {showViewUser && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-screen overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-charcoal">
+                  User Details
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowViewUser(false);
+                    setSelectedUser(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">First Name</label>
+                    <p className="text-charcoal">{selectedUser.firstName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Last Name</label>
+                    <p className="text-charcoal">{selectedUser.lastName}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Email</label>
+                  <p className="text-charcoal">{selectedUser.email}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Role</label>
+                  <div className="mt-1">{getRoleBadge(selectedUser.role)}</div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Department</label>
+                  <div className="mt-1">{getDepartmentHierarchy(selectedUser)}</div>
+                </div>
+
+                {selectedUser.position && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Position</label>
+                    <p className="text-charcoal">{selectedUser.position}</p>
+                  </div>
+                )}
+
+                {selectedUser.phoneNumber && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Phone Number</label>
+                    <p className="text-charcoal">{selectedUser.phoneNumber}</p>
+                  </div>
+                )}
+
+                {selectedUser.hireDate && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Hire Date</label>
+                    <p className="text-charcoal">{new Date(selectedUser.hireDate).toLocaleDateString()}</p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Status</label>
+                  <div className="mt-1">{getStatusBadge(selectedUser)}</div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Created</label>
+                  <p className="text-gray-500 text-sm">{formatDate(selectedUser.createdAt)}</p>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <button
+                  onClick={() => {
+                    setShowViewUser(false);
+                    setSelectedUser(null);
+                  }}
+                  className="btn btn-secondary w-full"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

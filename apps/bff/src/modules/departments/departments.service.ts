@@ -774,7 +774,12 @@ export class DepartmentsService {
     return rootDepartments;
   }
 
-  async getDepartmentsForDropdown(currentUser: User, excludeId?: string): Promise<Department[]> {
+  async getDepartmentsForDropdown(currentUser: User, excludeId?: string): Promise<Array<{
+    id: string;
+    name: string;
+    level: number;
+    parentId?: string;
+  }>> {
     let whereClause: any = {};
     
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {

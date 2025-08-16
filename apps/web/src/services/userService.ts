@@ -10,6 +10,12 @@ export interface User {
   department?: {
     id: string;
     name: string;
+    level: number;
+    parent?: {
+      id: string;
+      name: string;
+      level: number;
+    };
   };
   position?: string;
   phoneNumber?: string;
