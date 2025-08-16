@@ -1,0 +1,10 @@
+export { default as DashboardPage } from './DashboardPage';
+export { default as ProfilePage } from './ProfilePage';
+export { default as DocumentsPage } from './DocumentsPage';
+export { default as PayrollPage } from './PayrollPage';
+export { default as VacationPage } from './VacationPage';
+export { default as TrainingPage } from './TrainingPage';
+export { default as BenefitsPage } from './BenefitsPage';
+export { default as NotificationsPage } from './NotificationsPage';
+export { default as UsersPage } from './UsersPage';
+export { default as DepartmentsPage } from './DepartmentsPage';
