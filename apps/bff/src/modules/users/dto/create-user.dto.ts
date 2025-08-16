@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsEnum, IsOptional, IsDateString, IsPhoneNumber, IsObject } from 'class-validator';
+import { IsEmail, IsString, IsEnum, IsOptional, IsDateString, IsObject } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
@@ -36,7 +36,7 @@ export class CreateUserDto {
 
   @ApiPropertyOptional({ example: '+1234567890' })
   @IsOptional()
-  @IsPhoneNumber()
+  @IsString()
   phoneNumber?: string;
 
   @ApiPropertyOptional({

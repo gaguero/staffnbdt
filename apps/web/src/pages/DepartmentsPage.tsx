@@ -158,14 +158,26 @@ const DepartmentsPage: React.FC = () => {
     setError(null);
 
     try {
-      const departmentData = {
+      const departmentData: any = {
         name: formData.name,
-        description: formData.description || undefined,
-        location: formData.location || undefined,
-        budget: formData.budget ? parseFloat(formData.budget) : undefined,
-        managerId: formData.managerId || undefined,
-        parentId: formData.parentId || undefined
       };
+
+      // Only add fields that have values
+      if (formData.description?.trim()) {
+        departmentData.description = formData.description;
+      }
+      if (formData.location?.trim()) {
+        departmentData.location = formData.location;
+      }
+      if (formData.budget && !isNaN(parseFloat(formData.budget))) {
+        departmentData.budget = parseFloat(formData.budget);
+      }
+      if (formData.managerId?.trim()) {
+        departmentData.managerId = formData.managerId;
+      }
+      if (formData.parentId?.trim()) {
+        departmentData.parentId = formData.parentId;
+      }
 
       if (showEditDepartment && selectedDepartment) {
         // Update existing department

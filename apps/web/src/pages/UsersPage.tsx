@@ -107,7 +107,28 @@ const UsersPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await userService.createUser(formData);
+      const userData: any = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        role: formData.role,
+      };
+
+      // Only add fields that have values
+      if (formData.departmentId?.trim()) {
+        userData.departmentId = formData.departmentId;
+      }
+      if (formData.position?.trim()) {
+        userData.position = formData.position;
+      }
+      if (formData.phoneNumber?.trim()) {
+        userData.phoneNumber = formData.phoneNumber;
+      }
+      if (formData.hireDate?.trim()) {
+        userData.hireDate = formData.hireDate;
+      }
+
+      await userService.createUser(userData);
       await loadUsers();
       setShowAddUser(false);
       setFormData({
@@ -738,7 +759,29 @@ const UsersPage: React.FC = () => {
                 e.preventDefault();
                 try {
                   setLoading(true);
-                  await userService.updateUser(selectedUser.id, formData);
+                  
+                  const userData: any = {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    role: formData.role,
+                  };
+
+                  // Only add fields that have values
+                  if (formData.departmentId?.trim()) {
+                    userData.departmentId = formData.departmentId;
+                  }
+                  if (formData.position?.trim()) {
+                    userData.position = formData.position;
+                  }
+                  if (formData.phoneNumber?.trim()) {
+                    userData.phoneNumber = formData.phoneNumber;
+                  }
+                  if (formData.hireDate?.trim()) {
+                    userData.hireDate = formData.hireDate;
+                  }
+
+                  await userService.updateUser(selectedUser.id, userData);
                   await loadUsers();
                   setShowEditUser(false);
                   setSelectedUser(null);
