@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
+import DepartmentStaffModal from '../components/DepartmentStaffModal';
 import { departmentService } from '../services/departmentService';
 import { userService } from '../services/userService';
 import { useAuth } from '../contexts/AuthContext';
@@ -53,7 +54,9 @@ const DepartmentsPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showAddDepartment, setShowAddDepartment] = useState(false);
   const [showEditDepartment, setShowEditDepartment] = useState(false);
+  const [showStaffModal, setShowStaffModal] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [selectedDepartmentForStaff, setSelectedDepartmentForStaff] = useState<Department | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -524,7 +527,10 @@ const DepartmentsPage: React.FC = () => {
                   )}
                   <button 
                     className="btn btn-outline"
-                    onClick={() => console.log('View staff for', department.name)}
+                    onClick={() => {
+                      setSelectedDepartmentForStaff(department);
+                      setShowStaffModal(true);
+                    }}
                   >
                     <span className="mr-2">👥</span>
                     Staff ({getEmployeeCount(department)})
@@ -716,6 +722,19 @@ const DepartmentsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Staff Modal */}
+      {selectedDepartmentForStaff && (
+        <DepartmentStaffModal
+          isOpen={showStaffModal}
+          onClose={() => {
+            setShowStaffModal(false);
+            setSelectedDepartmentForStaff(null);
+          }}
+          departmentId={selectedDepartmentForStaff.id}
+          departmentName={selectedDepartmentForStaff.name}
+        />
       )}
     </div>
   );

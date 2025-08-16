@@ -34,6 +34,7 @@ export interface UserFilter {
   departmentId?: string;
   limit?: number;
   offset?: number;
+  includeInactive?: boolean;
 }
 
 export interface BulkImportResult {
@@ -63,6 +64,7 @@ class UserService {
     if (filter?.departmentId) params.append('departmentId', filter.departmentId);
     if (filter?.limit) params.append('limit', filter.limit.toString());
     if (filter?.offset) params.append('offset', filter.offset.toString());
+    if (filter?.includeInactive) params.append('includeInactive', filter.includeInactive.toString());
 
     const response = await api.get(`/users?${params.toString()}`);
     return response.data;
