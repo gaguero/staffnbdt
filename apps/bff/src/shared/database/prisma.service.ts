@@ -13,10 +13,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       throw new Error('DATABASE_URL environment variable is not set');
     }
     
+    // Parse connection string to add connection pool settings
+    const url = new URL(databaseUrl);
+    url.searchParams.set('connection_limit', '10');
+    url.searchParams.set('pool_timeout', '10');
+    
     super({
       datasources: {
         db: {
-          url: databaseUrl,
+          url: url.toString(),
         },
       },
       log: ['query', 'info', 'warn', 'error'],
