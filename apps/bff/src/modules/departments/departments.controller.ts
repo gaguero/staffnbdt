@@ -50,6 +50,33 @@ export class DepartmentsController {
     return CustomApiResponse.success(departments, 'Departments retrieved successfully');
   }
 
+  @Get('hierarchy')
+  @ApiOperation({ summary: 'Get departments in hierarchical tree structure' })
+  @ApiResponse({ status: 200, description: 'Department hierarchy retrieved successfully' })
+  async getHierarchy(@CurrentUser() currentUser: User) {
+    const hierarchy = await this.departmentsService.getHierarchy(currentUser);
+    return CustomApiResponse.success(hierarchy, 'Department hierarchy retrieved successfully');
+  }
+
+  @Get('dropdown')
+  @ApiOperation({ summary: 'Get departments for dropdown selection' })
+  @ApiResponse({ status: 200, description: 'Dropdown departments retrieved successfully' })
+  async getDropdownDepartments(@CurrentUser() currentUser: User) {
+    const departments = await this.departmentsService.getDepartmentsForDropdown(currentUser);
+    return CustomApiResponse.success(departments, 'Dropdown departments retrieved successfully');
+  }
+
+  @Get('dropdown/:excludeId')
+  @ApiOperation({ summary: 'Get departments for dropdown selection excluding specified department and its descendants' })
+  @ApiResponse({ status: 200, description: 'Dropdown departments retrieved successfully' })
+  async getDropdownDepartmentsWithExclusion(
+    @Param('excludeId') excludeId: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    const departments = await this.departmentsService.getDepartmentsForDropdown(currentUser, excludeId);
+    return CustomApiResponse.success(departments, 'Dropdown departments retrieved successfully');
+  }
+
   @Get('search')
   @ApiOperation({ summary: 'Search departments by name or description' })
   @ApiResponse({ status: 200, description: 'Search results retrieved successfully' })
@@ -72,6 +99,30 @@ export class DepartmentsController {
   ) {
     const department = await this.departmentsService.findOne(id, currentUser);
     return CustomApiResponse.success(department, 'Department retrieved successfully');
+  }
+
+  @Get(':id/ancestors')
+  @ApiOperation({ summary: 'Get department ancestors (parent chain)' })
+  @ApiResponse({ status: 200, description: 'Department ancestors retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Department not found' })
+  async getAncestors(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    const ancestors = await this.departmentsService.getAncestors(id, currentUser);
+    return CustomApiResponse.success(ancestors, 'Department ancestors retrieved successfully');
+  }
+
+  @Get(':id/descendants')
+  @ApiOperation({ summary: 'Get department descendants (all sub-departments)' })
+  @ApiResponse({ status: 200, description: 'Department descendants retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Department not found' })
+  async getDescendants(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    const descendants = await this.departmentsService.getDescendants(id, currentUser);
+    return CustomApiResponse.success(descendants, 'Department descendants retrieved successfully');
   }
 
   @Get('stats/overall')

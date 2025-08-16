@@ -49,4 +49,12 @@ export class CreateDepartmentDto {
   @IsOptional()
   @IsUUID()
   managerId?: string;
+
+  @ApiPropertyOptional({ 
+    example: 'parent-dept-cuid',
+    description: 'Parent department ID for hierarchy'
+  })
+  @IsOptional()
+  @IsUUID()
+  parentId?: string;
 }

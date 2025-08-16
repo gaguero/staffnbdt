@@ -39,6 +39,18 @@ export class DepartmentsService {
       }
     }
 
+    // Validate parent department exists and calculate level
+    let level = 0;
+    if (createDepartmentDto.parentId) {
+      const parentDepartment = await this.prisma.department.findUnique({
+        where: { id: createDepartmentDto.parentId },
+      });
+      if (!parentDepartment) {
+        throw new BadRequestException('Parent department not found');
+      }
+      level = parentDepartment.level + 1;
+    }
+
     const department = await this.prisma.department.create({
       data: {
         name: createDepartmentDto.name,
@@ -46,6 +58,8 @@ export class DepartmentsService {
         location: createDepartmentDto.location,
         budget: createDepartmentDto.budget,
         managerId: createDepartmentDto.managerId,
+        parentId: createDepartmentDto.parentId,
+        level,
       },
       include: {
         manager: {
@@ -55,6 +69,20 @@ export class DepartmentsService {
             lastName: true,
             email: true,
             role: true,
+          },
+        },
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
           },
         },
         users: {
@@ -73,6 +101,7 @@ export class DepartmentsService {
             users: {
               where: { deletedAt: null },
             },
+            children: true,
             trainingSessions: true,
             documents: {
               where: { deletedAt: null },
@@ -108,6 +137,20 @@ export class DepartmentsService {
             position: true,
           },
         },
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
+          },
+        },
         users: {
           where: { deletedAt: null },
           select: {
@@ -124,6 +167,7 @@ export class DepartmentsService {
             users: {
               where: { deletedAt: null },
             },
+            children: true,
             trainingSessions: true,
             documents: {
               where: { deletedAt: null },
@@ -131,9 +175,10 @@ export class DepartmentsService {
           },
         },
       },
-      orderBy: {
-        name: 'asc',
-      },
+      orderBy: [
+        { level: 'asc' },
+        { name: 'asc' },
+      ],
     });
 
     return departments;
@@ -255,6 +300,29 @@ export class DepartmentsService {
       }
     }
 
+    // Handle parent change and prevent circular references
+    let newLevel = existingDepartment.level;
+    if (updateDepartmentDto.parentId !== undefined) {
+      if (updateDepartmentDto.parentId === id) {
+        throw new BadRequestException('Department cannot be its own parent');
+      }
+
+      if (updateDepartmentDto.parentId) {
+        const parentDepartment = await this.prisma.department.findUnique({
+          where: { id: updateDepartmentDto.parentId },
+        });
+        if (!parentDepartment) {
+          throw new BadRequestException('Parent department not found');
+        }
+
+        // Check for circular reference
+        await this.validateNoCircularReference(id, updateDepartmentDto.parentId);
+        newLevel = parentDepartment.level + 1;
+      } else {
+        newLevel = 0; // Making it a root department
+      }
+    }
+
     const updatedDepartment = await this.prisma.department.update({
       where: { id },
       data: {
@@ -263,6 +331,8 @@ export class DepartmentsService {
         location: updateDepartmentDto.location,
         budget: updateDepartmentDto.budget,
         managerId: updateDepartmentDto.managerId,
+        parentId: updateDepartmentDto.parentId,
+        level: newLevel,
       },
       include: {
         manager: {
@@ -273,6 +343,20 @@ export class DepartmentsService {
             email: true,
             role: true,
             position: true,
+          },
+        },
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
           },
         },
         users: {
@@ -291,6 +375,7 @@ export class DepartmentsService {
             users: {
               where: { deletedAt: null },
             },
+            children: true,
             trainingSessions: true,
             documents: {
               where: { deletedAt: null },
@@ -530,6 +615,197 @@ export class DepartmentsService {
         name: 'asc',
       },
       take: 10, // Limit search results
+    });
+  }
+
+  // New hierarchy-related methods
+
+  async validateNoCircularReference(departmentId: string, parentId: string): Promise<void> {
+    // Get all ancestors of the proposed parent
+    const ancestors = await this.getAncestors(parentId, undefined);
+    const ancestorIds = ancestors.map(dept => dept.id);
+    
+    // Check if current department is in the ancestor chain
+    if (ancestorIds.includes(departmentId)) {
+      throw new BadRequestException('Circular reference detected: department cannot be moved under its own descendant');
+    }
+  }
+
+  async getHierarchy(currentUser: User): Promise<Department[]> {
+    // Get all departments in hierarchical order
+    let whereClause = {};
+    if (currentUser.role === Role.DEPARTMENT_ADMIN) {
+      // Get department admin's department and all its descendants
+      const departmentWithDescendants = await this.getDescendants(currentUser.departmentId!, currentUser);
+      const allowedIds = [currentUser.departmentId!, ...departmentWithDescendants.map(d => d.id)];
+      whereClause = { id: { in: allowedIds } };
+    }
+
+    const departments = await this.prisma.department.findMany({
+      where: whereClause,
+      include: {
+        manager: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
+          },
+        },
+        _count: {
+          select: {
+            users: {
+              where: { deletedAt: null },
+            },
+            children: true,
+          },
+        },
+      },
+      orderBy: [
+        { level: 'asc' },
+        { name: 'asc' },
+      ],
+    });
+
+    return this.buildHierarchyTree(departments);
+  }
+
+  async getAncestors(departmentId: string, currentUser?: User): Promise<Department[]> {
+    const ancestors: Department[] = [];
+    let currentDepartment = await this.prisma.department.findUnique({
+      where: { id: departmentId },
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
+            parentId: true,
+          },
+        },
+      },
+    });
+
+    while (currentDepartment?.parent) {
+      ancestors.unshift(currentDepartment.parent as any);
+      currentDepartment = await this.prisma.department.findUnique({
+        where: { id: currentDepartment.parent.id },
+        include: {
+          parent: {
+            select: {
+              id: true,
+              name: true,
+              level: true,
+              parentId: true,
+            },
+          },
+        },
+      });
+    }
+
+    return ancestors;
+  }
+
+  async getDescendants(departmentId: string, currentUser: User): Promise<Department[]> {
+    // Check access permissions
+    if (currentUser.role === Role.DEPARTMENT_ADMIN && currentUser.departmentId !== departmentId) {
+      throw new ForbiddenException('Cannot access other departments');
+    }
+
+    const descendants: Department[] = [];
+    const queue = [departmentId];
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      const children = await this.prisma.department.findMany({
+        where: { parentId: currentId },
+        select: {
+          id: true,
+          name: true,
+          level: true,
+          parentId: true,
+        },
+      });
+
+      descendants.push(...children as any);
+      queue.push(...children.map(child => child.id));
+    }
+
+    return descendants;
+  }
+
+  private buildHierarchyTree(departments: Department[]): Department[] {
+    const departmentMap = new Map<string, any>();
+    const rootDepartments: any[] = [];
+
+    // Create a map of all departments
+    departments.forEach(dept => {
+      departmentMap.set(dept.id, { ...dept, children: [] });
+    });
+
+    // Build the tree structure
+    departments.forEach(dept => {
+      const deptWithChildren = departmentMap.get(dept.id);
+      if (dept.parentId) {
+        const parent = departmentMap.get(dept.parentId);
+        if (parent) {
+          parent.children.push(deptWithChildren);
+        }
+      } else {
+        rootDepartments.push(deptWithChildren);
+      }
+    });
+
+    return rootDepartments;
+  }
+
+  async getDepartmentsForDropdown(currentUser: User, excludeId?: string): Promise<Department[]> {
+    let whereClause: any = {};
+    
+    if (currentUser.role === Role.DEPARTMENT_ADMIN) {
+      // Department admins can only select from their department and its descendants
+      const allowedIds = [currentUser.departmentId!];
+      const descendants = await this.getDescendants(currentUser.departmentId!, currentUser);
+      allowedIds.push(...descendants.map(d => d.id));
+      whereClause.id = { in: allowedIds };
+    }
+
+    if (excludeId) {
+      // Exclude the department itself and its descendants to prevent circular references
+      const descendants = await this.getDescendants(excludeId, currentUser);
+      const excludeIds = [excludeId, ...descendants.map(d => d.id)];
+      whereClause.id = whereClause.id 
+        ? { in: whereClause.id.in.filter((id: string) => !excludeIds.includes(id)) }
+        : { notIn: excludeIds };
+    }
+
+    return this.prisma.department.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        name: true,
+        level: true,
+        parentId: true,
+      },
+      orderBy: [
+        { level: 'asc' },
+        { name: 'asc' },
+      ],
     });
   }
 }

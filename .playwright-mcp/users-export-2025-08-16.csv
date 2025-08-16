@@ -1,0 +1,9 @@
+Email,First Name,Last Name,Role,Department,Position,Phone Number,Hire Date,Status,Created At
+"spa@nayara.com","Lisa","Chen","STAFF","Spa & Wellness","Spa Therapist","+507-6000-0040","2024-02-15","Active","2025-08-16"
+"housekeeper@nayara.com","Rosa","Lopez","STAFF","Housekeeping","Housekeeping Supervisor","+507-6000-0030","2024-02-10","Active","2025-08-16"
+"chef@nayara.com","Pierre","Dubois","STAFF","Food & Beverage","Executive Chef","+507-6000-0021","2024-02-05","Active","2025-08-16"
+"frontdesk@nayara.com","John","Smith","STAFF","Front Office","Front Desk Agent","+507-6000-0011","2024-02-01","Active","2025-08-16"
+"fb@nayara.com","Ana","Garcia","DEPARTMENT_ADMIN","Food & Beverage","F&B Manager","+507-6000-0020","2024-01-25","Active","2025-08-16"
+"frontoffice@nayara.com","Carlos","Martinez","DEPARTMENT_ADMIN","Front Office","Front Office Manager","+507-6000-0010","2024-01-20","Active","2025-08-16"
+"hr@nayara.com","HR","Manager","DEPARTMENT_ADMIN","Human Resources","HR Manager","+507-6000-0002","2024-01-15","Active","2025-08-15"
+"admin@nayara.com","Admin","User","SUPERADMIN","","System Administrator","+507-6000-0001","2024-01-01","Active","2025-08-15"

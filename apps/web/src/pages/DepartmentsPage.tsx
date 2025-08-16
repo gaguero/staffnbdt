@@ -11,6 +11,8 @@ interface Department {
   location?: string;
   budget?: number | string;
   managerId?: string;
+  parentId?: string;
+  level: number;
   manager?: {
     id: string;
     firstName: string;
@@ -19,10 +21,21 @@ interface Department {
     role: string;
     position?: string;
   };
+  parent?: {
+    id: string;
+    name: string;
+    level: number;
+  };
+  children?: Array<{
+    id: string;
+    name: string;
+    level: number;
+  }>;
   users?: any[];
   trainingSessions?: any[];
   _count?: {
     users: number;
+    children?: number;
     trainingSessions?: number;
     documents?: number;
   };
@@ -33,7 +46,9 @@ interface Department {
 const DepartmentsPage: React.FC = () => {
   const { user } = useAuth();
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [hierarchyDepartments, setHierarchyDepartments] = useState<Department[]>([]);
   const [availableManagers, setAvailableManagers] = useState<any[]>([]);
+  const [availableParents, setAvailableParents] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showAddDepartment, setShowAddDepartment] = useState(false);
@@ -45,6 +60,7 @@ const DepartmentsPage: React.FC = () => {
     name: '',
     description: '',
     managerId: '',
+    parentId: '',
     location: '',
     budget: ''
   });
@@ -52,6 +68,7 @@ const DepartmentsPage: React.FC = () => {
   // Load departments and users on component mount
   useEffect(() => {
     loadDepartments();
+    loadHierarchy();
     loadAvailableManagers();
   }, []);
 
@@ -79,14 +96,40 @@ const DepartmentsPage: React.FC = () => {
         limit: 100 
       });
       if (response.success && response.data) {
+        // The actual users array is nested in data.data
+        const users = response.data.data || [];
         // Filter for users who can be managers (Department Admins and Superadmins)
-        const managers = response.data.filter((u: any) => 
+        const managers = users.filter((u: any) => 
           u.role === 'DEPARTMENT_ADMIN' || u.role === 'SUPERADMIN'
         );
         setAvailableManagers(managers);
       }
     } catch (error) {
       console.error('Error loading managers:', error);
+    }
+  };
+
+  const loadHierarchy = async () => {
+    try {
+      const response = await departmentService.getHierarchy();
+      if (response.success && response.data) {
+        setHierarchyDepartments(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading hierarchy:', error);
+    }
+  };
+
+  const loadAvailableParents = async (excludeId?: string) => {
+    try {
+      const response = excludeId 
+        ? await departmentService.getDepartmentsForDropdownWithExclusion(excludeId)
+        : await departmentService.getDepartmentsForDropdown();
+      if (response.success && response.data) {
+        setAvailableParents(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading parent departments:', error);
     }
   };
 
@@ -120,7 +163,8 @@ const DepartmentsPage: React.FC = () => {
         description: formData.description || undefined,
         location: formData.location || undefined,
         budget: formData.budget ? parseFloat(formData.budget) : undefined,
-        managerId: formData.managerId || undefined
+        managerId: formData.managerId || undefined,
+        parentId: formData.parentId || undefined
       };
 
       if (showEditDepartment && selectedDepartment) {
@@ -128,6 +172,7 @@ const DepartmentsPage: React.FC = () => {
         const response = await departmentService.updateDepartment(selectedDepartment.id, departmentData);
         if (response.success) {
           await loadDepartments();
+          await loadHierarchy();
           setShowEditDepartment(false);
           setSelectedDepartment(null);
         } else {
@@ -138,6 +183,7 @@ const DepartmentsPage: React.FC = () => {
         const response = await departmentService.createDepartment(departmentData);
         if (response.success) {
           await loadDepartments();
+          await loadHierarchy();
           setShowAddDepartment(false);
         } else {
           setError(response.message || 'Failed to create department');
@@ -149,6 +195,7 @@ const DepartmentsPage: React.FC = () => {
         name: '',
         description: '',
         managerId: '',
+        parentId: '',
         location: '',
         budget: ''
       });
@@ -160,15 +207,18 @@ const DepartmentsPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (department: Department) => {
+  const handleEdit = async (department: Department) => {
     setSelectedDepartment(department);
     setFormData({
       name: department.name,
       description: department.description || '',
       managerId: department.managerId || '',
+      parentId: department.parentId || '',
       location: department.location || '',
       budget: department.budget?.toString() || ''
     });
+    // Load available parent departments excluding this department and its descendants
+    await loadAvailableParents(department.id);
     setShowEditDepartment(true);
     setError(null);
   };
@@ -184,6 +234,7 @@ const DepartmentsPage: React.FC = () => {
       const response = await departmentService.deleteDepartment(id);
       if (response.success) {
         await loadDepartments();
+        await loadHierarchy();
       } else {
         setError(response.message || 'Failed to delete department');
       }
@@ -193,6 +244,11 @@ const DepartmentsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleAddDepartment = async () => {
+    await loadAvailableParents();
+    setShowAddDepartment(true);
   };
 
   const getEmployeeCount = (department: Department) => {
@@ -212,6 +268,72 @@ const DepartmentsPage: React.FC = () => {
       currency: 'USD',
       minimumFractionDigits: 0
     }).format(amount);
+  };
+
+  const renderDepartmentTree = (departments: Department[], level: number = 0): React.ReactNode => {
+    return departments.map(department => (
+      <div key={department.id}>
+        <div 
+          className={`flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-gray-100 ${
+            level === 0 ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-gray-50'
+          }`}
+          style={{ marginLeft: `${level * 24}px` }}
+        >
+          <div className="flex items-center space-x-3">
+            {/* Tree connector */}
+            {level > 0 && (
+              <div className="text-gray-400 text-sm">
+                └─
+              </div>
+            )}
+            
+            {/* Department icon */}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-medium text-xs ${
+              level === 0 ? 'bg-blue-600' : level === 1 ? 'bg-green-500' : 'bg-warm-gold'
+            }`}>
+              {department.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
+            </div>
+            
+            {/* Department info */}
+            <div className="flex-1">
+              <div className="flex items-center space-x-2">
+                <h4 className="font-medium text-charcoal">{department.name}</h4>
+                {department.parent && (
+                  <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
+                    under {department.parent.name}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-600">
+                Manager: {getManagerName(department)} • {getEmployeeCount(department)} employees
+              </p>
+              {department.location && (
+                <p className="text-xs text-gray-500">📍 {department.location}</p>
+              )}
+            </div>
+          </div>
+          
+          {/* Department stats */}
+          <div className="text-right">
+            <div className="text-xs text-gray-500 space-y-1">
+              {department._count?.children && department._count.children > 0 && (
+                <p>🏢 {department._count.children} sub-dept{department._count.children > 1 ? 's' : ''}</p>
+              )}
+              {department.budget && (
+                <p className="text-green-600 font-medium">
+                  {formatCurrency(typeof department.budget === 'string' ? parseFloat(department.budget) : department.budget)}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Render children recursively */}
+        {department.children && department.children.length > 0 && (
+          renderDepartmentTree(department.children as Department[], level + 1)
+        )}
+      </div>
+    ));
   };
 
   // Calculate department statistics
@@ -235,7 +357,7 @@ const DepartmentsPage: React.FC = () => {
         </div>
         
         <button
-          onClick={() => setShowAddDepartment(true)}
+          onClick={handleAddDepartment}
           className="btn btn-primary"
         >
           <span className="mr-2">➕</span>
@@ -408,27 +530,16 @@ const DepartmentsPage: React.FC = () => {
           <h3 className="text-lg font-semibold text-charcoal">Department Hierarchy</h3>
         </div>
         <div className="card-body">
-          <div className="space-y-4">
-            {filteredDepartments.map(department => (
-              <div key={department.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-warm-gold rounded-full flex items-center justify-center text-white font-medium">
-                    {department.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-charcoal">{department.name}</h4>
-                    <p className="text-sm text-gray-600">
-                      Manager: {getManagerName(department)}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-charcoal">{getEmployeeCount(department)} employees</p>
-                  <p className="text-xs text-gray-500">{department.location || 'No location'}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {hierarchyDepartments.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">🏗️</div>
+              <p>Loading department hierarchy...</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {renderDepartmentTree(hierarchyDepartments)}
+            </div>
+          )}
         </div>
       </div>
 
@@ -450,6 +561,7 @@ const DepartmentsPage: React.FC = () => {
                       name: '',
                       description: '',
                       managerId: '',
+                      parentId: '',
                       location: '',
                       budget: ''
                     });
@@ -507,6 +619,26 @@ const DepartmentsPage: React.FC = () => {
                 </div>
 
                 <div>
+                  <label className="form-label">Parent Department</label>
+                  <select
+                    name="parentId"
+                    value={formData.parentId}
+                    onChange={handleInputChange}
+                    className="form-input"
+                  >
+                    <option value="">No Parent (Top Level)</option>
+                    {availableParents.map(parent => (
+                      <option key={parent.id} value={parent.id}>
+                        {'  '.repeat(parent.level)}{parent.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select a parent department to create a hierarchical structure
+                  </p>
+                </div>
+
+                <div>
                   <label className="form-label">Location</label>
                   <input
                     type="text"
@@ -556,6 +688,7 @@ const DepartmentsPage: React.FC = () => {
                         name: '',
                         description: '',
                         managerId: '',
+                        parentId: '',
                         location: '',
                         budget: ''
                       });

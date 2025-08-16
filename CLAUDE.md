@@ -891,10 +891,29 @@ All features will respect department boundaries:
 ### Session Progress Tracking
 Use this section to track work across development sessions:
 
-**Last Updated**: [Session Date]
-**Current Task**: Documentation update
-**Next Steps**: Start Profile Management implementation
+**Last Updated**: August 16, 2025
+**Current Task**: Implementing Department Hierarchy Feature
+**Next Steps**: Update DepartmentsService with hierarchy logic
 **Blockers**: None
+
+#### Current TODO List - Department Hierarchy Implementation:
+- [x] Phase 1: Update Prisma schema for department hierarchy
+- [x] Phase 1: Create database migration for hierarchy  
+- [x] Phase 2: Update DTOs to include parentId field
+- [ ] Phase 2: Update DepartmentsService with hierarchy logic
+- [ ] Phase 2: Add new hierarchy endpoints to controller
+- [ ] Phase 3: Update frontend department service and interface
+- [ ] Phase 3: Update DepartmentsPage with hierarchy UI
+- [ ] Phase 3: Update UsersPage to show department hierarchy
+- [ ] Phase 4: Implement circular reference prevention
+- [ ] Phase 5: Add visual hierarchy indicators and tree view
+- [ ] Phase 6: Test hierarchy implementation on Railway
+- [ ] Fix issue: View button in Users table not working
+
+#### Recently Fixed Issues:
+- [x] Department dropdown not showing options in Add/Edit User modals
+- [x] Manager loading error in Departments page
+- [x] Manager dropdown not populating in Add/Edit Department modals
 
 ## Deployment Checklist
 

@@ -12,6 +12,7 @@ const UsersPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showEditUser, setShowEditUser] = useState(false);
+  const [showViewUser, setShowViewUser] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showImportResults, setShowImportResults] = useState(false);
   const [importResults, setImportResults] = useState<BulkImportResult | null>(null);
@@ -499,7 +500,13 @@ const UsersPage: React.FC = () => {
                               </button>
                             </>
                           )}
-                          <button className="text-gray-600 hover:text-gray-800">
+                          <button 
+                            className="text-gray-600 hover:text-gray-800"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowViewUser(true);
+                            }}
+                          >
                             View
                           </button>
                         </div>
