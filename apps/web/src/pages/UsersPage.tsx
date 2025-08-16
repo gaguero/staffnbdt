@@ -51,6 +51,7 @@ const UsersPage: React.FC = () => {
         search: searchTerm,
         role: selectedRole || undefined,
         departmentId: filter.departmentId || undefined,
+        includeInactive: true, // Always include inactive users for correct statistics
       });
       setUsers(response.data?.data || []);
     } catch (error) {
