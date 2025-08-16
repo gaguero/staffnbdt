@@ -45,6 +45,21 @@ class DepartmentService {
     const response = await api.delete(`/departments/${id}`);
     return response.data;
   }
+
+  async getDepartmentStats(id: string) {
+    const response = await api.get(`/departments/${id}/stats`);
+    return response.data;
+  }
+
+  async getOverallStats() {
+    const response = await api.get('/departments/stats/overall');
+    return response.data;
+  }
+
+  async searchDepartments(query: string) {
+    const response = await api.get(`/departments/search?q=${encodeURIComponent(query)}`);
+    return response.data;
+  }
 }
 
 export const departmentService = new DepartmentService();

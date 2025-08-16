@@ -29,9 +29,34 @@ export class DepartmentsService {
       throw new BadRequestException('Department with this name already exists');
     }
 
+    // Validate manager exists if provided
+    if (createDepartmentDto.managerId) {
+      const manager = await this.prisma.user.findUnique({
+        where: { id: createDepartmentDto.managerId },
+      });
+      if (!manager) {
+        throw new BadRequestException('Manager not found');
+      }
+    }
+
     const department = await this.prisma.department.create({
-      data: createDepartmentDto,
+      data: {
+        name: createDepartmentDto.name,
+        description: createDepartmentDto.description,
+        location: createDepartmentDto.location,
+        budget: createDepartmentDto.budget,
+        managerId: createDepartmentDto.managerId,
+      },
       include: {
+        manager: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
         users: {
           where: { deletedAt: null },
           select: {
@@ -46,6 +71,10 @@ export class DepartmentsService {
         _count: {
           select: {
             users: {
+              where: { deletedAt: null },
+            },
+            trainingSessions: true,
+            documents: {
               where: { deletedAt: null },
             },
           },
@@ -69,6 +98,16 @@ export class DepartmentsService {
     const departments = await this.prisma.department.findMany({
       where: whereClause,
       include: {
+        manager: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+            position: true,
+          },
+        },
         users: {
           where: { deletedAt: null },
           select: {
@@ -83,6 +122,10 @@ export class DepartmentsService {
         _count: {
           select: {
             users: {
+              where: { deletedAt: null },
+            },
+            trainingSessions: true,
+            documents: {
               where: { deletedAt: null },
             },
           },
@@ -105,6 +148,16 @@ export class DepartmentsService {
     const department = await this.prisma.department.findUnique({
       where: { id },
       include: {
+        manager: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+            position: true,
+          },
+        },
         users: {
           where: { deletedAt: null },
           select: {
@@ -116,6 +169,15 @@ export class DepartmentsService {
             position: true,
             hireDate: true,
             phoneNumber: true,
+          },
+        },
+        trainingSessions: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            category: true,
+            isActive: true,
           },
         },
         documents: {
@@ -135,6 +197,7 @@ export class DepartmentsService {
             users: {
               where: { deletedAt: null },
             },
+            trainingSessions: true,
             documents: {
               where: { deletedAt: null },
             },
@@ -182,10 +245,36 @@ export class DepartmentsService {
       }
     }
 
+    // Validate manager exists if provided
+    if (updateDepartmentDto.managerId) {
+      const manager = await this.prisma.user.findUnique({
+        where: { id: updateDepartmentDto.managerId },
+      });
+      if (!manager) {
+        throw new BadRequestException('Manager not found');
+      }
+    }
+
     const updatedDepartment = await this.prisma.department.update({
       where: { id },
-      data: updateDepartmentDto,
+      data: {
+        name: updateDepartmentDto.name,
+        description: updateDepartmentDto.description,
+        location: updateDepartmentDto.location,
+        budget: updateDepartmentDto.budget,
+        managerId: updateDepartmentDto.managerId,
+      },
       include: {
+        manager: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+            position: true,
+          },
+        },
         users: {
           where: { deletedAt: null },
           select: {
@@ -200,6 +289,10 @@ export class DepartmentsService {
         _count: {
           select: {
             users: {
+              where: { deletedAt: null },
+            },
+            trainingSessions: true,
+            documents: {
               where: { deletedAt: null },
             },
           },
@@ -311,6 +404,101 @@ export class DepartmentsService {
       recentHires,
       documentsCount,
       pendingVacationRequests: vacationRequests,
+    };
+  }
+
+  async getOverallStats(currentUser: User): Promise<any> {
+    // Only superadmins can see overall stats
+    if (currentUser.role !== Role.SUPERADMIN) {
+      throw new ForbiddenException('Only superadmins can view overall statistics');
+    }
+
+    const [
+      totalDepartments,
+      departmentsWithManagers,
+      totalUsers,
+      usersByDepartment,
+      totalTrainingSessions,
+      totalDocuments,
+      totalBudget,
+      recentActivity,
+    ] = await Promise.all([
+      this.prisma.department.count(),
+      this.prisma.department.count({
+        where: { managerId: { not: null } },
+      }),
+      this.prisma.user.count({
+        where: { deletedAt: null },
+      }),
+      this.prisma.department.findMany({
+        select: {
+          id: true,
+          name: true,
+          budget: true,
+          _count: {
+            select: {
+              users: {
+                where: { deletedAt: null },
+              },
+              trainingSessions: true,
+              documents: {
+                where: { deletedAt: null },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.trainingSession.count(),
+      this.prisma.document.count({
+        where: { deletedAt: null },
+      }),
+      this.prisma.department.aggregate({
+        _sum: {
+          budget: true,
+        },
+      }),
+      this.prisma.auditLog.findMany({
+        where: {
+          entity: 'Department',
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const departmentBreakdown = usersByDepartment.map(dept => ({
+      id: dept.id,
+      name: dept.name,
+      budget: dept.budget,
+      userCount: dept._count.users,
+      trainingCount: dept._count.trainingSessions,
+      documentCount: dept._count.documents,
+    }));
+
+    return {
+      totalDepartments,
+      departmentsWithManagers,
+      departmentsWithoutManagers: totalDepartments - departmentsWithManagers,
+      totalUsers,
+      totalTrainingSessions,
+      totalDocuments,
+      totalBudget: totalBudget._sum.budget || 0,
+      departmentBreakdown,
+      recentActivity: recentActivity.map(activity => ({
+        action: activity.action,
+        departmentId: activity.entityId,
+        user: `${activity.user.firstName} ${activity.user.lastName}`,
+        timestamp: activity.createdAt,
+      })),
     };
   }
 

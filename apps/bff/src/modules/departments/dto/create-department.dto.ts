@@ -1,5 +1,6 @@
-import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, MaxLength, IsNumber, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateDepartmentDto {
   @ApiProperty({ 
@@ -22,4 +23,30 @@ export class CreateDepartmentDto {
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @ApiPropertyOptional({ 
+    example: 'Main Building - 2nd Floor',
+    description: 'Department physical location'
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  location?: string;
+
+  @ApiPropertyOptional({ 
+    example: 250000,
+    description: 'Annual department budget'
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  budget?: number;
+
+  @ApiPropertyOptional({ 
+    example: 'cuid123456789',
+    description: 'ID of the department manager'
+  })
+  @IsOptional()
+  @IsUUID()
+  managerId?: string;
 }

@@ -1,24 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { departmentService } from '../services/departmentService';
+import { userService } from '../services/userService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Department {
   id: string;
   name: string;
-  description: string;
+  description?: string;
+  location?: string;
+  budget?: number | string;
   managerId?: string;
-  managerName?: string;
-  employeeCount: number;
-  location: string;
-  budget: number;
-  status: 'active' | 'inactive';
+  manager?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+    position?: string;
+  };
+  users?: any[];
+  trainingSessions?: any[];
+  _count?: {
+    users: number;
+    trainingSessions?: number;
+    documents?: number;
+  };
   createdAt: string;
+  updatedAt: string;
 }
 
 const DepartmentsPage: React.FC = () => {
+  const { user } = useAuth();
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [availableManagers, setAvailableManagers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showAddDepartment, setShowAddDepartment] = useState(false);
+  const [showEditDepartment, setShowEditDepartment] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -27,89 +49,56 @@ const DepartmentsPage: React.FC = () => {
     budget: ''
   });
 
-  // Mock data - replace with actual API call
-  const departments: Department[] = [
-    {
-      id: 'dept1',
-      name: 'Front Office',
-      description: 'Guest services, reception, and customer relations',
-      managerId: 'mgr1',
-      managerName: 'Alice Johnson',
-      employeeCount: 12,
-      location: 'Main Building - Lobby',
-      budget: 150000,
-      status: 'active',
-      createdAt: '2023-01-15T10:00:00Z'
-    },
-    {
-      id: 'dept2',
-      name: 'Housekeeping',
-      description: 'Room cleaning, maintenance, and facility upkeep',
-      managerId: 'mgr2',
-      managerName: 'Bob Martinez',
-      employeeCount: 25,
-      location: 'Service Building',
-      budget: 200000,
-      status: 'active',
-      createdAt: '2023-01-15T10:00:00Z'
-    },
-    {
-      id: 'dept3',
-      name: 'Food & Beverage',
-      description: 'Restaurant, bar, and catering services',
-      managerId: 'mgr3',
-      managerName: 'Carol Davis',
-      employeeCount: 18,
-      location: 'Restaurant Complex',
-      budget: 300000,
-      status: 'active',
-      createdAt: '2023-01-15T10:00:00Z'
-    },
-    {
-      id: 'dept4',
-      name: 'Maintenance',
-      description: 'Facility maintenance, repairs, and technical support',
-      employeeCount: 8,
-      location: 'Maintenance Workshop',
-      budget: 100000,
-      status: 'active',
-      createdAt: '2023-01-15T10:00:00Z'
-    },
-    {
-      id: 'dept5',
-      name: 'Administration',
-      description: 'HR, accounting, and administrative operations',
-      managerId: 'mgr5',
-      managerName: 'David Wilson',
-      employeeCount: 6,
-      location: 'Admin Building',
-      budget: 120000,
-      status: 'inactive',
-      createdAt: '2023-01-15T10:00:00Z'
-    }
-  ];
+  // Load departments and users on component mount
+  useEffect(() => {
+    loadDepartments();
+    loadAvailableManagers();
+  }, []);
 
-  // Mock managers data
-  const availableManagers = [
-    { id: 'mgr1', name: 'Alice Johnson' },
-    { id: 'mgr2', name: 'Bob Martinez' },
-    { id: 'mgr3', name: 'Carol Davis' },
-    { id: 'mgr4', name: 'Diana Brown' },
-    { id: 'mgr5', name: 'David Wilson' }
-  ];
+  const loadDepartments = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await departmentService.getDepartments();
+      if (response.success && response.data) {
+        setDepartments(response.data);
+      } else {
+        setError('Failed to load departments');
+      }
+    } catch (error: any) {
+      console.error('Error loading departments:', error);
+      setError(error.message || 'Failed to load departments');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadAvailableManagers = async () => {
+    try {
+      const response = await userService.getUsers({ 
+        limit: 100 
+      });
+      if (response.success && response.data) {
+        // Filter for users who can be managers (Department Admins and Superadmins)
+        const managers = response.data.filter((u: any) => 
+          u.role === 'DEPARTMENT_ADMIN' || u.role === 'SUPERADMIN'
+        );
+        setAvailableManagers(managers);
+      }
+    } catch (error) {
+      console.error('Error loading managers:', error);
+    }
+  };
 
   const statuses = [
-    { value: 'all', label: 'All Departments' },
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' }
+    { value: 'all', label: 'All Departments' }
   ];
 
   const filteredDepartments = departments.filter(dept => {
-    const matchesStatus = selectedStatus === 'all' || dept.status === selectedStatus;
     const matchesSearch = dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         dept.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (dept.managerName && dept.managerName.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesStatus && matchesSearch;
+                         (dept.description && dept.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (dept.manager && `${dept.manager.firstName} ${dept.manager.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesSearch;
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -123,15 +112,39 @@ const DepartmentsPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
-      // TODO: Implement department creation API call
-      console.log('Creating department:', formData);
+      const departmentData = {
+        name: formData.name,
+        description: formData.description || undefined,
+        location: formData.location || undefined,
+        budget: formData.budget ? parseFloat(formData.budget) : undefined,
+        managerId: formData.managerId || undefined
+      };
+
+      if (showEditDepartment && selectedDepartment) {
+        // Update existing department
+        const response = await departmentService.updateDepartment(selectedDepartment.id, departmentData);
+        if (response.success) {
+          await loadDepartments();
+          setShowEditDepartment(false);
+          setSelectedDepartment(null);
+        } else {
+          setError(response.message || 'Failed to update department');
+        }
+      } else {
+        // Create new department
+        const response = await departmentService.createDepartment(departmentData);
+        if (response.success) {
+          await loadDepartments();
+          setShowAddDepartment(false);
+        } else {
+          setError(response.message || 'Failed to create department');
+        }
+      }
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Reset form and close modal
+      // Reset form
       setFormData({
         name: '',
         description: '',
@@ -139,23 +152,66 @@ const DepartmentsPage: React.FC = () => {
         location: '',
         budget: ''
       });
-      setShowAddDepartment(false);
-    } catch (error) {
-      console.error('Failed to create department:', error);
+    } catch (error: any) {
+      console.error('Failed to save department:', error);
+      setError(error.message || 'Failed to save department');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <span className="badge badge-success">Active</span>;
-      case 'inactive':
-        return <span className="badge badge-error">Inactive</span>;
-      default:
-        return <span className="badge badge-neutral">Unknown</span>;
+  const handleEdit = (department: Department) => {
+    setSelectedDepartment(department);
+    setFormData({
+      name: department.name,
+      description: department.description || '',
+      managerId: department.managerId || '',
+      location: department.location || '',
+      budget: department.budget?.toString() || ''
+    });
+    setShowEditDepartment(true);
+    setError(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this department? This action cannot be undone.')) {
+      return;
     }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await departmentService.deleteDepartment(id);
+      if (response.success) {
+        await loadDepartments();
+      } else {
+        setError(response.message || 'Failed to delete department');
+      }
+    } catch (error: any) {
+      console.error('Failed to delete department:', error);
+      setError(error.message || 'Failed to delete department');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getEmployeeCount = (department: Department) => {
+    return department._count?.users || 0;
+  };
+
+  const getTrainingCount = (department: Department) => {
+    return department._count?.trainingSessions || 0;
+  };
+
+  const getDocumentCount = (department: Department) => {
+    return department._count?.documents || 0;
+  };
+
+  const getManagerName = (department: Department) => {
+    if (department.manager) {
+      return `${department.manager.firstName} ${department.manager.lastName}`;
+    }
+    return 'Unassigned';
   };
 
   const formatCurrency = (amount: number) => {
@@ -169,9 +225,12 @@ const DepartmentsPage: React.FC = () => {
   // Calculate department statistics
   const stats = {
     total: departments.length,
-    active: departments.filter(d => d.status === 'active').length,
-    totalEmployees: departments.reduce((sum, d) => sum + d.employeeCount, 0),
-    totalBudget: departments.reduce((sum, d) => sum + d.budget, 0)
+    withManagers: departments.filter(d => d.managerId).length,
+    totalEmployees: departments.reduce((sum, d) => sum + getEmployeeCount(d), 0),
+    totalBudget: departments.reduce((sum, d) => {
+      const budget = typeof d.budget === 'string' ? parseFloat(d.budget) : (d.budget || 0);
+      return sum + budget;
+    }, 0)
   };
 
   return (
@@ -201,8 +260,8 @@ const DepartmentsPage: React.FC = () => {
         </div>
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">✅</div>
-          <p className="text-sm text-gray-600 mb-1">Active</p>
-          <p className="text-xl font-bold text-green-600">{stats.active}</p>
+          <p className="text-sm text-gray-600 mb-1">With Managers</p>
+          <p className="text-xl font-bold text-green-600">{stats.withManagers}</p>
         </div>
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">👥</div>
@@ -247,8 +306,20 @@ const DepartmentsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="card p-4 bg-red-50 border border-red-200">
+          <p className="text-red-600">{error}</p>
+        </div>
+      )}
+
       {/* Departments Grid */}
-      {filteredDepartments.length === 0 ? (
+      {isLoading ? (
+        <div className="card p-12 text-center">
+          <LoadingSpinner size="lg" />
+          <p className="text-gray-600 mt-4">Loading departments...</p>
+        </div>
+      ) : filteredDepartments.length === 0 ? (
         <div className="card p-12 text-center">
           <div className="text-6xl mb-4">🏢</div>
           <h3 className="text-lg font-semibold text-charcoal mb-2">
@@ -268,12 +339,9 @@ const DepartmentsPage: React.FC = () => {
               <div className="card-body">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold text-charcoal">
-                        {department.name}
-                      </h3>
-                      {getStatusBadge(department.status)}
-                    </div>
+                    <h3 className="text-lg font-semibold text-charcoal mb-2">
+                      {department.name}
+                    </h3>
                     <p className="text-sm text-gray-600 mb-3">
                       {department.description}
                     </p>
@@ -284,20 +352,22 @@ const DepartmentsPage: React.FC = () => {
                   <div>
                     <span className="text-gray-600">Manager:</span>
                     <p className="font-medium text-charcoal">
-                      {department.managerName || 'Unassigned'}
+                      {getManagerName(department)}
                     </p>
                   </div>
                   <div>
                     <span className="text-gray-600">Employees:</span>
-                    <p className="font-medium text-charcoal">{department.employeeCount}</p>
+                    <p className="font-medium text-charcoal">{getEmployeeCount(department)}</p>
                   </div>
                   <div>
                     <span className="text-gray-600">Location:</span>
-                    <p className="font-medium text-charcoal">{department.location}</p>
+                    <p className="font-medium text-charcoal">{department.location || 'Not specified'}</p>
                   </div>
                   <div>
                     <span className="text-gray-600">Budget:</span>
-                    <p className="font-medium text-green-600">{formatCurrency(department.budget)}</p>
+                    <p className="font-medium text-green-600">
+                      {department.budget ? formatCurrency(typeof department.budget === 'string' ? parseFloat(department.budget) : department.budget) : 'Not set'}
+                    </p>
                   </div>
                 </div>
 
@@ -307,16 +377,31 @@ const DepartmentsPage: React.FC = () => {
 
                 {/* Action Buttons */}
                 <div className="flex space-x-2">
-                  <button className="btn btn-primary flex-1">
-                    <span className="mr-2">✏️</span>
-                    Edit
-                  </button>
-                  <button className="btn btn-outline">
+                  {user?.role === 'SUPERADMIN' && (
+                    <>
+                      <button 
+                        onClick={() => handleEdit(department)}
+                        className="btn btn-primary flex-1"
+                        disabled={isLoading}
+                      >
+                        <span className="mr-2">✏️</span>
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(department.id)}
+                        className="btn btn-error"
+                        disabled={isLoading}
+                      >
+                        <span>🗑️</span>
+                      </button>
+                    </>
+                  )}
+                  <button 
+                    className="btn btn-outline"
+                    onClick={() => console.log('View staff for', department.name)}
+                  >
                     <span className="mr-2">👥</span>
-                    View Staff
-                  </button>
-                  <button className="btn btn-secondary">
-                    <span>📊</span>
+                    Staff ({getEmployeeCount(department)})
                   </button>
                 </div>
               </div>
@@ -332,42 +417,52 @@ const DepartmentsPage: React.FC = () => {
         </div>
         <div className="card-body">
           <div className="space-y-4">
-            {filteredDepartments
-              .filter(dept => dept.status === 'active')
-              .map(department => (
-                <div key={department.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-warm-gold rounded-full flex items-center justify-center text-white font-medium">
-                      {department.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-charcoal">{department.name}</h4>
-                      <p className="text-sm text-gray-600">
-                        {department.managerName ? `Manager: ${department.managerName}` : 'No manager assigned'}
-                      </p>
-                    </div>
+            {filteredDepartments.map(department => (
+              <div key={department.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-warm-gold rounded-full flex items-center justify-center text-white font-medium">
+                    {department.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-charcoal">{department.employeeCount} employees</p>
-                    <p className="text-xs text-gray-500">{department.location}</p>
+                  <div>
+                    <h4 className="font-medium text-charcoal">{department.name}</h4>
+                    <p className="text-sm text-gray-600">
+                      Manager: {getManagerName(department)}
+                    </p>
                   </div>
                 </div>
-              ))}
+                <div className="text-right">
+                  <p className="text-sm font-medium text-charcoal">{getEmployeeCount(department)} employees</p>
+                  <p className="text-xs text-gray-500">{department.location || 'No location'}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Add Department Modal */}
-      {showAddDepartment && (
+      {/* Add/Edit Department Modal */}
+      {(showAddDepartment || showEditDepartment) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-screen overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold text-charcoal">
-                  Add New Department
+                  {showEditDepartment ? 'Edit Department' : 'Add New Department'}
                 </h3>
                 <button
-                  onClick={() => setShowAddDepartment(false)}
+                  onClick={() => {
+                    setShowAddDepartment(false);
+                    setShowEditDepartment(false);
+                    setSelectedDepartment(null);
+                    setFormData({
+                      name: '',
+                      description: '',
+                      managerId: '',
+                      location: '',
+                      budget: ''
+                    });
+                    setError(null);
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                   disabled={isLoading}
                 >
@@ -413,7 +508,7 @@ const DepartmentsPage: React.FC = () => {
                     <option value="">Select Manager (Optional)</option>
                     {availableManagers.map(manager => (
                       <option key={manager.id} value={manager.id}>
-                        {manager.name}
+                        {`${manager.firstName} ${manager.lastName} - ${manager.position || manager.role}`}
                       </option>
                     ))}
                   </select>
@@ -456,12 +551,24 @@ const DepartmentsPage: React.FC = () => {
                     {isLoading ? (
                       <LoadingSpinner size="sm" />
                     ) : (
-                      'Create Department'
+                      showEditDepartment ? 'Update Department' : 'Create Department'
                     )}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowAddDepartment(false)}
+                    onClick={() => {
+                      setShowAddDepartment(false);
+                      setShowEditDepartment(false);
+                      setSelectedDepartment(null);
+                      setFormData({
+                        name: '',
+                        description: '',
+                        managerId: '',
+                        location: '',
+                        budget: ''
+                      });
+                      setError(null);
+                    }}
                     className="btn btn-secondary flex-1"
                     disabled={isLoading}
                   >

@@ -74,6 +74,15 @@ export class DepartmentsController {
     return CustomApiResponse.success(department, 'Department retrieved successfully');
   }
 
+  @Get('stats/overall')
+  @Roles(Role.SUPERADMIN)
+  @ApiOperation({ summary: 'Get overall departments statistics (Superadmin only)' })
+  @ApiResponse({ status: 200, description: 'Overall statistics retrieved successfully' })
+  async getOverallStats(@CurrentUser() currentUser: User) {
+    const stats = await this.departmentsService.getOverallStats(currentUser);
+    return CustomApiResponse.success(stats, 'Overall statistics retrieved successfully');
+  }
+
   @Get(':id/stats')
   @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
   @ApiOperation({ summary: 'Get department statistics (Admin only)' })
