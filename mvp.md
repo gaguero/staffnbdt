@@ -74,60 +74,228 @@ Employees submit leave; Admins approve for their department; Superadmin can over
 
 ---
 
-### Profile & ID Attachment (PII-Safe)
+### Profile & User Management (Complete System) - PRIORITY 1
 
-Profile page with contact info and emergency contact. Upload ID (image/PDF) with verification timestamp (by Admin or Superadmin).
+Comprehensive profile management with user lifecycle, role-based access control, and department-scoped administration. Includes photo/ID uploads, emergency contacts, and full user creation/management capabilities.
 
 #### Tech Involved
 
-* Postgres profile; object storage for ID
-* KMS-managed encryption at rest; short-lived signed URLs
-* Optional verification workflow (task and timestamp)
+* Postgres User model with enhanced fields (profilePhoto, emergencyContact JSON)
+* Role-based access control (Staff, Department Admin, Superadmin)
+* Object storage (S3/R2) for photos and ID documents with pre-signed URLs
+* KMS-managed encryption for ID documents; 5-minute signed URL expiry
+* Email invitation system with 7-day expiry tokens
+* CSV bulk import with validation pipeline
+* Comprehensive audit logging for all operations
 
 #### Main Requirements
 
-* Strict access (self + HR/Superadmin; Admin only within dept)
-* Redacted logs; PII classification tags
-* Retention & deletion policy (legal compliance)
+* **User Lifecycle**: Creation, invitation, onboarding, role changes, deactivation
+* **Profile Information**: firstName, lastName, phone, position, department, hireDate
+* **Emergency Contacts**: Structured JSON with name, relationship, phone (up to 3)
+* **Photo Upload**: 5MB limit, image formats (JPG, PNG), preview and crop
+* **ID Document**: 10MB limit, encrypted storage, admin verification workflow
+* **Role Management**: Three-tier hierarchy with department scoping
+* **Department Scoping**: Admins can only manage users in their department
+* **Bulk Operations**: CSV import/export with validation and error reporting
+* **Access Control**: Granular permissions based on role and department
+* **Security**: PII encryption, audit trail, session management
+
+#### User Management Features
+
+* **User Creation (Admin)**:
+  - Multi-step wizard (Basic Info → Role & Dept → Permissions)
+  - Department-scoped creation (enforced at API level)
+  - Automatic invitation email with setup link
+  - Optional temporary password with forced reset
+  - Add to onboarding training automatically
+
+* **Role System**:
+  - **Staff**: Basic user, own profile access only
+  - **Department Admin**: Manage department users, verify IDs
+  - **Superadmin**: Full system access, cross-department management
+  - Role changes require approval and audit logging
+  - Prevent orphaned departments (last admin check)
+
+* **Invitation & Onboarding**:
+  - Email invitations with 7-day expiry
+  - First-login profile completion required
+  - Password setup with security questions
+  - Emergency contact mandatory on setup
+  - Welcome packet and training assignment
+
+* **Bulk Import**:
+  - CSV template download
+  - Validation with row-level error reporting
+  - Partial import capability (skip errors)
+  - Progress tracking and rollback option
+  - Email notifications for imported users
+
+#### Implementation Details
+
+* **API Endpoints - Profile**:
+  - GET /api/profile - Current user's complete profile
+  - PUT /api/profile - Update profile information
+  - POST /api/profile/photo - Upload profile photo
+  - DELETE /api/profile/photo - Remove photo
+  - POST /api/profile/id - Upload ID document
+  - GET /api/profile/id - Get signed URL (admin only)
+  - POST /api/profile/id/verify - Verify ID (admin)
+  - POST /api/profile/emergency-contacts - Manage contacts
+
+* **API Endpoints - User Management**:
+  - GET /api/users - List users (department-scoped)
+  - POST /api/users - Create new user
+  - GET /api/users/:id - Get user details
+  - PUT /api/users/:id - Update user information
+  - DELETE /api/users/:id - Delete user (superadmin only)
+  - PUT /api/users/:id/role - Change user role
+  - POST /api/users/:id/deactivate - Deactivate user
+  - POST /api/users/:id/reactivate - Reactivate user
+
+* **API Endpoints - Bulk & Admin**:
+  - POST /api/users/bulk - Bulk import via CSV
+  - GET /api/users/bulk/template - Download CSV template
+  - POST /api/users/bulk/validate - Validate CSV without import
+  - GET /api/users/export - Export users to CSV
+  - POST /api/users/:id/invite - Send/resend invitation
+  - GET /api/admin/verifications - ID verification queue
+  - GET /api/admin/stats - Department user statistics
+
+* **Frontend Components - User Side**:
+  - ProfileView.tsx - Complete profile display
+  - ProfileEdit.tsx - Multi-tab edit interface
+  - ProfilePhotoUpload.tsx - Upload with crop tool
+  - IDDocumentUpload.tsx - Secure document upload
+  - EmergencyContactForm.tsx - Contact management
+  - OnboardingWizard.tsx - First-login setup
+
+* **Frontend Components - Admin Side**:
+  - UserManagementDashboard.tsx - Main admin interface
+  - CreateUserWizard.tsx - 3-step user creation
+  - UserTable.tsx - Sortable/filterable user list
+  - RoleChangeModal.tsx - Role management UI
+  - BulkImportModal.tsx - CSV upload interface
+  - VerificationQueue.tsx - ID verification workflow
+  - DepartmentStats.tsx - Analytics dashboard
+  - UserActivityLog.tsx - Audit trail viewer
+
+* **Security & Validation**:
+  - Department-scoped data access at API level
+  - Role validation middleware for all endpoints
+  - Password policies (complexity, history, expiry)
+  - Account lockout after failed attempts
+  - Session invalidation on role changes
+  - Audit logging for all administrative actions
+  - PII encryption for sensitive fields
+  - Rate limiting on user creation endpoints
 
 ---
 
-### Commercial Benefits Directory (Superadmin Managed)
+### Commercial Benefits Directory - PRIORITY 2
 
-Discover & filter partner perks (Dining, Wellness, Hotels, Other). Superadmin manages entries; staff read-only.
+Comprehensive partner benefits platform with categories, department-specific benefits, and usage analytics. Rich filtering and search capabilities.
 
 #### Tech Involved
 
-* Postgres CRUD; optional logo asset storage
-* Server-side filtering/search
-* Feature flags for rollout
+* Postgres CommercialBenefit model with categories enum and validity dates
+* Object storage for partner logos and promotional materials
+* Server-side filtering by category, department, validity, location
+* Anonymous usage tracking for analytics
+* Redis caching for frequently accessed benefits
 
 #### Main Requirements
 
-* Validity windows & blackout dates
-* Soft delete with version history
-* Optional location filter
+* **Categories**: Dining, Wellness, Hotels, Entertainment, Shopping, Transportation
+* **Department Benefits**: Some benefits exclusive to specific departments
+* **Validity Management**: Start/end dates, blackout periods, terms & conditions
+* **Partner Information**: Name, logo, website, contact, discount percentage/details
+* **Location-Based**: Filter by physical location or online availability
+* **Usage Tracking**: Anonymous analytics for popularity and engagement
+* **Admin Management**: Full CRUD for Superadmin, read-only for others
+
+#### Implementation Details
+
+* **API Endpoints**:
+  - GET /api/benefits - List with filters (category, dept, location, validity)
+  - GET /api/benefits/:id - Detailed view with terms
+  - POST /api/benefits - Create new benefit (superadmin)
+  - PUT /api/benefits/:id - Update benefit (superadmin)
+  - DELETE /api/benefits/:id - Soft delete (superadmin)
+  - GET /api/benefits/categories - Available categories
+  - POST /api/benefits/:id/track - Track usage (anonymous)
+  - GET /api/benefits/analytics - Usage reports (admin)
+
+* **Frontend Components**:
+  - BenefitsGrid.tsx - Responsive card grid layout
+  - BenefitCard.tsx - Preview with logo, discount, category
+  - BenefitDetails.tsx - Full modal with terms and contact
+  - BenefitFilters.tsx - Multi-select filters sidebar
+  - BenefitSearch.tsx - Real-time search with suggestions
+  - BenefitAdmin.tsx - Management interface with bulk operations
 
 ---
 
-### Training Sessions (Assigned/Requested/Optional)
+### Training Sessions with Integrated Documents - PRIORITY 3
 
-Admins create training sessions for their users. Sessions can be “Assigned”, “Requested” (user requests enrollment), or “Optional” (discoverable catalog). Sessions are modular: text blocks, file attachments, videos (URL or embed), external links, and form components (quizzes/acknowledgements).
+Modular training platform with document integration, progress tracking, quizzes, and certificate generation. Department-based assignments with version control.
 
 #### Tech Involved
 
-* Postgres: sessions, session\_blocks (ordered), enrollment, completion, attempts
-* Block types: TEXT, FILE, VIDEO, LINK, FORM (JSON schema for questions)
-* File storage for attachments; video via external link/iframe
-* Worker for grading simple forms; score + pass/fail; completion rule engine
+* Postgres: TrainingSession with versioning, contentBlocks JSON, enrollments
+* Block types: TEXT, FILE, VIDEO, LINK, FORM, DOCUMENT (integrated viewer)
+* Document integration: Link existing documents directly into training flow
+* Object storage for training materials, certificates
+* Worker queue for quiz grading, certificate generation
+* Progress tracking with completion rules engine
 
 #### Main Requirements
 
-* Admin-scoped creation within department; Superadmin across org
-* Assign users/positions/departments; user can request enrollment if allowed
-* Completion tracking (rules: all blocks viewed, form pass score, acknowledgment)
-* Versioning: edits create new version; active enrollments pinned to version
-* Reporting: per-user status, per-session completion rates
+* **Content Blocks**: Ordered, mixed-type content (text, files, videos, documents)
+* **Document Integration**: Attach existing documents as training materials
+* **Assignment Types**: Assigned (mandatory), Requested (approval needed), Optional
+* **Department Scoping**: Assign to departments, positions, or individuals
+* **Progress Tracking**: Track viewed blocks, time spent, quiz scores
+* **Completion Rules**: View all blocks + pass quiz (if present) + minimum time
+* **Versioning**: Edits create new versions; enrollments pinned to specific version
+* **Certificates**: Auto-generated upon completion with unique ID
+* **Reporting**: Completion rates, average scores, time to complete
+
+#### Implementation Details
+
+* **API Endpoints**:
+  - GET /api/training/sessions - List available (filtered by assignment)
+  - GET /api/training/sessions/:id - Full session with blocks
+  - POST /api/training/sessions - Create session (admin)
+  - PUT /api/training/sessions/:id - Update (creates new version)
+  - POST /api/training/sessions/:id/blocks - Add content blocks
+  - GET /api/training/enrollments - User's enrollments with progress
+  - POST /api/training/enrollments - Enroll in session
+  - GET /api/training/progress/:id - Detailed progress data
+  - POST /api/training/progress/:id - Update progress (block viewed)
+  - POST /api/training/submit/:id - Submit quiz/form answers
+  - GET /api/training/:id/documents - List attached documents
+  - POST /api/training/:id/documents - Attach document to training
+  - GET /api/training/certificate/:id - Download certificate PDF
+
+* **Frontend Components**:
+  - TrainingDashboard.tsx - Overview with progress cards
+  - TrainingCard.tsx - Session preview with progress bar
+  - TrainingViewer.tsx - Content block renderer with navigation
+  - TrainingDocuments.tsx - Integrated document viewer/downloader
+  - TrainingQuiz.tsx - Dynamic form/quiz with validation
+  - TrainingProgress.tsx - Visual progress indicators
+  - TrainingCertificate.tsx - Certificate preview/download
+  - TrainingAdmin.tsx - Session builder with drag-drop blocks
+  - TrainingReports.tsx - Analytics and completion tracking
+
+* **Content Block Specifications**:
+  - TEXT: Rich text editor content (Markdown/HTML)
+  - FILE: Downloadable attachments (PDF, DOCX, etc.)
+  - VIDEO: YouTube/Vimeo embeds or direct URLs
+  - LINK: External resources with description
+  - FORM: JSON schema-based quiz/survey
+  - DOCUMENT: Embedded document viewer from library
 
 ---
 

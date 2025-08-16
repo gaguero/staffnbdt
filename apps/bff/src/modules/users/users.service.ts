@@ -3,8 +3,11 @@ import { PrismaService } from '../../shared/database/prisma.service';
 import { AuditService } from '../../shared/audit/audit.service';
 import { PaginatedResponse } from '../../shared/dto/pagination.dto';
 import { applySoftDelete } from '../../shared/utils/soft-delete';
-import { CreateUserDto, UpdateUserDto, UserFilterDto } from './dto';
-import { User, Role } from '@prisma/client';
+import { CreateUserDto, UpdateUserDto, UserFilterDto, ChangeRoleDto, ChangeStatusDto, BulkImportDto, BulkImportResultDto, BulkImportUserDto } from './dto';
+import { UserWithDepartment, UserStats, UserPermissions } from './interfaces';
+import { User, Role, InvitationStatus } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class UsersService {
@@ -16,7 +19,7 @@ export class UsersService {
   async create(
     createUserDto: CreateUserDto,
     currentUser: User,
-  ): Promise<User> {
+  ): Promise<UserWithDepartment> {
     // Only superadmins can create users
     if (currentUser.role !== Role.SUPERADMIN) {
       throw new ForbiddenException('Only superadmins can create users');
@@ -30,6 +33,9 @@ export class UsersService {
     if (existingUser) {
       throw new BadRequestException('User with this email already exists');
     }
+
+    // Validate department assignment rules
+    this.validateDepartmentAssignment(createUserDto.role, createUserDto.departmentId);
 
     // Validate department exists if provided
     if (createUserDto.departmentId) {
@@ -61,7 +67,7 @@ export class UsersService {
   async findAll(
     filterDto: UserFilterDto,
     currentUser: User,
-  ): Promise<PaginatedResponse<User>> {
+  ): Promise<PaginatedResponse<UserWithDepartment>> {
     const { limit, offset, role, departmentId, search } = filterDto;
 
     // Build where clause based on user role and filters
@@ -116,7 +122,7 @@ export class UsersService {
     return new PaginatedResponse(users, total, limit, offset);
   }
 
-  async findOne(id: string, currentUser: User): Promise<User> {
+  async findOne(id: string, currentUser: User): Promise<UserWithDepartment> {
     // Check access permissions
     if (currentUser.role === Role.STAFF && currentUser.id !== id) {
       throw new ForbiddenException('Can only access your own profile');
@@ -153,7 +159,7 @@ export class UsersService {
     id: string,
     updateUserDto: UpdateUserDto,
     currentUser: User,
-  ): Promise<User> {
+  ): Promise<UserWithDepartment> {
     const existingUser = await this.findOne(id, currentUser);
 
     // Permission checks
@@ -181,6 +187,14 @@ export class UsersService {
       if (updateUserDto.departmentId && updateUserDto.departmentId !== currentUser.departmentId) {
         throw new ForbiddenException('Cannot move users to other departments');
       }
+    }
+
+    // Validate department assignment if role is being changed
+    if (updateUserDto.role) {
+      this.validateDepartmentAssignment(
+        updateUserDto.role,
+        updateUserDto.departmentId || existingUser.departmentId,
+      );
     }
 
     // Validate department exists if provided
@@ -248,7 +262,7 @@ export class UsersService {
     await this.auditService.logDelete(currentUser.id, 'User', id, existingUser);
   }
 
-  async restore(id: string, currentUser: User): Promise<User> {
+  async restore(id: string, currentUser: User): Promise<UserWithDepartment> {
     // Only superadmins can restore users
     if (currentUser.role !== Role.SUPERADMIN) {
       throw new ForbiddenException('Only superadmins can restore users');
@@ -288,7 +302,7 @@ export class UsersService {
     return restoredUser;
   }
 
-  async getUsersByDepartment(departmentId: string, currentUser: User): Promise<User[]> {
+  async getUsersByDepartment(departmentId: string, currentUser: User): Promise<UserWithDepartment[]> {
     // Check permissions
     if (
       currentUser.role === Role.DEPARTMENT_ADMIN &&
@@ -312,7 +326,7 @@ export class UsersService {
     });
   }
 
-  async getUserStats(currentUser: User): Promise<any> {
+  async getUserStats(currentUser: User): Promise<UserStats> {
     // Only superadmins and department admins can view stats
     if (currentUser.role === Role.STAFF) {
       throw new ForbiddenException('Staff cannot access user statistics');
@@ -344,7 +358,7 @@ export class UsersService {
       byRole: byRole.reduce((acc, item) => {
         acc[item.role] = item._count;
         return acc;
-      }, {}),
+      }, {} as Record<Role, number>),
       byDepartment: byDepartment.reduce((acc, item) => {
         if (item.departmentId) {
           acc[item.departmentId] = item._count;
@@ -352,5 +366,542 @@ export class UsersService {
         return acc;
       }, {}),
     };
+  }
+
+  async changeRole(
+    id: string,
+    changeRoleDto: ChangeRoleDto,
+    currentUser: User,
+  ): Promise<UserWithDepartment> {
+    // Only superadmins can change roles
+    if (currentUser.role !== Role.SUPERADMIN) {
+      throw new ForbiddenException('Only superadmins can change user roles');
+    }
+
+    // Cannot change own role
+    if (currentUser.id === id) {
+      throw new BadRequestException('Cannot change your own role');
+    }
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: applySoftDelete({ where: { id } }).where,
+      include: {
+        department: true,
+      },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Validate the new role assignment
+    this.validateDepartmentAssignment(changeRoleDto.role, existingUser.departmentId);
+
+    // Prevent orphaning departments - check if this is the last admin of a department
+    if (
+      existingUser.role === Role.DEPARTMENT_ADMIN &&
+      changeRoleDto.role !== Role.DEPARTMENT_ADMIN &&
+      existingUser.departmentId
+    ) {
+        const hasOtherAdmins = await this.validateDepartmentAdminRemoval(
+        existingUser.departmentId,
+        id,
+      );
+
+      if (!hasOtherAdmins) {
+        throw new BadRequestException(
+          'Cannot change role - this user is the last admin of their department',
+        );
+      }
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        role: changeRoleDto.role,
+        // If changing to SUPERADMIN, remove department assignment
+        departmentId: changeRoleDto.role === Role.SUPERADMIN ? null : existingUser.departmentId,
+      },
+      include: {
+        department: true,
+      },
+    });
+
+    // Log role change
+    await this.auditService.logUpdate(
+      currentUser.id,
+      'User',
+      id,
+      { role: existingUser.role },
+      { role: updatedUser.role },
+    );
+
+    return updatedUser;
+  }
+
+  async changeStatus(
+    id: string,
+    changeStatusDto: ChangeStatusDto,
+    currentUser: User,
+  ): Promise<UserWithDepartment> {
+    // Only superadmins and department admins can change status
+    if (currentUser.role !== Role.SUPERADMIN && currentUser.role !== Role.DEPARTMENT_ADMIN) {
+      throw new ForbiddenException('Only admins can change user status');
+    }
+
+    // Cannot change own status
+    if (currentUser.id === id) {
+      throw new BadRequestException('Cannot change your own status');
+    }
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: { id }, // Don't apply soft delete filter here to find inactive users
+      include: {
+        department: true,
+      },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Department admin can only change status of users in their department
+    if (
+      currentUser.role === Role.DEPARTMENT_ADMIN &&
+      existingUser.departmentId !== currentUser.departmentId
+    ) {
+      throw new ForbiddenException('Cannot change status of users from other departments');
+    }
+
+    // Department admin cannot change status of other admins
+    if (
+      currentUser.role === Role.DEPARTMENT_ADMIN &&
+      (existingUser.role === Role.SUPERADMIN || existingUser.role === Role.DEPARTMENT_ADMIN)
+    ) {
+      throw new ForbiddenException('Department admins cannot change status of other admins');
+    }
+
+    // Prevent orphaning departments - check if this is the last admin of a department
+    if (
+      !changeStatusDto.isActive &&
+      existingUser.role === Role.DEPARTMENT_ADMIN &&
+      existingUser.departmentId
+    ) {
+      const hasOtherAdmins = await this.validateDepartmentAdminRemoval(
+        existingUser.departmentId,
+        id,
+      );
+
+      if (!hasOtherAdmins) {
+        throw new BadRequestException(
+          'Cannot deactivate - this user is the last active admin of their department',
+        );
+      }
+    }
+
+    const currentStatus = !existingUser.deletedAt;
+    
+    // If status is not changing, return current user
+    if (currentStatus === changeStatusDto.isActive) {
+      return existingUser;
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        deletedAt: changeStatusDto.isActive ? null : new Date(),
+      },
+      include: {
+        department: true,
+      },
+    });
+
+    // Log status change
+    await this.auditService.logUpdate(
+      currentUser.id,
+      'User',
+      id,
+      { isActive: currentStatus },
+      { isActive: changeStatusDto.isActive },
+    );
+
+    return updatedUser;
+  }
+
+  /**
+   * Get user permissions for the current user context
+   * This helps frontend determine what actions are available
+   */
+  async getUserPermissions(
+    targetUserId: string,
+    currentUser: User,
+  ): Promise<UserPermissions> {
+    const isSuperAdmin = currentUser.role === Role.SUPERADMIN;
+    const isDepartmentAdmin = currentUser.role === Role.DEPARTMENT_ADMIN;
+    const isSelf = currentUser.id === targetUserId;
+
+    // Default permissions
+    const permissions = {
+      canView: false,
+      canEdit: false,
+      canDelete: false,
+      canChangeRole: false,
+      canChangeStatus: false,
+    };
+
+    // Superadmins can do everything
+    if (isSuperAdmin) {
+      permissions.canView = true;
+      permissions.canEdit = true;
+      permissions.canDelete = targetUserId !== currentUser.id; // Cannot delete self
+      permissions.canChangeRole = targetUserId !== currentUser.id; // Cannot change own role
+      permissions.canChangeStatus = targetUserId !== currentUser.id; // Cannot change own status
+      return permissions;
+    }
+
+    // Get target user info for department validation
+    const targetUser = await this.prisma.user.findFirst({
+      where: { id: targetUserId },
+      select: { departmentId: true, role: true },
+    });
+
+    if (!targetUser) {
+      return permissions;
+    }
+
+    // Staff users can only view/edit themselves
+    if (currentUser.role === Role.STAFF) {
+      if (isSelf) {
+        permissions.canView = true;
+        permissions.canEdit = true;
+      }
+      return permissions;
+    }
+
+    // Department admin permissions
+    if (isDepartmentAdmin) {
+      const sameOrOwnDepartment = targetUser.departmentId === currentUser.departmentId;
+      const isTargetAdmin = targetUser.role === Role.SUPERADMIN || targetUser.role === Role.DEPARTMENT_ADMIN;
+
+      if (sameOrOwnDepartment) {
+        permissions.canView = true;
+        
+        if (isSelf || !isTargetAdmin) {
+          permissions.canEdit = true;
+          permissions.canChangeStatus = !isSelf;
+        }
+      }
+    }
+
+    return permissions;
+  }
+
+  /**
+   * Validate if a department can have its last admin removed
+   * Prevents orphaned departments
+   */
+  private async validateDepartmentAdminRemoval(
+    departmentId: string,
+    excludeUserId?: string,
+  ): Promise<boolean> {
+    const adminCount = await this.prisma.user.count({
+      where: applySoftDelete({
+        where: {
+          departmentId,
+          role: Role.DEPARTMENT_ADMIN,
+          id: excludeUserId ? { not: excludeUserId } : undefined,
+        },
+      }).where,
+    });
+
+    return adminCount > 0;
+  }
+
+  /**
+   * Check if a user can be assigned to a department based on their role
+   */
+  private validateDepartmentAssignment(role: Role, departmentId?: string): void {
+    if (role === Role.DEPARTMENT_ADMIN && !departmentId) {
+      throw new BadRequestException('Department Admins must be assigned to a department');
+    }
+
+    if (role === Role.SUPERADMIN && departmentId) {
+      throw new BadRequestException('Superadmins cannot be assigned to a specific department');
+    }
+  }
+
+  /**
+   * Get a clean user object with department info
+   */
+  private formatUserResponse(user: any): UserWithDepartment {
+    return {
+      ...user,
+      department: user.department || undefined,
+    };
+  }
+
+  /**
+   * Bulk import users from array
+   */
+  async bulkImport(
+    bulkImportDto: BulkImportDto,
+    currentUser: User,
+  ): Promise<BulkImportResultDto> {
+    // Only superadmins can bulk import users
+    if (currentUser.role !== Role.SUPERADMIN) {
+      throw new ForbiddenException('Only superadmins can bulk import users');
+    }
+
+    const result: BulkImportResultDto = {
+      successCount: 0,
+      failureCount: 0,
+      successful: [],
+      failed: [],
+    };
+
+    // Validate all departments first
+    const departmentIds = [...new Set(bulkImportDto.users
+      .filter(u => u.departmentId)
+      .map(u => u.departmentId))];
+    
+    const departments = await this.prisma.department.findMany({
+      where: { id: { in: departmentIds } },
+    });
+    
+    const validDepartmentIds = new Set(departments.map(d => d.id));
+
+    // Process each user
+    for (let i = 0; i < bulkImportDto.users.length; i++) {
+      const userData = bulkImportDto.users[i];
+      const row = i + 1;
+
+      try {
+        // Validate department
+        if (userData.departmentId && !validDepartmentIds.has(userData.departmentId)) {
+          throw new Error(`Department ${userData.departmentId} not found`);
+        }
+
+        // Validate department assignment rules
+        this.validateDepartmentAssignment(userData.role, userData.departmentId);
+
+        // Check if user already exists
+        const existingUser = await this.prisma.user.findUnique({
+          where: { email: userData.email },
+        });
+
+        if (existingUser) {
+          throw new Error(`User with email ${userData.email} already exists`);
+        }
+
+        // If validate only, skip creation
+        if (bulkImportDto.validateOnly) {
+          result.successful.push({
+            row,
+            email: userData.email,
+            status: 'Valid',
+          });
+          result.successCount++;
+          continue;
+        }
+
+        // Create user
+        const user = await this.prisma.user.create({
+          data: {
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            role: userData.role,
+            departmentId: userData.departmentId,
+            position: userData.position,
+            hireDate: userData.hireDate ? new Date(userData.hireDate) : undefined,
+            phoneNumber: userData.phoneNumber,
+            emergencyContact: userData.emergencyContact,
+          },
+          include: {
+            department: true,
+          },
+        });
+
+        // Create invitation if requested
+        if (userData.sendInvitation !== false) {
+          const token = randomBytes(32).toString('hex');
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+
+          await this.prisma.invitation.create({
+            data: {
+              email: userData.email,
+              token,
+              role: userData.role,
+              departmentId: userData.departmentId,
+              invitedBy: currentUser.id,
+              status: InvitationStatus.PENDING,
+              expiresAt,
+            },
+          });
+
+          // TODO: Send invitation email
+        }
+
+        // Log user creation
+        await this.auditService.logCreate(currentUser.id, 'User', user.id, user);
+
+        result.successful.push(user);
+        result.successCount++;
+      } catch (error) {
+        result.failed.push({
+          row,
+          email: userData.email,
+          error: error.message || 'Unknown error',
+        });
+        result.failureCount++;
+      }
+    }
+
+    // Log bulk import operation
+    await this.auditService.log({
+      userId: currentUser.id,
+      action: 'BULK_IMPORT',
+      entity: 'User',
+      entityId: 'bulk',
+      newData: {
+        total: bulkImportDto.users.length,
+        successCount: result.successCount,
+        failureCount: result.failureCount,
+      },
+    });
+
+    return result;
+  }
+
+  /**
+   * Process CSV file for bulk import
+   */
+  async processCsvImport(
+    csvData: string,
+    validateOnly: boolean,
+    sendInvitations: boolean,
+    currentUser: User,
+  ): Promise<BulkImportResultDto> {
+    // Parse CSV data
+    const lines = csvData.split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      throw new BadRequestException('CSV file must contain headers and at least one data row');
+    }
+
+    // Extract headers
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const requiredHeaders = ['email', 'firstname', 'lastname', 'role'];
+    const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+    
+    if (missingHeaders.length > 0) {
+      throw new BadRequestException(`Missing required headers: ${missingHeaders.join(', ')}`);
+    }
+
+    // Map headers to indices
+    const headerMap = new Map<string, number>();
+    headers.forEach((header, index) => {
+      headerMap.set(header, index);
+    });
+
+    // Parse data rows
+    const users: BulkImportUserDto[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim());
+      
+      if (values.length !== headers.length) {
+        throw new BadRequestException(`Row ${i + 1} has incorrect number of columns`);
+      }
+
+      const user: BulkImportUserDto = {
+        email: values[headerMap.get('email')!],
+        firstName: values[headerMap.get('firstname')!],
+        lastName: values[headerMap.get('lastname')!],
+        role: values[headerMap.get('role')!] as Role,
+        departmentId: values[headerMap.get('departmentid')] || undefined,
+        position: values[headerMap.get('position')] || undefined,
+        phoneNumber: values[headerMap.get('phonenumber')] || undefined,
+        hireDate: values[headerMap.get('hiredate')] || undefined,
+        sendInvitation: sendInvitations,
+      };
+
+      // Validate role
+      if (!Object.values(Role).includes(user.role)) {
+        throw new BadRequestException(`Row ${i + 1}: Invalid role "${user.role}"`);
+      }
+
+      users.push(user);
+    }
+
+    // Process bulk import
+    return this.bulkImport(
+      {
+        users,
+        validateOnly,
+      },
+      currentUser,
+    );
+  }
+
+  /**
+   * Export users to CSV format
+   */
+  async exportUsers(
+    filterDto: UserFilterDto,
+    currentUser: User,
+  ): Promise<string> {
+    // Get users based on permissions
+    const result = await this.findAll(
+      { ...filterDto, limit: 10000, offset: 0 }, // Export all matching users
+      currentUser,
+    );
+
+    // Build CSV headers
+    const headers = [
+      'Email',
+      'First Name',
+      'Last Name',
+      'Role',
+      'Department',
+      'Position',
+      'Phone Number',
+      'Hire Date',
+      'Status',
+      'Created At',
+    ];
+
+    // Build CSV rows
+    const rows = result.data.map(user => [
+      user.email,
+      user.firstName,
+      user.lastName,
+      user.role,
+      user.department?.name || '',
+      user.position || '',
+      user.phoneNumber || '',
+      user.hireDate ? new Date(user.hireDate).toISOString().split('T')[0] : '',
+      user.deletedAt ? 'Inactive' : 'Active',
+      new Date(user.createdAt).toISOString().split('T')[0],
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    // Log export operation
+    await this.auditService.log({
+      userId: currentUser.id,
+      action: 'EXPORT',
+      entity: 'User',
+      entityId: 'export',
+      newData: {
+        count: result.data.length,
+        filters: filterDto,
+      },
+    });
+
+    return csvContent;
   }
 }

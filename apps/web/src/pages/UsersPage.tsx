@@ -1,34 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { userService, User as UserType, UserFilter, BulkImportResult } from '../services/userService';
 
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: 'SUPERADMIN' | 'DEPARTMENT_ADMIN' | 'STAFF';
-  departmentId?: string;
-  departmentName?: string;
-  status: 'active' | 'inactive' | 'pending';
-  lastLogin?: string;
-  createdAt: string;
-}
 
 const UsersPage: React.FC = () => {
   const { user: currentUser } = useAuth();
-  const [selectedRole, setSelectedRole] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showEditUser, setShowEditUser] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showImportResults, setShowImportResults] = useState(false);
+  const [importResults, setImportResults] = useState<BulkImportResult | null>(null);
+  const [filter, setFilter] = useState<UserFilter>({
+    search: '',
+    role: '',
+    departmentId: '',
+  });
+  const [stats, setStats] = useState({
+    total: 0,
+    byRole: {} as Record<string, number>,
+    byDepartment: {} as Record<string, number>,
+  });
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     role: 'STAFF' as const,
-    departmentId: ''
+    departmentId: '',
+    position: '',
+    phoneNumber: '',
+    hireDate: '',
   });
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [validateOnly, setValidateOnly] = useState(true);
+  const [sendInvitations, setSendInvitations] = useState(true);
 
   // Mock data - replace with actual API call
   const users: User[] = [

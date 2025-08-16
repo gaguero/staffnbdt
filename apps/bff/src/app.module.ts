@@ -26,6 +26,8 @@ import { VacationModule } from './modules/vacation/vacation.module';
 import { TrainingModule } from './modules/training/training.module';
 import { BenefitsModule } from './modules/benefits/benefits.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ProfileModule } from './modules/profile/profile.module';
+import { InvitationsModule } from './modules/invitations/invitations.module';
 
 @Module({
   imports: [
@@ -71,6 +73,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     TrainingModule,
     BenefitsModule,
     NotificationsModule,
+    ProfileModule,
+    InvitationsModule,
   ],
   controllers: [],
   providers: [

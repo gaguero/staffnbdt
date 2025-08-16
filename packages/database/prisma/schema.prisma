@@ -31,6 +31,8 @@ model User {
   enrollments      Enrollment[]
   notifications    Notification[]
   auditLogs        AuditLog[]
+  invitationsSent  Invitation[] @relation("InvitedBy")
+  invitationsAccepted Invitation[] @relation("AcceptedBy")
 }
 
 enum Role {
@@ -45,6 +47,7 @@ model Department {
   description String?
   users       User[]
   documents   Document[]
+  invitations Invitation[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -207,6 +210,36 @@ model Notification {
   
   @@index([userId, read])
   @@index([createdAt])
+}
+
+model Invitation {
+  id           String           @id @default(cuid())
+  email        String
+  token        String           @unique
+  role         Role
+  departmentId String?
+  department   Department?      @relation(fields: [departmentId], references: [id])
+  invitedBy    String
+  invitedByUser User            @relation("InvitedBy", fields: [invitedBy], references: [id])
+  status       InvitationStatus @default(PENDING)
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  acceptedBy   String?          // User ID when accepted
+  acceptedUser User?            @relation("AcceptedBy", fields: [acceptedBy], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  
+  @@unique([email, status])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([invitedBy])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
 }
 
 model AuditLog {

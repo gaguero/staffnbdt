@@ -131,22 +131,263 @@ flowchart TB
 * **Implementation**: Transitions with guards (blackouts/accrual); notifications on change.
 * **Errors**: 422 invalid range; 409 overlap; 403 out-of-scope approval.
 
-### 3.5 Profile & ID Attachment
+### 3.5 Profile & User Management System - PRIORITY 1
 
-* **User Stories**: edit contact info; upload ID; Admin verifies.
-* **Technical**: Profiles table + object storage; verification timestamp & actor.
-* **Implementation**: File upload via signed URL; metadata row with hash.
+* **User Stories**
+  * As a user, I can view and edit my profile with photo and emergency contacts
+  * As a user, I can upload my ID document securely for verification
+  * As a department admin, I can create and manage users in my department
+  * As a department admin, I can verify ID documents for my department members
+  * As a superadmin, I can manage all users and departments system-wide
+  * As an admin, I can bulk import users via CSV with validation
 
-### 3.6 Commercial Benefits Directory
+* **Acceptance Criteria**
+  * Three-tier role system: Staff, Department Admin, Superadmin
+  * Department admins can only create/edit users in their department
+  * Profile photos limited to 5MB (JPG/PNG), ID documents to 10MB
+  * Emergency contacts as structured JSON (up to 3 contacts)
+  * ID documents encrypted at rest with audit trail
+  * Email invitations with 7-day expiry for new users
+  * CSV bulk import with row-level validation
+  * Prevent orphaned departments (last admin check)
+  * Complete audit logging for all user operations
 
-* **User Stories**: Staff browse; Superadmin CRUD.
-* **Technical**: `benefits` with validity windows; optional logo asset.
+* **Technical Requirements**
+  * Role-based access control at API and database level
+  * Department-scoped queries with row-level security
+  * Pre-signed URLs for file uploads (5-minute expiry)
+  * KMS encryption for ID documents
+  * JWT tokens with role and department claims
+  * Email service for invitations and notifications
+  * CSV parsing with validation pipeline
+  * Session management for role changes
+  * Rate limiting on user creation endpoints
 
-### 3.7 Training Sessions
+* **Implementation**
+  * User management module in apps/bff/src/modules/users
+  * Profile module in apps/bff/src/modules/profile
+  * RBAC middleware for all protected routes
+  * Department scoping service for data access
+  * Email templates for invitations and notifications
+  * CSV processor with background job queue
+  * Audit service for logging all operations
 
-* **User Stories**: Admin creates modular session (TEXT/FILE/VIDEO/LINK/FORM); assigns to users/positions/departments; user completes; system grades form.
-* **Technical**: `training_sessions`, `training_blocks`, `enrollments`, `attempts`.
-* **Implementation**: Ordered blocks; FORM as JSON schema; grading worker; versioning on edit.
+* **User Flows**
+
+  **Profile Management Flow:**
+  1. User navigates to My Profile
+  2. Views/edits personal information
+  3. Uploads/crops profile photo
+  4. Manages emergency contacts
+  5. Uploads ID document for verification
+  6. Receives notification when ID verified
+
+  **User Creation Flow (Admin):**
+  1. Admin clicks "Create User" from dashboard
+  2. Completes 3-step wizard (Info → Role → Permissions)
+  3. System validates department scope
+  4. Sends invitation email to new user
+  5. User completes onboarding on first login
+  6. Admin notified when user activates account
+
+  **Role Change Flow:**
+  1. Admin selects user from list
+  2. Opens role change modal
+  3. Selects new role with validation
+  4. Provides reason for audit log
+  5. System checks for orphaned departments
+  6. User notified of role change
+  7. Session invalidated if downgrade
+
+* **API Endpoints**
+
+  **Profile Management:**
+  * GET /api/profile - Get current user's profile
+  * PUT /api/profile - Update profile information
+  * POST /api/profile/photo - Upload profile photo
+  * DELETE /api/profile/photo - Remove profile photo
+  * POST /api/profile/id - Upload ID document
+  * GET /api/profile/id - Get signed URL for ID viewing
+  * POST /api/profile/id/verify - Verify ID document (admin)
+  * GET /api/profile/id/status - Check verification status
+  * POST /api/profile/emergency-contacts - Update emergency contacts
+
+  **User Management:**
+  * GET /api/users - List users (department-scoped)
+  * POST /api/users - Create new user
+  * GET /api/users/:id - Get user details
+  * PUT /api/users/:id - Update user information
+  * DELETE /api/users/:id - Delete user (superadmin only)
+  * PATCH /api/users/:id/status - Activate/deactivate user
+
+  **Role Management:**
+  * PUT /api/users/:id/role - Change user role
+  * GET /api/users/:id/permissions - Get user permissions
+  * POST /api/users/:id/role/request - Request role change
+  * GET /api/roles - List available roles
+  * GET /api/departments - List departments (for assignment)
+
+  **Bulk Operations:**
+  * POST /api/users/bulk - Bulk import users via CSV
+  * POST /api/users/bulk/validate - Validate CSV without import
+  * GET /api/users/bulk/template - Download CSV template
+  * GET /api/users/bulk/status/:jobId - Check import status
+  * GET /api/users/export - Export users to CSV
+
+  **Invitations:**
+  * POST /api/users/:id/invite - Send invitation email
+  * POST /api/users/:id/invite/resend - Resend invitation
+  * GET /api/invitations/:token - Validate invitation token
+  * POST /api/invitations/:token/accept - Accept invitation
+
+  **Admin Operations:**
+  * GET /api/admin/verifications - ID verification queue
+  * GET /api/admin/users/stats - User statistics by department
+  * GET /api/admin/users/activity - Recent user activity
+  * GET /api/admin/audit-log - User operation audit trail
+
+* **Data Models**: See section 4.1 for detailed schema
+* **Errors**: 
+  * 400 Invalid input/CSV format
+  * 403 Insufficient permissions/wrong department
+  * 404 User not found
+  * 409 Email already exists
+  * 413 File too large
+  * 422 Validation failed/orphaned department
+* **Performance**: 
+  * Pagination for user lists (50 per page)
+  * CDN for profile photos
+  * Redis cache for role permissions
+  * Background jobs for bulk operations
+  * Indexed queries on department_id and role
+
+### 3.6 Commercial Benefits Directory - PRIORITY 2
+
+* **User Stories**
+  * As staff, I can browse and filter benefits by category
+  * As staff, I can see department-specific benefits
+  * As staff, I can track which benefits I've used
+  * As superadmin, I can create and manage all benefits
+  * As admin, I can view usage analytics for my department
+
+* **Acceptance Criteria**
+  * Benefits filterable by category, department, validity, location
+  * Real-time search with suggestions
+  * Anonymous usage tracking for analytics
+  * Partner logos and promotional materials supported
+  * Terms and conditions clearly displayed
+
+* **Technical Requirements**
+  * CommercialBenefit model with categories enum
+  * Department-specific benefit linking
+  * Usage tracking with analytics
+  * Redis caching for frequently accessed benefits
+  * Pre-signed URLs for partner assets
+
+* **Implementation**
+  * Benefits module in apps/bff/src/modules/benefits
+  * Grid layout with card components
+  * Advanced filtering sidebar
+  * Usage analytics dashboard
+  * Admin CRUD interface
+
+* **User Flow**
+  1. User navigates to Benefits section
+  2. Sees grid of benefit cards
+  3. Filters by category/location/department
+  4. Clicks card for full details
+  5. Views terms and contact info
+  6. Tracks usage (anonymous)
+  7. Admin views analytics dashboard
+
+* **API Endpoints**
+  * GET /api/benefits?category=&dept=&location= - List with filters
+  * GET /api/benefits/:id - Detailed benefit view
+  * POST /api/benefits - Create (superadmin)
+  * PUT /api/benefits/:id - Update (superadmin)
+  * DELETE /api/benefits/:id - Soft delete (superadmin)
+  * GET /api/benefits/categories - Category list
+  * POST /api/benefits/:id/track - Track usage
+  * GET /api/benefits/analytics - Usage reports
+
+* **Categories**: Dining, Wellness, Hotels, Entertainment, Shopping, Transportation
+* **Data Models**: See CommercialBenefit table in section 4.1
+* **Errors**: 403 unauthorized; 404 benefit not found; 422 invalid dates
+* **Performance**: Redis cache with 5-minute TTL; pagination
+
+### 3.7 Training Sessions with Integrated Documents - PRIORITY 3
+
+* **User Stories**
+  * As admin, I create training with mixed content blocks including documents
+  * As admin, I assign training to departments/positions/individuals
+  * As user, I complete training with progress tracking
+  * As user, I take quizzes and receive certificates
+  * As admin, I view training analytics and completion reports
+
+* **Acceptance Criteria**
+  * Support 6 content types: TEXT, FILE, VIDEO, LINK, FORM, DOCUMENT
+  * Documents from library integrated into training flow
+  * Progress saved automatically
+  * Quizzes graded with immediate feedback
+  * Certificates generated upon completion
+  * Version control for content updates
+
+* **Technical Requirements**
+  * TrainingSession model with contentBlocks JSON
+  * Document attachment to training sessions
+  * Progress tracking with completion rules
+  * Worker queue for quiz grading
+  * Certificate generation with unique IDs
+  * Version pinning for active enrollments
+
+* **Implementation**
+  * Training module in apps/bff/src/modules/training
+  * Content block renderer with type detection
+  * Document viewer integration
+  * Quiz engine with JSON schema
+  * Progress persistence and recovery
+  * Certificate PDF generation
+  * Analytics dashboard
+
+* **User Flow**
+  1. Admin creates training session
+  2. Adds mixed content blocks (drag-drop)
+  3. Attaches documents from library
+  4. Sets completion rules and passing score
+  5. Assigns to users/departments
+  6. User enrolls and starts training
+  7. Progresses through blocks
+  8. Takes quiz if present
+  9. Receives certificate upon completion
+  10. Admin views completion reports
+
+* **API Endpoints**
+  * GET /api/training/sessions - List available
+  * GET /api/training/sessions/:id - Full session
+  * POST /api/training/sessions - Create (admin)
+  * PUT /api/training/sessions/:id - Update (new version)
+  * POST /api/training/sessions/:id/blocks - Add blocks
+  * GET /api/training/enrollments - User's enrollments
+  * POST /api/training/enrollments - Enroll
+  * GET /api/training/progress/:id - Progress data
+  * POST /api/training/progress/:id - Update progress
+  * POST /api/training/submit/:id - Submit quiz
+  * GET /api/training/:id/documents - Attached docs
+  * POST /api/training/:id/documents - Attach doc
+  * GET /api/training/certificate/:id - Download cert
+
+* **Content Types**:
+  * TEXT: Rich text/Markdown content
+  * FILE: Downloadable attachments
+  * VIDEO: Embedded players
+  * LINK: External resources
+  * FORM: Quiz/survey JSON schema
+  * DOCUMENT: Library document viewer
+
+* **Completion Rules**: All blocks viewed + quiz pass + minimum time
+* **Data Models**: See training tables in section 4.1
+* **Errors**: 422 invalid quiz answers; 409 already enrolled
+* **Performance**: Lazy load content blocks; cache progress
 
 ### 3.8 Admin Console
 
@@ -173,9 +414,22 @@ flowchart TB
 **users**
 
 * email CITEXT UNIQUE NOT NULL
-* name TEXT NOT NULL
-* status ENUM('invited','active','disabled') DEFAULT 'invited'
-* primary\_department\_id FK→departments(id) NULL
+* firstName TEXT NOT NULL
+* lastName TEXT NOT NULL
+* employeeId TEXT UNIQUE NULL (auto-generated if not provided)
+* role ENUM('STAFF','DEPARTMENT_ADMIN','SUPERADMIN') DEFAULT 'STAFF'
+* status ENUM('pending','active','deactivated') DEFAULT 'pending'
+* department\_id FK→departments(id) NOT NULL
+* position TEXT NULL
+* phoneNumber TEXT NULL
+* hireDate DATE NULL
+* lastLoginAt TIMESTAMPTZ NULL
+* invitationToken TEXT NULL
+* invitationExpiresAt TIMESTAMPTZ NULL
+* passwordResetToken TEXT NULL
+* passwordResetExpiresAt TIMESTAMPTZ NULL
+* failedLoginAttempts INT DEFAULT 0
+* lockedUntil TIMESTAMPTZ NULL
 
 **role\_assignments**
 
@@ -205,8 +459,14 @@ flowchart TB
 **profiles**
 
 * user\_id FK→users(id) UNIQUE
-* phone TEXT, emergency\_name TEXT, emergency\_phone TEXT, hire\_date DATE
-* id\_url\_key TEXT NULL, id\_verified\_at TIMESTAMPTZ NULL, id\_verified\_by FK→users(id) NULL
+* phone TEXT, hire\_date DATE
+* profile\_photo\_url TEXT NULL (S3/CDN URL for photo)
+* emergency\_contacts JSONB NULL (array of {name, relationship, phone})
+* id\_document\_url TEXT NULL (encrypted S3 key)
+* id\_verified\_at TIMESTAMPTZ NULL
+* id\_verified\_by FK→users(id) NULL
+* department\_id FK→departments(id)
+* position TEXT
 
 **payslips**
 
@@ -244,46 +504,140 @@ flowchart TB
 * pending\_days NUMERIC(4,1) DEFAULT 0
 * taken\_days NUMERIC(4,1) DEFAULT 0
 
-**benefits**
+**commercial\_benefits**
 
-* name TEXT, category ENUM('Dining','Wellness','Hotels','Other'), partner TEXT, location TEXT
-* summary TEXT, terms TEXT, valid\_from DATE, valid\_to DATE, active BOOLEAN DEFAULT true
-* logo\_url\_key TEXT NULL
+* name TEXT NOT NULL
+* category ENUM('Dining','Wellness','Hotels','Entertainment','Shopping','Transportation')
+* partner\_name TEXT NOT NULL
+* description TEXT
+* discount\_percentage INT NULL
+* discount\_details TEXT
+* location TEXT NULL (physical location or 'Online')
+* website\_url TEXT NULL
+* contact\_info TEXT NULL
+* logo\_url TEXT NULL (S3/CDN URL)
+* terms\_conditions TEXT
+* valid\_from DATE
+* valid\_until DATE
+* blackout\_dates JSONB NULL (array of date ranges)
+* department\_ids JSONB NULL (array of department IDs, NULL = all)
+* is\_active BOOLEAN DEFAULT true
+* usage\_count INT DEFAULT 0 (anonymous tracking)
+* deleted\_at TIMESTAMPTZ NULL
 
 **training\_sessions**
 
-* title TEXT, department\_id FK→departments(id) NULL (null means org-wide)
-* version INT DEFAULT 1, status ENUM('draft','published','archived')
-* assigned\_rule JSONB NULL (e.g., by position)
+* title TEXT NOT NULL
+* description TEXT
+* department\_id FK→departments(id) NULL (null = org-wide)
+* category TEXT (e.g., 'Onboarding', 'Safety', 'Skills')
+* version INT DEFAULT 1
+* status ENUM('draft','published','archived') DEFAULT 'draft'
+* assignment\_type ENUM('assigned','requested','optional')
+* assigned\_positions JSONB NULL (array of position IDs)
+* assigned\_departments JSONB NULL (array of department IDs)
+* assigned\_users JSONB NULL (array of user IDs)
+* passing\_score INT NULL (percentage for quizzes)
+* minimum\_time\_minutes INT NULL
+* certificate\_template TEXT NULL
+* content\_blocks JSONB NOT NULL (ordered array of blocks)
+* created\_by FK→users(id)
+* is\_active BOOLEAN DEFAULT true
 
-**training\_blocks**
+**training\_blocks** (embedded in content\_blocks JSON)
 
-* session\_id FK→training\_sessions(id)
-* version INT
+* block\_id UUID
 * order\_index INT
-* type ENUM('TEXT','FILE','VIDEO','LINK','FORM')
-* payload JSONB (content, urls, form schema)
-* UNIQUE(session\_id, version, order\_index)
+* type ENUM('TEXT','FILE','VIDEO','LINK','FORM','DOCUMENT')
+* title TEXT
+* content TEXT NULL (for TEXT type)
+* file\_url TEXT NULL (for FILE type)
+* video\_url TEXT NULL (for VIDEO type)
+* link\_url TEXT NULL (for LINK type)
+* document\_id FK→documents(id) NULL (for DOCUMENT type)
+* form\_schema JSONB NULL (for FORM type - quiz questions)
+* required BOOLEAN DEFAULT true
+* minimum\_view\_seconds INT NULL
 
 **training\_enrollments**
 
 * session\_id FK→training\_sessions(id)
 * session\_version INT
 * user\_id FK→users(id)
-* status ENUM('assigned','in\_progress','completed','failed','requested')
-* requested\_by FK→users(id) NULL
+* status ENUM('not\_started','in\_progress','completed','failed') DEFAULT 'not\_started'
+* enrollment\_type ENUM('assigned','requested','optional')
+* progress JSONB (tracks viewed blocks, time spent, quiz scores)
+* started\_at TIMESTAMPTZ NULL
+* completed\_at TIMESTAMPTZ NULL
+* certificate\_url TEXT NULL
+* certificate\_issued\_at TIMESTAMPTZ NULL
+* total\_time\_minutes INT DEFAULT 0
+* final\_score INT NULL
 * UNIQUE(session\_id, user\_id)
 
-**training\_attempts**
+**training\_documents** (links documents to training)
 
-* enrollment\_id FK→training\_enrollments(id)
-* block\_id FK→training\_blocks(id)
-* score NUMERIC(5,2) NULL, passed BOOLEAN NULL, answers JSONB
+* training\_session\_id FK→training\_sessions(id)
+* document\_id FK→documents(id)
+* order\_index INT
+* is\_required BOOLEAN DEFAULT false
+* UNIQUE(training\_session\_id, document\_id)
 
-**audit\_events**
+**user\_invitations**
 
-* actor\_id FK→users(id)
-* verb TEXT, object\_type TEXT, object\_id UUID, meta JSONB
+* id UUID PK
+* email TEXT NOT NULL
+* token TEXT UNIQUE NOT NULL
+* role ENUM('STAFF','DEPARTMENT_ADMIN','SUPERADMIN')
+* department\_id FK→departments(id) NOT NULL
+* invited\_by FK→users(id) NOT NULL
+* accepted\_at TIMESTAMPTZ NULL
+* expires\_at TIMESTAMPTZ NOT NULL
+* created\_at TIMESTAMPTZ DEFAULT NOW()
+
+**user\_activities**
+
+* user\_id FK→users(id)
+* activity\_type ENUM('login','logout','profile_update','role_change','password_change')
+* ip\_address INET
+* user\_agent TEXT
+* metadata JSONB
+* created\_at TIMESTAMPTZ DEFAULT NOW()
+* INDEX(user\_id, created\_at)
+
+**bulk\_import\_jobs**
+
+* id UUID PK
+* filename TEXT NOT NULL
+* total\_rows INT
+* processed\_rows INT DEFAULT 0
+* successful\_rows INT DEFAULT 0
+* failed\_rows INT DEFAULT 0
+* errors JSONB
+* status ENUM('pending','processing','completed','failed') DEFAULT 'pending'
+* imported\_by FK→users(id)
+* department\_id FK→departments(id) NULL
+* started\_at TIMESTAMPTZ NULL
+* completed\_at TIMESTAMPTZ NULL
+* created\_at TIMESTAMPTZ DEFAULT NOW()
+
+**audit\_log**
+
+* id UUID PK
+* actor\_id FK→users(id) NOT NULL
+* action TEXT NOT NULL (e.g., 'user.create', 'role.change', 'profile.update')
+* entity\_type TEXT NOT NULL (e.g., 'user', 'profile', 'document')
+* entity\_id UUID NOT NULL
+* department\_id FK→departments(id) NULL
+* old\_values JSONB NULL
+* new\_values JSONB NULL
+* reason TEXT NULL (for role changes, etc.)
+* ip\_address INET
+* user\_agent TEXT
+* created\_at TIMESTAMPTZ DEFAULT NOW()
+* INDEX(actor\_id, created\_at)
+* INDEX(entity\_type, entity\_id)
+* INDEX(department\_id)
 
 **Indexes & Optimization**
 
@@ -396,7 +750,67 @@ flowchart TB
 * PII classification: IDs, payslips; logs redact emails and url\_keys; access to PII audited.
 * Compliance: align with GDPR-like principles (lawful basis, minimization); enable data export/delete.
 
-### 6.3 Application Security
+### 6.3 Role-Based Access Control (RBAC)
+
+#### Permission Matrix
+
+| Resource | Action | Staff | Dept Admin | Superadmin |
+|----------|--------|-------|------------|------------|
+| **Profile** | View Own | ✅ | ✅ | ✅ |
+| | Edit Own | ✅ | ✅ | ✅ |
+| | View Others | ❌ | Dept Only | ✅ |
+| **Users** | Create | ❌ | Dept Only | ✅ |
+| | Edit | ❌ | Dept Only | ✅ |
+| | Delete | ❌ | ❌ | ✅ |
+| | Change Role | ❌ | Limited* | ✅ |
+| | Bulk Import | ❌ | Dept Only | ✅ |
+| **Documents** | Upload | ❌ | ✅ | ✅ |
+| | Link to Users | ❌ | Dept Only | ✅ |
+| **ID Verification** | Verify | ❌ | Dept Only | ✅ |
+| | View Queue | ❌ | Dept Only | ✅ |
+| **Departments** | Create | ❌ | ❌ | ✅ |
+| | Edit | ❌ | ❌ | ✅ |
+| **Audit Logs** | View | ❌ | Dept Only | ✅ |
+
+*Department Admins can only change roles between Staff and Department Admin within their department
+
+#### Implementation Strategy
+
+```typescript
+// Middleware for role checking
+export const requireRole = (minRole: Role) => {
+  return (req, res, next) => {
+    if (!hasMinimumRole(req.user.role, minRole)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    next();
+  };
+};
+
+// Department scoping
+export const scopeToDepartment = (req, res, next) => {
+  if (req.user.role === 'SUPERADMIN') {
+    // No scoping for superadmin
+    next();
+  } else if (req.user.role === 'DEPARTMENT_ADMIN') {
+    // Scope to user's department
+    req.query.departmentId = req.user.departmentId;
+    next();
+  } else {
+    // Staff can only access own resources
+    req.query.userId = req.user.id;
+    next();
+  }
+};
+```
+
+#### Session Management
+- JWT tokens include role and department claims
+- Token refresh on role change
+- Session invalidation on role downgrade
+- Re-authentication required for sensitive operations
+
+### 6.4 Application Security
 
 * Input validation with Zod; output encoding; strict CSP; security headers (HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy).
 * OWASP: prevent injection, auth failures, sensitive data exposure; AV scan for uploads; rate limit auth endpoints.

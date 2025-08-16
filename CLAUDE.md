@@ -732,6 +732,170 @@ playwright.screenshot("desktop-view.png")
 3. Build TypeScript applications
 4. Run production with compiled JavaScript
 
+## Current Implementation Focus
+
+### Prioritized Features (In Development Order)
+
+#### 1. Profile & User Management - Week 1
+**Status**: 🔴 Not Started
+
+**Scope**:
+- **Profile Management**: Personal info, emergency contacts, photo/ID upload
+- **User Creation**: Admin-created users with department scoping
+- **Role Management**: Staff, Department Admin, Superadmin hierarchy
+- **Invitation System**: Email invites with 7-day expiry
+- **Bulk Import**: CSV user upload with validation
+- **ID Verification**: Admin workflow for document approval
+- **Audit Logging**: Complete trail for all sensitive operations
+
+**Technical Implementation**:
+- **Database**: 
+  - User model with profilePhoto, emergencyContact JSON
+  - Role-based access control with department scoping
+  - Audit log for all user/profile changes
+- **Storage**: Pre-signed URLs for photos/IDs (5MB photos, 10MB documents)
+- **Security**: 
+  - ID documents encrypted at rest
+  - Department-scoped data access
+  - Role validation and permission matrix
+- **API Endpoints**:
+  - **Profile**: GET/PUT /api/profile, POST /api/profile/photo, POST /api/profile/id
+  - **Users**: GET/POST /api/users, PUT /api/users/:id, PUT /api/users/:id/role
+  - **Bulk**: POST /api/users/bulk, GET /api/users/export
+  - **Verification**: POST /api/profile/id/verify, GET /api/admin/verifications
+  - **Invitations**: POST /api/users/:id/invite, POST /api/users/:id/resend
+
+**Frontend Components**:
+- **User Views**:
+  - ProfileView.tsx - Complete profile display
+  - ProfileEdit.tsx - Multi-tab edit form
+  - ProfilePhotoUpload.tsx - Drag & drop with crop
+  - IDDocumentUpload.tsx - Secure upload with encryption
+  - EmergencyContactForm.tsx - Dynamic contact management
+- **Admin Views**:
+  - UserManagementDashboard.tsx - Department-scoped user list
+  - CreateUserWizard.tsx - 3-step user creation
+  - BulkImportModal.tsx - CSV upload with validation
+  - RoleChangeModal.tsx - Role management with warnings
+  - VerificationQueue.tsx - ID verification workflow
+
+**Role Permissions**:
+- **Staff**: View/edit own profile only
+- **Department Admin**: Create/edit users in department, verify IDs
+- **Superadmin**: Full system access, cross-department management
+
+**Progress Tracking**:
+- [ ] User management API module
+- [ ] Role-based access control
+- [ ] Invitation email system
+- [ ] Profile management features
+- [ ] Photo/ID upload flows
+- [ ] Admin dashboards
+- [ ] Bulk import functionality
+- [ ] Testing & documentation
+
+#### 2. Commercial Benefits - Week 2
+**Status**: 🔴 Not Started
+
+**Scope**:
+- Partner benefits directory (Dining, Wellness, Hotels, Shopping)
+- Category filtering and search
+- Department-specific benefits
+- Usage tracking and analytics
+- Admin management interface
+
+**Technical Implementation**:
+- **Database**: CommercialBenefit model with categories, validity dates
+- **Filtering**: Category, department, validity, location
+- **Analytics**: Anonymous usage tracking
+- **API Endpoints**:
+  - GET /api/benefits (with filters)
+  - GET /api/benefits/:id (details)
+  - POST/PUT/DELETE /api/benefits (admin)
+  - POST /api/benefits/:id/track (usage)
+
+**Frontend Components**:
+- BenefitsGrid.tsx - Responsive card layout
+- BenefitCard.tsx - Preview with logo/discount
+- BenefitDetails.tsx - Full modal view
+- BenefitFilters.tsx - Category/search sidebar
+- BenefitAdmin.tsx - CRUD interface
+
+**Progress Tracking**:
+- [ ] Backend API module created
+- [ ] Category system implemented
+- [ ] Department filtering added
+- [ ] Frontend grid & cards
+- [ ] Search & filter UI
+- [ ] Admin management
+- [ ] Usage analytics
+
+#### 3. Training with Integrated Documents - Week 3
+**Status**: 🔴 Not Started
+
+**Scope**:
+- Modular training sessions with content blocks
+- Document integration within training
+- Progress tracking and completion rules
+- Quiz/form functionality with grading
+- Certificate generation
+- Department-based assignments
+
+**Technical Implementation**:
+- **Database**: TrainingSession with versioning, contentBlocks JSON
+- **Content Types**: TEXT, FILE, VIDEO, LINK, FORM, DOCUMENT
+- **Progress**: Track viewed blocks, quiz scores, completion
+- **Documents**: Attach existing docs to training sessions
+- **API Endpoints**:
+  - GET/POST /api/training/sessions
+  - GET/POST /api/training/enrollments
+  - POST /api/training/progress/:id
+  - POST /api/training/submit/:id (quiz)
+  - GET /api/training/:id/documents
+  - GET /api/training/certificate/:id
+
+**Frontend Components**:
+- TrainingDashboard.tsx - Overview with progress
+- TrainingCard.tsx - Session preview
+- TrainingViewer.tsx - Content block renderer
+- TrainingDocuments.tsx - Integrated doc viewer
+- TrainingQuiz.tsx - Form/quiz component
+- TrainingProgress.tsx - Visual progress bar
+- TrainingAdmin.tsx - Session builder
+
+**Progress Tracking**:
+- [ ] Backend API module created
+- [ ] Content block system
+- [ ] Document integration
+- [ ] Progress tracking
+- [ ] Quiz/grading system
+- [ ] Frontend viewer
+- [ ] Certificate generation
+- [ ] Admin builder UI
+
+### Cross-Cutting Concerns
+
+#### Department Integration
+All features will respect department boundaries:
+- **Profile**: Filter users by department (admin view)
+- **Benefits**: Department-specific benefits and usage stats
+- **Training**: Department-assigned training, scoped document access
+
+#### Implementation Patterns
+- **Authentication**: JWT with role/department claims
+- **Authorization**: Policy-based with department scoping
+- **File Storage**: Pre-signed URLs via BFF
+- **Audit Logging**: All sensitive operations tracked
+- **Soft Deletes**: deletedAt timestamps preserve history
+
+### Session Progress Tracking
+Use this section to track work across development sessions:
+
+**Last Updated**: [Session Date]
+**Current Task**: Documentation update
+**Next Steps**: Start Profile Management implementation
+**Blockers**: None
+
 ## Deployment Checklist
 
 - [ ] Environment variables configured in Railway
