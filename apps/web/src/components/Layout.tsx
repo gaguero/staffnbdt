@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { NavLink, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -15,61 +16,61 @@ interface NavItem {
 
 const navigationItems: NavItem[] = [
   {
-    label: 'Dashboard',
+    label: 'nav.dashboard',
     path: '/dashboard',
     icon: '📊',
     roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
-    label: 'My Profile',
+    label: 'nav.profile',
     path: '/profile',
     icon: '👤',
     roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
-    label: 'Documents',
+    label: 'nav.documents',
     path: '/documents',
     icon: '📁',
     roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
-    label: 'Payroll',
+    label: 'nav.payroll',
     path: '/payroll',
     icon: '💰',
     roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
-    label: 'Vacation',
+    label: 'nav.vacation',
     path: '/vacation',
     icon: '🏖️',
     roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
-    label: 'Training',
+    label: 'nav.training',
     path: '/training',
     icon: '🎓',
     roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
-    label: 'Benefits',
+    label: 'nav.benefits',
     path: '/benefits',
     icon: '🎁',
     roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
-    label: 'Notifications',
+    label: 'nav.notifications',
     path: '/notifications',
     icon: '🔔',
     roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
-    label: 'Users',
+    label: 'nav.users',
     path: '/users',
     icon: '👥',
     roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN']
   },
   {
-    label: 'Departments',
+    label: 'nav.departments',
     path: '/departments',
     icon: '🏢',
     roles: ['SUPERADMIN']
@@ -78,6 +79,7 @@ const navigationItems: NavItem[] = [
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -110,10 +112,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:relative lg:inset-0 flex-shrink-0`}
       >
         {/* Logo/Brand */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 bg-charcoal">
-          <h1 className="text-white font-heading text-lg uppercase">
-            Nayara HR
-          </h1>
+        <div className="flex items-center justify-between h-20 px-4 border-b border-gray-200 bg-charcoal">
+          <img 
+            src="/nayara-logo-white.png" 
+            alt="Nayara Bocas del Toro"
+            className="h-12 w-auto object-contain"
+          />
           <button
             onClick={closeSidebar}
             className="lg:hidden text-white hover:text-warm-gold transition-colors"
@@ -141,7 +145,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <span className="mr-3 text-lg" role="img" aria-hidden="true">
                 {item.icon}
               </span>
-              {item.label}
+              {t(item.label)}
             </NavLink>
           ))}
         </nav>
@@ -193,12 +197,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Page title */}
             <div className="flex-1 lg:ml-0 ml-4">
               <h1 className="text-2xl font-heading text-charcoal uppercase">
-                {navigationItems.find(item => item.path === location.pathname)?.label || 'Dashboard'}
+                {t(navigationItems.find(item => item.path === location.pathname)?.label || 'nav.dashboard')}
               </h1>
             </div>
 
             {/* User menu */}
             <div className="flex items-center space-x-4">
+              {/* Language Switcher */}
+              <button
+                onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                className="flex items-center space-x-1 px-3 py-1 text-sm font-medium text-charcoal hover:text-warm-gold transition-colors border border-gray-300 rounded-md hover:border-warm-gold"
+                aria-label="Switch language"
+              >
+                <span>{language === 'en' ? '🇬🇧' : '🇪🇸'}</span>
+                <span>{language === 'en' ? 'EN' : 'ES'}</span>
+              </button>
+
               {/* Notifications (placeholder) */}
               <button
                 className="text-charcoal hover:text-warm-gold transition-colors focus:outline-none focus:ring-2 focus:ring-warm-gold focus:ring-offset-2 rounded-md p-2"
@@ -222,7 +236,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     onClick={logout}
                     className="btn btn-outline btn-sm"
                   >
-                    Sign Out
+                    {t('nav.signOut')}
                   </button>
                 </div>
               </div>
