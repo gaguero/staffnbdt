@@ -10,7 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse as ApiResponseDecorator, ApiBearerAuth } from '@nestjs/swagger';
 import { InvitationsService } from './invitations.service';
 import { CreateInvitationDto, AcceptInvitationDto, InvitationFilterDto } from './dto';
 import { InvitationWithRelations, InvitationStats } from './interfaces';
@@ -35,14 +35,14 @@ export class InvitationsController {
   @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'CREATE', entity: 'Invitation' })
   @ApiOperation({ summary: 'Create and send an invitation' })
-  @ApiResponse({
+  @ApiResponseDecorator({
     status: 201,
     description: 'Invitation created and sent successfully',
     type: ApiResponse<InvitationWithRelations>,
   })
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 409, description: 'Conflict - user or invitation already exists' })
+  @ApiResponseDecorator({ status: 400, description: 'Bad request' })
+  @ApiResponseDecorator({ status: 403, description: 'Forbidden' })
+  @ApiResponseDecorator({ status: 409, description: 'Conflict - user or invitation already exists' })
   async create(
     @Body() createInvitationDto: CreateInvitationDto,
     @CurrentUser() currentUser: User,
@@ -58,12 +58,12 @@ export class InvitationsController {
   @Get()
   @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
   @ApiOperation({ summary: 'Get all invitations with filtering and pagination' })
-  @ApiResponse({
+  @ApiResponseDecorator({
     status: 200,
     description: 'Invitations retrieved successfully',
     type: ApiResponse<PaginatedResponse<InvitationWithRelations>>,
   })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponseDecorator({ status: 403, description: 'Forbidden' })
   async findAll(
     @Query() filterDto: InvitationFilterDto,
     @CurrentUser() currentUser: User,
@@ -79,12 +79,12 @@ export class InvitationsController {
   @Get('stats')
   @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
   @ApiOperation({ summary: 'Get invitation statistics' })
-  @ApiResponse({
+  @ApiResponseDecorator({
     status: 200,
     description: 'Invitation statistics retrieved successfully',
     type: ApiResponse<InvitationStats>,
   })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponseDecorator({ status: 403, description: 'Forbidden' })
   async getStats(
     @CurrentUser() currentUser: User,
   ): Promise<ApiResponse<InvitationStats>> {
@@ -99,13 +99,13 @@ export class InvitationsController {
   @Get(':token')
   @Public()
   @ApiOperation({ summary: 'Validate invitation token and get invitation details' })
-  @ApiResponse({
+  @ApiResponseDecorator({
     status: 200,
     description: 'Invitation details retrieved successfully',
     type: ApiResponse<InvitationWithRelations>,
   })
-  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  @ApiResponse({ status: 404, description: 'Invitation not found' })
+  @ApiResponseDecorator({ status: 400, description: 'Invalid or expired token' })
+  @ApiResponseDecorator({ status: 404, description: 'Invitation not found' })
   async findByToken(
     @Param('token') token: string,
   ): Promise<ApiResponse<InvitationWithRelations>> {
@@ -122,14 +122,14 @@ export class InvitationsController {
   @Audit({ action: 'ACCEPT', entity: 'Invitation' })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Accept invitation and create user account' })
-  @ApiResponse({
+  @ApiResponseDecorator({
     status: 200,
     description: 'Invitation accepted and user created successfully',
     type: ApiResponse<{ user: User; invitation: InvitationWithRelations }>,
   })
-  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  @ApiResponse({ status: 404, description: 'Invitation not found' })
-  @ApiResponse({ status: 409, description: 'User already exists' })
+  @ApiResponseDecorator({ status: 400, description: 'Invalid or expired token' })
+  @ApiResponseDecorator({ status: 404, description: 'Invitation not found' })
+  @ApiResponseDecorator({ status: 409, description: 'User already exists' })
   async acceptInvitation(
     @Param('token') token: string,
     @Body() acceptDto: AcceptInvitationDto,
@@ -147,14 +147,14 @@ export class InvitationsController {
   @Audit({ action: 'RESEND', entity: 'Invitation' })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Resend invitation email' })
-  @ApiResponse({
+  @ApiResponseDecorator({
     status: 200,
     description: 'Invitation resent successfully',
     type: ApiResponse<InvitationWithRelations>,
   })
-  @ApiResponse({ status: 400, description: 'Cannot resend non-pending invitation' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'Invitation not found' })
+  @ApiResponseDecorator({ status: 400, description: 'Cannot resend non-pending invitation' })
+  @ApiResponseDecorator({ status: 403, description: 'Forbidden' })
+  @ApiResponseDecorator({ status: 404, description: 'Invitation not found' })
   async resendInvitation(
     @Param('id') id: string,
     @CurrentUser() currentUser: User,
@@ -172,10 +172,10 @@ export class InvitationsController {
   @Audit({ action: 'CANCEL', entity: 'Invitation' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Cancel invitation' })
-  @ApiResponse({ status: 204, description: 'Invitation cancelled successfully' })
-  @ApiResponse({ status: 400, description: 'Cannot cancel non-pending invitation' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'Invitation not found' })
+  @ApiResponseDecorator({ status: 204, description: 'Invitation cancelled successfully' })
+  @ApiResponseDecorator({ status: 400, description: 'Cannot cancel non-pending invitation' })
+  @ApiResponseDecorator({ status: 403, description: 'Forbidden' })
+  @ApiResponseDecorator({ status: 404, description: 'Invitation not found' })
   async cancelInvitation(
     @Param('id') id: string,
     @CurrentUser() currentUser: User,
@@ -190,12 +190,12 @@ export class InvitationsController {
     summary: 'Cleanup expired invitations (admin only)',
     description: 'Marks all expired pending invitations as expired. This endpoint is typically called by cron jobs.',
   })
-  @ApiResponse({
+  @ApiResponseDecorator({
     status: 200,
     description: 'Expired invitations cleaned up successfully',
     type: ApiResponse<{ cleanedCount: number }>,
   })
-  @ApiResponse({ status: 403, description: 'Forbidden - Superadmin only' })
+  @ApiResponseDecorator({ status: 403, description: 'Forbidden - Superadmin only' })
   async cleanupExpiredInvitations(): Promise<ApiResponse<{ cleanedCount: number }>> {
     const cleanedCount = await this.invitationsService.cleanupExpiredInvitations();
     

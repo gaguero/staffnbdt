@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { userService, User as UserType, UserFilter, BulkImportResult } from '../services/userService';
 
-
 const UsersPage: React.FC = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserType[]>([]);
@@ -14,6 +13,9 @@ const UsersPage: React.FC = () => {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showImportResults, setShowImportResults] = useState(false);
   const [importResults, setImportResults] = useState<BulkImportResult | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   const [filter, setFilter] = useState<UserFilter>({
     search: '',
     role: '',
@@ -38,94 +40,44 @@ const UsersPage: React.FC = () => {
   const [validateOnly, setValidateOnly] = useState(true);
   const [sendInvitations, setSendInvitations] = useState(true);
 
-  // Mock data - replace with actual API call
-  const users: User[] = [
-    {
-      id: '1',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@nayara.com',
-      role: 'STAFF',
-      departmentId: 'dept1',
-      departmentName: 'Front Office',
-      status: 'active',
-      lastLogin: '2024-01-30T14:30:00Z',
-      createdAt: '2023-06-15T10:00:00Z'
-    },
-    {
-      id: '2',
-      firstName: 'Jane',
-      lastName: 'Smith',
-      email: 'jane.smith@nayara.com',
-      role: 'DEPARTMENT_ADMIN',
-      departmentId: 'dept2',
-      departmentName: 'Housekeeping',
-      status: 'active',
-      lastLogin: '2024-01-31T09:15:00Z',
-      createdAt: '2023-05-20T08:00:00Z'
-    },
-    {
-      id: '3',
-      firstName: 'Mike',
-      lastName: 'Johnson',
-      email: 'mike.johnson@nayara.com',
-      role: 'STAFF',
-      departmentId: 'dept3',
-      departmentName: 'Food & Beverage',
-      status: 'inactive',
-      lastLogin: '2024-01-25T16:45:00Z',
-      createdAt: '2023-08-10T12:30:00Z'
-    },
-    {
-      id: '4',
-      firstName: 'Sarah',
-      lastName: 'Wilson',
-      email: 'sarah.wilson@nayara.com',
-      role: 'STAFF',
-      departmentId: 'dept1',
-      departmentName: 'Front Office',
-      status: 'pending',
-      createdAt: '2024-01-28T11:00:00Z'
+  // Load users
+  const loadUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await userService.getUsers({
+        search: searchTerm,
+        role: selectedRole || undefined,
+        departmentId: filter.departmentId || undefined,
+      });
+      setUsers(response.data?.data || []);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  }, [searchTerm, selectedRole, filter.departmentId]);
 
-  const departments = [
-    { id: 'dept1', name: 'Front Office' },
-    { id: 'dept2', name: 'Housekeeping' },
-    { id: 'dept3', name: 'Food & Beverage' },
-    { id: 'dept4', name: 'Maintenance' },
-    { id: 'dept5', name: 'Administration' }
-  ];
-
-  const roles = [
-    { value: 'all', label: 'All Roles' },
-    { value: 'STAFF', label: 'Staff' },
-    { value: 'DEPARTMENT_ADMIN', label: 'Department Admin' },
-    { value: 'SUPERADMIN', label: 'Super Admin' }
-  ];
-
-  const statuses = [
-    { value: 'all', label: 'All Statuses' },
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'pending', label: 'Pending' }
-  ];
-
-  // Filter users based on current user's role and department
-  const filteredUsers = users.filter(user => {
-    // Department scoping for DEPARTMENT_ADMIN
-    if (currentUser?.role === 'DEPARTMENT_ADMIN' && user.departmentId !== currentUser.departmentId) {
-      return false;
-    }
-
-    const matchesRole = selectedRole === 'all' || user.role === selectedRole;
-    const matchesStatus = selectedStatus === 'all' || user.status === selectedStatus;
-    const matchesSearch = user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+  // Load stats
+  const loadStats = useCallback(async () => {
+    if (currentUser?.role === 'STAFF') return;
     
-    return matchesRole && matchesStatus && matchesSearch;
-  });
+    try {
+      const response = await userService.getUserStats();
+      setStats(response.data?.data || {
+        total: 0,
+        byRole: {},
+        byDepartment: {},
+      });
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    loadUsers();
+    loadStats();
+  }, [loadUsers, loadStats]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -137,42 +89,124 @@ const UsersPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
 
     try {
-      // TODO: Implement user creation API call
-      console.log('Creating user:', formData);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Reset form and close modal
+      await userService.createUser(formData);
+      await loadUsers();
+      setShowAddUser(false);
       setFormData({
         firstName: '',
         lastName: '',
         email: '',
         role: 'STAFF',
-        departmentId: ''
+        departmentId: '',
+        position: '',
+        phoneNumber: '',
+        hireDate: '',
       });
-      setShowAddUser(false);
     } catch (error) {
       console.error('Failed to create user:', error);
+      alert('Failed to create user');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <span className="badge badge-success">Active</span>;
-      case 'inactive':
-        return <span className="badge badge-error">Inactive</span>;
-      case 'pending':
-        return <span className="badge badge-warning">Pending</span>;
-      default:
-        return <span className="badge badge-neutral">Unknown</span>;
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    
+    try {
+      setLoading(true);
+      await userService.deleteUser(userId);
+      await loadUsers();
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      alert('Failed to delete user');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleChangeStatus = async (userId: string, isActive: boolean) => {
+    try {
+      setLoading(true);
+      await userService.changeUserStatus(userId, isActive);
+      await loadUsers();
+    } catch (error) {
+      console.error('Failed to change status:', error);
+      alert('Failed to change status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkImport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!csvFile) {
+      alert('Please select a CSV file');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await userService.importUsersFromCsv(csvFile, validateOnly, sendInvitations);
+      setImportResults(result.data);
+      setShowImportResults(true);
+      
+      if (!validateOnly && result.data?.successCount > 0) {
+        await loadUsers();
+        setShowBulkImport(false);
+      }
+    } catch (error) {
+      console.error('Failed to import users:', error);
+      alert('Failed to import users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      setLoading(true);
+      const blob = await userService.exportUsers({
+        search: searchTerm,
+        role: selectedRole || undefined,
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `users-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export users:', error);
+      alert('Failed to export users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await userService.getImportTemplate();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'user-import-template.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download template:', error);
+      alert('Failed to download template');
+    }
+  };
+
+  const getStatusBadge = (user: UserType) => {
+    if (user.deletedAt) {
+      return <span className="badge badge-error">Inactive</span>;
+    }
+    return <span className="badge badge-success">Active</span>;
   };
 
   const getRoleBadge = (role: string) => {
@@ -188,13 +222,13 @@ const UsersPage: React.FC = () => {
     }
   };
 
-  const formatLastLogin = (lastLogin?: string) => {
-    if (!lastLogin) return 'Never';
-    const date = new Date(lastLogin);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatDate = (date?: string) => {
+    if (!date) return 'Never';
+    const d = new Date(date);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const canManageUser = (user: User) => {
+  const canManageUser = (user: UserType) => {
     if (currentUser?.role === 'SUPERADMIN') return true;
     if (currentUser?.role === 'DEPARTMENT_ADMIN') {
       return user.departmentId === currentUser.departmentId && user.role === 'STAFF';
@@ -206,9 +240,37 @@ const UsersPage: React.FC = () => {
     ? ['STAFF', 'DEPARTMENT_ADMIN', 'SUPERADMIN']
     : ['STAFF'];
 
-  const availableDepartments = currentUser?.role === 'SUPERADMIN'
-    ? departments
-    : departments.filter(dept => dept.id === currentUser?.departmentId);
+  // Filter users
+  const filteredUsers = users.filter(user => {
+    // Department scoping for DEPARTMENT_ADMIN
+    if (currentUser?.role === 'DEPARTMENT_ADMIN' && user.departmentId !== currentUser.departmentId) {
+      return false;
+    }
+
+    const matchesRole = !selectedRole || user.role === selectedRole;
+    const matchesStatus = selectedStatus === 'all' || 
+      (selectedStatus === 'active' && !user.deletedAt) ||
+      (selectedStatus === 'inactive' && user.deletedAt);
+    const matchesSearch = !searchTerm || 
+      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesRole && matchesStatus && matchesSearch;
+  });
+
+  const roles = [
+    { value: '', label: 'All Roles' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'DEPARTMENT_ADMIN', label: 'Department Admin' },
+    { value: 'SUPERADMIN', label: 'Super Admin' }
+  ];
+
+  const statuses = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' }
+  ];
 
   return (
     <div className="space-y-6">
@@ -226,13 +288,32 @@ const UsersPage: React.FC = () => {
           </p>
         </div>
         
-        <button
-          onClick={() => setShowAddUser(true)}
-          className="btn btn-primary"
-        >
-          <span className="mr-2">➕</span>
-          Add User
-        </button>
+        <div className="flex gap-2">
+          {currentUser?.role === 'SUPERADMIN' && (
+            <>
+              <button
+                onClick={() => setShowBulkImport(true)}
+                className="btn btn-secondary"
+              >
+                📤 Import CSV
+              </button>
+              <button
+                onClick={handleExport}
+                className="btn btn-secondary"
+                disabled={loading}
+              >
+                📥 Export CSV
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setShowAddUser(true)}
+            className="btn btn-primary"
+          >
+            <span className="mr-2">➕</span>
+            Add User
+          </button>
+        </div>
       </div>
 
       {/* User Statistics */}
@@ -246,14 +327,14 @@ const UsersPage: React.FC = () => {
           <div className="text-2xl mb-2">✅</div>
           <p className="text-sm text-gray-600 mb-1">Active</p>
           <p className="text-xl font-bold text-green-600">
-            {filteredUsers.filter(u => u.status === 'active').length}
+            {filteredUsers.filter(u => !u.deletedAt).length}
           </p>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-2xl mb-2">⏳</div>
-          <p className="text-sm text-gray-600 mb-1">Pending</p>
-          <p className="text-xl font-bold text-orange-600">
-            {filteredUsers.filter(u => u.status === 'pending').length}
+          <div className="text-2xl mb-2">❌</div>
+          <p className="text-sm text-gray-600 mb-1">Inactive</p>
+          <p className="text-xl font-bold text-red-600">
+            {filteredUsers.filter(u => u.deletedAt).length}
           </p>
         </div>
         <div className="card p-4 text-center">
@@ -314,7 +395,11 @@ const UsersPage: React.FC = () => {
       {/* Users Table */}
       <div className="card">
         <div className="card-body p-0">
-          {filteredUsers.length === 0 ? (
+          {loading ? (
+            <div className="p-12 text-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : filteredUsers.length === 0 ? (
             <div className="p-12 text-center">
               <div className="text-6xl mb-4">👥</div>
               <h3 className="text-lg font-semibold text-charcoal mb-2">
@@ -345,7 +430,7 @@ const UsersPage: React.FC = () => {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Login
+                      Created
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -372,23 +457,45 @@ const UsersPage: React.FC = () => {
                         {getRoleBadge(user.role)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-charcoal">
-                        {user.departmentName || 'Unassigned'}
+                        {user.department?.name || 'Unassigned'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(user.status)}
+                        {getStatusBadge(user)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatLastLogin(user.lastLogin)}
+                        {formatDate(user.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex space-x-2">
                           {canManageUser(user) && (
                             <>
-                              <button className="text-blue-600 hover:text-blue-800">
+                              <button 
+                                className="text-blue-600 hover:text-blue-800"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setFormData({
+                                    firstName: user.firstName,
+                                    lastName: user.lastName,
+                                    email: user.email,
+                                    role: user.role,
+                                    departmentId: user.departmentId || '',
+                                    position: user.position || '',
+                                    phoneNumber: user.phoneNumber || '',
+                                    hireDate: user.hireDate ? user.hireDate.split('T')[0] : '',
+                                  });
+                                  setShowEditUser(true);
+                                }}
+                              >
                                 Edit
                               </button>
-                              <button className="text-red-600 hover:text-red-800">
-                                {user.status === 'active' ? 'Deactivate' : 'Activate'}
+                              <button 
+                                className="text-red-600 hover:text-red-800"
+                                onClick={() => user.deletedAt 
+                                  ? handleChangeStatus(user.id, true)
+                                  : handleChangeStatus(user.id, false)
+                                }
+                              >
+                                {user.deletedAt ? 'Activate' : 'Deactivate'}
                               </button>
                             </>
                           )}
@@ -418,7 +525,7 @@ const UsersPage: React.FC = () => {
                 <button
                   onClick={() => setShowAddUser(false)}
                   className="text-gray-400 hover:text-gray-600"
-                  disabled={isLoading}
+                  disabled={loading}
                 >
                   ✕
                 </button>
@@ -479,31 +586,13 @@ const UsersPage: React.FC = () => {
                   </select>
                 </div>
 
-                <div>
-                  <label className="form-label">Department</label>
-                  <select
-                    name="departmentId"
-                    value={formData.departmentId}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    required
-                  >
-                    <option value="">Select Department</option>
-                    {availableDepartments.map(dept => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 <div className="flex space-x-4 pt-4">
                   <button
                     type="submit"
                     className="btn btn-primary flex-1"
-                    disabled={isLoading}
+                    disabled={loading}
                   >
-                    {isLoading ? (
+                    {loading ? (
                       <LoadingSpinner size="sm" />
                     ) : (
                       'Create User'
@@ -513,12 +602,126 @@ const UsersPage: React.FC = () => {
                     type="button"
                     onClick={() => setShowAddUser(false)}
                     className="btn btn-secondary flex-1"
-                    disabled={isLoading}
+                    disabled={loading}
                   >
                     Cancel
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {showBulkImport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Bulk Import Users</h3>
+              <form onSubmit={handleBulkImport} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">CSV File</label>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                    className="form-input"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="text-sm text-blue-600 hover:text-blue-800 mt-2"
+                  >
+                    Download CSV Template
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={validateOnly}
+                      onChange={(e) => setValidateOnly(e.target.checked)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Validate only (don't create users)</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={sendInvitations}
+                      onChange={(e) => setSendInvitations(e.target.checked)}
+                      className="mr-2"
+                      disabled={validateOnly}
+                    />
+                    <span className="text-sm">Send invitation emails</span>
+                  </label>
+                </div>
+                <div className="flex gap-4">
+                  <button type="submit" className="btn btn-primary flex-1" disabled={loading || !csvFile}>
+                    {loading ? <LoadingSpinner size="sm" /> : validateOnly ? 'Validate CSV' : 'Import Users'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowBulkImport(false);
+                      setCsvFile(null);
+                      setValidateOnly(true);
+                      setSendInvitations(true);
+                    }}
+                    className="btn btn-secondary flex-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Results Modal */}
+      {showImportResults && importResults && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Import Results</h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="card p-4 bg-green-50">
+                    <p className="text-sm text-gray-600">Successful</p>
+                    <p className="text-2xl font-bold text-green-600">{importResults.successCount}</p>
+                  </div>
+                  <div className="card p-4 bg-red-50">
+                    <p className="text-sm text-gray-600">Failed</p>
+                    <p className="text-2xl font-bold text-red-600">{importResults.failureCount}</p>
+                  </div>
+                </div>
+                
+                {importResults.failed.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2">Failed Imports:</h4>
+                    <div className="bg-red-50 rounded p-4 max-h-64 overflow-y-auto">
+                      {importResults.failed.map((failure, index) => (
+                        <div key={index} className="mb-2 text-sm">
+                          <span className="font-medium">Row {failure.row}:</span> {failure.email} - {failure.error}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <button
+                  onClick={() => {
+                    setShowImportResults(false);
+                    setImportResults(null);
+                  }}
+                  className="btn btn-primary w-full"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
