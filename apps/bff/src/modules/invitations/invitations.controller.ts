@@ -25,7 +25,7 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { User, Role } from '@prisma/client';
 
 @ApiTags('Invitations')
-@Controller('api/invitations')
+@Controller('invitations')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class InvitationsController {
