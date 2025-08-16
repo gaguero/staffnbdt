@@ -61,11 +61,11 @@ const UsersPage: React.FC = () => {
     }
   }, [searchTerm, selectedRole, filter.departmentId]);
 
-  // Load departments
+  // Load departments with hierarchy
   const loadDepartments = useCallback(async () => {
     try {
       const response = await departmentService.getDepartments();
-      setDepartments(response.data?.data || []);
+      setDepartments(response.data || []);
     } catch (error) {
       console.error('Failed to load departments:', error);
       setDepartments([]);
@@ -227,6 +227,44 @@ const UsersPage: React.FC = () => {
     if (!date) return 'Never';
     const d = new Date(date);
     return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getDepartmentHierarchy = (user: UserType) => {
+    if (!user.department) {
+      return (
+        <span className="text-gray-500 text-sm">Unassigned</span>
+      );
+    }
+
+    const department = user.department;
+    const isChild = department.parent;
+    
+    return (
+      <div className="flex flex-col space-y-1">
+        <div className="flex items-center space-x-2">
+          {isChild && (
+            <span className="text-gray-400 text-xs">└─</span>
+          )}
+          <span className={`text-sm font-medium ${
+            isChild ? 'text-green-600' : 'text-blue-600'
+          }`}>
+            {department.name}
+          </span>
+          {department.level > 0 && (
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              department.level === 1 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+            }`}>
+              L{department.level}
+            </span>
+          )}
+        </div>
+        {department.parent && (
+          <div className="text-xs text-gray-500">
+            under {department.parent.name}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const canManageUser = (user: UserType) => {
@@ -457,8 +495,8 @@ const UsersPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getRoleBadge(user.role)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-charcoal">
-                        {user.department?.name || 'Unassigned'}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getDepartmentHierarchy(user)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(user)}
@@ -606,7 +644,8 @@ const UsersPage: React.FC = () => {
                       <option value="">Select Department</option>
                       {departments.map(dept => (
                         <option key={dept.id} value={dept.id}>
-                          {dept.name}
+                          {'  '.repeat(dept.level || 0)}{dept.name}
+                          {dept.parent ? ` (under ${dept.parent.name})` : ''}
                         </option>
                       ))}
                     </select>
@@ -772,7 +811,8 @@ const UsersPage: React.FC = () => {
                       <option value="">Select Department</option>
                       {departments.map(dept => (
                         <option key={dept.id} value={dept.id}>
-                          {dept.name}
+                          {'  '.repeat(dept.level || 0)}{dept.name}
+                          {dept.parent ? ` (under ${dept.parent.name})` : ''}
                         </option>
                       ))}
                     </select>
