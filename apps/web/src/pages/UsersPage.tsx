@@ -2,10 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { userService, User as UserType, UserFilter, BulkImportResult } from '../services/userService';
+import { departmentService, Department } from '../services/departmentService';
 
 const UsersPage: React.FC = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserType[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
@@ -58,6 +60,17 @@ const UsersPage: React.FC = () => {
     }
   }, [searchTerm, selectedRole, filter.departmentId]);
 
+  // Load departments
+  const loadDepartments = useCallback(async () => {
+    try {
+      const response = await departmentService.getDepartments();
+      setDepartments(response.data?.data || []);
+    } catch (error) {
+      console.error('Failed to load departments:', error);
+      setDepartments([]);
+    }
+  }, []);
+
   // Load stats
   const loadStats = useCallback(async () => {
     if (currentUser?.role === 'STAFF') return;
@@ -77,7 +90,8 @@ const UsersPage: React.FC = () => {
   useEffect(() => {
     loadUsers();
     loadStats();
-  }, [loadUsers, loadStats]);
+    loadDepartments();
+  }, [loadUsers, loadStats, loadDepartments]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -105,9 +119,9 @@ const UsersPage: React.FC = () => {
         phoneNumber: '',
         hireDate: '',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create user:', error);
-      alert('Failed to create user');
+      alert(error.message || 'Failed to create user');
     } finally {
       setLoading(false);
     }
@@ -572,6 +586,62 @@ const UsersPage: React.FC = () => {
                   </select>
                 </div>
 
+                {formData.role !== 'SUPERADMIN' && (
+                  <div>
+                    <label className="form-label">Department *</label>
+                    <select
+                      name="departmentId"
+                      value={formData.departmentId}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map(dept => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="form-label">Position</label>
+                  <input
+                    type="text"
+                    name="position"
+                    value={formData.position}
+                    onChange={handleInputChange}
+                    className="form-input"
+                    placeholder="e.g. Software Engineer"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Phone Number</label>
+                    <input
+                      type="tel"
+                      name="phoneNumber"
+                      value={formData.phoneNumber}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      placeholder="+1234567890"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Hire Date</label>
+                    <input
+                      type="date"
+                      name="hireDate"
+                      value={formData.hireDate}
+                      onChange={handleInputChange}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex space-x-4 pt-4">
                   <button
                     type="submit"
@@ -602,9 +672,22 @@ const UsersPage: React.FC = () => {
       {/* Edit User Modal */}
       {showEditUser && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-screen overflow-y-auto">
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Edit User</h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-charcoal">Edit User</h3>
+                <button
+                  onClick={() => {
+                    setShowEditUser(false);
+                    setSelectedUser(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                  disabled={loading}
+                >
+                  ✕
+                </button>
+              </div>
+              
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 try {
@@ -613,66 +696,116 @@ const UsersPage: React.FC = () => {
                   await loadUsers();
                   setShowEditUser(false);
                   setSelectedUser(null);
-                } catch (error) {
+                } catch (error: any) {
                   console.error('Failed to update user:', error);
-                  alert('Failed to update user');
+                  alert(error.message || 'Failed to update user');
                 } finally {
                   setLoading(false);
                 }
               }} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">First Name</label>
+                    <input
+                      type="text"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Last Name</label>
+                    <input
+                      type="text"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="form-label">Email</label>
                   <input
-                    type="text"
-                    placeholder="First Name"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="form-input"
                     required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Last Name"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className="form-input"
-                    required
+                    disabled
                   />
                 </div>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="form-input"
-                  required
-                  disabled
-                />
+                
                 {currentUser?.role === 'SUPERADMIN' && (
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                    className="form-input"
-                  >
-                    <option value="STAFF">Staff</option>
-                    <option value="DEPARTMENT_ADMIN">Department Admin</option>
-                    <option value="SUPERADMIN">Super Admin</option>
-                  </select>
+                  <div>
+                    <label className="form-label">Role</label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                      className="form-input"
+                    >
+                      <option value="STAFF">Staff</option>
+                      <option value="DEPARTMENT_ADMIN">Department Admin</option>
+                      <option value="SUPERADMIN">Super Admin</option>
+                    </select>
+                  </div>
                 )}
-                <input
-                  type="text"
-                  placeholder="Position"
-                  value={formData.position}
-                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                  className="form-input"
-                />
-                <input
-                  type="tel"
-                  placeholder="Phone Number"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  className="form-input"
-                />
-                <div className="flex gap-4">
+                
+                {formData.role !== 'SUPERADMIN' && (
+                  <div>
+                    <label className="form-label">Department *</label>
+                    <select
+                      value={formData.departmentId}
+                      onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map(dept => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                <div>
+                  <label className="form-label">Position</label>
+                  <input
+                    type="text"
+                    value={formData.position}
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                    className="form-input"
+                    placeholder="e.g. Software Engineer"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={formData.phoneNumber}
+                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                      className="form-input"
+                      placeholder="+1234567890"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Hire Date</label>
+                    <input
+                      type="date"
+                      value={formData.hireDate}
+                      onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 pt-4">
                   <button type="submit" className="btn btn-primary flex-1" disabled={loading}>
                     {loading ? <LoadingSpinner size="sm" /> : 'Update User'}
                   </button>
@@ -683,6 +816,7 @@ const UsersPage: React.FC = () => {
                       setSelectedUser(null);
                     }}
                     className="btn btn-secondary flex-1"
+                    disabled={loading}
                   >
                     Cancel
                   </button>

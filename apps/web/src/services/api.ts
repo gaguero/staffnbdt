@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { TOKEN_STORAGE_KEY } from '../utils/constants';
 
+// Use VITE_API_URL if set, otherwise use relative paths (for Railway deployment)
 const API_URL = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
@@ -17,6 +18,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Log requests in development
+    if (import.meta.env.DEV) {
+      console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, config.data);
+    }
+    
     return config;
   },
   (error) => {
@@ -26,14 +33,39 @@ api.interceptors.request.use(
 
 // Response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Log successful responses in development
+    if (import.meta.env.DEV) {
+      console.log(`[API Response] ${response.config.url}`, response.data);
+    }
+    return response;
+  },
   (error) => {
+    // Log errors in development
+    if (import.meta.env.DEV) {
+      console.error(`[API Error] ${error.config?.url}`, error.response?.data || error.message);
+    }
+    
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       window.location.href = '/login';
     }
-    return Promise.reject(error);
+    
+    // Extract meaningful error message
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'An unexpected error occurred';
+    
+    // Create a new error with the extracted message
+    const enhancedError = new Error(errorMessage);
+    enhancedError.name = error.name;
+    // Preserve the original error for debugging
+    (enhancedError as any).originalError = error;
+    (enhancedError as any).response = error.response;
+    
+    return Promise.reject(enhancedError);
   }
 );
 

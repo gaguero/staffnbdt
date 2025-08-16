@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { userService, User, UserFilter, BulkImportResult } from '../services/userService';
+import { departmentService, Department } from '../services/departmentService';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
@@ -65,10 +67,22 @@ const UserManagementPage: React.FC = () => {
     }
   }, [currentUser]);
 
+  // Load departments
+  const loadDepartments = useCallback(async () => {
+    try {
+      const response = await departmentService.getDepartments();
+      setDepartments(response.data?.data || []);
+    } catch (error) {
+      console.error('Failed to load departments:', error);
+      setDepartments([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadUsers();
     loadStats();
-  }, [loadUsers, loadStats]);
+    loadDepartments();
+  }, [loadUsers, loadStats, loadDepartments]);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,9 +92,9 @@ const UserManagementPage: React.FC = () => {
       await loadUsers();
       setShowAddUser(false);
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create user:', error);
-      alert('Failed to create user');
+      alert(error.message || 'Failed to create user');
     } finally {
       setLoading(false);
     }
@@ -96,9 +110,9 @@ const UserManagementPage: React.FC = () => {
       await loadUsers();
       setShowEditUser(false);
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update user:', error);
-      alert('Failed to update user');
+      alert(error.message || 'Failed to update user');
     } finally {
       setLoading(false);
     }
@@ -446,17 +460,40 @@ const UserManagementPage: React.FC = () => {
                   className="form-input"
                   required
                 />
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                  className="form-input"
-                >
-                  <option value="STAFF">Staff</option>
-                  <option value="DEPARTMENT_ADMIN">Department Admin</option>
-                  {currentUser?.role === 'SUPERADMIN' && (
-                    <option value="SUPERADMIN">Super Admin</option>
-                  )}
-                </select>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Role</label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                    className="form-input"
+                  >
+                    <option value="STAFF">Staff</option>
+                    <option value="DEPARTMENT_ADMIN">Department Admin</option>
+                    {currentUser?.role === 'SUPERADMIN' && (
+                      <option value="SUPERADMIN">Super Admin</option>
+                    )}
+                  </select>
+                </div>
+                
+                {formData.role !== 'SUPERADMIN' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Department *</label>
+                    <select
+                      value={formData.departmentId}
+                      onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map(dept => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
                 <input
                   type="text"
                   placeholder="Position"
@@ -534,16 +571,39 @@ const UserManagementPage: React.FC = () => {
                   disabled
                 />
                 {currentUser?.role === 'SUPERADMIN' && (
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                    className="form-input"
-                  >
-                    <option value="STAFF">Staff</option>
-                    <option value="DEPARTMENT_ADMIN">Department Admin</option>
-                    <option value="SUPERADMIN">Super Admin</option>
-                  </select>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Role</label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                      className="form-input"
+                    >
+                      <option value="STAFF">Staff</option>
+                      <option value="DEPARTMENT_ADMIN">Department Admin</option>
+                      <option value="SUPERADMIN">Super Admin</option>
+                    </select>
+                  </div>
                 )}
+                
+                {formData.role !== 'SUPERADMIN' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Department *</label>
+                    <select
+                      value={formData.departmentId}
+                      onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map(dept => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
                 <input
                   type="text"
                   placeholder="Position"
