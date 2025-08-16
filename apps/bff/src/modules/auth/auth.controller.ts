@@ -6,6 +6,8 @@ import {
   Query,
   UseGuards,
   Req,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -15,12 +17,16 @@ import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Public } from '../../shared/decorators/public.decorator';
 import { ApiResponse as CustomApiResponse } from '../../shared/dto/response.dto';
 import { LoginDto, MagicLinkDto, RegisterDto, ResetPasswordDto } from './dto';
-import { User } from '@prisma/client';
+import { User, Role } from '@prisma/client';
+import { PrismaService } from '../../shared/database/prisma.service';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Post('login')
   @Public()
@@ -116,5 +122,91 @@ export class AuthController {
     // In a more sophisticated setup, you might want to blacklist the JWT token
     // For now, we'll just log the logout action
     return CustomApiResponse.success(null, 'Successfully logged out');
+  }
+
+  @Public()
+  @Post('init-database')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Initialize database with test users (development only)' })
+  @ApiResponse({ status: 200, description: 'Database initialized' })
+  async initializeDatabase() {
+    // Check if users already exist
+    const userCount = await this.prisma.user.count({
+      where: { deletedAt: null }
+    });
+
+    if (userCount > 0) {
+      return CustomApiResponse.success({
+        message: 'Database already has users',
+        userCount,
+        users: await this.prisma.user.findMany({
+          where: { deletedAt: null },
+          select: {
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            department: { select: { name: true } }
+          }
+        })
+      }, 'Database already initialized');
+    }
+
+    // Create test department
+    const department = await this.prisma.department.upsert({
+      where: { name: 'Test Department' },
+      update: {},
+      create: {
+        name: 'Test Department',
+        description: 'Test department for development',
+        location: 'Test Location'
+      }
+    });
+
+    // Create test users
+    const users = [
+      {
+        email: 'admin@nayara.com',
+        firstName: 'Admin',
+        lastName: 'User',
+        role: Role.SUPERADMIN,
+        departmentId: department.id
+      },
+      {
+        email: 'hr@nayara.com',
+        firstName: 'HR',
+        lastName: 'Manager',
+        role: Role.DEPARTMENT_ADMIN,
+        departmentId: department.id
+      },
+      {
+        email: 'staff@nayara.com',
+        firstName: 'Staff',
+        lastName: 'Member',
+        role: Role.STAFF,
+        departmentId: department.id
+      }
+    ];
+
+    const createdUsers = [];
+    for (const userData of users) {
+      const user = await this.prisma.user.create({
+        data: userData,
+        select: {
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          department: { select: { name: true } }
+        }
+      });
+      createdUsers.push(user);
+    }
+
+    return CustomApiResponse.success({
+      message: 'Database initialized successfully',
+      createdUsers,
+      department: { name: department.name, id: department.id }
+    }, 'Test users created successfully');
   }
 }

@@ -33,8 +33,14 @@ const LoginPage = () => {
     
     try {
       await login(email, password);
-    } catch (err) {
-      setError('Invalid credentials. Please try again.');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      // Extract error message from API response
+      const errorMessage = err?.response?.data?.message || 
+                          err?.response?.data?.error || 
+                          err?.message || 
+                          'Login failed. Please check your credentials and try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
