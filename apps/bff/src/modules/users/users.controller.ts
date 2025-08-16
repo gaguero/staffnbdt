@@ -23,7 +23,7 @@ import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { Audit } from '../../shared/decorators/audit.decorator';
 import { ApiResponse as CustomApiResponse } from '../../shared/dto/response.dto';
-import { CreateUserDto, UpdateUserDto, UserFilterDto, ChangeRoleDto, ChangeStatusDto, BulkImportDto, CsvImportDto } from './dto';
+import { CreateUserDto, UpdateUserDto, UserFilterDto, ChangeRoleDto, ChangeStatusDto, ChangeDepartmentDto, BulkImportDto, CsvImportDto } from './dto';
 import { User, Role } from '@prisma/client';
 import { memoryStorage } from 'multer';
 
@@ -170,6 +170,39 @@ export class UsersController {
   ) {
     const user = await this.usersService.changeStatus(id, changeStatusDto, currentUser);
     return CustomApiResponse.success(user, 'User status changed successfully');
+  }
+
+  @Patch(':id/department')
+  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Audit({ action: 'CHANGE_DEPARTMENT', entity: 'User' })
+  @ApiOperation({ summary: 'Change user department (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User department changed successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin required' })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid department change' })
+  async changeDepartment(
+    @Param('id') id: string,
+    @Body() changeDepartmentDto: ChangeDepartmentDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    const user = await this.usersService.changeDepartment(id, changeDepartmentDto, currentUser);
+    return CustomApiResponse.success(user, 'User department changed successfully');
+  }
+
+  @Delete(':id/department')
+  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Audit({ action: 'REMOVE_FROM_DEPARTMENT', entity: 'User' })
+  @ApiOperation({ summary: 'Remove user from department (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User removed from department successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin required' })
+  @ApiResponse({ status: 400, description: 'Bad request - Cannot remove user from department' })
+  async removeFromDepartment(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    const user = await this.usersService.removeFromDepartment(id, currentUser);
+    return CustomApiResponse.success(user, 'User removed from department successfully');
   }
 
   @Get(':id/permissions')

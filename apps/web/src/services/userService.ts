@@ -170,6 +170,16 @@ class UserService {
     const response = await api.post(`/users/${userId}/resend`);
     return response.data;
   }
+
+  async changeUserDepartment(userId: string, departmentId: string) {
+    const response = await api.patch(`/users/${userId}/department`, { departmentId });
+    return response.data;
+  }
+
+  async removeFromDepartment(userId: string) {
+    const response = await api.delete(`/users/${userId}/department`);
+    return response.data;
+  }
 }
 
 export const userService = new UserService();

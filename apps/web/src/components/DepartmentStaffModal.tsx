@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { userService } from '../services/userService';
+import ChangeDepartmentModal from './ChangeDepartmentModal';
+import UserDetailsModal from './UserDetailsModal';
 
 interface User {
   id: string;
@@ -32,6 +34,9 @@ const DepartmentStaffModal: React.FC<DepartmentStaffModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [hoveredUserId, setHoveredUserId] = useState<string | null>(null);
+  const [showChangeDepartment, setShowChangeDepartment] = useState(false);
+  const [showUserDetails, setShowUserDetails] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     if (isOpen && departmentId) {
@@ -81,13 +86,27 @@ const DepartmentStaffModal: React.FC<DepartmentStaffModalProps> = ({
     setFilteredStaff(filtered);
   };
 
-  const handleStatusToggle = async (userId: string, isActive: boolean) => {
+  const handleRemoveFromDepartment = async (user: User) => {
     try {
-      await userService.changeUserStatus(userId, !isActive);
+      await userService.removeFromDepartment(user.id);
       await loadDepartmentStaff();
     } catch (error) {
-      console.error('Failed to change user status:', error);
+      console.error('Failed to remove user from department:', error);
     }
+  };
+
+  const handleChangeDepartment = (user: User) => {
+    setSelectedUser(user);
+    setShowChangeDepartment(true);
+  };
+
+  const handleViewDetails = (user: User) => {
+    setSelectedUser(user);
+    setShowUserDetails(true);
+  };
+
+  const handleModalSuccess = () => {
+    loadDepartmentStaff();
   };
 
   const activeCount = staff.filter(user => !user.deletedAt).length;
@@ -222,20 +241,25 @@ const DepartmentStaffModal: React.FC<DepartmentStaffModalProps> = ({
                     {hoveredUserId === user.id && (
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => handleStatusToggle(user.id, !user.deletedAt)}
-                          className={`px-3 py-1 rounded text-xs font-medium ${
-                            user.deletedAt
-                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                              : 'bg-red-100 text-red-800 hover:bg-red-200'
-                          }`}
+                          onClick={() => handleRemoveFromDepartment(user)}
+                          className="px-3 py-1 rounded text-xs font-medium bg-orange-100 text-orange-800 hover:bg-orange-200"
+                          title="Remove from department"
                         >
-                          {user.deletedAt ? 'Activate' : 'Deactivate'}
+                          Remove
                         </button>
                         <button
-                          onClick={() => console.log('View profile for', user.id)}
-                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200"
+                          onClick={() => handleChangeDepartment(user)}
+                          className="px-3 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200"
+                          title="Change department"
                         >
-                          View Profile
+                          Change Dept
+                        </button>
+                        <button
+                          onClick={() => handleViewDetails(user)}
+                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200"
+                          title="View user details"
+                        >
+                          View Details
                         </button>
                       </div>
                     )}
@@ -258,6 +282,25 @@ const DepartmentStaffModal: React.FC<DepartmentStaffModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Change Department Modal */}
+      {selectedUser && (
+        <ChangeDepartmentModal
+          isOpen={showChangeDepartment}
+          onClose={() => setShowChangeDepartment(false)}
+          user={selectedUser}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {/* User Details Modal */}
+      {selectedUser && (
+        <UserDetailsModal
+          isOpen={showUserDetails}
+          onClose={() => setShowUserDetails(false)}
+          user={selectedUser}
+        />
+      )}
     </div>
   );
 };

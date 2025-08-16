@@ -3,7 +3,7 @@ import { PrismaService } from '../../shared/database/prisma.service';
 import { AuditService } from '../../shared/audit/audit.service';
 import { PaginatedResponse } from '../../shared/dto/pagination.dto';
 import { applySoftDelete } from '../../shared/utils/soft-delete';
-import { CreateUserDto, UpdateUserDto, UserFilterDto, ChangeRoleDto, ChangeStatusDto, BulkImportDto, BulkImportResultDto, BulkImportUserDto } from './dto';
+import { CreateUserDto, UpdateUserDto, UserFilterDto, ChangeRoleDto, ChangeStatusDto, ChangeDepartmentDto, BulkImportDto, BulkImportResultDto, BulkImportUserDto } from './dto';
 import { UserWithDepartment, UserStats, UserPermissions } from './interfaces';
 import { User, Role } from '@prisma/client';
 
@@ -526,6 +526,158 @@ export class UsersService {
       id,
       { isActive: currentStatus },
       { isActive: changeStatusDto.isActive },
+    );
+
+    return updatedUser;
+  }
+
+  async changeDepartment(
+    id: string,
+    changeDepartmentDto: ChangeDepartmentDto,
+    currentUser: User,
+  ): Promise<UserWithDepartment> {
+    // Only superadmins and department admins can change departments
+    if (currentUser.role !== Role.SUPERADMIN && currentUser.role !== Role.DEPARTMENT_ADMIN) {
+      throw new ForbiddenException('Only admins can change user departments');
+    }
+
+    // Cannot change own department
+    if (currentUser.id === id) {
+      throw new BadRequestException('Cannot change your own department');
+    }
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: { id }, // Don't apply soft delete filter here to find inactive users
+      include: {
+        department: true,
+      },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Department admin can only change departments for users in their department
+    if (
+      currentUser.role === Role.DEPARTMENT_ADMIN &&
+      existingUser.departmentId !== currentUser.departmentId
+    ) {
+      throw new ForbiddenException('Cannot change department for users from other departments');
+    }
+
+    // Validate new department exists
+    const newDepartment = await this.prisma.department.findUnique({
+      where: { id: changeDepartmentDto.departmentId },
+    });
+
+    if (!newDepartment) {
+      throw new BadRequestException('Target department not found');
+    }
+
+    // Validate department assignment rules
+    this.validateDepartmentAssignment(existingUser.role, changeDepartmentDto.departmentId);
+
+    // Prevent orphaning departments - check if this is the last admin of a department
+    if (
+      existingUser.role === Role.DEPARTMENT_ADMIN &&
+      existingUser.departmentId
+    ) {
+      const hasOtherAdmins = await this.validateDepartmentAdminRemoval(
+        existingUser.departmentId,
+        id,
+      );
+
+      if (!hasOtherAdmins) {
+        throw new BadRequestException(
+          'Cannot change department - this user is the last admin of their current department',
+        );
+      }
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        departmentId: changeDepartmentDto.departmentId,
+      },
+      include: {
+        department: true,
+      },
+    });
+
+    // Log department change
+    await this.auditService.logUpdate(
+      currentUser.id,
+      'User',
+      id,
+      { departmentId: existingUser.departmentId },
+      { departmentId: updatedUser.departmentId },
+    );
+
+    return updatedUser;
+  }
+
+  async removeFromDepartment(
+    id: string,
+    currentUser: User,
+  ): Promise<UserWithDepartment> {
+    // Only superadmins and department admins can remove from departments
+    if (currentUser.role !== Role.SUPERADMIN && currentUser.role !== Role.DEPARTMENT_ADMIN) {
+      throw new ForbiddenException('Only admins can remove users from departments');
+    }
+
+    // Cannot change own department
+    if (currentUser.id === id) {
+      throw new BadRequestException('Cannot remove yourself from a department');
+    }
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: { id }, // Don't apply soft delete filter here to find inactive users
+      include: {
+        department: true,
+      },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Department admin can only remove users from their department
+    if (
+      currentUser.role === Role.DEPARTMENT_ADMIN &&
+      existingUser.departmentId !== currentUser.departmentId
+    ) {
+      throw new ForbiddenException('Cannot remove users from other departments');
+    }
+
+    // Cannot remove users with roles that require departments
+    if (existingUser.role === Role.STAFF || existingUser.role === Role.DEPARTMENT_ADMIN) {
+      throw new BadRequestException(
+        `Cannot remove ${existingUser.role.replace('_', ' ')} users from departments - they must belong to a department`,
+      );
+    }
+
+    // If user doesn't have a department, nothing to do
+    if (!existingUser.departmentId) {
+      return existingUser;
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        departmentId: null,
+      },
+      include: {
+        department: true,
+      },
+    });
+
+    // Log department removal
+    await this.auditService.logUpdate(
+      currentUser.id,
+      'User',
+      id,
+      { departmentId: existingUser.departmentId },
+      { departmentId: null },
     );
 
     return updatedUser;
