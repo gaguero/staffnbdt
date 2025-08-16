@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { userService } from '../services/userService';
 import ChangeDepartmentModal from './ChangeDepartmentModal';
 import UserDetailsModal from './UserDetailsModal';
+import EditUserModal from './EditUserModal';
 
 interface User {
   id: string;
@@ -36,6 +37,7 @@ const DepartmentStaffModal: React.FC<DepartmentStaffModalProps> = ({
   const [hoveredUserId, setHoveredUserId] = useState<string | null>(null);
   const [showChangeDepartment, setShowChangeDepartment] = useState(false);
   const [showUserDetails, setShowUserDetails] = useState(false);
+  const [showEditUser, setShowEditUser] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -86,14 +88,6 @@ const DepartmentStaffModal: React.FC<DepartmentStaffModalProps> = ({
     setFilteredStaff(filtered);
   };
 
-  const handleRemoveFromDepartment = async (user: User) => {
-    try {
-      await userService.removeFromDepartment(user.id);
-      await loadDepartmentStaff();
-    } catch (error) {
-      console.error('Failed to remove user from department:', error);
-    }
-  };
 
   const handleChangeDepartment = (user: User) => {
     setSelectedUser(user);
@@ -103,6 +97,12 @@ const DepartmentStaffModal: React.FC<DepartmentStaffModalProps> = ({
   const handleViewDetails = (user: User) => {
     setSelectedUser(user);
     setShowUserDetails(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setShowUserDetails(false);
+    setShowEditUser(true);
   };
 
   const handleModalSuccess = () => {
@@ -241,13 +241,6 @@ const DepartmentStaffModal: React.FC<DepartmentStaffModalProps> = ({
                     {hoveredUserId === user.id && (
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => handleRemoveFromDepartment(user)}
-                          className="px-3 py-1 rounded text-xs font-medium bg-orange-100 text-orange-800 hover:bg-orange-200"
-                          title="Remove from department"
-                        >
-                          Remove
-                        </button>
-                        <button
                           onClick={() => handleChangeDepartment(user)}
                           className="px-3 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200"
                           title="Change department"
@@ -299,6 +292,17 @@ const DepartmentStaffModal: React.FC<DepartmentStaffModalProps> = ({
           isOpen={showUserDetails}
           onClose={() => setShowUserDetails(false)}
           user={selectedUser}
+          onEdit={handleEditUser}
+        />
+      )}
+
+      {/* Edit User Modal */}
+      {selectedUser && (
+        <EditUserModal
+          isOpen={showEditUser}
+          onClose={() => setShowEditUser(false)}
+          user={selectedUser}
+          onSuccess={handleModalSuccess}
         />
       )}
     </div>

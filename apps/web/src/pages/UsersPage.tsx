@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import UserDetailsModal from '../components/UserDetailsModal';
+import EditUserModal from '../components/EditUserModal';
 import { userService, User as UserType, UserFilter, BulkImportResult } from '../services/userService';
 import { departmentService, Department } from '../services/departmentService';
 
@@ -162,6 +164,17 @@ const UsersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditUser = (user: UserType) => {
+    setSelectedUser(user);
+    setShowViewUser(false);
+    setShowEditUser(true);
+  };
+
+  const handleUserModalSuccess = () => {
+    loadUsers();
+    setShowEditUser(false);
   };
 
   const handleBulkImport = async (e: React.FormEvent) => {
@@ -567,7 +580,7 @@ const UsersPage: React.FC = () => {
                               setShowViewUser(true);
                             }}
                           >
-                            View
+                            View Details
                           </button>
                         </div>
                       </td>
@@ -737,186 +750,6 @@ const UsersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Edit User Modal */}
-      {showEditUser && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-screen overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-charcoal">Edit User</h3>
-                <button
-                  onClick={() => {
-                    setShowEditUser(false);
-                    setSelectedUser(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                  disabled={loading}
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                try {
-                  setLoading(true);
-                  
-                  const userData: any = {
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    email: formData.email,
-                    role: formData.role,
-                  };
-
-                  // Only add fields that have values
-                  if (formData.departmentId?.trim()) {
-                    userData.departmentId = formData.departmentId;
-                  }
-                  if (formData.position?.trim()) {
-                    userData.position = formData.position;
-                  }
-                  if (formData.phoneNumber?.trim()) {
-                    userData.phoneNumber = formData.phoneNumber;
-                  }
-                  if (formData.hireDate?.trim()) {
-                    userData.hireDate = formData.hireDate;
-                  }
-
-                  await userService.updateUser(selectedUser.id, userData);
-                  await loadUsers();
-                  setShowEditUser(false);
-                  setSelectedUser(null);
-                } catch (error: any) {
-                  console.error('Failed to update user:', error);
-                  alert(error.message || 'Failed to update user');
-                } finally {
-                  setLoading(false);
-                }
-              }} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="form-label">First Name</label>
-                    <input
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="form-input"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Last Name</label>
-                    <input
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="form-input"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="form-label">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="form-input"
-                    required
-                    disabled
-                  />
-                </div>
-                
-                {currentUser?.role === 'SUPERADMIN' && (
-                  <div>
-                    <label className="form-label">Role</label>
-                    <select
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                      className="form-input"
-                    >
-                      <option value="STAFF">Staff</option>
-                      <option value="DEPARTMENT_ADMIN">Department Admin</option>
-                      <option value="SUPERADMIN">Super Admin</option>
-                    </select>
-                  </div>
-                )}
-                
-                {formData.role !== 'SUPERADMIN' && (
-                  <div>
-                    <label className="form-label">Department *</label>
-                    <select
-                      value={formData.departmentId}
-                      onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                      className="form-input"
-                      required
-                    >
-                      <option value="">Select Department</option>
-                      {departments.map(dept => (
-                        <option key={dept.id} value={dept.id}>
-                          {'  '.repeat(dept.level || 0)}{dept.name}
-                          {dept.parent ? ` (under ${dept.parent.name})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                
-                <div>
-                  <label className="form-label">Position</label>
-                  <input
-                    type="text"
-                    value={formData.position}
-                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                    className="form-input"
-                    placeholder="e.g. Software Engineer"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="form-label">Phone Number</label>
-                    <input
-                      type="tel"
-                      value={formData.phoneNumber}
-                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                      className="form-input"
-                      placeholder="+1234567890"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Hire Date</label>
-                    <input
-                      type="date"
-                      value={formData.hireDate}
-                      onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
-                      className="form-input"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex gap-4 pt-4">
-                  <button type="submit" className="btn btn-primary flex-1" disabled={loading}>
-                    {loading ? <LoadingSpinner size="sm" /> : 'Update User'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowEditUser(false);
-                      setSelectedUser(null);
-                    }}
-                    className="btn btn-secondary flex-1"
-                    disabled={loading}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bulk Import Modal */}
       {showBulkImport && (
@@ -1032,99 +865,30 @@ const UsersPage: React.FC = () => {
         </div>
       )}
 
-      {/* View User Modal */}
-      {showViewUser && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-screen overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-charcoal">
-                  User Details
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowViewUser(false);
-                    setSelectedUser(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
+      {/* User Details Modal */}
+      {selectedUser && (
+        <UserDetailsModal
+          isOpen={showViewUser}
+          onClose={() => {
+            setShowViewUser(false);
+            setSelectedUser(null);
+          }}
+          user={selectedUser}
+          onEdit={handleEditUser}
+        />
+      )}
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">First Name</label>
-                    <p className="text-charcoal">{selectedUser.firstName}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Last Name</label>
-                    <p className="text-charcoal">{selectedUser.lastName}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Email</label>
-                  <p className="text-charcoal">{selectedUser.email}</p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Role</label>
-                  <div className="mt-1">{getRoleBadge(selectedUser.role)}</div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Department</label>
-                  <div className="mt-1">{getDepartmentHierarchy(selectedUser)}</div>
-                </div>
-
-                {selectedUser.position && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Position</label>
-                    <p className="text-charcoal">{selectedUser.position}</p>
-                  </div>
-                )}
-
-                {selectedUser.phoneNumber && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Phone Number</label>
-                    <p className="text-charcoal">{selectedUser.phoneNumber}</p>
-                  </div>
-                )}
-
-                {selectedUser.hireDate && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Hire Date</label>
-                    <p className="text-charcoal">{new Date(selectedUser.hireDate).toLocaleDateString()}</p>
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Status</label>
-                  <div className="mt-1">{getStatusBadge(selectedUser)}</div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Created</label>
-                  <p className="text-gray-500 text-sm">{formatDate(selectedUser.createdAt)}</p>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <button
-                  onClick={() => {
-                    setShowViewUser(false);
-                    setSelectedUser(null);
-                  }}
-                  className="btn btn-secondary w-full"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Edit User Modal */}
+      {selectedUser && (
+        <EditUserModal
+          isOpen={showEditUser}
+          onClose={() => {
+            setShowEditUser(false);
+            setSelectedUser(null);
+          }}
+          user={selectedUser}
+          onSuccess={handleUserModalSuccess}
+        />
       )}
     </div>
   );

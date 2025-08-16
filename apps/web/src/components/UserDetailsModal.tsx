@@ -27,12 +27,14 @@ interface UserDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: User;
+  onEdit?: (user: User) => void;
 }
 
 const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
   isOpen,
   onClose,
   user,
+  onEdit,
 }) => {
   if (!isOpen) return null;
 
@@ -210,7 +212,17 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex justify-end">
+          <div className="flex justify-between">
+            <div>
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(user)}
+                  className="px-4 py-2 bg-warm-gold text-white rounded-md hover:bg-opacity-90 font-medium"
+                >
+                  Edit User
+                </button>
+              )}
+            </div>
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-600 hover:text-gray-800"
