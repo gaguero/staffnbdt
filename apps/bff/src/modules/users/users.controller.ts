@@ -254,9 +254,15 @@ export class UsersController {
   @ApiResponse({ status: 403, description: 'Forbidden - Superadmin required' })
   async getImportTemplate(@Res() res: Response) {
     const template = [
+      '# User Import Template - Delete this comment line before importing',
+      '# Required fields: Email, FirstName, LastName, Role',
+      '# Role must be one of: STAFF, DEPARTMENT_ADMIN, SUPERADMIN',
+      '# DepartmentId is required for STAFF and DEPARTMENT_ADMIN roles',
+      '# Date format: YYYY-MM-DD',
       'Email,FirstName,LastName,Role,DepartmentId,Position,PhoneNumber,HireDate',
       'john.doe@example.com,John,Doe,STAFF,dept-id-123,Software Engineer,+1234567890,2024-01-15',
       'jane.smith@example.com,Jane,Smith,DEPARTMENT_ADMIN,dept-id-456,HR Manager,+0987654321,2023-06-01',
+      'admin@example.com,Super,Admin,SUPERADMIN,,System Administrator,,2023-01-01',
     ].join('\n');
 
     res.setHeader('Content-Type', 'text/csv');

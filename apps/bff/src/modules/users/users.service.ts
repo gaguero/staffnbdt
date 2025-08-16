@@ -619,10 +619,12 @@ export class UsersService {
    * Check if a user can be assigned to a department based on their role
    */
   private validateDepartmentAssignment(role: Role, departmentId?: string): void {
-    if (role === Role.DEPARTMENT_ADMIN && !departmentId) {
-      throw new BadRequestException('Department Admins must be assigned to a department');
+    // STAFF and DEPARTMENT_ADMIN must have a department
+    if ((role === Role.STAFF || role === Role.DEPARTMENT_ADMIN) && !departmentId) {
+      throw new BadRequestException(`${role.replace('_', ' ')} users must be assigned to a department`);
     }
 
+    // SUPERADMIN cannot have a department
     if (role === Role.SUPERADMIN && departmentId) {
       throw new BadRequestException('Superadmins cannot be assigned to a specific department');
     }
@@ -763,26 +765,80 @@ export class UsersService {
     sendInvitations: boolean,
     currentUser: User,
   ): Promise<BulkImportResultDto> {
-    // Parse CSV data
-    const lines = csvData.split('\n').filter(line => line.trim());
+    // Parse CSV data, filtering out empty lines and comment lines
+    const lines = csvData.split('\n')
+      .filter(line => line.trim() && !line.trim().startsWith('#'));
+    
     if (lines.length < 2) {
       throw new BadRequestException('CSV file must contain headers and at least one data row');
     }
 
-    // Extract headers
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const requiredHeaders = ['email', 'firstname', 'lastname', 'role'];
-    const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+    // Extract headers and normalize them (case-insensitive)
+    const rawHeaders = lines[0].split(',').map(h => h.trim());
+    const headers = rawHeaders.map(h => h.toLowerCase());
     
-    if (missingHeaders.length > 0) {
-      throw new BadRequestException(`Missing required headers: ${missingHeaders.join(', ')}`);
-    }
-
-    // Map headers to indices
+    // Create header map for case-insensitive lookup
     const headerMap = new Map<string, number>();
     headers.forEach((header, index) => {
-      headerMap.set(header, index);
+      // Normalize common variations
+      const normalized = header
+        .toLowerCase()
+        .replace(/\s+/g, '') // Remove spaces
+        .replace('_', ''); // Remove underscores
+      
+      headerMap.set(normalized, index);
+      headerMap.set(header, index); // Also keep original lowercase
     });
+
+    // Define required headers with multiple accepted variations
+    const requiredHeaderVariations = {
+      email: ['email', 'emailaddress', 'e-mail'],
+      firstname: ['firstname', 'first_name', 'fname', 'first'],
+      lastname: ['lastname', 'last_name', 'lname', 'last'],
+      role: ['role', 'userrole', 'user_role'],
+    };
+
+    // Check for required headers
+    const missingHeaders: string[] = [];
+    const foundHeaders = new Map<string, number>();
+    
+    for (const [key, variations] of Object.entries(requiredHeaderVariations)) {
+      let found = false;
+      for (const variation of variations) {
+        const normalized = variation.replace(/\s+/g, '').replace('_', '');
+        if (headerMap.has(normalized)) {
+          foundHeaders.set(key, headerMap.get(normalized)!);
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        missingHeaders.push(key);
+      }
+    }
+    
+    if (missingHeaders.length > 0) {
+      throw new BadRequestException(`Missing required headers: ${missingHeaders.join(', ')}. Headers found: ${rawHeaders.join(', ')}`);
+    }
+
+    // Optional headers with variations
+    const optionalHeaderVariations = {
+      departmentid: ['departmentid', 'department_id', 'department', 'dept'],
+      position: ['position', 'jobtitle', 'job_title', 'title'],
+      phonenumber: ['phonenumber', 'phone_number', 'phone', 'mobile'],
+      hiredate: ['hiredate', 'hire_date', 'startdate', 'start_date'],
+    };
+
+    // Find optional headers
+    for (const [key, variations] of Object.entries(optionalHeaderVariations)) {
+      for (const variation of variations) {
+        const normalized = variation.replace(/\s+/g, '').replace('_', '');
+        if (headerMap.has(normalized)) {
+          foundHeaders.set(key, headerMap.get(normalized)!);
+          break;
+        }
+      }
+    }
 
     // Parse data rows
     const users: BulkImportUserDto[] = [];
@@ -794,20 +850,20 @@ export class UsersService {
       }
 
       const user: BulkImportUserDto = {
-        email: values[headerMap.get('email')!],
-        firstName: values[headerMap.get('firstname')!],
-        lastName: values[headerMap.get('lastname')!],
-        role: values[headerMap.get('role')!] as Role,
-        departmentId: values[headerMap.get('departmentid')] || undefined,
-        position: values[headerMap.get('position')] || undefined,
-        phoneNumber: values[headerMap.get('phonenumber')] || undefined,
-        hireDate: values[headerMap.get('hiredate')] || undefined,
+        email: values[foundHeaders.get('email')!],
+        firstName: values[foundHeaders.get('firstname')!],
+        lastName: values[foundHeaders.get('lastname')!],
+        role: values[foundHeaders.get('role')!].toUpperCase() as Role,
+        departmentId: foundHeaders.has('departmentid') ? values[foundHeaders.get('departmentid')!] || undefined : undefined,
+        position: foundHeaders.has('position') ? values[foundHeaders.get('position')!] || undefined : undefined,
+        phoneNumber: foundHeaders.has('phonenumber') ? values[foundHeaders.get('phonenumber')!] || undefined : undefined,
+        hireDate: foundHeaders.has('hiredate') ? values[foundHeaders.get('hiredate')!] || undefined : undefined,
         sendInvitation: sendInvitations,
       };
 
-      // Validate role
+      // Validate role (case-insensitive)
       if (!Object.values(Role).includes(user.role)) {
-        throw new BadRequestException(`Row ${i + 1}: Invalid role "${user.role}"`);
+        throw new BadRequestException(`Row ${i + 1}: Invalid role "${user.role}". Valid roles are: ${Object.values(Role).join(', ')}`);
       }
 
       users.push(user);
