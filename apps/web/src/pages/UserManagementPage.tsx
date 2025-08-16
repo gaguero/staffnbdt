@@ -2,11 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { userService, User, UserFilter, BulkImportResult } from '../services/userService';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { useLanguage } from '../contexts/LanguageContext';
 
 const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
-  const { t } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -31,7 +29,7 @@ const UserManagementPage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
-    role: 'STAFF' as const,
+    role: 'STAFF' as 'STAFF' | 'DEPARTMENT_ADMIN' | 'SUPERADMIN',
     departmentId: '',
     position: '',
     phoneNumber: '',
@@ -106,20 +104,6 @@ const UserManagementPage: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    
-    try {
-      setLoading(true);
-      await userService.deleteUser(userId);
-      await loadUsers();
-    } catch (error) {
-      console.error('Failed to delete user:', error);
-      alert('Failed to delete user');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleRestoreUser = async (userId: string) => {
     try {
@@ -134,18 +118,6 @@ const UserManagementPage: React.FC = () => {
     }
   };
 
-  const handleChangeRole = async (userId: string, role: string) => {
-    try {
-      setLoading(true);
-      await userService.changeUserRole(userId, role);
-      await loadUsers();
-    } catch (error) {
-      console.error('Failed to change role:', error);
-      alert('Failed to change role');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleChangeStatus = async (userId: string, isActive: boolean) => {
     try {

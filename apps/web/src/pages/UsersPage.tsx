@@ -16,12 +16,12 @@ const UsersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [filter, setFilter] = useState<UserFilter>({
+  const [filter] = useState<UserFilter>({
     search: '',
     role: '',
     departmentId: '',
   });
-  const [stats, setStats] = useState({
+  const [, setStats] = useState({
     total: 0,
     byRole: {} as Record<string, number>,
     byDepartment: {} as Record<string, number>,
@@ -30,7 +30,7 @@ const UsersPage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
-    role: 'STAFF' as const,
+    role: 'STAFF' as 'STAFF' | 'DEPARTMENT_ADMIN' | 'SUPERADMIN',
     departmentId: '',
     position: '',
     phoneNumber: '',
@@ -113,20 +113,6 @@ const UsersPage: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    
-    try {
-      setLoading(true);
-      await userService.deleteUser(userId);
-      await loadUsers();
-    } catch (error) {
-      console.error('Failed to delete user:', error);
-      alert('Failed to delete user');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleChangeStatus = async (userId: string, isActive: boolean) => {
     try {
@@ -603,6 +589,100 @@ const UsersPage: React.FC = () => {
                     onClick={() => setShowAddUser(false)}
                     className="btn btn-secondary flex-1"
                     disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditUser && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Edit User</h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  setLoading(true);
+                  await userService.updateUser(selectedUser.id, formData);
+                  await loadUsers();
+                  setShowEditUser(false);
+                  setSelectedUser(null);
+                } catch (error) {
+                  console.error('Failed to update user:', error);
+                  alert('Failed to update user');
+                } finally {
+                  setLoading(false);
+                }
+              }} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="First Name"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    className="form-input"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Last Name"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="form-input"
+                  required
+                  disabled
+                />
+                {currentUser?.role === 'SUPERADMIN' && (
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                    className="form-input"
+                  >
+                    <option value="STAFF">Staff</option>
+                    <option value="DEPARTMENT_ADMIN">Department Admin</option>
+                    <option value="SUPERADMIN">Super Admin</option>
+                  </select>
+                )}
+                <input
+                  type="text"
+                  placeholder="Position"
+                  value={formData.position}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                  className="form-input"
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone Number"
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  className="form-input"
+                />
+                <div className="flex gap-4">
+                  <button type="submit" className="btn btn-primary flex-1" disabled={loading}>
+                    {loading ? <LoadingSpinner size="sm" /> : 'Update User'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditUser(false);
+                      setSelectedUser(null);
+                    }}
+                    className="btn btn-secondary flex-1"
                   >
                     Cancel
                   </button>
