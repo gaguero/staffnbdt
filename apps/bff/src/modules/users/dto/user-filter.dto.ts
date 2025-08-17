@@ -23,6 +23,10 @@ export class UserFilterDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Include inactive (soft-deleted) users' })
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') return value.toLowerCase() === 'true';
+    return false;
+  })
   includeInactive?: boolean;
 }
