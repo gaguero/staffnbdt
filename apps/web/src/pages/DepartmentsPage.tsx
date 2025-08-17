@@ -289,7 +289,7 @@ const DepartmentsPage: React.FC = () => {
     return departments.map(department => (
       <div key={department.id}>
         <div 
-          className={`flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-gray-100 ${
+          className={`group flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-gray-100 ${
             level === 0 ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-gray-50'
           }`}
           style={{ marginLeft: `${level * 24}px` }}
@@ -328,17 +328,61 @@ const DepartmentsPage: React.FC = () => {
             </div>
           </div>
           
-          {/* Department stats */}
-          <div className="text-right">
-            <div className="text-xs text-gray-500 space-y-1">
-              {department._count?.children && department._count.children > 0 && (
-                <p>🏢 {department._count.children} sub-dept{department._count.children > 1 ? 's' : ''}</p>
+          {/* Department stats and actions */}
+          <div className="flex items-center gap-3">
+            {/* Stats */}
+            <div className="text-right">
+              <div className="text-xs text-gray-500 space-y-1">
+                {department._count?.children && department._count.children > 0 && (
+                  <p>🏢 {department._count.children} sub-dept{department._count.children > 1 ? 's' : ''}</p>
+                )}
+                {department.budget && (
+                  <p className="text-green-600 font-medium">
+                    {formatCurrency(typeof department.budget === 'string' ? parseFloat(department.budget) : department.budget)}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {user?.role === 'SUPERADMIN' && (
+                <>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(department);
+                    }}
+                    className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded transition-colors"
+                    disabled={isLoading}
+                    title="Edit Department"
+                  >
+                    ✏️
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(department.id);
+                    }}
+                    className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded transition-colors"
+                    disabled={isLoading}
+                    title="Delete Department"
+                  >
+                    🗑️
+                  </button>
+                </>
               )}
-              {department.budget && (
-                <p className="text-green-600 font-medium">
-                  {formatCurrency(typeof department.budget === 'string' ? parseFloat(department.budget) : department.budget)}
-                </p>
-              )}
+              <button 
+                className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDepartmentForStaff(department);
+                  setShowStaffModal(true);
+                }}
+                title={`View Staff (${getEmployeeCount(department)})`}
+              >
+                👥 {getEmployeeCount(department)}
+              </button>
             </div>
           </div>
         </div>
@@ -468,9 +512,37 @@ const DepartmentsPage: React.FC = () => {
               <div className="card-body">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-charcoal mb-2">
-                      {department.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-semibold text-charcoal">
+                        {department.name}
+                      </h3>
+                      
+                      {/* Hierarchy Level Badge */}
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        department.level === 0 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : department.level === 1 
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-warm-gold bg-opacity-20 text-warm-gold'
+                      }`}>
+                        Level {department.level}
+                      </span>
+
+                      {/* Parent Department Badge */}
+                      {department.parent && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                          under {department.parent.name}
+                        </span>
+                      )}
+
+                      {/* Sub-departments Count Badge */}
+                      {department._count?.children && department._count.children > 0 && (
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                          {department._count.children} sub-dept{department._count.children > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                    
                     <p className="text-sm text-gray-600 mb-3">
                       {department.description}
                     </p>
