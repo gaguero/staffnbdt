@@ -2,7 +2,6 @@ import { IsString, IsDateString, IsInt, IsEnum, IsDecimal, IsOptional } from 'cl
 import { Transform, Type } from 'class-transformer';
 
 export enum ReservationStatus {
-  PENDING = 'PENDING',
   CONFIRMED = 'CONFIRMED',
   CHECKED_IN = 'CHECKED_IN',
   CHECKED_OUT = 'CHECKED_OUT',
@@ -20,6 +19,10 @@ export class CreateReservationDto {
   @IsString()
   unitId: string;
 
+  @IsOptional()
+  @IsString()
+  reservationNumber?: string;
+
   @IsDateString()
   checkInDate: string;
 
@@ -28,7 +31,7 @@ export class CreateReservationDto {
 
   @IsOptional()
   @IsEnum(ReservationStatus)
-  status?: ReservationStatus = ReservationStatus.PENDING;
+  status?: ReservationStatus = ReservationStatus.CONFIRMED;
 
   @IsInt()
   @Type(() => Number)

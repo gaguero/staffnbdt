@@ -11,7 +11,7 @@ export class GuestsService {
     if (createGuestDto.email) {
       const existingGuest = await this.prisma.guest.findFirst({
         where: {
-          organizationId: createGuestDto.organizationId,
+          propertyId: createGuestDto.propertyId,
           email: createGuestDto.email,
         },
       });
@@ -31,7 +31,7 @@ export class GuestsService {
           : null,
       },
       include: {
-        organization: {
+        property: {
           select: {
             id: true,
             name: true,
@@ -51,8 +51,8 @@ export class GuestsService {
       deletedAt: null,
     };
 
-    if (filters?.organizationId) {
-      where.organizationId = filters.organizationId;
+    if (filters?.propertyId) {
+      where.propertyId = filters.propertyId;
     }
 
     if (filters?.documentType) {
@@ -68,7 +68,7 @@ export class GuestsService {
         { firstName: { contains: filters.search, mode: 'insensitive' } },
         { lastName: { contains: filters.search, mode: 'insensitive' } },
         { email: { contains: filters.search, mode: 'insensitive' } },
-        { phone: { contains: filters.search, mode: 'insensitive' } },
+        { phoneNumber: { contains: filters.search, mode: 'insensitive' } },
         { loyaltyNumber: { contains: filters.search, mode: 'insensitive' } },
       ];
     }
@@ -76,7 +76,7 @@ export class GuestsService {
     return this.prisma.guest.findMany({
       where,
       include: {
-        organization: {
+        property: {
           select: {
             id: true,
             name: true,
@@ -102,7 +102,7 @@ export class GuestsService {
         deletedAt: null,
       },
       include: {
-        organization: {
+        property: {
           select: {
             id: true,
             name: true,
@@ -151,7 +151,7 @@ export class GuestsService {
     if (updateGuestDto.email) {
       const existingGuest = await this.prisma.guest.findFirst({
         where: {
-          organizationId: updateGuestDto.organizationId,
+          propertyId: updateGuestDto.propertyId,
           email: updateGuestDto.email,
           id: { not: id },
         },
@@ -173,7 +173,7 @@ export class GuestsService {
           : undefined,
       },
       include: {
-        organization: {
+        property: {
           select: {
             id: true,
             name: true,
@@ -241,20 +241,19 @@ export class GuestsService {
     });
   }
 
-  async searchGuests(query: string, organizationId?: string) {
+  async searchGuests(query: string, propertyId?: string) {
     const where: any = {
       deletedAt: null,
       OR: [
         { firstName: { contains: query, mode: 'insensitive' } },
         { lastName: { contains: query, mode: 'insensitive' } },
         { email: { contains: query, mode: 'insensitive' } },
-        { phone: { contains: query, mode: 'insensitive' } },
-        { loyaltyNumber: { contains: query, mode: 'insensitive' } },
+        { phoneNumber: { contains: query, mode: 'insensitive' } },
       ],
     };
 
-    if (organizationId) {
-      where.organizationId = organizationId;
+    if (propertyId) {
+      where.propertyId = propertyId;
     }
 
     return this.prisma.guest.findMany({
@@ -264,8 +263,7 @@ export class GuestsService {
         firstName: true,
         lastName: true,
         email: true,
-        phone: true,
-        loyaltyNumber: true,
+        phoneNumber: true,
       },
       orderBy: [
         { lastName: 'asc' },

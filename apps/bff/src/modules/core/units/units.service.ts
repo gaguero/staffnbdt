@@ -22,7 +22,9 @@ export class UnitsService {
     }
 
     return this.prisma.unit.create({
-      data: createUnitDto,
+      data: {
+        ...createUnitDto,
+      },
       include: {
         property: {
           select: {
@@ -168,7 +170,9 @@ export class UnitsService {
 
     return this.prisma.unit.update({
       where: { id },
-      data: updateUnitDto,
+      data: {
+        ...updateUnitDto,
+      },
       include: {
         property: {
           select: {
@@ -190,7 +194,7 @@ export class UnitsService {
 
     return this.prisma.unit.update({
       where: { id },
-      data: { status },
+      data: { status: status as any },
       include: {
         property: {
           select: {

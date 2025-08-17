@@ -24,7 +24,7 @@ export class ReservationsService {
       where: {
         unitId: createReservationDto.unitId,
         status: {
-          in: ['CONFIRMED', 'CHECKED_IN', 'PENDING'],
+          in: ['CONFIRMED', 'CHECKED_IN'],
         },
         OR: [
           {
@@ -53,9 +53,14 @@ export class ReservationsService {
       throw new BadRequestException('Unit is not available for the selected dates');
     }
 
+    // Generate reservation number if not provided
+    const reservationNumber = createReservationDto.reservationNumber || 
+      `RES-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
     return this.prisma.reservation.create({
       data: {
         ...createReservationDto,
+        reservationNumber,
         checkInDate,
         checkOutDate,
       },
@@ -66,7 +71,7 @@ export class ReservationsService {
             firstName: true,
             lastName: true,
             email: true,
-            phone: true,
+            phoneNumber: true,
           },
         },
         unit: {
@@ -81,13 +86,6 @@ export class ReservationsService {
           select: {
             id: true,
             name: true,
-          },
-        },
-        createdByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
           },
         },
       },
@@ -167,7 +165,7 @@ export class ReservationsService {
             firstName: true,
             lastName: true,
             email: true,
-            phone: true,
+            phoneNumber: true,
           },
         },
         unit: {
@@ -237,13 +235,6 @@ export class ReservationsService {
             },
           },
         },
-        createdByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
     });
 
@@ -285,7 +276,7 @@ export class ReservationsService {
             firstName: true,
             lastName: true,
             email: true,
-            phone: true,
+            phoneNumber: true,
           },
         },
         unit: {
@@ -311,7 +302,7 @@ export class ReservationsService {
 
     return this.prisma.reservation.update({
       where: { id },
-      data: { status },
+      data: { status: status as any },
       include: {
         guest: {
           select: {
@@ -360,7 +351,7 @@ export class ReservationsService {
       where: { id },
       data: { 
         status: 'CHECKED_IN',
-        actualCheckInDate: new Date(),
+        checkedInAt: new Date(),
         checkedInBy,
       },
       include: {
@@ -388,7 +379,7 @@ export class ReservationsService {
       where: { id },
       data: { 
         status: 'CHECKED_OUT',
-        actualCheckOutDate: new Date(),
+        checkedOutAt: new Date(),
         checkedOutBy,
       },
       include: {
@@ -434,7 +425,7 @@ export class ReservationsService {
             id: true,
             firstName: true,
             lastName: true,
-            phone: true,
+            phoneNumber: true,
           },
         },
         unit: {
@@ -471,7 +462,7 @@ export class ReservationsService {
             id: true,
             firstName: true,
             lastName: true,
-            phone: true,
+            phoneNumber: true,
           },
         },
         unit: {
