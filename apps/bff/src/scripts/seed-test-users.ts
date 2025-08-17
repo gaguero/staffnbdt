@@ -43,10 +43,11 @@ async function seedTestUsers() {
           data: {
             name: 'Test Department',
             description: 'Test department for development',
-          location: 'Test Location',
-          propertyId: property.id
-        }
-      });
+            location: 'Test Location',
+            propertyId: property.id
+          }
+        });
+      }
 
       // Create test users
       const users = [

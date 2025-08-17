@@ -64,6 +64,12 @@ model Property {
   invitations    Invitation[]
   auditLogs      AuditLog[]
   
+  // Core platform relations
+  units          Unit[]
+  guests         Guest[]
+  reservations   Reservation[]
+  tasks          Task[]
+  
   @@unique([organizationId, slug])
   @@index([organizationId])
   @@index([isActive])
@@ -149,6 +155,11 @@ model User {
   invitationsAccepted Invitation[] @relation("AcceptedBy")
   managedDepartments Department[] @relation("DepartmentManager")
   
+  // Task relations
+  assignedTasks    Task[]
+  createdTasks     Task[]       @relation("CreatedTasks")
+  completedTasks   Task[]       @relation("CompletedTasks")
+  
   @@index([organizationId])
   @@index([propertyId])
   @@index([departmentId])
@@ -184,6 +195,7 @@ model Department {
   documents   Document[]
   invitations Invitation[]
   trainingSessions TrainingSession[]
+  tasks       Task[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   
@@ -432,4 +444,233 @@ model AuditLog {
   @@index([userId])
   @@index([entity, entityId])
   @@index([createdAt])
+}
+
+// Core Platform Models for Hotel Operations
+
+model Unit {
+  id           String        @id @default(cuid())
+  propertyId   String
+  property     Property      @relation(fields: [propertyId], references: [id])
+  unitNumber   String
+  unitType     UnitType      @default(STANDARD)
+  building     String?
+  floor        Int?
+  bedrooms     Int           @default(1)
+  bathrooms    Int           @default(1)
+  maxOccupancy Int           @default(2)
+  size         Decimal?      @db.Decimal(8, 2) // Square feet/meters
+  amenities    String[]      // WiFi, AC, Balcony, etc.
+  status       UnitStatus    @default(AVAILABLE)
+  isActive     Boolean       @default(true)
+  description  String?
+  notes        String?
+  dailyRate    Decimal?      @db.Decimal(10, 2)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+  
+  reservations Reservation[]
+  tasks        Task[]        @relation("UnitTasks")
+  
+  @@unique([propertyId, unitNumber])
+  @@index([propertyId])
+  @@index([status])
+  @@index([isActive])
+  @@index([building, floor])
+}
+
+enum UnitType {
+  STANDARD
+  DELUXE
+  SUITE
+  PRESIDENTIAL
+  FAMILY
+  ACCESSIBLE
+  STUDIO
+  APARTMENT
+  VILLA
+  OTHER
+}
+
+enum UnitStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  CLEANING
+  OUT_OF_ORDER
+  RESERVED
+}
+
+model Guest {
+  id              String        @id @default(cuid())
+  propertyId      String
+  property        Property      @relation(fields: [propertyId], references: [id])
+  firstName       String
+  lastName        String
+  email           String?
+  phoneNumber     String?
+  nationality     String?
+  dateOfBirth     DateTime?
+  passportNumber  String?
+  idNumber        String?
+  address         Json?         // Structured address object
+  preferences     Json?         // Dietary, room preferences, etc.
+  vipStatus       VipStatus     @default(STANDARD)
+  notes           String?
+  blacklisted     Boolean       @default(false)
+  blacklistReason String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+  
+  reservations    Reservation[]
+  
+  @@index([propertyId])
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([vipStatus])
+  @@index([blacklisted])
+}
+
+enum VipStatus {
+  STANDARD
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+model Reservation {
+  id             String            @id @default(cuid())
+  propertyId     String
+  property       Property          @relation(fields: [propertyId], references: [id])
+  unitId         String
+  unit           Unit              @relation(fields: [unitId], references: [id])
+  guestId        String
+  guest          Guest             @relation(fields: [guestId], references: [id])
+  reservationNumber String         @unique
+  checkInDate    DateTime
+  checkOutDate   DateTime
+  adults         Int               @default(1)
+  children       Int               @default(0)
+  status         ReservationStatus @default(CONFIRMED)
+  totalAmount    Decimal           @db.Decimal(10, 2)
+  paidAmount     Decimal           @default(0) @db.Decimal(10, 2)
+  currency       String            @default("USD")
+  paymentStatus  PaymentStatus     @default(PENDING)
+  paymentMethod  String?
+  specialRequests String?
+  notes          String?
+  source         String?           // Booking.com, Direct, etc.
+  confirmationCode String?
+  checkedInAt    DateTime?
+  checkedOutAt   DateTime?
+  checkedInBy    String?           // User ID
+  checkedOutBy   String?           // User ID
+  cancelledAt    DateTime?
+  cancelledBy    String?           // User ID
+  cancellationReason String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  
+  tasks          Task[]            @relation("ReservationTasks")
+  
+  @@index([propertyId])
+  @@index([unitId])
+  @@index([guestId])
+  @@index([status])
+  @@index([checkInDate, checkOutDate])
+  @@index([reservationNumber])
+  @@index([paymentStatus])
+}
+
+enum ReservationStatus {
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+  CANCELLED
+}
+
+model Task {
+  id               String       @id @default(cuid())
+  propertyId       String
+  property         Property     @relation(fields: [propertyId], references: [id])
+  title            String
+  description      String?
+  taskType         TaskType
+  priority         TaskPriority @default(MEDIUM)
+  status           TaskStatus   @default(PENDING)
+  assignedToId     String?
+  assignedTo       User?        @relation(fields: [assignedToId], references: [id])
+  departmentId     String?
+  department       Department?  @relation(fields: [departmentId], references: [id])
+  relatedEntity    String?      // unit, reservation, guest, etc.
+  relatedId        String?      // ID of related entity
+  unitId           String?      // Direct relation to unit
+  unit             Unit?        @relation("UnitTasks", fields: [unitId], references: [id])
+  reservationId    String?      // Direct relation to reservation
+  reservation      Reservation? @relation("ReservationTasks", fields: [reservationId], references: [id])
+  dueDate          DateTime?
+  completedAt      DateTime?
+  completedBy      String?      // User ID
+  completedByUser  User?        @relation("CompletedTasks", fields: [completedBy], references: [id])
+  estimatedTime    Int?         // Minutes
+  actualTime       Int?         // Minutes
+  attachments      String[]     // File URLs
+  notes            String?
+  createdBy        String
+  createdByUser    User         @relation("CreatedTasks", fields: [createdBy], references: [id])
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  
+  @@index([propertyId])
+  @@index([taskType])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedToId])
+  @@index([departmentId])
+  @@index([dueDate])
+  @@index([unitId])
+  @@index([reservationId])
+  @@index([relatedEntity, relatedId])
+}
+
+enum TaskType {
+  MAINTENANCE
+  HOUSEKEEPING
+  FRONT_DESK
+  GUEST_REQUEST
+  INSPECTION
+  REPAIR
+  PREVENTIVE
+  CLEANING
+  CHECKIN
+  CHECKOUT
+  OTHER
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
 }
