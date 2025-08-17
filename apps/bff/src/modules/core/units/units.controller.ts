@@ -10,9 +10,9 @@ import {
   UseGuards,
   Put,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../shared/guards/roles.guard';
+import { Roles } from '../../../shared/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { UnitsService } from './units.service';
 import { CreateUnitDto, UpdateUnitDto, UnitFilterDto } from './dto';

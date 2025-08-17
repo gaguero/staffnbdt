@@ -65,6 +65,7 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
 
     // Feature modules
     AuthModule,
+    CoreModule,
     UsersModule,
     DepartmentsModule,
     DocumentsModule,

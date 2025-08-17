@@ -31,17 +31,18 @@ async function seedTestUsers() {
       console.log('Creating test users...');
 
       // Create a test department first
-      const department = await prisma.department.upsert({
+      let department = await prisma.department.findFirst({
         where: { 
-          propertyId_name: {
-            propertyId: property.id,
-            name: 'Test Department'
-          }
-        },
-        update: {},
-        create: {
-          name: 'Test Department',
-          description: 'Test department for development',
+          propertyId: property.id,
+          name: 'Test Department'
+        }
+      });
+
+      if (!department) {
+        department = await prisma.department.create({
+          data: {
+            name: 'Test Department',
+            description: 'Test department for development',
           location: 'Test Location',
           propertyId: property.id
         }
