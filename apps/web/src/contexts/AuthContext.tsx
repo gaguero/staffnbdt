@@ -10,6 +10,7 @@ interface User {
   role: 'SUPERADMIN' | 'DEPARTMENT_ADMIN' | 'STAFF';
   departmentId?: string;
   profilePhoto?: string;
+  phoneNumber?: string;
 }
 
 interface AuthContextType {
