@@ -678,6 +678,17 @@ export class DepartmentsService {
             level: true,
           },
         },
+        users: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+            position: true,
+          },
+        },
         _count: {
           select: {
             users: {

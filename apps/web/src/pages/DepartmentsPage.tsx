@@ -148,38 +148,47 @@ const DepartmentsPage: React.FC = () => {
     return matchesSearch;
   });
 
-  // Organize departments by hierarchy for card display
-  const organizeByHierarchy = (departments: Department[]): Department[] => {
-    const organized: Department[] = [];
+  // Organize departments by hierarchy for card display with sibling grouping
+  const organizeByHierarchy = (departments: Department[]) => {
+    const hierarchyGroups: Array<{
+      level: number;
+      parentId: string | null;
+      parentName?: string;
+      departments: Department[];
+    }> = [];
+    
     const processed = new Set<string>();
 
-    // Helper function to add department and its children recursively
-    const addDepartmentWithChildren = (dept: Department) => {
-      if (processed.has(dept.id)) return;
+    // Helper function to process departments at each level
+    const processLevel = (parentId: string | null, level: number, parentName?: string) => {
+      const depsAtLevel = departments.filter(d => 
+        d.parentId === parentId && !processed.has(d.id)
+      );
       
-      organized.push(dept);
-      processed.add(dept.id);
-      
-      // Find and add immediate children
-      const children = departments.filter(d => d.parentId === dept.id);
-      children.forEach(child => addDepartmentWithChildren(child));
+      if (depsAtLevel.length > 0) {
+        hierarchyGroups.push({
+          level,
+          parentId,
+          parentName,
+          departments: depsAtLevel
+        });
+        
+        depsAtLevel.forEach(dept => processed.add(dept.id));
+        
+        // Process children of each department
+        depsAtLevel.forEach(dept => {
+          processLevel(dept.id, level + 1, dept.name);
+        });
+      }
     };
 
     // Start with root departments (level 0)
-    const rootDepartments = departments.filter(d => d.level === 0);
-    rootDepartments.forEach(root => addDepartmentWithChildren(root));
+    processLevel(null, 0);
 
-    // Add any remaining departments that might not have been processed
-    departments.forEach(dept => {
-      if (!processed.has(dept.id)) {
-        organized.push(dept);
-      }
-    });
-
-    return organized;
+    return hierarchyGroups;
   };
 
-  const hierarchicalDepartments = organizeByHierarchy(filteredDepartments);
+  const hierarchyGroups = organizeByHierarchy(filteredDepartments);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -599,7 +608,7 @@ const DepartmentsPage: React.FC = () => {
           <LoadingSpinner size="lg" />
           <p className="text-gray-600 mt-4">Loading departments...</p>
         </div>
-      ) : hierarchicalDepartments.length === 0 ? (
+      ) : hierarchyGroups.length === 0 ? (
         <div className="card p-12 text-center">
           <div className="text-6xl mb-4">🏢</div>
           <h3 className="text-lg font-semibold text-charcoal mb-2">
@@ -613,148 +622,128 @@ const DepartmentsPage: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {hierarchicalDepartments.map(department => (
-            <div 
-              key={department.id} 
-              className="card hover:shadow-medium transition-shadow"
-              style={{ 
-                marginLeft: `${department.level * 24}px`,
-                maxWidth: `calc(100% - ${department.level * 24}px)`
-              }}
-            >
-              {/* Connection line for child departments */}
-              {department.level > 0 && (
-                <>
-                  {/* Vertical line */}
-                  <div 
-                    className="absolute border-l-2 border-gray-300"
-                    style={{
-                      left: `${department.level * 24 - 12}px`,
-                      top: '-16px',
-                      height: '32px',
-                      width: '1px'
-                    }}
-                  />
-                  {/* Horizontal line */}
-                  <div 
-                    className="absolute border-t-2 border-gray-300"
-                    style={{
-                      left: `${department.level * 24 - 12}px`,
-                      top: '16px',
-                      width: '12px',
-                      height: '1px'
-                    }}
-                  />
-                </>
+        <div className="space-y-6">
+          {hierarchyGroups.map((group, groupIndex) => (
+            <div key={`group-${group.level}-${group.parentId || 'root'}`} className="relative">
+              {/* Group header for child departments */}
+              {group.level > 0 && group.parentName && (
+                <div 
+                  className="mb-4 text-sm text-gray-600 font-medium"
+                  style={{ marginLeft: `${group.level * 20}px` }}
+                >
+                  <span className="text-gray-400">└─</span> Under {group.parentName}
+                </div>
               )}
               
-              <div className="card-body relative">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {/* Hierarchy indicator */}
-                      {department.level > 0 && (
-                        <span className="text-gray-400 text-sm mr-1">
-                          {'└─ '.repeat(1)}
-                        </span>
-                      )}
-                      
-                      <h3 className="text-lg font-semibold text-charcoal">
-                        {department.name}
-                      </h3>
-                      
-                      {/* Hierarchy Level Badge */}
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        department.level === 0 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : department.level === 1 
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-warm-gold bg-opacity-20 text-warm-gold'
-                      }`}>
-                        Level {department.level}
-                      </span>
-
-                      {/* Parent Department Badge */}
-                      {department.parent && (
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                          under {department.parent.name}
-                        </span>
-                      )}
-
-                      {/* Sub-departments Count Badge */}
-                      {department._count?.children && department._count.children > 0 && (
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
-                          {department._count.children} sub-dept{department._count.children > 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <p className="text-sm text-gray-600 mb-3">
-                      {department.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Manager:</span>
-                    <p className="font-medium text-charcoal">
-                      {getManagerName(department)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Employees:</span>
-                    <p className="font-medium text-charcoal">{getEmployeeCount(department)}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Location:</span>
-                    <p className="font-medium text-charcoal">{department.location || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Budget:</span>
-                    <p className="font-medium text-green-600">
-                      {department.budget ? formatCurrency(typeof department.budget === 'string' ? parseFloat(department.budget) : department.budget) : 'Not set'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-xs text-gray-500 mb-4">
-                  Created: {new Date(department.createdAt).toLocaleDateString()}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex space-x-2">
-                  {currentUser?.role === 'SUPERADMIN' && (
-                    <>
-                      <button 
-                        onClick={() => handleEdit(department)}
-                        className="btn btn-primary flex-1"
-                        disabled={isLoading}
-                      >
-                        <span className="mr-2">✏️</span>
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(department.id)}
-                        className="btn btn-error"
-                        disabled={isLoading}
-                      >
-                        <span>🗑️</span>
-                      </button>
-                    </>
-                  )}
-                  <button 
-                    className="btn btn-outline"
-                    onClick={() => {
-                      setSelectedDepartmentForStaff(department);
-                      setShowStaffModal(true);
-                    }}
+              {/* Grid of sibling departments */}
+              <div 
+                className={`grid gap-4 ${
+                  group.departments.length === 1 
+                    ? 'grid-cols-1 lg:grid-cols-2' 
+                    : group.departments.length === 2 
+                    ? 'grid-cols-1 md:grid-cols-2' 
+                    : group.departments.length === 3 
+                    ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+                    : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+                }`}
+                style={{ marginLeft: `${group.level * 20}px` }}
+              >
+                {group.departments.map(department => (
+                  <div 
+                    key={department.id} 
+                    className="card hover:shadow-medium transition-shadow"
                   >
-                    <span className="mr-2">👥</span>
-                    Staff ({getEmployeeCount(department)})
-                  </button>
-                </div>
+                    <div className="card-body">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <h3 className="text-lg font-semibold text-charcoal">
+                              {department.name}
+                            </h3>
+                            
+                            {/* Hierarchy Level Badge */}
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              department.level === 0 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : department.level === 1 
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-warm-gold bg-opacity-20 text-warm-gold'
+                            }`}>
+                              L{department.level}
+                            </span>
+
+                            {/* Sub-departments Count Badge */}
+                            {department._count?.children && department._count.children > 0 && (
+                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                                {department._count.children} sub
+                              </span>
+                            )}
+                          </div>
+                          
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                            {department.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-4 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Manager:</span>
+                          <span className="font-medium text-charcoal text-right">
+                            {getManagerName(department)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Staff:</span>
+                          <span className="font-medium text-charcoal">{getEmployeeCount(department)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Location:</span>
+                          <span className="font-medium text-charcoal text-right truncate">
+                            {department.location || 'Not set'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Budget:</span>
+                          <span className="font-medium text-green-600 text-right">
+                            {department.budget ? formatCurrency(typeof department.budget === 'string' ? parseFloat(department.budget) : department.budget) : 'Not set'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex space-x-1">
+                        {currentUser?.role === 'SUPERADMIN' && (
+                          <>
+                            <button 
+                              onClick={() => handleEdit(department)}
+                              className="btn btn-primary flex-1 text-xs py-2"
+                              disabled={isLoading}
+                            >
+                              ✏️
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(department.id)}
+                              className="btn btn-error text-xs py-2 px-3"
+                              disabled={isLoading}
+                            >
+                              🗑️
+                            </button>
+                          </>
+                        )}
+                        <button 
+                          className="btn btn-outline flex-1 text-xs py-2"
+                          onClick={() => {
+                            setSelectedDepartmentForStaff(department);
+                            setShowStaffModal(true);
+                          }}
+                        >
+                          👥 {getEmployeeCount(department)}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
