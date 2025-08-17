@@ -9,6 +9,7 @@ interface User {
   lastName: string;
   role: 'SUPERADMIN' | 'DEPARTMENT_ADMIN' | 'STAFF';
   departmentId?: string;
+  profilePhoto?: string;
 }
 
 interface AuthContextType {

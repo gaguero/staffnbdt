@@ -35,7 +35,7 @@ const IDDocumentUpload: React.FC<IDDocumentUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // File validation constants from shared types
-  const { MAX_SIZE: MAX_FILE_SIZE, ALLOWED_TYPES, ALLOWED_EXTENSIONS } = FILE_CONSTRAINTS.ID_DOCUMENT;
+  const { ALLOWED_EXTENSIONS } = FILE_CONSTRAINTS.ID_DOCUMENT;
 
   // Determine which user ID to use for API calls
   const targetUserId = showAdminControls && userId ? userId : user?.id;
@@ -132,7 +132,7 @@ const IDDocumentUpload: React.FC<IDDocumentUploadProps> = ({
         throw new Error(errorData.message || 'Failed to upload ID document');
       }
 
-      const result = await response.json();
+      await response.json();
       
       // Refresh document status after successful upload
       setTimeout(() => {

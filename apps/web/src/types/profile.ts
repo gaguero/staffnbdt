@@ -193,7 +193,7 @@ export const formatDate = (dateString: string): string => {
 };
 
 export const validateFile = (file: File, constraints: typeof FILE_CONSTRAINTS.ID_DOCUMENT | typeof FILE_CONSTRAINTS.PROFILE_PHOTO): string | null => {
-  if (!constraints.ALLOWED_TYPES.includes(file.type)) {
+  if (!(constraints.ALLOWED_TYPES as readonly string[]).includes(file.type)) {
     const allowedExtensions = constraints.ALLOWED_EXTENSIONS.join(', ');
     return `Please select a valid file type: ${allowedExtensions}`;
   }
