@@ -58,6 +58,13 @@ const DepartmentsPage: React.FC = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [selectedDepartmentForStaff, setSelectedDepartmentForStaff] = useState<Department | null>(null);
   const [expandedUserLists, setExpandedUserLists] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
+  const [deleteOptions, setDeleteOptions] = useState({
+    reassignUsersTo: '',
+    reassignChildrenTo: '',
+    action: 'reassign' // 'reassign' | 'unassign'
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -282,10 +289,34 @@ const DepartmentsPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this department? This action cannot be undone.')) {
-      return;
-    }
+    const dept = departments.find(d => d.id === id);
+    if (!dept) return;
 
+    // Check if department has children or users
+    const hasChildren = dept._count?.children && dept._count.children > 0;
+    const hasUsers = dept._count?.users && dept._count.users > 0;
+
+    if (hasChildren || hasUsers) {
+      // Show advanced deletion modal
+      setDepartmentToDelete(dept);
+      setDeleteOptions({
+        reassignUsersTo: '',
+        reassignChildrenTo: '',
+        action: 'reassign'
+      });
+      // Load available departments for reassignment
+      await loadAvailableParents(dept.id);
+      setShowDeleteModal(true);
+    } else {
+      // Simple deletion for empty departments
+      if (!confirm('Are you sure you want to delete this department? This action cannot be undone.')) {
+        return;
+      }
+      await performDeletion(id);
+    }
+  };
+
+  const performDeletion = async (id: string, options?: typeof deleteOptions) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -293,6 +324,8 @@ const DepartmentsPage: React.FC = () => {
       if (response.success) {
         await loadDepartments();
         await loadHierarchy();
+        setShowDeleteModal(false);
+        setDepartmentToDelete(null);
       } else {
         setError(response.message || 'Failed to delete department');
       }
@@ -473,18 +506,52 @@ const DepartmentsPage: React.FC = () => {
                         <button 
                           className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-1 py-0.5 rounded"
                           title="Edit User"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Navigate to user edit page or open modal
+                            window.open(`/users/${user.id}/edit`, '_blank');
+                          }}
                         >
                           ✏️
                         </button>
                         <button 
                           className="text-xs bg-green-100 hover:bg-green-200 text-green-700 px-1 py-0.5 rounded"
                           title="Change Department"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const newDeptId = prompt(`Change ${user.firstName} ${user.lastName}'s department. Enter new department ID (leave empty to remove from department):`);
+                            if (newDeptId !== null) {
+                              try {
+                                await userService.updateUser(user.id, { 
+                                  departmentId: newDeptId || null 
+                                });
+                                // Refresh the hierarchy
+                                await loadHierarchy();
+                                alert('Department changed successfully!');
+                              } catch (error) {
+                                alert('Failed to change department');
+                              }
+                            }
+                          }}
                         >
                           🔄
                         </button>
                         <button 
                           className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-1 py-0.5 rounded"
                           title="Deactivate User"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (confirm(`Are you sure you want to deactivate ${user.firstName} ${user.lastName}?`)) {
+                              try {
+                                await userService.deleteUser(user.id);
+                                // Refresh the hierarchy
+                                await loadHierarchy();
+                                alert('User deactivated successfully!');
+                              } catch (error) {
+                                alert('Failed to deactivate user');
+                              }
+                            }
+                          }}
                         >
                           🚫
                         </button>
@@ -493,6 +560,11 @@ const DepartmentsPage: React.FC = () => {
                     <button 
                       className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-1 py-0.5 rounded"
                       title="View Profile"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Navigate to user profile page
+                        window.open(`/users/${user.id}`, '_blank');
+                      }}
                     >
                       👁️
                     </button>
@@ -927,6 +999,156 @@ const DepartmentsPage: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Deletion Modal */}
+      {showDeleteModal && departmentToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full max-h-screen overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-charcoal">
+                  Delete Department: {departmentToDelete.name}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDepartmentToDelete(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                  disabled={isLoading}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <h4 className="font-medium text-yellow-800 mb-2">⚠️ This department contains:</h4>
+                  <ul className="text-sm text-yellow-700 space-y-1">
+                    {departmentToDelete._count?.users && departmentToDelete._count.users > 0 && (
+                      <li>• {departmentToDelete._count.users} user{departmentToDelete._count.users > 1 ? 's' : ''}</li>
+                    )}
+                    {departmentToDelete._count?.children && departmentToDelete._count.children > 0 && (
+                      <li>• {departmentToDelete._count.children} sub-department{departmentToDelete._count.children > 1 ? 's' : ''}</li>
+                    )}
+                  </ul>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      What should happen to the content?
+                    </label>
+                    <div className="space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          value="reassign"
+                          checked={deleteOptions.action === 'reassign'}
+                          onChange={(e) => setDeleteOptions(prev => ({...prev, action: e.target.value as 'reassign'}))}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">Reassign to other departments</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          value="unassign"
+                          checked={deleteOptions.action === 'unassign'}
+                          onChange={(e) => setDeleteOptions(prev => ({...prev, action: e.target.value as 'unassign'}))}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">Leave unassigned (remove department association)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {deleteOptions.action === 'reassign' && (
+                    <>
+                      {departmentToDelete._count?.users && departmentToDelete._count.users > 0 && (
+                        <div>
+                          <label className="form-label">Reassign Users To</label>
+                          <select
+                            value={deleteOptions.reassignUsersTo}
+                            onChange={(e) => setDeleteOptions(prev => ({...prev, reassignUsersTo: e.target.value}))}
+                            className="form-input"
+                          >
+                            <option value="">Select Department</option>
+                            {availableParents
+                              .filter(dept => dept.id !== departmentToDelete.id)
+                              .map(dept => (
+                              <option key={dept.id} value={dept.id}>
+                                {'  '.repeat(dept.level)}{dept.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {departmentToDelete._count?.children && departmentToDelete._count.children > 0 && (
+                        <div>
+                          <label className="form-label">Reassign Sub-departments To</label>
+                          <select
+                            value={deleteOptions.reassignChildrenTo}
+                            onChange={(e) => setDeleteOptions(prev => ({...prev, reassignChildrenTo: e.target.value}))}
+                            className="form-input"
+                          >
+                            <option value="">Select Parent Department (or leave empty for root level)</option>
+                            {availableParents
+                              .filter(dept => dept.id !== departmentToDelete.id)
+                              .map(dept => (
+                              <option key={dept.id} value={dept.id}>
+                                {'  '.repeat(dept.level)}{dept.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (deleteOptions.action === 'reassign') {
+                      const hasUsers = departmentToDelete._count?.users && departmentToDelete._count.users > 0;
+                      const hasChildren = departmentToDelete._count?.children && departmentToDelete._count.children > 0;
+                      
+                      if (hasUsers && !deleteOptions.reassignUsersTo) {
+                        alert('Please select a department to reassign users to');
+                        return;
+                      }
+                    }
+                    await performDeletion(departmentToDelete.id, deleteOptions);
+                  }}
+                  className="btn btn-error flex-1"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    'Delete Department'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDepartmentToDelete(null);
+                  }}
+                  className="btn btn-secondary flex-1"
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
