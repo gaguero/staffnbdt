@@ -76,8 +76,8 @@ export class UsersService {
     // When includeInactive is false, only include active users (exclude deleted)
     console.log('UsersService.findAll - includeInactive type:', typeof includeInactive, 'value:', includeInactive);
     
-    // Convert includeInactive to boolean if it's a string (from query params)
-    const includeDeleted = includeInactive === true || includeInactive === 'true';
+    // The Transform decorator in DTO should have already converted to boolean
+    const includeDeleted = includeInactive === true;
     console.log('UsersService.findAll - includeDeleted:', includeDeleted);
     
     const queryWithSoftDelete = applySoftDelete({ where: whereClause }, includeDeleted);
