@@ -11,13 +11,6 @@ interface ProfilePhotoUploadProps {
   onPhotoDelete?: () => void;
 }
 
-interface CropArea {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   currentPhotoUrl,
   onPhotoUpdate,
