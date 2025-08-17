@@ -14,6 +14,7 @@ interface User {
   hireDate?: string;
   deletedAt?: string | null;
   createdAt?: string;
+  updatedAt?: string;
   departmentId?: string;
   department?: {
     id: string;

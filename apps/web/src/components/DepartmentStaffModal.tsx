@@ -14,6 +14,8 @@ interface User {
   phoneNumber?: string;
   profilePhoto?: string;
   deletedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface DepartmentStaffModalProps {
