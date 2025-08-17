@@ -57,8 +57,6 @@ const DepartmentsPage: React.FC = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [selectedDepartmentForStaff, setSelectedDepartmentForStaff] = useState<Department | null>(null);
   const [expandedUserLists, setExpandedUserLists] = useState<Set<string>>(new Set());
-  const [selectedDepartments, setSelectedDepartments] = useState<Set<string>>(new Set());
-  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'hierarchy'>('cards');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
@@ -157,12 +155,7 @@ const DepartmentsPage: React.FC = () => {
                            `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
                          ));
     
-    // Selection filter
-    const matchesSelection = !showSelectedOnly || 
-                           selectedDepartments.has(dept.id) || 
-                           hasSelectedParent(dept);
-    
-    return matchesSearch && matchesSelection;
+    return matchesSearch;
   });
 
   // Organize departments by hierarchy for card display with sibling grouping
@@ -245,12 +238,7 @@ const DepartmentsPage: React.FC = () => {
                            `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
                          ));
     
-    // Selection filter
-    const matchesSelection = !showSelectedOnly || 
-                           selectedDepartments.has(dept.id) || 
-                           hasSelectedParent(dept);
-    
-    return matchesSearch && matchesSelection;
+    return matchesSearch;
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -410,47 +398,6 @@ const DepartmentsPage: React.FC = () => {
     });
   };
 
-  const toggleDepartmentSelection = (departmentId: string) => {
-    setSelectedDepartments(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(departmentId)) {
-        // Remove department and its children
-        newSet.delete(departmentId);
-        // Remove all children too
-        const removeChildren = (deptId: string) => {
-          departments.filter(d => d.parentId === deptId).forEach(child => {
-            newSet.delete(child.id);
-            removeChildren(child.id);
-          });
-        };
-        removeChildren(departmentId);
-      } else {
-        // Add department and its children
-        newSet.add(departmentId);
-        // Add all children too
-        const addChildren = (deptId: string) => {
-          departments.filter(d => d.parentId === deptId).forEach(child => {
-            newSet.add(child.id);
-            addChildren(child.id);
-          });
-        };
-        addChildren(departmentId);
-      }
-      return newSet;
-    });
-  };
-
-  const clearSelection = () => {
-    setSelectedDepartments(new Set());
-    setShowSelectedOnly(false);
-  };
-
-  const hasSelectedParent = (dept: Department): boolean => {
-    if (!dept.parentId) return false;
-    if (selectedDepartments.has(dept.parentId)) return true;
-    const parent = departments.find(d => d.id === dept.parentId);
-    return parent ? hasSelectedParent(parent) : false;
-  };
 
   const getEmployeeCount = (department: Department) => {
     return department._count?.users || 0;
@@ -475,23 +422,13 @@ const DepartmentsPage: React.FC = () => {
     return departments.map(department => (
       <div key={department.id}>
         <div 
-          className={`group flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-gray-100 relative ${
+          className={`group flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-gray-100 ${
             level === 0 ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-gray-50'
-          } ${selectedDepartments.has(department.id) ? 'ring-2 ring-blue-500' : ''}`}
+          }`}
           style={{ marginLeft: `${level * 24}px` }}
         >
-          {/* Selection Checkbox */}
-          <div className="absolute top-2 right-2 z-10">
-            <input
-              type="checkbox"
-              checked={selectedDepartments.has(department.id)}
-              onChange={() => toggleDepartmentSelection(department.id)}
-              className="form-checkbox text-blue-600"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
 
-          <div className="flex items-center space-x-3 flex-1 pr-8">
+          <div className="flex items-center space-x-3 flex-1">
             {/* Tree connector */}
             {level > 0 && (
               <div className="text-gray-400 text-sm">
@@ -759,58 +696,30 @@ const DepartmentsPage: React.FC = () => {
             />
           </div>
 
-          {/* Controls Row */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            {/* Selection Controls */}
-            <div className="flex items-center gap-4">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={showSelectedOnly}
-                  onChange={(e) => setShowSelectedOnly(e.target.checked)}
-                  className="form-checkbox"
-                />
-                <span className="text-sm">Show Selected Only</span>
-              </label>
-              
+          {/* View Toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">View:</span>
+            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
               <button
-                onClick={clearSelection}
-                className="text-xs text-gray-600 hover:text-gray-800 underline"
-                disabled={selectedDepartments.size === 0}
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-1 text-sm ${
+                  viewMode === 'cards'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
               >
-                Clear Selection
+                📊 Cards
               </button>
-
-              <span className="text-xs text-gray-500">
-                {selectedDepartments.size > 0 && `${selectedDepartments.size} selected`}
-              </span>
-            </div>
-
-            {/* View Toggle */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">View:</span>
-              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setViewMode('cards')}
-                  className={`px-3 py-1 text-sm ${
-                    viewMode === 'cards'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  📊 Cards
-                </button>
-                <button
-                  onClick={() => setViewMode('hierarchy')}
-                  className={`px-3 py-1 text-sm ${
-                    viewMode === 'hierarchy'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  🌳 Hierarchy
-                </button>
-              </div>
+              <button
+                onClick={() => setViewMode('hierarchy')}
+                className={`px-3 py-1 text-sm ${
+                  viewMode === 'hierarchy'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                🌳 Hierarchy
+              </button>
             </div>
           </div>
         </div>
@@ -880,24 +789,12 @@ const DepartmentsPage: React.FC = () => {
                 {group.departments.map(department => (
                   <div 
                     key={department.id} 
-                    className={`card hover:shadow-medium transition-shadow relative ${
-                      selectedDepartments.has(department.id) ? 'ring-2 ring-blue-500' : ''
-                    }`}
+                    className="card hover:shadow-medium transition-shadow"
                   >
-                    {/* Selection Checkbox */}
-                    <div className="absolute top-3 right-3 z-10">
-                      <input
-                        type="checkbox"
-                        checked={selectedDepartments.has(department.id)}
-                        onChange={() => toggleDepartmentSelection(department.id)}
-                        className="form-checkbox text-blue-600"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
 
                     <div className="card-body">
                       <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1 pr-8">
+                        <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <h3 className="text-lg font-semibold text-charcoal">
                               {department.name}
