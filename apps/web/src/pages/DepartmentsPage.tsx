@@ -623,7 +623,7 @@ const DepartmentsPage: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {hierarchyGroups.map((group, groupIndex) => (
+          {hierarchyGroups.map((group) => (
             <div key={`group-${group.level}-${group.parentId || 'root'}`} className="relative">
               {/* Group header for child departments */}
               {group.level > 0 && group.parentName && (
