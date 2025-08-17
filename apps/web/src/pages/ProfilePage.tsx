@@ -1,30 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
 import IDDocumentUpload from '../components/IDDocumentUpload';
+import profileService, { Profile } from '../services/profileService';
+import toast from 'react-hot-toast';
 
 const ProfilePage: React.FC = () => {
   const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [activeTab, setActiveTab] = useState('personal');
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: '',
-    address: '',
-    emergencyContact: '',
-    emergencyPhone: ''
+    firstName: '',
+    lastName: '',
+    phoneNumber: '',
+    position: '',
+    emergencyContact: {
+      name: '',
+      phoneNumber: ''
+    }
   });
+
+  // Load profile data
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        setIsLoadingProfile(true);
+        const profileData = await profileService.getProfile();
+        setProfile(profileData);
+        
+        // Initialize form data with profile data
+        setFormData({
+          firstName: profileData.firstName || '',
+          lastName: profileData.lastName || '',
+          phoneNumber: profileData.phoneNumber || '',
+          position: profileData.position || '',
+          emergencyContact: {
+            name: profileData.emergencyContact?.primaryContact?.name || '',
+            phoneNumber: profileData.emergencyContact?.primaryContact?.phoneNumber || ''
+          }
+        });
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+        toast.error('Failed to load profile data');
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name.startsWith('emergencyContact.')) {
+      const field = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        emergencyContact: {
+          ...prev.emergencyContact,
+          [field]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,42 +79,84 @@ const ProfilePage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // TODO: API call to update profile
-      console.log('Updating profile:', formData);
+      // Update basic profile
+      const updateData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
+        position: formData.position,
+      };
+
+      const updatedProfile = await profileService.updateProfile(updateData);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Update emergency contacts if they were provided
+      if (formData.emergencyContact.name || formData.emergencyContact.phoneNumber) {
+        await profileService.updateEmergencyContacts({
+          primaryContact: {
+            name: formData.emergencyContact.name,
+            relationship: 'Emergency Contact',
+            phoneNumber: formData.emergencyContact.phoneNumber,
+          }
+        });
+      }
+
+      // Update local state
+      setProfile(updatedProfile);
       
-      // Update local user data
+      // Update auth context
       if (user) {
         updateUser({
           ...user,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email
+          firstName: updatedProfile.firstName,
+          lastName: updatedProfile.lastName,
+          phoneNumber: updatedProfile.phoneNumber,
         });
       }
       
       setIsEditing(false);
+      toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Failed to update profile:', error);
+      toast.error('Failed to update profile. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCancel = () => {
-    setFormData({
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
-      email: user?.email || '',
-      phone: '',
-      address: '',
-      emergencyContact: '',
-      emergencyPhone: ''
-    });
+    if (profile) {
+      setFormData({
+        firstName: profile.firstName || '',
+        lastName: profile.lastName || '',
+        phoneNumber: profile.phoneNumber || '',
+        position: profile.position || '',
+        emergencyContact: {
+          name: profile.emergencyContact?.primaryContact?.name || '',
+          phoneNumber: profile.emergencyContact?.primaryContact?.phoneNumber || ''
+        }
+      });
+    }
     setIsEditing(false);
   };
+
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading profile..." />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Profile not found</h2>
+          <p className="text-gray-600">Unable to load your profile data.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -78,15 +167,15 @@ const ProfilePage: React.FC = () => {
           <div className="flex items-start space-x-4">
             {/* Profile Avatar */}
             <div className="relative">
-              {user?.profilePhoto ? (
+              {profile.profilePhoto ? (
                 <img 
-                  src={user.profilePhoto} 
+                  src={profile.profilePhoto} 
                   alt="Profile" 
                   className="w-20 h-20 rounded-full object-cover border-4 border-white/20 shadow-lg"
                 />
               ) : (
                 <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-2xl font-bold border-4 border-white/20 shadow-lg">
-                  {user?.firstName?.[0]?.toUpperCase()}{user?.lastName?.[0]?.toUpperCase()}
+                  {profile.firstName?.[0]?.toUpperCase()}{profile.lastName?.[0]?.toUpperCase()}
                 </div>
               )}
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
@@ -97,12 +186,12 @@ const ProfilePage: React.FC = () => {
             {/* User Info */}
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold text-white mb-1 truncate">
-                {user?.firstName} {user?.lastName}
+                {profile.firstName} {profile.lastName}
               </h1>
-              <p className="text-white/80 text-sm mb-2 truncate">{user?.email}</p>
+              <p className="text-white/80 text-sm mb-2 truncate">{profile.email}</p>
               <div className="flex items-center space-x-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
-                  {user?.role.replace('_', ' ')}
+                  {profile.role.replace('_', ' ')}
                 </span>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-white backdrop-blur-sm">
                   ✓ Verificado
@@ -231,23 +320,20 @@ const ProfilePage: React.FC = () => {
                       <input
                         type="email"
                         name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-warm-gold focus:border-transparent transition-all ${
-                          !isEditing ? 'bg-gray-50' : 'bg-white'
-                        }`}
-                        disabled={!isEditing}
-                        required
+                        value={profile.email}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 bg-gray-50 cursor-not-allowed"
+                        disabled
                         placeholder="tu@email.com"
                       />
+                      <p className="text-xs text-gray-500">El correo electrónico no se puede cambiar</p>
                     </div>
 
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700">Teléfono</label>
                       <input
                         type="tel"
-                        name="phone"
-                        value={formData.phone}
+                        name="phoneNumber"
+                        value={formData.phoneNumber}
                         onChange={handleInputChange}
                         className={`w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-warm-gold focus:border-transparent transition-all ${
                           !isEditing ? 'bg-gray-50' : 'bg-white'
@@ -258,17 +344,17 @@ const ProfilePage: React.FC = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Dirección</label>
-                      <textarea
-                        name="address"
-                        value={formData.address}
+                      <label className="text-sm font-medium text-gray-700">Cargo/Posición</label>
+                      <input
+                        type="text"
+                        name="position"
+                        value={formData.position}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-warm-gold focus:border-transparent transition-all resize-none ${
+                        className={`w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-warm-gold focus:border-transparent transition-all ${
                           !isEditing ? 'bg-gray-50' : 'bg-white'
                         }`}
                         disabled={!isEditing}
-                        rows={3}
-                        placeholder="Tu dirección completa"
+                        placeholder="Tu cargo o posición"
                       />
                     </div>
 
@@ -282,8 +368,8 @@ const ProfilePage: React.FC = () => {
                           <label className="text-sm font-medium text-blue-800">Nombre del Contacto</label>
                           <input
                             type="text"
-                            name="emergencyContact"
-                            value={formData.emergencyContact}
+                            name="emergencyContact.name"
+                            value={formData.emergencyContact.name}
                             onChange={handleInputChange}
                             className={`w-full px-3 py-2 border border-blue-200 rounded-lg text-gray-900 placeholder-blue-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm ${
                               !isEditing ? 'bg-blue-50' : 'bg-white'
@@ -296,8 +382,8 @@ const ProfilePage: React.FC = () => {
                           <label className="text-sm font-medium text-blue-800">Teléfono de Emergencia</label>
                           <input
                             type="tel"
-                            name="emergencyPhone"
-                            value={formData.emergencyPhone}
+                            name="emergencyContact.phoneNumber"
+                            value={formData.emergencyContact.phoneNumber}
                             onChange={handleInputChange}
                             className={`w-full px-3 py-2 border border-blue-200 rounded-lg text-gray-900 placeholder-blue-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm ${
                               !isEditing ? 'bg-blue-50' : 'bg-white'
@@ -350,16 +436,28 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="p-6">
                 <ProfilePhotoUpload 
-                  currentPhotoUrl={user?.profilePhoto}
-                  onPhotoUpdate={(photoUrl) => {
+                  currentPhotoUrl={profile.profilePhoto}
+                  onPhotoUpdate={async (photoUrl) => {
+                    // Update local state
+                    setProfile(prev => prev ? { ...prev, profilePhoto: photoUrl } : null);
+                    
+                    // Update auth context
                     if (user) {
                       updateUser({ ...user, profilePhoto: photoUrl });
                     }
+                    
+                    toast.success('Profile photo updated successfully!');
                   }}
-                  onPhotoDelete={() => {
+                  onPhotoDelete={async () => {
+                    // Update local state
+                    setProfile(prev => prev ? { ...prev, profilePhoto: undefined } : null);
+                    
+                    // Update auth context  
                     if (user) {
                       updateUser({ ...user, profilePhoto: undefined });
                     }
+                    
+                    toast.success('Profile photo removed successfully!');
                   }}
                 />
               </div>

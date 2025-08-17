@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
+import profileService from '../services/profileService';
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl?: string;
