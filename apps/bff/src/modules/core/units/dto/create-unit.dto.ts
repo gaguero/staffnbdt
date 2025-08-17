@@ -21,7 +21,7 @@ export class CreateUnitDto {
 
   @IsOptional()
   @IsEnum(UnitStatus)
-  status?: UnitStatus = UnitStatus.AVAILABLE;
+  status?: UnitStatus;
 
   @IsOptional()
   @IsArray()
@@ -37,5 +37,5 @@ export class CreateUnitDto {
 
   @IsOptional()
   @IsBoolean()
-  isActive?: boolean = true;
+  isActive?: boolean;
 }

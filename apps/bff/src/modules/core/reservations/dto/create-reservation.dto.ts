@@ -24,7 +24,7 @@ export class CreateReservationDto {
 
   @IsOptional()
   @IsEnum(ReservationStatus)
-  status?: ReservationStatus = ReservationStatus.CONFIRMED;
+  status?: ReservationStatus;
 
   @IsInt()
   @Type(() => Number)
@@ -33,7 +33,7 @@ export class CreateReservationDto {
   @IsOptional()
   @IsInt()
   @Type(() => Number)
-  children?: number = 0;
+  children?: number;
 
   @IsDecimal()
   @Transform(({ value }) => parseFloat(value))
@@ -42,7 +42,7 @@ export class CreateReservationDto {
   @IsOptional()
   @IsDecimal()
   @Transform(({ value }) => parseFloat(value))
-  paidAmount?: number = 0;
+  paidAmount?: number;
 
   @IsOptional()
   @IsString()

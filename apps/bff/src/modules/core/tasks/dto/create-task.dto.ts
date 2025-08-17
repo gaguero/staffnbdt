@@ -17,11 +17,11 @@ export class CreateTaskDto {
 
   @IsOptional()
   @IsEnum(TaskPriority)
-  priority?: TaskPriority = TaskPriority.MEDIUM;
+  priority?: TaskPriority;
 
   @IsOptional()
   @IsEnum(TaskStatus)
-  status?: TaskStatus = TaskStatus.PENDING;
+  status?: TaskStatus;
 
   @IsOptional()
   @IsString()
