@@ -10,6 +10,8 @@ export interface UserWithDepartment extends User {
 
 export interface UserStats {
   total: number;
+  active: number;
+  inactive: number;
   byRole: Record<Role, number>;
   byDepartment: Record<string, number>;
 }

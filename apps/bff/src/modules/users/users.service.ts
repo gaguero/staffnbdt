@@ -344,29 +344,41 @@ export class UsersService {
       throw new ForbiddenException('Staff cannot access user statistics');
     }
 
-    const whereClause: any = applySoftDelete({ where: {} }).where || {};
+    // Base where clause for department scoping
+    let baseWhereClause: any = {};
     
     // Department admins only see their department
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
-      whereClause.departmentId = currentUser.departmentId;
+      baseWhereClause.departmentId = currentUser.departmentId;
     }
 
-    const [total, byRole, byDepartment] = await Promise.all([
-      this.prisma.user.count({ where: whereClause }),
+    // Get counts including all users (active + inactive) for total
+    const totalWhereClause = applySoftDelete({ where: baseWhereClause }, true).where || {};
+    
+    // Get counts excluding deleted users for active stats
+    const activeWhereClause = applySoftDelete({ where: baseWhereClause }, false).where || {};
+
+    const [total, active, byRole, byDepartment] = await Promise.all([
+      // Total count includes both active and inactive users
+      this.prisma.user.count({ where: totalWhereClause }),
+      // Active count excludes deleted users
+      this.prisma.user.count({ where: activeWhereClause }),
       this.prisma.user.groupBy({
         by: ['role'],
-        where: whereClause,
+        where: activeWhereClause, // Use active for role breakdown
         _count: true,
       }),
       this.prisma.user.groupBy({
         by: ['departmentId'],
-        where: whereClause,
+        where: activeWhereClause, // Use active for department breakdown
         _count: true,
       }),
     ]);
 
     return {
       total,
+      active,
+      inactive: total - active, // Calculate inactive count
       byRole: byRole.reduce((acc, item) => {
         acc[item.role] = item._count;
         return acc;
