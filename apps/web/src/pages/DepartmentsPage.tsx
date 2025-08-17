@@ -45,7 +45,7 @@ interface Department {
 }
 
 const DepartmentsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user: currentUser } = useAuth();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [hierarchyDepartments, setHierarchyDepartments] = useState<Department[]>([]);
   const [availableManagers, setAvailableManagers] = useState<any[]>([]);
@@ -57,6 +57,7 @@ const DepartmentsPage: React.FC = () => {
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [selectedDepartmentForStaff, setSelectedDepartmentForStaff] = useState<Department | null>(null);
+  const [expandedUserLists, setExpandedUserLists] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -146,6 +147,39 @@ const DepartmentsPage: React.FC = () => {
                          (dept.manager && `${dept.manager.firstName} ${dept.manager.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesSearch;
   });
+
+  // Organize departments by hierarchy for card display
+  const organizeByHierarchy = (departments: Department[]): Department[] => {
+    const organized: Department[] = [];
+    const processed = new Set<string>();
+
+    // Helper function to add department and its children recursively
+    const addDepartmentWithChildren = (dept: Department) => {
+      if (processed.has(dept.id)) return;
+      
+      organized.push(dept);
+      processed.add(dept.id);
+      
+      // Find and add immediate children
+      const children = departments.filter(d => d.parentId === dept.id);
+      children.forEach(child => addDepartmentWithChildren(child));
+    };
+
+    // Start with root departments (level 0)
+    const rootDepartments = departments.filter(d => d.level === 0);
+    rootDepartments.forEach(root => addDepartmentWithChildren(root));
+
+    // Add any remaining departments that might not have been processed
+    departments.forEach(dept => {
+      if (!processed.has(dept.id)) {
+        organized.push(dept);
+      }
+    });
+
+    return organized;
+  };
+
+  const hierarchicalDepartments = organizeByHierarchy(filteredDepartments);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -266,6 +300,18 @@ const DepartmentsPage: React.FC = () => {
     setShowAddDepartment(true);
   };
 
+  const toggleUserList = (departmentId: string) => {
+    setExpandedUserLists(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(departmentId)) {
+        newSet.delete(departmentId);
+      } else {
+        newSet.add(departmentId);
+      }
+      return newSet;
+    });
+  };
+
   const getEmployeeCount = (department: Department) => {
     return department._count?.users || 0;
   };
@@ -346,7 +392,7 @@ const DepartmentsPage: React.FC = () => {
 
             {/* Action buttons */}
             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              {user?.role === 'SUPERADMIN' && (
+              {currentUser?.role === 'SUPERADMIN' && (
                 <>
                   <button 
                     onClick={(e) => {
@@ -373,19 +419,80 @@ const DepartmentsPage: React.FC = () => {
                 </>
               )}
               <button 
-                className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors"
+                className={`text-xs px-2 py-1 rounded transition-colors ${
+                  expandedUserLists.has(department.id)
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedDepartmentForStaff(department);
-                  setShowStaffModal(true);
+                  toggleUserList(department.id);
                 }}
-                title={`View Staff (${getEmployeeCount(department)})`}
+                title={`${expandedUserLists.has(department.id) ? 'Hide' : 'Show'} Staff (${getEmployeeCount(department)})`}
               >
-                👥 {getEmployeeCount(department)}
+                {expandedUserLists.has(department.id) ? '👥 ▼' : '👥 ▶'} {getEmployeeCount(department)}
               </button>
             </div>
           </div>
         </div>
+        
+        {/* Expandable user list */}
+        {expandedUserLists.has(department.id) && department.users && department.users.length > 0 && (
+          <div 
+            className="ml-6 mt-2 p-3 bg-gray-50 rounded-lg border-l-2 border-blue-300"
+            style={{ marginLeft: `${(level + 1) * 24}px` }}
+          >
+            <h5 className="text-xs font-medium text-gray-700 mb-2">Staff Members:</h5>
+            <div className="space-y-1">
+              {department.users.map(user => (
+                <div 
+                  key={user.id} 
+                  className="group flex items-center justify-between py-1 px-2 hover:bg-white rounded text-sm"
+                >
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-800">{user.firstName} {user.lastName}</span>
+                    <span className="text-xs text-gray-500">({user.role})</span>
+                    {user.position && (
+                      <span className="text-xs text-gray-400">- {user.position}</span>
+                    )}
+                  </div>
+                  
+                  {/* Hover actions for each user */}
+                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {currentUser?.role === 'SUPERADMIN' && (
+                      <>
+                        <button 
+                          className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-1 py-0.5 rounded"
+                          title="Edit User"
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          className="text-xs bg-green-100 hover:bg-green-200 text-green-700 px-1 py-0.5 rounded"
+                          title="Change Department"
+                        >
+                          🔄
+                        </button>
+                        <button 
+                          className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-1 py-0.5 rounded"
+                          title="Deactivate User"
+                        >
+                          🚫
+                        </button>
+                      </>
+                    )}
+                    <button 
+                      className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-1 py-0.5 rounded"
+                      title="View Profile"
+                    >
+                      👁️
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Render children recursively */}
         {department.children && department.children.length > 0 && (
@@ -492,7 +599,7 @@ const DepartmentsPage: React.FC = () => {
           <LoadingSpinner size="lg" />
           <p className="text-gray-600 mt-4">Loading departments...</p>
         </div>
-      ) : filteredDepartments.length === 0 ? (
+      ) : hierarchicalDepartments.length === 0 ? (
         <div className="card p-12 text-center">
           <div className="text-6xl mb-4">🏢</div>
           <h3 className="text-lg font-semibold text-charcoal mb-2">
@@ -506,13 +613,53 @@ const DepartmentsPage: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredDepartments.map(department => (
-            <div key={department.id} className="card hover:shadow-medium transition-shadow">
-              <div className="card-body">
+        <div className="space-y-4">
+          {hierarchicalDepartments.map(department => (
+            <div 
+              key={department.id} 
+              className="card hover:shadow-medium transition-shadow"
+              style={{ 
+                marginLeft: `${department.level * 24}px`,
+                maxWidth: `calc(100% - ${department.level * 24}px)`
+              }}
+            >
+              {/* Connection line for child departments */}
+              {department.level > 0 && (
+                <>
+                  {/* Vertical line */}
+                  <div 
+                    className="absolute border-l-2 border-gray-300"
+                    style={{
+                      left: `${department.level * 24 - 12}px`,
+                      top: '-16px',
+                      height: '32px',
+                      width: '1px'
+                    }}
+                  />
+                  {/* Horizontal line */}
+                  <div 
+                    className="absolute border-t-2 border-gray-300"
+                    style={{
+                      left: `${department.level * 24 - 12}px`,
+                      top: '16px',
+                      width: '12px',
+                      height: '1px'
+                    }}
+                  />
+                </>
+              )}
+              
+              <div className="card-body relative">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
+                      {/* Hierarchy indicator */}
+                      {department.level > 0 && (
+                        <span className="text-gray-400 text-sm mr-1">
+                          {'└─ '.repeat(1)}
+                        </span>
+                      )}
+                      
                       <h3 className="text-lg font-semibold text-charcoal">
                         {department.name}
                       </h3>
@@ -578,7 +725,7 @@ const DepartmentsPage: React.FC = () => {
 
                 {/* Action Buttons */}
                 <div className="flex space-x-2">
-                  {user?.role === 'SUPERADMIN' && (
+                  {currentUser?.role === 'SUPERADMIN' && (
                     <>
                       <button 
                         onClick={() => handleEdit(department)}
