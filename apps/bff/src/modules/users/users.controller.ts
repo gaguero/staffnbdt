@@ -55,6 +55,7 @@ export class UsersController {
     @Query() filterDto: UserFilterDto,
     @CurrentUser() currentUser: User,
   ) {
+    console.log('UsersController.findAll - filterDto:', JSON.stringify(filterDto, null, 2));
     const result = await this.usersService.findAll(filterDto, currentUser);
     return CustomApiResponse.success(result, 'Users retrieved successfully');
   }
