@@ -891,29 +891,158 @@ All features will respect department boundaries:
 ### Session Progress Tracking
 Use this section to track work across development sessions:
 
-**Last Updated**: August 16, 2025
-**Current Task**: Implementing Department Hierarchy Feature
-**Next Steps**: Update DepartmentsService with hierarchy logic
+**Last Updated**: August 17, 2025
+**Current Task**: Implementing Complete User Management & Profile Features
+**Next Steps**: Create ProfilePhotoUpload component with drag & drop, crop, and validation
 **Blockers**: None
 
-#### Current TODO List - Department Hierarchy Implementation:
+#### Current TODO List - User Management Feature Implementation:
+
+**Phase 1: Profile Management Completion**
+- [ ] Create ProfilePhotoUpload.tsx component with drag & drop, crop, and validation
+- [ ] Create IDDocumentUpload.tsx component with secure upload and status display  
+- [ ] Create EmergencyContactsForm.tsx with dynamic contacts management
+- [ ] Update ProfilePage.tsx with complete profile fields and API integration
+
+**Phase 2: Admin Management Features**
+- [ ] Create VerificationQueue.tsx for admin ID document review
+- [ ] Create UserActivityLog.tsx for audit trail viewing
+- [ ] Create DepartmentStats.tsx dashboard for admin analytics
+- [ ] Enhance UsersPage.tsx with advanced filtering and invitation management
+
+**Phase 3: User Details & Modals Enhancement**
+- [ ] Update UserDetailsModal.tsx with complete profile display and tabs
+- [ ] Update EditUserModal.tsx with all profile fields and validation
+
+**Phase 4: Commercial Benefits Module**
+- [ ] Create Benefits module components (Grid, Card, Details, Filters, Admin)
+- [ ] Create benefitsService.ts with CRUD and filtering operations
+
+**Phase 5: Training Module Foundation**
+- [ ] Create Training module components (Dashboard, Card, Viewer, Quiz, Progress)
+- [ ] Create trainingService.ts with session and enrollment management
+
+**Phase 6: Security & Polish**
+- [ ] Add security enhancements (session timeout, role-based UI, validation)
+- [ ] Optimize for mobile responsiveness across all components
+- [ ] Improve UX with toasts, confirmations, tooltips, and loading states
+
+**Phase 7: Integration & Testing**
+- [ ] Connect all API endpoints and test integration
+- [ ] Deploy to Railway and test all features on production
+
+**Phase 8: Onboarding Wizard (Final)**
+- [ ] Create comprehensive OnboardingWizard.tsx (final phase)
+
+#### Recently Completed Department Hierarchy:
 - [x] Phase 1: Update Prisma schema for department hierarchy
 - [x] Phase 1: Create database migration for hierarchy  
 - [x] Phase 2: Update DTOs to include parentId field
-- [ ] Phase 2: Update DepartmentsService with hierarchy logic
-- [ ] Phase 2: Add new hierarchy endpoints to controller
-- [ ] Phase 3: Update frontend department service and interface
-- [ ] Phase 3: Update DepartmentsPage with hierarchy UI
-- [ ] Phase 3: Update UsersPage to show department hierarchy
-- [ ] Phase 4: Implement circular reference prevention
-- [ ] Phase 5: Add visual hierarchy indicators and tree view
-- [ ] Phase 6: Test hierarchy implementation on Railway
-- [ ] Fix issue: View button in Users table not working
-
-#### Recently Fixed Issues:
+- [x] Phase 2: Update DepartmentsService with hierarchy logic
+- [x] Phase 2: Add new hierarchy endpoints to controller
+- [x] Phase 3: Update frontend department service and interface
+- [x] Phase 3: Update DepartmentsPage with hierarchy UI
+- [x] Phase 3: Update UsersPage to show department hierarchy
 - [x] Department dropdown not showing options in Add/Edit User modals
 - [x] Manager loading error in Departments page
 - [x] Manager dropdown not populating in Add/Edit Department modals
+
+## Development Workflow (Updated: August 17, 2025)
+
+### Branch Strategy
+
+- **main**: Production branch (auto-deploys to Railway)
+- **dev**: Development integration branch for testing features together
+- **feature/***: Individual feature branches for isolated development
+
+### Local Development Setup
+
+1. **Work on feature branches** created from `dev`
+2. **Test locally** with development servers:
+   - Backend: `npm run dev:bff` (port 3000)
+   - Frontend: `npm run dev:web` (port 5173)
+3. **Merge to dev** after thorough local testing
+4. **Periodically merge dev to main** for Railway deployment
+
+### Feature Branch Naming Convention
+
+- `feature/profile-photo-upload` - Profile photo upload component
+- `feature/id-document-upload` - ID document upload and verification
+- `feature/emergency-contacts` - Emergency contacts management
+- `feature/verification-queue` - Admin ID verification dashboard
+- `feature/user-activity-log` - Audit trail viewing for admins
+- `feature/department-stats` - Department analytics dashboard
+- `feature/benefits-module` - Commercial benefits directory
+- `feature/training-module` - Training sessions and progress tracking
+
+### Testing Strategy
+
+1. **Local Testing**: Develop and test features on local development servers
+2. **Integration Testing**: Test feature combinations on `dev` branch locally
+3. **Production Testing**: Deploy to Railway from `main` for final validation
+
+### Environment Configuration
+
+#### Local Frontend (.env.local in apps/web/)
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+#### Local Backend (.env.local in apps/bff/)
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/staffnbdt_dev
+JWT_SECRET=local-dev-secret-change-in-production
+JWT_EXPIRES_IN=7d
+PORT=3000
+NODE_ENV=development
+```
+
+### Commit Message Conventions
+
+- `feat:` New features and components
+- `fix:` Bug fixes and corrections
+- `docs:` Documentation updates
+- `style:` Code formatting and style changes
+- `refactor:` Code refactoring without functionality changes
+- `test:` Test additions or modifications
+- `chore:` Build process, dependency updates, auxiliary tools
+
+### Development Commands
+
+```bash
+# Setup new feature
+git checkout dev
+git pull origin dev
+git checkout -b feature/new-feature-name
+
+# Local development
+cd apps/bff && npm run dev    # Start backend
+cd apps/web && npm run dev    # Start frontend
+
+# Testing and merging
+git add .
+git commit -m "feat: implement new feature"
+git checkout dev
+git merge feature/new-feature-name
+git push origin dev
+
+# Production deployment
+git checkout main
+git merge dev
+git push origin main  # Triggers Railway deployment
+```
+
+### Quality Checklist
+
+Before merging any feature:
+- [ ] Component works in local development
+- [ ] All TypeScript errors resolved
+- [ ] Console errors cleared
+- [ ] Mobile responsive design tested
+- [ ] API endpoints function correctly
+- [ ] Error handling implemented
+- [ ] Loading states added
+- [ ] Accessibility considerations met
 
 ## Deployment Checklist
 
