@@ -51,7 +51,6 @@ const DepartmentsPage: React.FC = () => {
   const [availableManagers, setAvailableManagers] = useState<any[]>([]);
   const [availableParents, setAvailableParents] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showAddDepartment, setShowAddDepartment] = useState(false);
   const [showEditDepartment, setShowEditDepartment] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
@@ -147,9 +146,6 @@ const DepartmentsPage: React.FC = () => {
     }
   };
 
-  const statuses = [
-    { value: 'all', label: 'All Departments' }
-  ];
 
   const filteredDepartments = departments.filter(dept => {
     // Enhanced search including all user names
