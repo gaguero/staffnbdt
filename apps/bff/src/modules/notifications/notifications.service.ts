@@ -18,21 +18,32 @@ export class NotificationsService {
       throw new ForbiddenException('Can only access your own notifications');
     }
 
+    // Scope notifications to the current user's property
+    const whereClause = { 
+      userId,
+      propertyId: currentUser.propertyId!
+    };
+
     const [notifications, total] = await Promise.all([
       this.prisma.notification.findMany({
-        where: { userId },
+        where: whereClause,
         orderBy: { createdAt: 'desc' },
         skip: offset,
         take: limit,
       }),
-      this.prisma.notification.count({ where: { userId } }),
+      this.prisma.notification.count({ where: whereClause }),
     ]);
 
     return new PaginatedResponse(notifications, total, limit, offset);
   }
 
   async markAsRead(id: string, currentUser: User): Promise<Notification> {
-    const notification = await this.prisma.notification.findUnique({ where: { id } });
+    const notification = await this.prisma.notification.findFirst({ 
+      where: { 
+        id,
+        propertyId: currentUser.propertyId!
+      }
+    });
     
     if (!notification) {
       throw new NotFoundException('Notification not found');
@@ -54,7 +65,11 @@ export class NotificationsService {
     }
 
     const result = await this.prisma.notification.updateMany({
-      where: { userId, read: false },
+      where: { 
+        userId, 
+        read: false,
+        propertyId: currentUser.propertyId!
+      },
       data: { read: true, readAt: new Date() },
     });
 
@@ -66,6 +81,7 @@ export class NotificationsService {
     type: string;
     title: string;
     message: string;
+    propertyId: string;
     data?: any;
   }): Promise<Notification> {
     return this.prisma.notification.create({ data });

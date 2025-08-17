@@ -295,6 +295,12 @@ export class InvitationsService {
 
     // Create user and update invitation in a transaction
     const result = await this.prisma.$transaction(async (tx) => {
+      // Get inviter's tenant context to assign the new user to the same tenant
+      const inviter = await tx.user.findUnique({
+        where: { id: invitation.invitedBy },
+        select: { organizationId: true, propertyId: true }
+      });
+
       // Create user
       const user = await tx.user.create({
         data: {
@@ -303,6 +309,8 @@ export class InvitationsService {
           lastName: acceptDto.lastName,
           role: invitation.role,
           departmentId: invitation.departmentId,
+          organizationId: inviter?.organizationId,
+          propertyId: inviter?.propertyId,
           position: acceptDto.position,
           phoneNumber: acceptDto.phoneNumber,
           emergencyContact: acceptDto.emergencyContact,

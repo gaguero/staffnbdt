@@ -123,8 +123,8 @@ model User {
   firstName        String
   lastName         String
   role             Role
-  organizationId   String
-  organization     Organization @relation(fields: [organizationId], references: [id])
+  organizationId   String?      // Make nullable for gradual migration
+  organization     Organization? @relation(fields: [organizationId], references: [id])
   propertyId       String?
   property         Property?    @relation(fields: [propertyId], references: [id])
   departmentId     String?
@@ -172,8 +172,8 @@ model Department {
   description String?
   location    String?
   budget      Decimal?   @db.Decimal(12, 2)
-  propertyId  String
-  property    Property   @relation(fields: [propertyId], references: [id])
+  propertyId  String?    // Make nullable for gradual migration
+  property    Property?  @relation(fields: [propertyId], references: [id])
   managerId   String?
   manager     User?      @relation("DepartmentManager", fields: [managerId], references: [id])
   parentId    String?
@@ -187,7 +187,7 @@ model Department {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   
-  @@unique([propertyId, name])
+  // @@unique([propertyId, name]) // Temporarily disabled during migration
   @@index([propertyId])
   @@index([parentId])
   @@index([level])
@@ -202,8 +202,8 @@ model Document {
   fileSize     Int
   mimeType     String
   scope        DocumentScope
-  propertyId   String
-  property     Property     @relation(fields: [propertyId], references: [id])
+  propertyId   String?      // Make nullable for gradual migration
+  property     Property?    @relation(fields: [propertyId], references: [id])
   departmentId String?
   department   Department?  @relation(fields: [departmentId], references: [id])
   userId       String?
@@ -229,8 +229,8 @@ model Payslip {
   id           String   @id @default(cuid())
   userId       String
   user         User     @relation(fields: [userId], references: [id])
-  propertyId   String
-  property     Property @relation(fields: [propertyId], references: [id])
+  propertyId   String?  // Make nullable for gradual migration
+  property     Property? @relation(fields: [propertyId], references: [id])
   period       String   // "2024-01"
   grossSalary  Decimal  @db.Decimal(10, 2)
   deductions   Json
@@ -242,7 +242,8 @@ model Payslip {
   createdAt    DateTime @default(now())
   viewedAt     DateTime?
   
-  @@unique([userId, period, propertyId])
+  // @@unique([userId, period, propertyId]) // Temporarily disabled during migration
+  @@unique([userId, period]) // Keep original constraint for now
   @@index([propertyId])
   @@index([period])
   @@index([importBatch])
@@ -252,8 +253,8 @@ model Vacation {
   id             String         @id @default(cuid())
   userId         String
   user           User           @relation(fields: [userId], references: [id])
-  propertyId     String
-  property       Property       @relation(fields: [propertyId], references: [id])
+  propertyId     String?        // Make nullable for gradual migration
+  property       Property?      @relation(fields: [propertyId], references: [id])
   type           VacationType
   startDate      DateTime
   endDate        DateTime
@@ -295,8 +296,8 @@ model TrainingSession {
   passingScore Int?
   duration     Int?        // in minutes
   contentBlocks Json       // Array of content blocks
-  propertyId   String
-  property     Property    @relation(fields: [propertyId], references: [id])
+  propertyId   String?     // Make nullable for gradual migration
+  property     Property?   @relation(fields: [propertyId], references: [id])
   departmentId String?     // Optional department-specific training
   department   Department? @relation(fields: [departmentId], references: [id])
   createdBy    String
@@ -305,7 +306,8 @@ model TrainingSession {
   
   enrollments  Enrollment[]
   
-  @@unique([propertyId, title, version])
+  // @@unique([propertyId, title, version]) // Temporarily disabled during migration
+  @@unique([title, version]) // Keep original constraint for now
   @@index([propertyId])
   @@index([isActive])
   @@index([departmentId])
@@ -345,8 +347,8 @@ model CommercialBenefit {
   imageUrl     String?
   websiteUrl   String?
   contactInfo  String?
-  propertyId   String
-  property     Property  @relation(fields: [propertyId], references: [id])
+  propertyId   String?   // Make nullable for gradual migration
+  property     Property? @relation(fields: [propertyId], references: [id])
   validFrom    DateTime?
   validUntil   DateTime?
   isActive     Boolean   @default(true)
@@ -362,8 +364,8 @@ model Notification {
   id           String    @id @default(cuid())
   userId       String
   user         User      @relation(fields: [userId], references: [id])
-  propertyId   String
-  property     Property  @relation(fields: [propertyId], references: [id])
+  propertyId   String?   // Make nullable for gradual migration
+  property     Property? @relation(fields: [propertyId], references: [id])
   type         String
   title        String
   message      String    @db.Text
@@ -382,8 +384,8 @@ model Invitation {
   email        String
   token        String           @unique
   role         Role
-  propertyId   String
-  property     Property         @relation(fields: [propertyId], references: [id])
+  propertyId   String?          // Make nullable for gradual migration
+  property     Property?        @relation(fields: [propertyId], references: [id])
   departmentId String?
   department   Department?      @relation(fields: [departmentId], references: [id])
   invitedBy    String
@@ -396,7 +398,8 @@ model Invitation {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   
-  @@unique([propertyId, email, status])
+  // @@unique([propertyId, email, status]) // Temporarily disabled during migration
+  @@unique([email, status]) // Keep original constraint for now
   @@index([propertyId])
   @@index([status])
   @@index([expiresAt])
@@ -414,8 +417,8 @@ model AuditLog {
   id           String    @id @default(cuid())
   userId       String
   user         User      @relation(fields: [userId], references: [id])
-  propertyId   String
-  property     Property  @relation(fields: [propertyId], references: [id])
+  propertyId   String?   // Make nullable for gradual migration
+  property     Property? @relation(fields: [propertyId], references: [id])
   action       String
   entity       String
   entityId     String

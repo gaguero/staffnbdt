@@ -19,6 +19,7 @@ import { ApiResponse as CustomApiResponse } from '../../shared/dto/response.dto'
 import { LoginDto, MagicLinkDto, RegisterDto, ResetPasswordDto } from './dto';
 import { User, Role } from '@prisma/client';
 import { PrismaService } from '../../shared/database/prisma.service';
+import { TenantService } from '../../shared/tenant/tenant.service';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -26,6 +27,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
+    private readonly tenantService: TenantService,
   ) {}
 
   @Post('login')
@@ -101,6 +103,8 @@ export class AuthController {
         lastName: user.lastName,
         role: user.role,
         departmentId: user.departmentId,
+        organizationId: user.organizationId,
+        propertyId: user.propertyId,
         position: user.position,
         hireDate: user.hireDate,
         phoneNumber: user.phoneNumber,
@@ -152,14 +156,18 @@ export class AuthController {
       }, 'Database already initialized');
     }
 
+    // Get or create default tenant
+    const { organization, property } = await this.tenantService.getDefaultTenant();
+
     // Create test department
     const department = await this.prisma.department.upsert({
-      where: { name: 'Test Department' },
+      where: { id: 'temp-dept-id' }, // Use ID since name is no longer unique globally
       update: {},
       create: {
         name: 'Test Department',
         description: 'Test department for development',
-        location: 'Test Location'
+        location: 'Test Location',
+        propertyId: property.id
       }
     });
 
@@ -170,6 +178,8 @@ export class AuthController {
         firstName: 'Admin',
         lastName: 'User',
         role: Role.SUPERADMIN,
+        organizationId: organization.id,
+        propertyId: property.id,
         departmentId: department.id
       },
       {
@@ -177,6 +187,8 @@ export class AuthController {
         firstName: 'HR',
         lastName: 'Manager',
         role: Role.DEPARTMENT_ADMIN,
+        organizationId: organization.id,
+        propertyId: property.id,
         departmentId: department.id
       },
       {
@@ -184,6 +196,8 @@ export class AuthController {
         firstName: 'Staff',
         lastName: 'Member',
         role: Role.STAFF,
+        organizationId: organization.id,
+        propertyId: property.id,
         departmentId: department.id
       }
     ];

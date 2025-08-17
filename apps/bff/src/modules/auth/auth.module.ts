@@ -7,10 +7,14 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { EmailService } from './email.service';
+import { TenantModule } from '../../shared/tenant/tenant.module';
+import { DatabaseModule } from '../../shared/database/database.module';
 
 @Module({
   imports: [
     PassportModule,
+    TenantModule,
+    DatabaseModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

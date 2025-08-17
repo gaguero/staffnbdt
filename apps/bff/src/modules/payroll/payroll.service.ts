@@ -36,7 +36,11 @@ export class PayrollService {
     // Department admin can only access payslips from their department
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
       const targetUser = await this.prisma.user.findUnique({
-        where: { id: userId, deletedAt: null },
+        where: { 
+          id: userId, 
+          deletedAt: null,
+          propertyId: currentUser.propertyId!
+        },
       });
       
       if (!targetUser || targetUser.departmentId !== currentUser.departmentId) {
@@ -44,22 +48,30 @@ export class PayrollService {
       }
     }
 
+    const whereClause = { 
+      userId,
+      propertyId: currentUser.propertyId!
+    };
+
     const [payslips, total] = await Promise.all([
       this.prisma.payslip.findMany({
-        where: { userId },
+        where: whereClause,
         orderBy: { period: 'desc' },
         skip: offset,
         take: limit,
       }),
-      this.prisma.payslip.count({ where: { userId } }),
+      this.prisma.payslip.count({ where: whereClause }),
     ]);
 
     return new PaginatedResponse(payslips, total, limit, offset);
   }
 
   async getPayslip(id: string, currentUser: User): Promise<Payslip> {
-    const payslip = await this.prisma.payslip.findUnique({
-      where: { id },
+    const payslip = await this.prisma.payslip.findFirst({
+      where: { 
+        id,
+        propertyId: currentUser.propertyId!
+      },
       include: {
         user: {
           select: {
@@ -140,23 +152,26 @@ export class PayrollService {
 
             for (const row of results) {
               try {
-                // Validate user exists
+                // Validate user exists in the current property
                 const user = await this.prisma.user.findUnique({
-                  where: { id: row.userId, deletedAt: null },
+                  where: { 
+                    id: row.userId, 
+                    deletedAt: null,
+                    propertyId: currentUser.propertyId!
+                  },
                 });
 
                 if (!user) {
-                  errors.push(`User not found: ${row.userId}`);
+                  errors.push(`User not found in current property: ${row.userId}`);
                   continue;
                 }
 
-                // Check if payslip already exists for this period
-                const existingPayslip = await this.prisma.payslip.findUnique({
+                // Check if payslip already exists for this period in this property
+                const existingPayslip = await this.prisma.payslip.findFirst({
                   where: {
-                    userId_period: {
-                      userId: row.userId,
-                      period: row.period,
-                    },
+                    userId: row.userId,
+                    period: row.period,
+                    propertyId: currentUser.propertyId!,
                   },
                 });
 
@@ -175,6 +190,7 @@ export class PayrollService {
                     netSalary: row.netSalary,
                     currency: row.currency,
                     importBatch,
+                    propertyId: currentUser.propertyId!,
                   },
                 });
 
@@ -208,7 +224,9 @@ export class PayrollService {
       throw new ForbiddenException('Staff cannot access payroll statistics');
     }
 
-    let whereClause: any = {};
+    let whereClause: any = {
+      propertyId: currentUser.propertyId!
+    };
     
     if (period) {
       whereClause.period = period;
@@ -216,9 +234,16 @@ export class PayrollService {
 
     // Department admins only see their department
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
-      whereClause.user = { departmentId: currentUser.departmentId, deletedAt: null };
+      whereClause.user = { 
+        departmentId: currentUser.departmentId, 
+        deletedAt: null,
+        propertyId: currentUser.propertyId!
+      };
     } else {
-      whereClause.user = { deletedAt: null };
+      whereClause.user = { 
+        deletedAt: null,
+        propertyId: currentUser.propertyId!
+      };
     }
 
     const [totalPayslips, totalGross, totalNet, avgSalary] = await Promise.all([

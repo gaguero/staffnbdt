@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../shared/database/prisma.service';
 import { AuditService } from '../../shared/audit/audit.service';
 import { EmailService } from './email.service';
+import { TenantService } from '../../shared/tenant/tenant.service';
 import { User, Role } from '@prisma/client';
 import { LoginDto, MagicLinkDto, RegisterDto, ResetPasswordDto } from './dto';
 
@@ -13,6 +14,8 @@ export interface JwtPayload {
   email: string;
   role: Role;
   departmentId?: string;
+  organizationId?: string;
+  propertyId?: string;
 }
 
 export interface AuthResponse {
@@ -28,6 +31,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly auditService: AuditService,
     private readonly emailService: EmailService,
+    private readonly tenantService: TenantService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -61,6 +65,8 @@ export class AuthService {
       email: user.email,
       role: user.role,
       departmentId: user.departmentId,
+      organizationId: user.organizationId,
+      propertyId: user.propertyId,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -83,6 +89,8 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         departmentId: user.departmentId,
+        organizationId: user.organizationId,
+        propertyId: user.propertyId,
         position: user.position,
         hireDate: user.hireDate,
         phoneNumber: user.phoneNumber,
@@ -111,6 +119,8 @@ export class AuthService {
       email: user.email,
       role: user.role,
       departmentId: user.departmentId,
+      organizationId: user.organizationId,
+      propertyId: user.propertyId,
     };
 
     const magicToken = this.jwtService.sign(payload, { expiresIn: '15m' });
@@ -144,6 +154,8 @@ export class AuthService {
         email: user.email,
         role: user.role,
         departmentId: user.departmentId,
+        organizationId: user.organizationId,
+        propertyId: user.propertyId,
       };
 
       const accessToken = this.jwtService.sign(newPayload);
@@ -166,6 +178,8 @@ export class AuthService {
           lastName: user.lastName,
           role: user.role,
           departmentId: user.departmentId,
+          organizationId: user.organizationId,
+          propertyId: user.propertyId,
           position: user.position,
           hireDate: user.hireDate,
           phoneNumber: user.phoneNumber,
@@ -191,6 +205,9 @@ export class AuthService {
       throw new BadRequestException('User already exists');
     }
 
+    // Get default tenant for new registrations
+    const { organization, property } = await this.tenantService.getDefaultTenant();
+
     // For demo purposes, default to STAFF role. In production, this should be controlled
     const user = await this.prisma.user.create({
       data: {
@@ -199,6 +216,8 @@ export class AuthService {
         lastName: registerDto.lastName,
         role: Role.STAFF,
         phoneNumber: registerDto.phoneNumber,
+        organizationId: organization.id,
+        propertyId: property.id,
       },
     });
 
@@ -207,6 +226,8 @@ export class AuthService {
       email: user.email,
       role: user.role,
       departmentId: user.departmentId,
+      organizationId: user.organizationId,
+      propertyId: user.propertyId,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -222,6 +243,8 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         departmentId: user.departmentId,
+        organizationId: user.organizationId,
+        propertyId: user.propertyId,
         position: user.position,
         hireDate: user.hireDate,
         phoneNumber: user.phoneNumber,

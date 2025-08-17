@@ -17,6 +17,7 @@ import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 
 // Feature modules
 import { AuthModule } from './modules/auth/auth.module';
+import { CoreModule } from './modules/core/core.module';
 import { UsersModule } from './modules/users/users.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { DocumentsModule } from './modules/documents/documents.module';

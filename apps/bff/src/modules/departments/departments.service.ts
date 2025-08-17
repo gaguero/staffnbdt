@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../shared/database/prisma.service';
 import { AuditService } from '../../shared/audit/audit.service';
+import { TenantService } from '../../shared/tenant/tenant.service';
 import { CreateDepartmentDto, UpdateDepartmentDto } from './dto';
 import { User, Department, Role } from '@prisma/client';
 
@@ -9,6 +10,7 @@ export class DepartmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly tenantService: TenantService,
   ) {}
 
   async create(
@@ -20,13 +22,16 @@ export class DepartmentsService {
       throw new ForbiddenException('Only superadmins can create departments');
     }
 
-    // Check if department with same name already exists
-    const existingDepartment = await this.prisma.department.findUnique({
-      where: { name: createDepartmentDto.name },
+    // Check if department with same name already exists in the property
+    const existingDepartment = await this.prisma.department.findFirst({
+      where: { 
+        name: createDepartmentDto.name,
+        propertyId: currentUser.propertyId!
+      },
     });
 
     if (existingDepartment) {
-      throw new BadRequestException('Department with this name already exists');
+      throw new BadRequestException('Department with this name already exists in this property');
     }
 
     // Validate manager exists if provided
@@ -60,6 +65,7 @@ export class DepartmentsService {
         managerId: createDepartmentDto.managerId,
         parentId: createDepartmentDto.parentId,
         level,
+        propertyId: currentUser.propertyId!,
       },
       include: {
         manager: {
@@ -119,9 +125,9 @@ export class DepartmentsService {
 
   async findAll(currentUser: User): Promise<Department[]> {
     // Department admins can only see their own department
-    let whereClause = {};
+    let whereClause: any = { propertyId: currentUser.propertyId };
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
-      whereClause = { id: currentUser.departmentId };
+      whereClause.id = currentUser.departmentId;
     }
 
     const departments = await this.prisma.department.findMany({
@@ -279,14 +285,18 @@ export class DepartmentsService {
       throw new NotFoundException('Department not found');
     }
 
-    // Check if another department with the same name exists
+    // Check if another department with the same name exists in the property
     if (updateDepartmentDto.name && updateDepartmentDto.name !== existingDepartment.name) {
-      const duplicateDepartment = await this.prisma.department.findUnique({
-        where: { name: updateDepartmentDto.name },
+      const duplicateDepartment = await this.prisma.department.findFirst({
+        where: { 
+          name: updateDepartmentDto.name,
+          propertyId: currentUser.propertyId!,
+          id: { not: id }
+        },
       });
 
       if (duplicateDepartment) {
-        throw new BadRequestException('Department with this name already exists');
+        throw new BadRequestException('Department with this name already exists in this property');
       }
     }
 
@@ -470,11 +480,19 @@ export class DepartmentsService {
         },
       }),
       this.prisma.document.count({
-        where: { departmentId: id, deletedAt: null },
+        where: { 
+          departmentId: id, 
+          deletedAt: null,
+          propertyId: currentUser.propertyId!
+        },
       }),
       this.prisma.vacation.count({
         where: {
-          user: { departmentId: id, deletedAt: null },
+          user: { 
+            departmentId: id, 
+            deletedAt: null,
+            propertyId: currentUser.propertyId!
+          },
           status: 'PENDING',
         },
       }),
@@ -498,6 +516,8 @@ export class DepartmentsService {
       throw new ForbiddenException('Only superadmins can view overall statistics');
     }
 
+    const propertyId = currentUser.propertyId!;
+    
     const [
       totalDepartments,
       departmentsWithManagers,
@@ -508,14 +528,23 @@ export class DepartmentsService {
       totalBudget,
       recentActivity,
     ] = await Promise.all([
-      this.prisma.department.count(),
       this.prisma.department.count({
-        where: { managerId: { not: null } },
+        where: { propertyId }
+      }),
+      this.prisma.department.count({
+        where: { 
+          managerId: { not: null },
+          propertyId 
+        },
       }),
       this.prisma.user.count({
-        where: { deletedAt: null },
+        where: { 
+          deletedAt: null,
+          propertyId
+        },
       }),
       this.prisma.department.findMany({
+        where: { propertyId },
         select: {
           id: true,
           name: true,
@@ -533,11 +562,19 @@ export class DepartmentsService {
           },
         },
       }),
-      this.prisma.trainingSession.count(),
+      this.prisma.trainingSession.count({
+        where: { 
+          department: { propertyId }
+        }
+      }),
       this.prisma.document.count({
-        where: { deletedAt: null },
+        where: { 
+          deletedAt: null,
+          propertyId
+        },
       }),
       this.prisma.department.aggregate({
+        where: { propertyId },
         _sum: {
           budget: true,
         },
@@ -590,6 +627,7 @@ export class DepartmentsService {
   async searchDepartments(query: string, currentUser: User): Promise<Department[]> {
     // Department admins can only search their own department
     let whereClause: any = {
+      propertyId: currentUser.propertyId,
       OR: [
         { name: { contains: query, mode: 'insensitive' } },
         { description: { contains: query, mode: 'insensitive' } },
@@ -633,7 +671,7 @@ export class DepartmentsService {
 
   async getHierarchy(currentUser: User): Promise<Department[]> {
     // Get all departments in hierarchical order
-    let whereClause = {};
+    let whereClause: any = { propertyId: currentUser.propertyId };
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
       // Check if department admin has a valid department
       if (!currentUser.departmentId) {
@@ -645,7 +683,10 @@ export class DepartmentsService {
         // Get department admin's department and all its descendants
         const departmentWithDescendants = await this.getDescendants(currentUser.departmentId, currentUser);
         const allowedIds = [currentUser.departmentId, ...departmentWithDescendants.map(d => d.id)];
-        whereClause = { id: { in: allowedIds } };
+        whereClause = { 
+          propertyId: currentUser.propertyId,
+          id: { in: allowedIds } 
+        };
       } catch (error) {
         // If department doesn't exist, return empty array
         return [];
@@ -755,7 +796,10 @@ export class DepartmentsService {
     while (queue.length > 0) {
       const currentId = queue.shift()!;
       const children = await this.prisma.department.findMany({
-        where: { parentId: currentId },
+        where: { 
+          parentId: currentId,
+          propertyId: currentUser.propertyId!
+        },
         select: {
           id: true,
           name: true,
@@ -802,7 +846,7 @@ export class DepartmentsService {
     level: number;
     parentId?: string;
   }>> {
-    let whereClause: any = {};
+    let whereClause: any = { propertyId: currentUser.propertyId };
     
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
       // Check if department admin has a valid department
@@ -816,7 +860,10 @@ export class DepartmentsService {
         const allowedIds = [currentUser.departmentId];
         const descendants = await this.getDescendants(currentUser.departmentId, currentUser);
         allowedIds.push(...descendants.map(d => d.id));
-        whereClause.id = { in: allowedIds };
+        whereClause = { 
+          propertyId: currentUser.propertyId,
+          id: { in: allowedIds }
+        };
       } catch (error) {
         // If department doesn't exist, return empty array
         return [];

@@ -61,6 +61,7 @@ export class DocumentsService {
         userId: createDocumentDto.userId,
         uploadedBy: currentUser.id,
         tags: createDocumentDto.tags || [],
+        propertyId: currentUser.propertyId!,
       },
       include: {
         department: true,
@@ -109,6 +110,7 @@ export class DocumentsService {
         userId: createDocumentDto.userId,
         uploadedBy: currentUser.id,
         tags: createDocumentDto.tags || [],
+        propertyId: currentUser.propertyId!,
       },
       include: {
         department: true,
@@ -136,7 +138,9 @@ export class DocumentsService {
     const { limit, offset, scope, departmentId, tags, search } = filterDto;
 
     // Build where clause based on user permissions
-    let whereClause: any = applySoftDelete({ where: {} }).where || {};
+    let whereClause: any = applySoftDelete({ 
+      where: { propertyId: currentUser.propertyId! } 
+    }).where || {};
 
     // Apply scope-based filtering
     whereClause.OR = this.buildAccessibleScopesFilter(currentUser);
@@ -200,7 +204,12 @@ export class DocumentsService {
 
   async findOne(id: string, currentUser: User): Promise<Document> {
     const document = await this.prisma.document.findFirst({
-      where: applySoftDelete({ where: { id } }).where,
+      where: applySoftDelete({ 
+        where: { 
+          id,
+          propertyId: currentUser.propertyId!
+        } 
+      }).where,
       include: {
         department: true,
         user: {

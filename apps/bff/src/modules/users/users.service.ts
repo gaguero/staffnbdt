@@ -37,12 +37,15 @@ export class UsersService {
 
     // Validate department exists if provided
     if (createUserDto.departmentId) {
-      const department = await this.prisma.department.findUnique({
-        where: { id: createUserDto.departmentId },
+      const department = await this.prisma.department.findFirst({
+        where: { 
+          id: createUserDto.departmentId,
+          propertyId: currentUser.propertyId!
+        },
       });
 
       if (!department) {
-        throw new BadRequestException('Department not found');
+        throw new BadRequestException('Department not found in current property');
       }
     }
 
@@ -71,7 +74,9 @@ export class UsersService {
     const { limit, offset, role, departmentId, search, includeInactive } = filterDto;
 
     // Build where clause based on user role and filters
-    let whereClause: any = {};
+    let whereClause: any = {
+      propertyId: currentUser.propertyId!
+    };
 
     // Apply soft delete filtering conditionally
     // When includeInactive is true, include both active and inactive users
@@ -147,7 +152,12 @@ export class UsersService {
     }
 
     const user = await this.prisma.user.findFirst({
-      where: applySoftDelete({ where: { id } }).where,
+      where: applySoftDelete({ 
+        where: { 
+          id,
+          propertyId: currentUser.propertyId!
+        } 
+      }).where,
       include: {
         department: true,
       },
@@ -627,7 +637,10 @@ export class UsersService {
     }
 
     const existingUser = await this.prisma.user.findFirst({
-      where: { id }, // Don't apply soft delete filter here to find inactive users
+      where: { 
+        id,
+        propertyId: currentUser.propertyId!
+      }, // Don't apply soft delete filter here to find inactive users
       include: {
         department: true,
       },
@@ -645,9 +658,12 @@ export class UsersService {
       throw new ForbiddenException('Cannot change department for users from other departments');
     }
 
-    // Validate new department exists
-    const newDepartment = await this.prisma.department.findUnique({
-      where: { id: changeDepartmentDto.departmentId },
+    // Validate new department exists in current property
+    const newDepartment = await this.prisma.department.findFirst({
+      where: { 
+        id: changeDepartmentDto.departmentId,
+        propertyId: currentUser.propertyId!
+      },
     });
 
     if (!newDepartment) {
@@ -902,7 +918,10 @@ export class UsersService {
       .map(u => u.departmentId))];
     
     const departments = await this.prisma.department.findMany({
-      where: { id: { in: departmentIds } },
+      where: { 
+        id: { in: departmentIds },
+        propertyId: currentUser.propertyId!
+      },
     });
     
     const validDepartmentIds = new Set(departments.map(d => d.id));
@@ -949,6 +968,8 @@ export class UsersService {
             lastName: userData.lastName,
             role: userData.role,
             departmentId: userData.departmentId,
+            organizationId: currentUser.organizationId,
+            propertyId: currentUser.propertyId,
             position: userData.position,
             hireDate: userData.hireDate ? new Date(userData.hireDate) : undefined,
             phoneNumber: userData.phoneNumber,
