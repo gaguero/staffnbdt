@@ -395,27 +395,27 @@ const UsersPage: React.FC = () => {
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">👥</div>
           <p className="text-sm text-gray-600 mb-1">Total Users</p>
-          <p className="text-xl font-bold text-charcoal">{filteredUsers.length}</p>
+          <p className="text-xl font-bold text-charcoal">{users.length}</p>
         </div>
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">✅</div>
           <p className="text-sm text-gray-600 mb-1">Active</p>
           <p className="text-xl font-bold text-green-600">
-            {filteredUsers.filter(u => !u.deletedAt).length}
+            {users.filter(u => !u.deletedAt).length}
           </p>
         </div>
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">❌</div>
           <p className="text-sm text-gray-600 mb-1">Inactive</p>
           <p className="text-xl font-bold text-red-600">
-            {filteredUsers.filter(u => u.deletedAt).length}
+            {users.filter(u => u.deletedAt).length}
           </p>
         </div>
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">👔</div>
           <p className="text-sm text-gray-600 mb-1">Admins</p>
           <p className="text-xl font-bold text-blue-600">
-            {filteredUsers.filter(u => u.role !== 'STAFF').length}
+            {users.filter(u => u.role !== 'STAFF').length}
           </p>
         </div>
       </div>
