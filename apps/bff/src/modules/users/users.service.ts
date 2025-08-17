@@ -49,6 +49,8 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         ...createUserDto,
+        organizationId: currentUser.organizationId, // Inherit from current user
+        propertyId: currentUser.propertyId, // Inherit from current user
         emergencyContact: createUserDto.emergencyContact || null,
       },
       include: {

@@ -6,6 +6,20 @@ async function seedTestUsers() {
   console.log('🌱 Seeding test users...');
 
   try {
+    // Get the default organization and property (should exist from migration)
+    const organization = await prisma.organization.findFirst({
+      where: { slug: 'nayara-group' }
+    });
+
+    const property = await prisma.property.findFirst({
+      where: { slug: 'nayara-gardens' }
+    });
+
+    if (!organization || !property) {
+      console.log('❌ Default organization/property not found. Run migration first.');
+      return;
+    }
+
     // Check if any users exist
     const userCount = await prisma.user.count({
       where: { deletedAt: null }
@@ -18,12 +32,18 @@ async function seedTestUsers() {
 
       // Create a test department first
       const department = await prisma.department.upsert({
-        where: { name: 'Test Department' },
+        where: { 
+          propertyId_name: {
+            propertyId: property.id,
+            name: 'Test Department'
+          }
+        },
         update: {},
         create: {
           name: 'Test Department',
           description: 'Test department for development',
-          location: 'Test Location'
+          location: 'Test Location',
+          propertyId: property.id
         }
       });
 
@@ -34,6 +54,8 @@ async function seedTestUsers() {
           firstName: 'Admin',
           lastName: 'User',
           role: Role.SUPERADMIN,
+          organizationId: organization.id,
+          propertyId: property.id,
           departmentId: department.id
         },
         {
@@ -41,6 +63,8 @@ async function seedTestUsers() {
           firstName: 'Department',
           lastName: 'Admin',
           role: Role.DEPARTMENT_ADMIN,
+          organizationId: organization.id,
+          propertyId: property.id,
           departmentId: department.id
         },
         {
@@ -48,6 +72,8 @@ async function seedTestUsers() {
           firstName: 'Staff',
           lastName: 'Member',
           role: Role.STAFF,
+          organizationId: organization.id,
+          propertyId: property.id,
           departmentId: department.id
         }
       ];

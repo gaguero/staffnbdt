@@ -61,6 +61,7 @@ export class VacationService {
     const vacation = await this.prisma.vacation.create({
       data: {
         userId: currentUser.id,
+        propertyId: currentUser.propertyId!, // Use user's property
         type: createVacationDto.type,
         startDate,
         endDate,

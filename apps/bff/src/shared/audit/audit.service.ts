@@ -18,9 +18,21 @@ export class AuditService {
 
   async log(data: AuditLogData): Promise<void> {
     try {
+      // Get user's propertyId for the audit log
+      const user = await this.prisma.user.findUnique({
+        where: { id: data.userId },
+        select: { propertyId: true },
+      });
+
+      if (!user?.propertyId) {
+        console.warn('User has no propertyId, skipping audit log');
+        return;
+      }
+
       await this.prisma.auditLog.create({
         data: {
           userId: data.userId,
+          propertyId: user.propertyId,
           action: data.action,
           entity: data.entity,
           entityId: data.entityId,
