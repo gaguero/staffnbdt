@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
+import IDDocumentUpload from '../components/IDDocumentUpload';
 
 const ProfilePage: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -90,6 +92,48 @@ const ProfilePage: React.FC = () => {
           >
             {isEditing ? 'Cancel' : 'Edit Profile'}
           </button>
+        </div>
+      </div>
+
+      {/* Profile Photo Section */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="text-lg font-semibold text-charcoal">Profile Photo</h3>
+        </div>
+        <div className="card-body">
+          <ProfilePhotoUpload 
+            currentPhotoUrl={user?.profilePhoto}
+            onPhotoUpdate={(photoUrl) => {
+              if (user) {
+                updateUser({ ...user, profilePhoto: photoUrl });
+              }
+            }}
+            onPhotoDelete={() => {
+              if (user) {
+                updateUser({ ...user, profilePhoto: undefined });
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* ID Document Verification Section */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="text-lg font-semibold text-charcoal">Identity Verification</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Upload your official ID document for account verification
+          </p>
+        </div>
+        <div className="card-body">
+          <IDDocumentUpload
+            onStatusUpdate={(status) => {
+              console.log('ID verification status updated:', status);
+            }}
+            onDocumentUpdate={(hasDocument) => {
+              console.log('Document upload status:', hasDocument);
+            }}
+          />
         </div>
       </div>
 
