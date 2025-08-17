@@ -316,7 +316,7 @@ const DepartmentsPage: React.FC = () => {
     }
   };
 
-  const performDeletion = async (id: string, options?: typeof deleteOptions) => {
+  const performDeletion = async (id: string) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -523,7 +523,7 @@ const DepartmentsPage: React.FC = () => {
                             if (newDeptId !== null) {
                               try {
                                 await userService.updateUser(user.id, { 
-                                  departmentId: newDeptId || null 
+                                  departmentId: newDeptId || undefined 
                                 });
                                 // Refresh the hierarchy
                                 await loadHierarchy();
@@ -1119,14 +1119,13 @@ const DepartmentsPage: React.FC = () => {
                   onClick={async () => {
                     if (deleteOptions.action === 'reassign') {
                       const hasUsers = departmentToDelete._count?.users && departmentToDelete._count.users > 0;
-                      const hasChildren = departmentToDelete._count?.children && departmentToDelete._count.children > 0;
                       
                       if (hasUsers && !deleteOptions.reassignUsersTo) {
                         alert('Please select a department to reassign users to');
                         return;
                       }
                     }
-                    await performDeletion(departmentToDelete.id, deleteOptions);
+                    await performDeletion(departmentToDelete.id);
                   }}
                   className="btn btn-error flex-1"
                   disabled={isLoading}
