@@ -12,30 +12,56 @@ export class CreateUnitDto {
   @IsEnum(UnitType)
   unitType: UnitType;
 
-  @IsString()
-  floor: string;
-
   @IsOptional()
   @IsString()
   building?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  floor?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  bedrooms?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  bathrooms?: number;
+
+  @IsInt()
+  @Type(() => Number)
+  maxOccupancy: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Transform(({ value }) => parseFloat(value))
+  size?: number;
+
+  @IsOptional()
+  @IsArray()
+  amenities?: string[];
 
   @IsOptional()
   @IsEnum(UnitStatus)
   status?: UnitStatus;
 
   @IsOptional()
-  @IsArray()
-  features?: any[];
-
-  @IsInt()
-  @Type(() => Number)
-  maxOccupancy: number;
-
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Transform(({ value }) => parseFloat(value))
-  baseRate: number;
-
-  @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Transform(({ value }) => parseFloat(value))
+  dailyRate?: number;
 }
