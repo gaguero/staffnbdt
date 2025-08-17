@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsEnum, IsDateString } from 'class-validator';
-import { ReservationStatus } from './create-reservation.dto';
+import { ReservationStatus } from '@prisma/client';
 
 export class ReservationFilterDto {
   @IsOptional()

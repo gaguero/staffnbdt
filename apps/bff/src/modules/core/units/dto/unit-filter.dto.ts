@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsEnum, IsBoolean } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { UnitType, UnitStatus } from './create-unit.dto';
+import { UnitType, UnitStatus } from '@prisma/client';
 
 export class UnitFilterDto {
   @IsOptional()

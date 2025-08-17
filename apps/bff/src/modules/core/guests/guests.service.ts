@@ -55,8 +55,12 @@ export class GuestsService {
       where.propertyId = filters.propertyId;
     }
 
-    if (filters?.documentType) {
-      where.documentType = filters.documentType;
+    if (filters?.vipStatus) {
+      where.vipStatus = filters.vipStatus;
+    }
+
+    if (filters?.blacklisted !== undefined) {
+      where.blacklisted = filters.blacklisted;
     }
 
     if (filters?.nationality) {
@@ -69,7 +73,8 @@ export class GuestsService {
         { lastName: { contains: filters.search, mode: 'insensitive' } },
         { email: { contains: filters.search, mode: 'insensitive' } },
         { phoneNumber: { contains: filters.search, mode: 'insensitive' } },
-        { loyaltyNumber: { contains: filters.search, mode: 'insensitive' } },
+        { passportNumber: { contains: filters.search, mode: 'insensitive' } },
+        { idNumber: { contains: filters.search, mode: 'insensitive' } },
       ];
     }
 
@@ -264,6 +269,7 @@ export class GuestsService {
         lastName: true,
         email: true,
         phoneNumber: true,
+        vipStatus: true,
       },
       orderBy: [
         { lastName: 'asc' },

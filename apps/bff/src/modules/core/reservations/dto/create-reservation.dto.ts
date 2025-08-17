@@ -1,13 +1,6 @@
 import { IsString, IsDateString, IsInt, IsEnum, IsDecimal, IsOptional } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-
-export enum ReservationStatus {
-  CONFIRMED = 'CONFIRMED',
-  CHECKED_IN = 'CHECKED_IN',
-  CHECKED_OUT = 'CHECKED_OUT',
-  CANCELLED = 'CANCELLED',
-  NO_SHOW = 'NO_SHOW',
-}
+import { ReservationStatus } from '@prisma/client';
 
 export class CreateReservationDto {
   @IsString()

@@ -1,15 +1,9 @@
-import { IsString, IsOptional, IsEmail, IsPhoneNumber, IsDateString, IsObject } from 'class-validator';
-
-export enum DocumentType {
-  PASSPORT = 'PASSPORT',
-  ID_CARD = 'ID_CARD',
-  DRIVER_LICENSE = 'DRIVER_LICENSE',
-  OTHER = 'OTHER',
-}
+import { IsString, IsOptional, IsEmail, IsDateString, IsObject, IsBoolean, IsEnum } from 'class-validator';
+import { VipStatus } from '@prisma/client';
 
 export class CreateGuestDto {
   @IsString()
-  organizationId: string;
+  propertyId: string;
 
   @IsString()
   firstName: string;
@@ -23,15 +17,11 @@ export class CreateGuestDto {
 
   @IsOptional()
   @IsString()
-  phone?: string;
+  phoneNumber?: string;
 
   @IsOptional()
   @IsString()
-  documentType?: DocumentType;
-
-  @IsOptional()
-  @IsString()
-  documentNumber?: string;
+  nationality?: string;
 
   @IsOptional()
   @IsDateString()
@@ -39,17 +29,33 @@ export class CreateGuestDto {
 
   @IsOptional()
   @IsString()
-  nationality?: string;
+  passportNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  idNumber?: string;
+
+  @IsOptional()
+  @IsObject()
+  address?: any;
 
   @IsOptional()
   @IsObject()
   preferences?: any;
 
   @IsOptional()
-  @IsString()
-  loyaltyNumber?: string;
+  @IsEnum(VipStatus)
+  vipStatus?: VipStatus;
 
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  blacklisted?: boolean;
+
+  @IsOptional()
+  @IsString()
+  blacklistReason?: string;
 }
