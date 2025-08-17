@@ -58,6 +58,9 @@ const DepartmentsPage: React.FC = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [selectedDepartmentForStaff, setSelectedDepartmentForStaff] = useState<Department | null>(null);
   const [expandedUserLists, setExpandedUserLists] = useState<Set<string>>(new Set());
+  const [selectedDepartments, setSelectedDepartments] = useState<Set<string>>(new Set());
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'hierarchy'>('cards');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
   const [deleteOptions, setDeleteOptions] = useState({
@@ -149,10 +152,21 @@ const DepartmentsPage: React.FC = () => {
   ];
 
   const filteredDepartments = departments.filter(dept => {
+    // Enhanced search including all user names
     const matchesSearch = dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (dept.description && dept.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         (dept.manager && `${dept.manager.firstName} ${dept.manager.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesSearch;
+                         (dept.location && dept.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (dept.manager && `${dept.manager.firstName} ${dept.manager.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (dept.users && dept.users.some(user => 
+                           `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+                         ));
+    
+    // Selection filter
+    const matchesSelection = !showSelectedOnly || 
+                           selectedDepartments.has(dept.id) || 
+                           hasSelectedParent(dept);
+    
+    return matchesSearch && matchesSelection;
   });
 
   // Organize departments by hierarchy for card display with sibling grouping
@@ -196,6 +210,25 @@ const DepartmentsPage: React.FC = () => {
   };
 
   const hierarchyGroups = organizeByHierarchy(filteredDepartments);
+
+  // Apply same filtering to hierarchy departments
+  const filteredHierarchyDepartments = hierarchyDepartments.filter(dept => {
+    // Enhanced search including all user names
+    const matchesSearch = dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (dept.description && dept.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (dept.location && dept.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (dept.manager && `${dept.manager.firstName} ${dept.manager.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (dept.users && dept.users.some(user => 
+                           `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+                         ));
+    
+    // Selection filter
+    const matchesSelection = !showSelectedOnly || 
+                           selectedDepartments.has(dept.id) || 
+                           hasSelectedParent(dept);
+    
+    return matchesSearch && matchesSelection;
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -354,6 +387,48 @@ const DepartmentsPage: React.FC = () => {
     });
   };
 
+  const toggleDepartmentSelection = (departmentId: string) => {
+    setSelectedDepartments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(departmentId)) {
+        // Remove department and its children
+        newSet.delete(departmentId);
+        // Remove all children too
+        const removeChildren = (deptId: string) => {
+          departments.filter(d => d.parentId === deptId).forEach(child => {
+            newSet.delete(child.id);
+            removeChildren(child.id);
+          });
+        };
+        removeChildren(departmentId);
+      } else {
+        // Add department and its children
+        newSet.add(departmentId);
+        // Add all children too
+        const addChildren = (deptId: string) => {
+          departments.filter(d => d.parentId === deptId).forEach(child => {
+            newSet.add(child.id);
+            addChildren(child.id);
+          });
+        };
+        addChildren(departmentId);
+      }
+      return newSet;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedDepartments(new Set());
+    setShowSelectedOnly(false);
+  };
+
+  const hasSelectedParent = (dept: Department): boolean => {
+    if (!dept.parentId) return false;
+    if (selectedDepartments.has(dept.parentId)) return true;
+    const parent = departments.find(d => d.id === dept.parentId);
+    return parent ? hasSelectedParent(parent) : false;
+  };
+
   const getEmployeeCount = (department: Department) => {
     return department._count?.users || 0;
   };
@@ -377,12 +452,23 @@ const DepartmentsPage: React.FC = () => {
     return departments.map(department => (
       <div key={department.id}>
         <div 
-          className={`group flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-gray-100 ${
+          className={`group flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-gray-100 relative ${
             level === 0 ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-gray-50'
-          }`}
+          } ${selectedDepartments.has(department.id) ? 'ring-2 ring-blue-500' : ''}`}
           style={{ marginLeft: `${level * 24}px` }}
         >
-          <div className="flex items-center space-x-3">
+          {/* Selection Checkbox */}
+          <div className="absolute top-2 right-2 z-10">
+            <input
+              type="checkbox"
+              checked={selectedDepartments.has(department.id)}
+              onChange={() => toggleDepartmentSelection(department.id)}
+              className="form-checkbox text-blue-600"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          <div className="flex items-center space-x-3 flex-1 pr-8">
             {/* Tree connector */}
             {level > 0 && (
               <div className="text-gray-400 text-sm">
@@ -636,33 +722,73 @@ const DepartmentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Enhanced Filter Bar */}
       <div className="card p-4">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+        <div className="space-y-4">
           {/* Search */}
-          <div className="flex-1 lg:max-w-md">
+          <div className="flex-1">
             <input
               type="text"
-              placeholder="Search departments..."
+              placeholder="🔍 Search departments, managers, staff..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-input"
+              className="form-input w-full"
             />
           </div>
 
-          {/* Status Filter */}
-          <div>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="form-input w-auto"
-            >
-              {statuses.map(status => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
+          {/* Controls Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Selection Controls */}
+            <div className="flex items-center gap-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={showSelectedOnly}
+                  onChange={(e) => setShowSelectedOnly(e.target.checked)}
+                  className="form-checkbox"
+                />
+                <span className="text-sm">Show Selected Only</span>
+              </label>
+              
+              <button
+                onClick={clearSelection}
+                className="text-xs text-gray-600 hover:text-gray-800 underline"
+                disabled={selectedDepartments.size === 0}
+              >
+                Clear Selection
+              </button>
+
+              <span className="text-xs text-gray-500">
+                {selectedDepartments.size > 0 && `${selectedDepartments.size} selected`}
+              </span>
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">View:</span>
+              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setViewMode('cards')}
+                  className={`px-3 py-1 text-sm ${
+                    viewMode === 'cards'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  📊 Cards
+                </button>
+                <button
+                  onClick={() => setViewMode('hierarchy')}
+                  className={`px-3 py-1 text-sm ${
+                    viewMode === 'hierarchy'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  🌳 Hierarchy
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -674,26 +800,27 @@ const DepartmentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Departments Grid */}
+      {/* Content Area - Cards or Hierarchy */}
       {isLoading ? (
         <div className="card p-12 text-center">
           <LoadingSpinner size="lg" />
           <p className="text-gray-600 mt-4">Loading departments...</p>
         </div>
-      ) : hierarchyGroups.length === 0 ? (
-        <div className="card p-12 text-center">
-          <div className="text-6xl mb-4">🏢</div>
-          <h3 className="text-lg font-semibold text-charcoal mb-2">
-            No departments found
-          </h3>
-          <p className="text-gray-600">
-            {searchTerm 
-              ? `No departments match "${searchTerm}"`
-              : 'No departments available'
-            }
-          </p>
-        </div>
-      ) : (
+      ) : viewMode === 'cards' ? (
+        hierarchyGroups.length === 0 ? (
+          <div className="card p-12 text-center">
+            <div className="text-6xl mb-4">🏢</div>
+            <h3 className="text-lg font-semibold text-charcoal mb-2">
+              No departments found
+            </h3>
+            <p className="text-gray-600">
+              {searchTerm 
+                ? `No departments match "${searchTerm}"`
+                : 'No departments available'
+              }
+            </p>
+          </div>
+        ) : (
         <div className="space-y-6">
           {hierarchyGroups.map((group) => (
             <div key={`group-${group.level}-${group.parentId || 'root'}`} className="relative">
@@ -723,11 +850,24 @@ const DepartmentsPage: React.FC = () => {
                 {group.departments.map(department => (
                   <div 
                     key={department.id} 
-                    className="card hover:shadow-medium transition-shadow"
+                    className={`card hover:shadow-medium transition-shadow relative ${
+                      selectedDepartments.has(department.id) ? 'ring-2 ring-blue-500' : ''
+                    }`}
                   >
+                    {/* Selection Checkbox */}
+                    <div className="absolute top-3 right-3 z-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedDepartments.has(department.id)}
+                        onChange={() => toggleDepartmentSelection(department.id)}
+                        className="form-checkbox text-blue-600"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
                     <div className="card-body">
                       <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
+                        <div className="flex-1 pr-8">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <h3 className="text-lg font-semibold text-charcoal">
                               {department.name}
@@ -820,26 +960,27 @@ const DepartmentsPage: React.FC = () => {
             </div>
           ))}
         </div>
+        )
+      ) : (
+        // Hierarchy View
+        <div className="card">
+          <div className="card-header">
+            <h3 className="text-lg font-semibold text-charcoal">Department Hierarchy</h3>
+          </div>
+          <div className="card-body">
+            {filteredHierarchyDepartments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <div className="text-4xl mb-2">🏗️</div>
+                <p>{searchTerm ? `No departments match "${searchTerm}"` : 'Loading department hierarchy...'}</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {renderDepartmentTree(filteredHierarchyDepartments)}
+              </div>
+            )}
+          </div>
+        </div>
       )}
-
-      {/* Organizational Chart Preview */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="text-lg font-semibold text-charcoal">Department Hierarchy</h3>
-        </div>
-        <div className="card-body">
-          {hierarchyDepartments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">🏗️</div>
-              <p>Loading department hierarchy...</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {renderDepartmentTree(hierarchyDepartments)}
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Add/Edit Department Modal */}
       {(showAddDepartment || showEditDepartment) && (
