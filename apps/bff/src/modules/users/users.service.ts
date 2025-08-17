@@ -75,6 +75,7 @@ export class UsersService {
     // When includeInactive is true, include both active and inactive users
     // When includeInactive is false, only include active users (exclude deleted)
     console.log('UsersService.findAll - includeInactive:', includeInactive);
+    // Fix: applySoftDelete expects 'includeDeleted' parameter, not 'includeInactive'
     const queryWithSoftDelete = applySoftDelete({ where: whereClause }, includeInactive);
     console.log('UsersService.findAll - queryWithSoftDelete:', JSON.stringify(queryWithSoftDelete, null, 2));
     whereClause = queryWithSoftDelete.where || {};
