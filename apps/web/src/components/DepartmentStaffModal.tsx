@@ -1,22 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { userService } from '../services/userService';
+import { userService, User } from '../services/userService';
 import ChangeDepartmentModal from './ChangeDepartmentModal';
 import UserDetailsModal from './UserDetailsModal';
 import EditUserModal from './EditUserModal';
-
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: 'SUPERADMIN' | 'DEPARTMENT_ADMIN' | 'STAFF';
-  position?: string;
-  phoneNumber?: string;
-  profilePhoto?: string;
-  deletedAt?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-}
 
 interface DepartmentStaffModalProps {
   isOpen: boolean;

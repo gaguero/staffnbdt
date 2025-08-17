@@ -1,28 +1,5 @@
 import React from 'react';
-
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: 'SUPERADMIN' | 'DEPARTMENT_ADMIN' | 'STAFF';
-  position?: string;
-  phoneNumber?: string;
-  profilePhoto?: string;
-  hireDate?: string;
-  deletedAt?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  department?: {
-    id: string;
-    name: string;
-  };
-  emergencyContact?: {
-    name: string;
-    relationship: string;
-    phoneNumber: string;
-  };
-}
+import { User } from '../services/userService';
 
 interface UserDetailsModalProps {
   isOpen: boolean;

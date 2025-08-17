@@ -1,31 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { userService } from '../services/userService';
+import { userService, User } from '../services/userService';
 import { departmentService, Department } from '../services/departmentService';
-
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: 'SUPERADMIN' | 'DEPARTMENT_ADMIN' | 'STAFF';
-  position?: string;
-  phoneNumber?: string;
-  profilePhoto?: string;
-  hireDate?: string;
-  deletedAt?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  departmentId?: string;
-  department?: {
-    id: string;
-    name: string;
-  };
-  emergencyContact?: {
-    name: string;
-    relationship: string;
-    phoneNumber: string;
-  };
-}
 
 interface EditUserModalProps {
   isOpen: boolean;

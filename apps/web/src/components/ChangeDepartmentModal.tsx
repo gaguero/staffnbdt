@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { departmentService, Department } from '../services/departmentService';
-import { userService } from '../services/userService';
-
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: 'SUPERADMIN' | 'DEPARTMENT_ADMIN' | 'STAFF';
-  departmentId?: string;
-  department?: {
-    id: string;
-    name: string;
-  };
-}
+import { userService, User } from '../services/userService';
 
 interface ChangeDepartmentModalProps {
   isOpen: boolean;
