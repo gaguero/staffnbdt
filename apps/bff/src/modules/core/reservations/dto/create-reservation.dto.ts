@@ -1,4 +1,4 @@
-import { IsString, IsDateString, IsInt, IsEnum, IsDecimal, IsOptional } from 'class-validator';
+import { IsString, IsDateString, IsInt, IsEnum, IsNumber, IsOptional } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ReservationStatus } from '@prisma/client';
 
@@ -35,12 +35,12 @@ export class CreateReservationDto {
   @Type(() => Number)
   children?: number;
 
-  @IsDecimal()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Transform(({ value }) => parseFloat(value))
   totalAmount: number;
 
   @IsOptional()
-  @IsDecimal()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Transform(({ value }) => parseFloat(value))
   paidAmount?: number;
 

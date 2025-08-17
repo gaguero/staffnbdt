@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsOptional, IsEnum, IsDecimal, IsBoolean, IsArray } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsEnum, IsNumber, IsBoolean, IsArray } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { UnitType, UnitStatus } from '@prisma/client';
 
@@ -31,7 +31,7 @@ export class CreateUnitDto {
   @Type(() => Number)
   maxOccupancy: number;
 
-  @IsDecimal()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Transform(({ value }) => parseFloat(value))
   baseRate: number;
 
