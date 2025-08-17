@@ -5,7 +5,7 @@ interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: string;
+  role: 'SUPERADMIN' | 'DEPARTMENT_ADMIN' | 'STAFF';
   position?: string;
   phoneNumber?: string;
   profilePhoto?: string;
