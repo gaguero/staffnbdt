@@ -44,6 +44,8 @@ const UsersPage: React.FC = () => {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [validateOnly, setValidateOnly] = useState(true);
   const [sendInvitations, setSendInvitations] = useState(true);
+  const [showPermanentDeleteModal, setShowPermanentDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
 
   // Load users
   const loadUsers = useCallback(async () => {
@@ -161,6 +163,23 @@ const UsersPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to change status:', error);
       alert('Failed to change status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      setLoading(true);
+      await userService.permanentDeleteUser(userToDelete.id);
+      await loadUsers();
+      setShowPermanentDeleteModal(false);
+      setUserToDelete(null);
+    } catch (error: any) {
+      console.error('Failed to permanently delete user:', error);
+      alert(error.response?.data?.message || 'Failed to permanently delete user');
     } finally {
       setLoading(false);
     }
@@ -571,6 +590,17 @@ const UsersPage: React.FC = () => {
                               >
                                 {user.deletedAt ? 'Activate' : 'Deactivate'}
                               </button>
+                              {user.deletedAt && currentUser?.role === 'SUPERADMIN' && (
+                                <button 
+                                  className="text-red-800 hover:text-red-900 font-medium"
+                                  onClick={() => {
+                                    setUserToDelete(user);
+                                    setShowPermanentDeleteModal(true);
+                                  }}
+                                >
+                                  Delete Forever
+                                </button>
+                              )}
                             </>
                           )}
                           <button 
@@ -889,6 +919,78 @@ const UsersPage: React.FC = () => {
           user={selectedUser}
           onSuccess={handleUserModalSuccess}
         />
+      )}
+
+      {/* Permanent Delete Confirmation Modal */}
+      {showPermanentDeleteModal && userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mr-4">
+                  <span className="text-2xl">⚠️</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-charcoal">
+                    Permanently Delete User
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    This action cannot be undone
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-700 mb-4">
+                  Are you sure you want to permanently delete{' '}
+                  <span className="font-semibold">
+                    {userToDelete.firstName} {userToDelete.lastName}
+                  </span>{' '}
+                  ({userToDelete.email}) from the database?
+                </p>
+                
+                <div className="bg-red-50 border border-red-200 rounded p-3">
+                  <div className="flex items-start">
+                    <span className="text-red-600 mr-2">⚠️</span>
+                    <div className="text-sm text-red-700">
+                      <p className="font-medium mb-1">Warning:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>This will completely remove the user from the database</li>
+                        <li>All user data will be permanently lost</li>
+                        <li>This action cannot be reversed</li>
+                        <li>Only inactive users can be permanently deleted</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => {
+                    setShowPermanentDeleteModal(false);
+                    setUserToDelete(null);
+                  }}
+                  className="btn btn-secondary flex-1"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePermanentDelete}
+                  className="btn bg-red-600 hover:bg-red-700 text-white flex-1"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    'Delete Forever'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

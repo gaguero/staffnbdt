@@ -318,6 +318,59 @@ export class UsersService {
     return restoredUser;
   }
 
+  async permanentDelete(id: string, currentUser: User): Promise<void> {
+    // Only superadmins can permanently delete users
+    if (currentUser.role !== Role.SUPERADMIN) {
+      throw new ForbiddenException('Only superadmins can permanently delete users');
+    }
+
+    // Cannot delete self
+    if (currentUser.id === id) {
+      throw new BadRequestException('Cannot permanently delete your own account');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        department: true,
+      },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Can only permanently delete users that are already soft-deleted (inactive)
+    if (!existingUser.deletedAt) {
+      throw new BadRequestException('Can only permanently delete inactive users. Please deactivate the user first.');
+    }
+
+    // Check for related data that would prevent deletion
+    // Check for audit logs, payslips, etc. that reference this user
+    const [auditLogCount, payslipCount, vacationCount, enrollmentCount, notificationCount] = await Promise.all([
+      this.prisma.auditLog.count({ where: { userId: id } }),
+      this.prisma.payslip.count({ where: { userId: id } }),
+      this.prisma.vacation.count({ where: { userId: id } }),
+      this.prisma.enrollment.count({ where: { userId: id } }),
+      this.prisma.notification.count({ where: { userId: id } }),
+    ]);
+
+    if (auditLogCount > 0 || payslipCount > 0 || vacationCount > 0 || enrollmentCount > 0 || notificationCount > 0) {
+      throw new BadRequestException(
+        'Cannot permanently delete user with existing records (audit logs, payslips, vacations, enrollments, or notifications). ' +
+        'Consider keeping the user deactivated for data integrity.'
+      );
+    }
+
+    // Log the permanent deletion before deleting
+    await this.auditService.logDelete(currentUser.id, 'User', id, existingUser);
+
+    // Perform hard delete from database
+    await this.prisma.user.delete({
+      where: { id },
+    });
+  }
+
   async getUsersByDepartment(departmentId: string, currentUser: User): Promise<UserWithDepartment[]> {
     // Check permissions
     if (

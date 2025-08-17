@@ -180,6 +180,11 @@ class UserService {
     const response = await api.delete(`/users/${userId}/department`);
     return response.data;
   }
+
+  async permanentDeleteUser(id: string) {
+    const response = await api.delete(`/users/${id}/permanent`);
+    return response.data;
+  }
 }
 
 export const userService = new UserService();

@@ -206,6 +206,22 @@ export class UsersController {
     return CustomApiResponse.success(user, 'User removed from department successfully');
   }
 
+  @Delete(':id/permanent')
+  @Roles(Role.SUPERADMIN)
+  @Audit({ action: 'PERMANENT_DELETE', entity: 'User' })
+  @ApiOperation({ summary: 'Permanently delete user from database (Superadmin only)' })
+  @ApiResponse({ status: 200, description: 'User permanently deleted successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Superadmin required' })
+  @ApiResponse({ status: 400, description: 'Bad request - Cannot permanently delete active user' })
+  async permanentDelete(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    await this.usersService.permanentDelete(id, currentUser);
+    return CustomApiResponse.success(null, 'User permanently deleted successfully');
+  }
+
   @Get(':id/permissions')
   @ApiOperation({ summary: 'Get user permissions for current user context' })
   @ApiResponse({ status: 200, description: 'User permissions retrieved successfully' })
