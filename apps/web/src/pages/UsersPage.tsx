@@ -513,17 +513,17 @@ const UsersPage: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                    <tr key={user.id} className={`hover:bg-gray-50 ${user.deletedAt ? 'opacity-75 bg-gray-50' : ''}`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="w-10 h-10 bg-warm-gold rounded-full flex items-center justify-center text-white font-medium mr-4">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium mr-4 ${user.deletedAt ? 'bg-gray-400' : 'bg-warm-gold'}`}>
                             {user.firstName[0]}{user.lastName[0]}
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-charcoal">
+                            <p className={`text-sm font-medium ${user.deletedAt ? 'text-gray-500 line-through' : 'text-charcoal'}`}>
                               {user.firstName} {user.lastName}
                             </p>
-                            <p className="text-sm text-gray-500">{user.email}</p>
+                            <p className={`text-sm ${user.deletedAt ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
                           </div>
                         </div>
                       </td>

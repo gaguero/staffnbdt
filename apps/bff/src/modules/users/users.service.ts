@@ -72,9 +72,9 @@ export class UsersService {
     let whereClause: any = {};
 
     // Apply soft delete filtering conditionally
-    if (!includeInactive) {
-      whereClause = applySoftDelete({ where: whereClause }).where || {};
-    }
+    // When includeInactive is true, include both active and inactive users
+    // When includeInactive is false, only include active users (exclude deleted)
+    whereClause = applySoftDelete({ where: whereClause }, includeInactive).where || {};
 
     // Apply role-based filtering
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
