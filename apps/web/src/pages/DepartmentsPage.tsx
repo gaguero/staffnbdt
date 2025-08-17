@@ -174,6 +174,33 @@ const DepartmentsPage: React.FC = () => {
       departments: Department[];
     }> = [];
     
+    // If we have a search term, show all matching departments in flat groups by level
+    if (searchTerm.trim()) {
+      // Group departments by level for search results
+      const departmentsByLevel = departments.reduce((acc, dept) => {
+        if (!acc[dept.level]) {
+          acc[dept.level] = [];
+        }
+        acc[dept.level].push(dept);
+        return acc;
+      }, {} as Record<number, Department[]>);
+
+      // Create groups for each level that has departments
+      Object.entries(departmentsByLevel)
+        .sort(([a], [b]) => parseInt(a) - parseInt(b)) // Sort by level
+        .forEach(([level, depts]) => {
+          hierarchyGroups.push({
+            level: parseInt(level),
+            parentId: null,
+            parentName: `Level ${level} Departments`,
+            departments: depts
+          });
+        });
+
+      return hierarchyGroups;
+    }
+    
+    // For non-search results, use the original hierarchy logic
     const processed = new Set<string>();
 
     // Helper function to process departments at each level
@@ -821,12 +848,19 @@ const DepartmentsPage: React.FC = () => {
           {hierarchyGroups.map((group) => (
             <div key={`group-${group.level}-${group.parentId || 'root'}`} className="relative">
               {/* Group header for child departments */}
-              {group.level > 0 && group.parentName && (
+              {group.level > 0 && group.parentName && !searchTerm.trim() && (
                 <div 
                   className="mb-4 text-sm text-gray-600 font-medium"
                   style={{ marginLeft: `${group.level * 20}px` }}
                 >
                   <span className="text-gray-400">└─</span> Under {group.parentName}
+                </div>
+              )}
+              
+              {/* Group header for search results */}
+              {searchTerm.trim() && group.parentName && group.parentName.startsWith('Level') && (
+                <div className="mb-4 text-sm text-gray-600 font-medium">
+                  <span className="text-blue-600">📊</span> {group.parentName} (matching "{searchTerm}")
                 </div>
               )}
               
@@ -841,7 +875,7 @@ const DepartmentsPage: React.FC = () => {
                     ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
                     : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
                 }`}
-                style={{ marginLeft: `${group.level * 20}px` }}
+                style={{ marginLeft: searchTerm.trim() ? '0px' : `${group.level * 20}px` }}
               >
                 {group.departments.map(department => (
                   <div 
