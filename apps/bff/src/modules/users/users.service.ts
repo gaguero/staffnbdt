@@ -74,7 +74,10 @@ export class UsersService {
     // Apply soft delete filtering conditionally
     // When includeInactive is true, include both active and inactive users
     // When includeInactive is false, only include active users (exclude deleted)
-    whereClause = applySoftDelete({ where: whereClause }, includeInactive).where || {};
+    console.log('UsersService.findAll - includeInactive:', includeInactive);
+    const queryWithSoftDelete = applySoftDelete({ where: whereClause }, includeInactive);
+    console.log('UsersService.findAll - queryWithSoftDelete:', JSON.stringify(queryWithSoftDelete, null, 2));
+    whereClause = queryWithSoftDelete.where || {};
 
     // Apply role-based filtering
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
@@ -107,6 +110,8 @@ export class UsersService {
       ];
     }
 
+    console.log('UsersService.findAll - final whereClause:', JSON.stringify(whereClause, null, 2));
+    
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
         where: whereClause,
@@ -121,6 +126,9 @@ export class UsersService {
       }),
       this.prisma.user.count({ where: whereClause }),
     ]);
+
+    console.log('UsersService.findAll - found users:', users.length, 'total:', total);
+    console.log('UsersService.findAll - users:', users.map(u => ({ id: u.id, email: u.email, deletedAt: u.deletedAt })));
 
     return new PaginatedResponse(users, total, limit, offset);
   }
