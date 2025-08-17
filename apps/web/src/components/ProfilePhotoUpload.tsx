@@ -1,6 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
+import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
+import profileService from '../services/profileService';
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl?: string;
@@ -26,7 +29,14 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   const [showCropModal, setShowCropModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 200, height: 200 });
+  const [crop, setCrop] = useState<Crop>({
+    unit: '%',
+    width: 50,
+    height: 50,
+    x: 25,
+    y: 25,
+  });
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
@@ -91,24 +101,27 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   const getCroppedCanvas = (): HTMLCanvasElement | null => {
     const canvas = canvasRef.current;
     const image = imageRef.current;
-    if (!canvas || !image) return null;
+    if (!canvas || !image || !completedCrop) return null;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    canvas.width = cropArea.width;
-    canvas.height = cropArea.height;
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+
+    canvas.width = completedCrop.width;
+    canvas.height = completedCrop.height;
 
     ctx.drawImage(
       image,
-      cropArea.x,
-      cropArea.y,
-      cropArea.width,
-      cropArea.height,
+      completedCrop.x * scaleX,
+      completedCrop.y * scaleY,
+      completedCrop.width * scaleX,
+      completedCrop.height * scaleY,
       0,
       0,
-      cropArea.width,
-      cropArea.height
+      completedCrop.width,
+      completedCrop.height
     );
 
     return canvas;
@@ -133,37 +146,23 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
         }, 'image/jpeg', 0.9);
       });
 
-      // Create FormData for upload
-      const formData = new FormData();
-      formData.append('photo', blob, `profile-photo-${user?.id}.jpg`);
+      // Create file from blob
+      const file = new File([blob], `profile-photo-${user?.id}.jpg`, { type: 'image/jpeg' });
 
       // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 100);
 
-      // Make API call to upload
-      const response = await fetch('/api/profile/photo', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: formData,
-      });
+      // Make API call to upload using profileService
+      const result = await profileService.uploadProfilePhoto(file);
 
       clearInterval(progressInterval);
       setUploadProgress(100);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to upload photo');
-      }
-
-      const result = await response.json();
       
       // Update parent component
-      if (onPhotoUpdate && result.data?.profilePhoto) {
-        onPhotoUpdate(result.data.profilePhoto);
+      if (onPhotoUpdate && result.profilePhoto) {
+        onPhotoUpdate(result.profilePhoto);
       }
 
       // Clean up
@@ -189,18 +188,7 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
     try {
       setIsDeleting(true);
 
-      const response = await fetch('/api/profile/photo', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete photo');
-      }
+      await profileService.deleteProfilePhoto();
 
       // Update parent component
       if (onPhotoDelete) {
@@ -351,30 +339,45 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
 
               {previewUrl && (
                 <div className="space-y-4">
-                  {/* Image Preview with Crop Area */}
+                  {/* Interactive Crop Component */}
                   <div className="relative max-w-md mx-auto">
-                    <img
-                      ref={imageRef}
-                      src={previewUrl}
-                      alt="Preview"
-                      className="max-w-full h-auto rounded border"
-                      onLoad={() => {
-                        // Set initial crop area to center square
-                        const img = imageRef.current;
-                        if (img) {
-                          const size = Math.min(img.naturalWidth, img.naturalHeight, 300);
-                          const x = (img.naturalWidth - size) / 2;
-                          const y = (img.naturalHeight - size) / 2;
-                          setCropArea({ x, y, width: size, height: size });
-                        }
-                      }}
-                    />
+                    <ReactCrop
+                      crop={crop}
+                      onChange={(newCrop) => setCrop(newCrop)}
+                      onComplete={(c) => setCompletedCrop(c)}
+                      aspect={1}
+                      minWidth={50}
+                      minHeight={50}
+                      keepSelection
+                    >
+                      <img
+                        ref={imageRef}
+                        src={previewUrl}
+                        alt="Preview"
+                        className="max-w-full h-auto rounded border"
+                        onLoad={() => {
+                          // Initialize crop to center square
+                          const img = imageRef.current;
+                          if (img) {
+                            const centerCrop: Crop = {
+                              unit: '%',
+                              width: 50,
+                              height: 50,
+                              x: 25,
+                              y: 25,
+                            };
+                            setCrop(centerCrop);
+                          }
+                        }}
+                      />
+                    </ReactCrop>
                   </div>
 
                   {/* Crop Instructions */}
-                  <div className="text-center text-sm text-gray-600">
+                  <div className="text-center text-sm text-gray-600 space-y-1">
+                    <p>Drag the corners to adjust the crop area</p>
                     <p>Your photo will be cropped to a square format</p>
-                    <p>Make sure your face is clearly visible in the center</p>
+                    <p>Make sure your face is clearly visible within the selection</p>
                   </div>
 
                   {/* Action Buttons */}
