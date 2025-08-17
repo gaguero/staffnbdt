@@ -10,6 +10,14 @@ cmds = [
 
 [phases.build]
 cmds = [
+  # Generate Prisma Client
+  "cd packages/database && npx prisma generate",
+  
+  # Apply database migrations automatically
+  "echo '🔍 Checking database migrations for Railway deployment'",
+  "cd packages/database && node scripts/deploy-migrations.js",
+  
+  # Continue with application build
   "cd apps/bff && node prisma-simple-fix.js",
   "cd apps/bff && npx nest build"
 ]

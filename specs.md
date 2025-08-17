@@ -1,103 +1,141 @@
-# Nayara HR Portal Technical Specification
+# Hotel Operations Hub - Technical Specifications
 
 ## 1. Executive Summary
 
-* **Overview**: Mobile-first HR portal for Nayara Bocas del Toro providing role-scoped access to documents, payroll, vacation, training, benefits, and profiles. Managers (Admins) operate within their department; Superadmins manage organization-wide structures.
-* **Objectives**: Deliver an MVP that is secure with strong RBAC, auditable actions, CSV payroll ingest, and extensible training sessions; deploy on Railway with Postgres in the same project.
+* **Overview**: Multi-tenant, white-labeled ERP platform for hotel operations supporting everything from independent properties to international hotel chains. Provides modular HR, operations, and business management tools with complete tenant isolation, custom branding, and internationalization.
+* **Objectives**: Deliver a scalable platform with secure multi-tenancy, comprehensive white-labeling, AI-powered internationalization, and modular architecture supporting diverse hotel operation needs.
 * **Key Decisions**:
 
-  * **Architecture**: Modular monolith with **Backend-for-Frontend (BFF)** + background **Worker** sharing a single Postgres; object storage via S3/R2; CDN in front of assets; signed URL brokerage only from BFF.
-  * **RBAC/ABAC**: Role + department-scoped authorization checked server-side (Casbin/Oso or policy module).
-  * **PII**: Encrypt highly sensitive blobs (IDs, payslips) and redact in logs; short-lived signed URLs.
-  * **Ingestion**: CSV payroll dry-run validator + idempotent commits; future vendor connector via strategy interface.
-* **Technology Stack (recommended)**: React + Tailwind (SPA), Node.js (NestJS/Express) BFF, TypeScript end-to-end, Postgres (Railway), Redis (Railway) optional, S3-compatible object storage (R2/S3), OpenTelemetry, Playwright/Cypress, Vitest/Jest.
+  * **Architecture**: Multi-tenant shared database with complete tenant isolation via organization/property hierarchy; modular system supporting independent module activation per tenant.
+  * **Multi-Tenancy**: Organization → Property → Department → User hierarchy with tenant context in all operations; complete data isolation at API and database level.
+  * **White-Labeling**: Dynamic CSS variables, custom fonts, logos, and domain support with real-time theme switching and brand studio interface.
+  * **Internationalization**: Multi-language support with AI translation fallback, tenant-specific overrides, and locale formatting.
+  * **Storage**: Cloudflare R2 for zero egress fees, global distribution, and multi-region replication with tenant-isolated file organization.
+* **Technology Stack**: React + Tailwind (SPA), NestJS BFF, TypeScript, PostgreSQL (Railway), Redis (Railway), Cloudflare R2, OpenTelemetry, react-i18next, Playwright testing.
 
-### High-level Architecture Diagram
+### Multi-Tenant Architecture Diagram
 
 ```mermaid
 flowchart TB
-  subgraph Client[Web Client (React SPA)]
-    UI[UI + i18n + State]
+  subgraph Client[Multi-Tenant Web Client]
+    UI[React SPA + White-Label + i18n]
+    THEME[Dynamic Theming]
+    LANG[Multi-Language]
   end
-  CDN[CDN/Edge]
+  
+  CDN[Cloudflare CDN + R2]
   WAF[WAF/Rate Limit]
-  BFF[API/BFF]
-  AUTH[OIDC/Passwordless]
-  RBAC[Policy Engine]
-  CACHE[(Redis)]
-  AUDIT[Audit Stream]
-  NOTIFY[Email/SMS/WhatsApp]
+  
+  subgraph Platform[Hotel Operations Hub Platform]
+    BFF[Multi-Tenant BFF API]
+    TENANT[Tenant Context Middleware]
+    AUTH[Authentication Service]
+    RBAC[Multi-Level Authorization]
+    BRAND[Branding Service]
+    I18N[Translation Service]
+    AI[AI Translation]
+  end
+  
+  CACHE[(Redis Cache)]
+  QUEUE[(Background Workers)]
+  AUDIT[Audit Service]
+  NOTIFY[Notification Service]
 
-  subgraph Core[Core Services]
-    USERS[Users/Orgs]
-    DOCS[Documents]
-    PAY[Payroll]
-    VAC[Vacation]
-    TRAIN[Training]
-    PROF[Profile]
-    BEN[Benefits]
+  subgraph Modules[Modular Services]
+    HR[HR Module]
+    FRONT[Front Desk Module]
+    HOUSE[Housekeeping Module]
+    MAINT[Maintenance Module]
+    INV[Inventory Module]
+    FNB[F&B Module]
+    CONC[Concierge Module]
+    FIN[Finance Module]
+    REV[Revenue Module]
+    BI[Business Intelligence]
   end
 
-  subgraph Data[Railway Postgres + Object Storage]
-    PG[(Postgres)]
-    OBJ[(Object Storage)]
-    Q[[Queue/Workers]]
+  subgraph Data[Multi-Tenant Data Layer]
+    PG[(PostgreSQL with Tenant Isolation)]
+    R2[(Cloudflare R2 Storage)]
+    TRANS[(Translation Memory)]
   end
 
-  UI -->|HTTPS| CDN --> WAF --> BFF
-  BFF --> AUTH
-  BFF --> RBAC
+  UI --> CDN --> WAF --> BFF
+  BFF --> TENANT --> AUTH --> RBAC
+  BFF --> BRAND --> THEME
+  BFF --> I18N --> AI --> TRANS
   BFF --> CACHE
-  BFF --> USERS & DOCS & PAY & VAC & TRAIN & PROF & BEN
-  BFF --> NOTIFY
+  BFF --> HR & FRONT & HOUSE & MAINT & INV & FNB & CONC & FIN & REV & BI
   BFF --> AUDIT
+  BFF --> NOTIFY
+  QUEUE --> HR & FRONT & HOUSE & MAINT
 
-  USERS & DOCS & PAY & VAC & TRAIN & PROF & BEN --> PG
-  DOCS & TRAIN & PAY --> OBJ
-  Q --> PAY
-  Q --> DOCS
-  Q --> TRAIN
-  Q --> OBJ
+  HR & FRONT & HOUSE & MAINT & INV & FNB & CONC & FIN & REV & BI --> PG
+  HR & FRONT & HOUSE & TRAIN --> R2
+  I18N --> TRANS
 ```
 
-## 2. System Architecture
+## 2. Multi-Tenant System Architecture
 
 ### 2.1 Architecture Overview
 
-* **Components**: React SPA, BFF API, Worker (CSV ingest, AV scan, PDF gen, training grading), Postgres, Object Storage, Queue (Railway cron/worker with BullMQ/RSMQ), CDN, Notification provider, Auth provider.
-* **Relationships**: SPA calls BFF only; BFF enforces authz and issues signed URLs; Worker performs async tasks via queue; services share Postgres schemas with clear boundaries; audit events written on every mutating action and sensitive reads.
-* **Data Flows**:
+* **Components**: Multi-tenant React SPA with dynamic theming, Multi-tenant BFF API with tenant context middleware, Background workers for async processing, PostgreSQL with tenant isolation, Cloudflare R2 storage with tenant-scoped organization, Redis for caching and queues, Translation service with AI fallback, Branding service with CSS injection.
+* **Multi-Tenant Relationships**: All requests include tenant context (organization/property); middleware validates tenant access; data queries filtered by tenant ID; file storage organized by tenant hierarchy; branding and translations resolved per tenant.
+* **Key Data Flows**:
 
-  1. **Document upload**: Admin → SPA → BFF → pre-signed upload → OBJ → enqueue AV → on pass, metadata→PG; on fail, quarantine.
-  2. **Payroll ingest**: Admin uploads CSV → BFF stores staged file → Worker validates (dry-run), returns report → Admin commits → Worker persists rows, generates payslip PDFs if configured → indices updated.
-  3. **Training**: Admin creates session with ordered blocks → users enroll/assigned → Worker grades FORM blocks on submit → completion recorded.
-  4. **Vacation**: Staff submits → state machine transitions; Admin approves within dept; Superadmin override.
-* **Infrastructure Requirements**: Railway services: `web` (BFF), `worker`, `postgres`, optional `redis`, `cron`. S3/R2 bucket with KMS; CDN (Cloudflare/R2 or CloudFront).
+  1. **Tenant-Aware Request**: Client → CDN → BFF → Tenant Middleware → Validate Access → Process with Tenant Context → Response
+  2. **Dynamic Branding**: Client loads → Fetch tenant branding → Inject CSS variables → Apply custom fonts/logos → Render themed UI
+  3. **Multi-Language**: Client requests translation → Check property override → Check organization override → Check platform default → AI translate if missing → Cache result
+  4. **File Upload**: Admin → Pre-signed URL with tenant path → R2 upload to `/org-id/property-id/` → Metadata to DB with tenant IDs
+  5. **Module Activation**: Organization enables module → Properties inherit → Users see module in navigation → Tenant-scoped data access
 
-### 2.2 Technology Stack
+* **Infrastructure Requirements**: Railway services: `web` (Multi-tenant BFF), `worker` (Async processing), `postgres` (Shared with tenant isolation), `redis` (Caching/queues). Cloudflare R2 bucket with tenant-organized structure. Custom domain support for white-labeling.
 
-* **Frontend**: React, TypeScript, Vite, Tailwind, React Query (TanStack), i18next; lucide icons; MSW for mock.
-* **Backend**: Node.js (NestJS preferred for modules/DI), TypeScript, PostgreSQL client (Prisma or Knex), Casbin/Oso for policies, Zod for validation.
-* **Database/Storage**: Postgres (Railway) single cluster; S3-compatible object storage for PDFs/IDs/training assets; Redis optional for rate limits/queues.
-* **Third-party**: Auth (Auth0/Clerk/Cognito or email-magic-link), Email/SMS (SendGrid/Twilio/WhatsApp), AV scan (Lambda/ClamAV container), PDF gen (wkhtmltopdf/WeasyPrint), OpenTelemetry.
+### 2.2 Multi-Tenant Technology Stack
 
-## 3. Feature Specifications
+* **Frontend**: React with dynamic theming, TypeScript, Vite, Tailwind CSS with CSS variables, TanStack Query for state management, react-i18next for internationalization, Lucide icons, React Router with tenant routing.
+* **Backend**: NestJS with multi-tenant middleware, TypeScript, Prisma ORM with tenant-aware queries, Passport JWT with tenant context, Zod validation, Class-validator for DTOs, Bull/BullMQ for job queues.
+* **Multi-Tenancy**: Tenant context middleware, Row-level security policies, API-level tenant validation, Shared database with tenant isolation, Tenant-scoped file storage.
+* **White-Labeling**: CSS variables injection, Google Fonts integration, Custom domain support, Brand asset management, Real-time theme switching.
+* **Internationalization**: react-i18next with namespace support, Translation management API, AI translation service (OpenAI/DeepL), Translation memory and caching, Locale formatting utilities.
+* **Database/Storage**: PostgreSQL (Railway) with tenant isolation, Cloudflare R2 for zero egress fees, Redis for caching and queues, Translation memory storage.
+* **Third-party**: JWT authentication with tenant claims, SendGrid/Twilio for notifications, OpenAI for AI translations, ClamAV for virus scanning, PDF generation services, OpenTelemetry for monitoring.
 
-### 3.1 Role-Based Access, Hierarchies & Provisioning
+## 3. Multi-Tenant Feature Specifications
+
+### 3.1 Multi-Tenant Organization Management
 
 * **User Stories**
+  * As a Platform Admin, I manage organizations and global platform settings
+  * As an Organization Owner, I manage properties within my organization and organization-level settings
+  * As a Property Manager, I manage users and operations within my property
+  * As a Department Admin, I manage users within my department and property
+  * As Staff, I access only resources within my scope
 
-  * As a Superadmin, I create departments and positions.
-  * As an Admin, I create users in my department and assign positions.
-  * As Staff, I access only my resources.
-* **Acceptance**: Policy denies cross-department access; audit entries for CRUD.
-* **Technical Requirements**: RBAC with attributes (role, department\_id); org tables for departments, positions, memberships.
-* **Implementation**: Casbin model with policies generated from DB; middleware enforces subject/action/object with attributes; provisioning endpoints validate scope.
-* **User Flow**: Superadmin → create dept/position → Admin → create user → system emails invite.
-* **API**: see Section 5.
-* **Data Models**: Department, Position, User, Membership (user↔department), RoleAssignment.
-* **Errors**: 403 on scope breach; 409 on duplicate email.
-* **Performance**: Cache policy decisions per token (short TTL).
+* **Acceptance Criteria**: Complete tenant isolation at all levels; no cross-tenant data access; organization-scoped module subscriptions; property-scoped configurations; audit trails for all tenant operations.
+
+* **Technical Requirements**: 
+  - Multi-level tenant hierarchy (Platform → Organization → Property → Department → User)
+  - Tenant context middleware on all requests
+  - Tenant-aware data models with organization_id and property_id
+  - Module subscription management per organization
+  - Property-specific configuration overrides
+
+* **Implementation**: 
+  - Tenant context extracted from JWT and request headers
+  - Database queries filtered by tenant context
+  - API endpoints scoped to tenant hierarchy
+  - Role validation against tenant boundaries
+  - Module access controlled by organization subscriptions
+
+* **User Flows**:
+  1. **Organization Setup**: Platform Admin creates organization → Organization Owner activates → Adds properties → Configures modules
+  2. **Property Management**: Organization Owner creates property → Assigns Property Manager → Configures property settings
+  3. **User Management**: Property Manager creates departments → Adds users → Assigns roles and permissions
+
+* **Data Models**: Organization, Property, PropertyGroup, User, UserPropertyAccess, OrganizationModule, PropertyModule
+* **Errors**: 403 on tenant boundary violations; 404 on cross-tenant resource access; 409 on duplicate tenant-scoped resources
+* **Performance**: Redis caching for tenant configurations; indexed tenant queries; connection pooling per tenant tier
 
 ### 3.2 Document Library with Scoped Linking
 

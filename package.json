@@ -11,6 +11,9 @@
     "db:generate": "cd packages/database && npx prisma generate",
     "db:push": "cd packages/database && npx prisma db push",
     "db:studio": "cd packages/database && npx prisma studio",
+    "db:migrate:deploy": "cd packages/database && node scripts/deploy-migrations.js",
+    "db:migrate:status": "cd packages/database && npx prisma migrate status",
+    "db:migrate:create": "cd packages/database && npx prisma migrate dev",
     "build": "npm run db:generate",
     "postinstall": "npm run db:generate"
   },

@@ -1,10 +1,61 @@
-# CLAUDE.md
+# CLAUDE.md - Hotel Operations Hub Navigation Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with the Hotel Operations Hub codebase.
 
-## Project Overview
+## 📚 Documentation Navigation Map
 
-This is the Nayara Bocas del Toro HR Portal - a mobile-first staff management system with role-based access control, document management, payroll, vacation tracking, training modules, and commercial benefits directory. This is a Turborepo monorepo with three main applications currently being implemented.
+**CRITICAL**: Always read the appropriate documentation below for your specific task. Each file covers a specific aspect of the system:
+
+### 🏗️ Core Architecture & Vision
+- **README.md** → Project overview, quick start, tech stack, deployment info
+- **ARCHITECTURE.md** → Multi-tenant system design, data models, API architecture
+- **specs.md** → Complete technical specifications, detailed requirements
+
+### 🧩 Features & Modules
+- **MODULES.md** → All available modules (HR, Inventory, Maintenance, Front Desk, etc.)
+- **mvp.md** → MVP features organized by modules, implementation priorities
+
+### 🔧 Technical Implementation Guides
+- **MULTI_TENANT.md** → Multi-tenancy implementation, tenant isolation, hierarchy
+- **WHITE_LABEL.md** → White-labeling system, theming, branding customization
+- **I18N.md** → Internationalization setup, translation management, AI integration
+
+### 🚀 Development & Deployment
+- **DEVELOPMENT_PLAN.md** → Implementation phases, current status, roadmap
+- **RAILWAY_DEPLOYMENT.md** → Railway-specific deployment configuration
+- **setup.md** → Local development environment setup
+
+### 🎨 User Interface & Design
+- **ui.md** → Design system, component guidelines, responsive design
+- **NAVIGATION_IMPLEMENTATION.md** → Navigation patterns, routing structure
+
+### 📝 Credentials & Configuration
+- **LOGIN_CREDENTIALS.md** → Test accounts and authentication details
+
+## 🏨 Project Overview
+
+**Hotel Operations Hub** is a comprehensive, **multi-tenant, white-labeled, multi-language ERP platform** designed specifically for hotel operations management. This evolved from a single-tenant HR portal into a complete suite of modules for managing every aspect of hotel operations.
+
+### Key Characteristics
+- **Multi-Tenant**: Supports hotel chains, property groups, and independent hotels
+- **White-Labeled**: Complete branding customization per tenant/property
+- **Multi-Language**: English/Spanish initially, AI-powered translation system
+- **Modular**: Module marketplace with HR, Inventory, Maintenance, Front Desk, etc.
+- **Scalable**: From single property to international hotel chains
+
+### Current Transformation Status
+- **From**: Single-tenant "Nayara HR Portal" (staffnbdt)
+- **To**: Multi-tenant "Hotel Operations Hub" (hotel-ops-hub)
+- **Progress**: HR module implemented, multi-tenant architecture in progress
+- **Storage**: Migrating from local filesystem to Cloudflare R2
+- **Deployment**: Railway-based with auto-deployment
+
+### Key Technical Decisions
+- **Tenant Isolation**: Shared database with organization_id/property_id columns
+- **File Storage**: Cloudflare R2 (NOT local filesystem) with CDN
+- **White-Labeling**: Dynamic CSS variables, runtime theme switching
+- **Internationalization**: react-i18next with AI translation preparation
+- **Module System**: Independent modules with inter-module communication
 
 ## Railway-First Development Workflow
 
@@ -128,20 +179,53 @@ packages/
   ui/           # Shared UI components (to be created)
 ```
 
-### Role Hierarchy
-1. **Superadmin**: Full system access, manages departments/positions
-2. **Department Admin**: Manages users within their department only
-3. **Staff**: Self-service access to their own resources
+### Multi-Level Role Hierarchy
+1. **Platform Admin**: Manages entire platform, all tenants
+2. **Organization Owner**: Manages hotel chain/group
+3. **Organization Admin**: Manages organization settings  
+4. **Property Manager**: Manages individual hotel property
+5. **Department Admin**: Manages department within property
+6. **Staff**: Self-service access to own resources
 
-### Core Features
-- **Document Library**: Scoped document access (general/department/user-specific)
-- **Payroll**: CSV bulk import with validation, payslip generation
-- **Vacation Management**: Request/approval workflow with department scoping
-- **Training Sessions**: Modular content blocks (TEXT/FILE/VIDEO/LINK/FORM) with grading
-- **Commercial Benefits**: Partner perks directory
-- **Profile Management**: PII-safe profile with ID verification
-- **Notifications**: In-app notification system
-- **Audit Logging**: Complete audit trail for sensitive operations
+### Tenant Hierarchy
+```
+Platform (Super Admin Portal)
+├── Organization (Hotel Chain/Group)
+│   ├── Properties (Individual Hotels)
+│   │   ├── Departments (Front Desk, Housekeeping, etc.)
+│   │   │   └── Users (Staff, Managers)
+│   │   └── Modules (HR, Inventory, Maintenance)
+│   └── Branding (White-label theming)
+└── Languages (Multi-language support)
+```
+
+### Hotel Operations Hub Modules
+
+#### Core Platform Features
+- **Multi-Tenant Management**: Organization/property hierarchy, tenant isolation
+- **White-Label Branding**: Custom logos, colors, fonts, CSS per tenant
+- **Multi-Language Support**: English/Spanish with AI translation system
+- **Module Marketplace**: Enable/disable modules per property
+- **Super Admin Portal**: Platform-wide tenant and usage management
+
+#### HR Module (Implemented)
+- **User Management**: Multi-level roles, department scoping
+- **Profile Management**: Photos, ID verification, emergency contacts
+- **Payroll**: CSV import, payslip generation, multi-property support
+- **Vacation Management**: Request/approval workflow
+- **Training Sessions**: Modular content with progress tracking
+- **Commercial Benefits**: Partner directory
+- **Document Library**: Scoped access with audit trails
+
+#### Hotel Operations Modules (Planned)
+- **Front Desk**: Check-in/out, reservations, guest services
+- **Housekeeping**: Room status, cleaning schedules, inventory
+- **Maintenance**: Work orders, preventive maintenance, asset tracking
+- **Inventory**: Stock management, purchase orders, suppliers
+- **F&B**: Restaurant, bar, room service, event management
+- **Concierge**: Guest requests, local recommendations
+- **Revenue Management**: Dynamic pricing, forecasting
+- **Analytics**: Cross-property reporting, KPI dashboards
 
 ## Development Commands
 
@@ -309,11 +393,28 @@ AUTH_DOMAIN=
 AUTH_CLIENT_ID=
 AUTH_CLIENT_SECRET=
 
-# S3 Storage
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_REGION=
-S3_BUCKET=
+# Cloudflare R2 Storage (NOT S3)
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_PUBLIC_URL=
+
+# Multi-Tenant Configuration
+DEFAULT_ORGANIZATION_ID=
+DEFAULT_PROPERTY_ID=
+TENANT_ISOLATION_MODE=strict
+
+# White-Label Configuration
+ALLOW_CUSTOM_BRANDING=true
+ALLOW_CUSTOM_DOMAINS=true
+ALLOW_CUSTOM_CSS=true
+
+# Internationalization
+DEFAULT_LANGUAGE=en
+SUPPORTED_LANGUAGES=en,es
+AI_TRANSLATION_ENABLED=false
+AI_TRANSLATION_PROVIDER=openai
 
 # Email (for magic links)
 SMTP_HOST=
@@ -892,47 +993,58 @@ All features will respect department boundaries:
 Use this section to track work across development sessions:
 
 **Last Updated**: August 17, 2025
-**Current Task**: Implementing Complete User Management & Profile Features
-**Next Steps**: Create ProfilePhotoUpload component with drag & drop, crop, and validation
-**Blockers**: None
+**Current Task**: Transforming to Hotel Operations Hub Multi-Tenant Platform
+**Next Steps**: Complete documentation update and implement multi-tenant foundation
+**Blockers**: None - Documentation transformation in progress
 
-#### Current TODO List - User Management Feature Implementation:
+#### Current TODO List - Hotel Operations Hub Transformation:
 
-**Phase 1: Profile Management Completion**
-- [ ] Create ProfilePhotoUpload.tsx component with drag & drop, crop, and validation
-- [ ] Create IDDocumentUpload.tsx component with secure upload and status display  
-- [ ] Create EmergencyContactsForm.tsx with dynamic contacts management
-- [ ] Update ProfilePage.tsx with complete profile fields and API integration
+**Phase 1: Documentation Transformation**
+- [x] Transform CLAUDE.md into navigation hub
+- [ ] Update README.md to Hotel Operations Hub
+- [ ] Create ARCHITECTURE.md for multi-tenant design
+- [ ] Create MODULES.md for module specifications
+- [ ] Create MULTI_TENANT.md for implementation details
+- [ ] Create WHITE_LABEL.md for theming system
+- [ ] Create I18N.md for internationalization
+- [ ] Update specs.md with multi-tenant requirements
+- [ ] Update mvp.md to reorganize by modules
+- [ ] Update DEVELOPMENT_PLAN.md for new phases
 
-**Phase 2: Admin Management Features**
-- [ ] Create VerificationQueue.tsx for admin ID document review
-- [ ] Create UserActivityLog.tsx for audit trail viewing
-- [ ] Create DepartmentStats.tsx dashboard for admin analytics
-- [ ] Enhance UsersPage.tsx with advanced filtering and invitation management
+**Phase 2: Multi-Tenant Foundation**
+- [ ] Update database schema for organizations/properties
+- [ ] Add tenant context to all API endpoints
+- [ ] Implement property selector component
+- [ ] Add tenant isolation middleware
+- [ ] Create super admin portal foundation
 
-**Phase 3: User Details & Modals Enhancement**
-- [ ] Update UserDetailsModal.tsx with complete profile display and tabs
-- [ ] Update EditUserModal.tsx with all profile fields and validation
+**Phase 3: White-Label System**
+- [ ] Implement dynamic theming system
+- [ ] Create branding configuration schema
+- [ ] Build brand studio interface
+- [ ] Add CSS variable injection
+- [ ] Test custom branding per tenant
 
-**Phase 4: Commercial Benefits Module**
-- [ ] Create Benefits module components (Grid, Card, Details, Filters, Admin)
-- [ ] Create benefitsService.ts with CRUD and filtering operations
+**Phase 4: Internationalization**
+- [ ] Setup react-i18next
+- [ ] Create translation management system
+- [ ] Add language selector component
+- [ ] Implement locale formatting
+- [ ] Prepare AI translation integration
 
-**Phase 5: Training Module Foundation**
-- [ ] Create Training module components (Dashboard, Card, Viewer, Quiz, Progress)
-- [ ] Create trainingService.ts with session and enrollment management
+**Phase 5: R2 Storage Migration**
+- [ ] Setup Cloudflare R2
+- [ ] Update file upload services
+- [ ] Migrate from local filesystem
+- [ ] Implement CDN delivery
+- [ ] Test file operations on Railway
 
-**Phase 6: Security & Polish**
-- [ ] Add security enhancements (session timeout, role-based UI, validation)
-- [ ] Optimize for mobile responsiveness across all components
-- [ ] Improve UX with toasts, confirmations, tooltips, and loading states
-
-**Phase 7: Integration & Testing**
-- [ ] Connect all API endpoints and test integration
-- [ ] Deploy to Railway and test all features on production
-
-**Phase 8: Onboarding Wizard (Final)**
-- [ ] Create comprehensive OnboardingWizard.tsx (final phase)
+**Phase 6: Module System**
+- [ ] Create module registry
+- [ ] Implement module permissions
+- [ ] Build module marketplace UI
+- [ ] Add inter-module communication
+- [ ] Test module enable/disable
 
 #### Recently Completed Department Hierarchy:
 - [x] Phase 1: Update Prisma schema for department hierarchy

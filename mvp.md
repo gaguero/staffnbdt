@@ -1,76 +1,111 @@
-## Features (MVP)
+## Hotel Operations Hub - Module-Based MVP
 
-### Role-Based Access, Hierarchies & Provisioning
+### Multi-Tenant Foundation - CORE PLATFORM
 
-A secure auth layer with four roles (Staff, Department Admin, Superadmin) and hierarchical scoping: Superadmin can create departments & positions; Admins can create users only within their department. Admins can also assign users to positions.
+The foundational multi-tenant architecture supporting hotel chains, independent properties, and management groups with complete tenant isolation and white-label branding.
 
 #### Tech Involved
 
-* OAuth2/OIDC (Auth0/Okta/Cognito) → BFF session; JWT (short-lived)
-* RBAC/ABAC policy engine (Casbin/Oso) embedded in BFF
-* Postgres (Railway) for users, departments, positions, memberships
+* Multi-tenant NestJS BFF with tenant context middleware
+* PostgreSQL with tenant isolation (organization_id, property_id columns)
+* JWT authentication with tenant claims
+* Dynamic CSS variables for white-labeling
+* react-i18next for internationalization
+* Cloudflare R2 for tenant-scoped file storage
 
 #### Main Requirements
 
-* Hierarchical scope checks (Superadmin > Admin > Staff) enforced server-side
-* CRUD: departments (Superadmin), positions (Superadmin), users (Admin within dept)
-* Idempotent user provisioning; email uniqueness; audit trail
+* **Tenant Hierarchy**: Platform → Organization → Property → Department → User
+* **Complete Isolation**: No cross-tenant data access at any level
+* **Module Subscriptions**: Organizations enable modules for their properties
+* **White-Label Branding**: Custom logos, colors, fonts, domains per tenant
+* **Multi-Language**: English/Spanish with AI translation fallback
+* **Tenant-Aware APIs**: All endpoints scoped to tenant context
 
 ---
 
-### Document Library with Scoped Linking
+### HR Module - Human Resources Management
 
-A searchable library of PDFs and static pages. Admins manage documents for their department and link files to specific departments and/or individual users.
+Comprehensive human resources module with multi-tenant user management, profile system, payroll, vacation tracking, training, and employee benefits.
 
-#### Tech Involved
+#### Module Components
 
-* Object storage (S3/R2) with signed URLs via BFF
-* Postgres metadata: documents, tags, department\_links, user\_links
-* Content scanning (AV) on upload; CDN fronting storage
-
-#### Main Requirements
-
-* Visibility: (general) OR (dept-linked) OR (user-linked)
-* Upload flow: AV scan → persist → index → CDN cache-invalidate
-* Audit: who uploaded/linked/unlinked; when viewed/downloaded
-
----
-
-### Payroll Service (DB-Backed + CSV Bulk Ingest, Future API)
-
-Self-service payroll with monthly payslips and detail (days, hours, OT, tips, deductions). Supports bulk CSV ingestion now; future vendor API integration.
+**User Management & Profile System - PRIORITY 1**
+Complete employee lifecycle management with role-based access control and department scoping.
 
 #### Tech Involved
 
-* Postgres tables for payslips & line items
-* CSV ingestion worker (queue-backed) with validation + idempotency keys
-* PDF generator (wkhtmltopdf/WeasyPrint) for payslip export
-* BFF aggregation for “self” access only
+* Multi-tenant user model with organization/property/department scoping
+* Role hierarchy: Platform Admin → Org Owner → Property Manager → Dept Admin → Staff
+* Encrypted ID document storage with admin verification workflow
+* Profile photo management with cropping and compression
+* Emergency contact management (structured JSON, up to 3 contacts)
+* Email invitation system with tenant-branded templates
+* CSV bulk import with validation and error reporting
+* Comprehensive audit logging for all HR operations
 
 #### Main Requirements
 
-* Bulk CSV endpoint (admin/superadmin): staged → validated → committed
-* Schema versioning for ingests; reject on incompatible columns
-* Immutable payslips (append-only); regeneration only creates new version
-* Future external API connector interface (strategy pattern)
+* **Multi-Tenant User Management**: Users scoped to organization and property
+* **Role-Based Access**: Five-tier role system with proper inheritance
+* **Profile Information**: Complete employee profiles with photos and documents
+* **Department Scoping**: Admins manage users only within their department/property
+* **Secure Document Handling**: ID verification workflow with encryption
+* **Bulk Operations**: CSV import/export with validation and progress tracking
+* **Audit Trail**: Complete logging of all user management operations
 
----
-
-### Vacation Management (Requests, Approvals, History)
-
-Employees submit leave; Admins approve for their department; Superadmin can override. Tracks available/pending/taken with blackout windows.
+**Payroll Management - PRIORITY 2**
+Multi-tenant payroll system with CSV import, PDF generation, and property consolidation.
 
 #### Tech Involved
 
-* State machine for request lifecycle (Submitted → Approved/Denied)
-* Rules engine for blackout windows & accrual
-* Notification service (email/SMS/WhatsApp) for status changes
+* Multi-tenant payslips with organization/property scoping
+* CSV ingestion worker with tenant-aware validation
+* PDF generator for payslips with tenant branding
+* Multi-property payroll consolidation for chains
+* Tenant-scoped batch processing and error reporting
 
 #### Main Requirements
 
-* Department-scoped approval queues for Admins
-* Accrual policy configurable (per position/tenure)
-* Full audit of actions & notes
+* **Tenant-Scoped Payroll**: Payslips isolated by organization and property
+* **CSV Import**: Bulk payroll import with tenant-specific validation
+* **Multi-Property Support**: Consolidate payroll across hotel chain properties
+* **Branded Payslips**: PDF generation using tenant branding configuration
+* **Audit Trail**: Complete tracking of payroll operations per tenant
+
+**Vacation Management - PRIORITY 3**
+Multi-tenant leave request system with property-scoped approval workflows.
+
+#### Tech Involved
+
+* Tenant-aware vacation request state machine
+* Property-scoped approval workflows and blackout policies
+* Tenant-branded notification templates
+* Multi-property vacation balance tracking
+
+#### Main Requirements
+
+* **Property-Scoped Approvals**: Managers approve leave within their property
+* **Tenant Policies**: Custom vacation policies per organization/property
+* **Cross-Property Tracking**: Vacation balances for chain employees
+* **Branded Notifications**: Email/SMS using tenant branding
+
+**Document Library - PRIORITY 4**
+Multi-tenant document management with property and department scoping.
+
+#### Tech Involved
+
+* Tenant-organized R2 storage structure (/org-id/property-id/)
+* Multi-level document scoping (organization, property, department, user)
+* Tenant-aware virus scanning and processing
+* Property-scoped document linking and access control
+
+#### Main Requirements
+
+* **Tenant Document Isolation**: Complete separation of documents by tenant
+* **Multi-Level Scoping**: Organization → Property → Department → User access
+* **Cross-Property Sharing**: Chain-level documents accessible to all properties
+* **Secure Access**: Pre-signed URLs with tenant validation
 
 ---
 

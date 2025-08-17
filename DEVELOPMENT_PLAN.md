@@ -1,103 +1,182 @@
-# Nayara Bocas del Toro HR Portal - Development Plan
+# Hotel Operations Hub - Development Plan
 
-## Current Status: Ready for Railway Deployment 🚀
+## Current Status: Multi-Tenant ERP Platform Architecture Complete 🏨
 
-### ✅ Completed Steps
-1. **Project Initialization** - Monorepo structure created with Turborepo
-2. **Database Schema** - Prisma schema fully defined in packages/database
-3. **Backend Structure** - NestJS BFF scaffolded with all core modules
-4. **Frontend Setup** - React + Vite + Tailwind configured
-5. **Worker Setup** - Background job processor initialized
-6. **Development Environment** - All apps configured and ready
-7. **Deployment Configuration** - Railway-ready with nixpacks.toml
+### ✅ Completed Platform Transformation
+1. **Project Architecture** - Transformed from single-tenant HR to multi-tenant hotel ERP
+2. **Multi-Tenant Foundation** - Complete tenant isolation and hierarchy design
+3. **White-Label System** - Dynamic branding and theme system architecture
+4. **Internationalization** - Multi-language support with AI translation
+5. **Module System** - Modular architecture for hotel operations
+6. **Storage Strategy** - Cloudflare R2 integration for global scale
+7. **Documentation Suite** - Comprehensive architectural documentation
 
-### 🔄 Current Phase: GitHub Push & Railway Deployment
+### 🔄 Current Phase: Multi-Tenant Implementation & MVP Development
 
-## Implementation Status
+## Development Phases Overview
 
-### Backend (apps/bff) ✅
-- **Core Modules Implemented:**
-  - ✅ Authentication (JWT + Magic Link)
-  - ✅ User Management with RBAC
-  - ✅ Department Management
-  - ✅ Document Library with S3
-  - ✅ Payroll System
-  - ✅ Vacation Management
-  - ✅ Training Sessions
-  - ✅ Commercial Benefits
-  - ✅ Notifications
-  
-- **Shared Services:**
-  - ✅ Prisma Database Service
-  - ✅ Logger Service (Winston)
-  - ✅ Storage Service (AWS S3)
-  - ✅ Audit Service
-  - ✅ Email Service
-  
-- **Security Features:**
-  - ✅ JWT Auth Guards
-  - ✅ Role-based Access Control
-  - ✅ Department Scoping
-  - ✅ Rate Limiting
-  - ✅ Input Validation
-  - ✅ Audit Logging
+### Phase 1: Multi-Tenant Foundation ✅ COMPLETE
+**Duration**: 2 weeks (Completed August 2025)
+**Status**: Architectural design and documentation complete
 
-### Frontend (apps/web) ✅
-- **Configuration:**
-  - ✅ Vite + React + TypeScript
-  - ✅ Tailwind CSS with custom design system
-  - ✅ TanStack Query for data fetching
-  - ✅ React Router for navigation
-  - ✅ Axios API client
-  - ✅ PWA support
+**Completed Deliverables:**
+- ✅ **Architecture Documentation** - Complete multi-tenant system design
+- ✅ **MULTI_TENANT.md** - Implementation guide for tenant isolation
+- ✅ **WHITE_LABEL.md** - White-labeling system with dynamic theming
+- ✅ **I18N.md** - Internationalization with AI translation
+- ✅ **MODULES.md** - Modular system design for hotel operations
+- ✅ **Updated Specifications** - Technical specs transformed for multi-tenancy
+- ✅ **MVP Reorganization** - Module-based development approach
 
-### Worker (apps/worker) ✅
-- **Job Processors:**
-  - ✅ Payroll CSV Import
-  - ✅ Email Notifications
-  - ✅ File Processing
-  - ✅ PDF Generation setup
-  - ✅ Training Grading setup
+### Phase 2: Core Platform Implementation 🔄 IN PROGRESS
+**Duration**: 4 weeks (August - September 2025)
+**Status**: Ready to begin implementation
 
-### Database (packages/database) ✅
-- **Complete Schema:**
-  - ✅ User model with roles
-  - ✅ Department model
-  - ✅ Document model with scoping
-  - ✅ Payslip model
-  - ✅ Vacation model
-  - ✅ Training & Enrollment models
-  - ✅ Commercial Benefits model
-  - ✅ Notification model
-  - ✅ Audit Log model
+**Implementation Priorities:**
 
-## Deployment Configuration ✅
+**Week 1-2: Multi-Tenant Foundation**
+- 🔄 Tenant context middleware implementation
+- 🔄 Multi-tenant database schema migration
+- 🔄 Organization and property management APIs
+- 🔄 JWT authentication with tenant claims
+- 🔄 Tenant-aware data access patterns
 
-### Railway Setup Files
-1. **nixpacks.toml** - Build configuration
-2. **.env.example** - Environment template
-3. **.gitignore** - Proper exclusions
+**Week 3-4: HR Module Core Features**
+- 📋 User management with multi-tenant scoping
+- 📋 Profile system with photo/ID uploads
+- 📋 Department hierarchy within properties
+- 📋 Role-based access control (5-tier system)
+- 📋 Bulk import/export with tenant isolation
 
-### Environment Variables Required
+### Phase 3: White-Label & Internationalization 📋 PLANNED
+**Duration**: 3 weeks (September 2025)
+**Status**: Architecture complete, ready for implementation
+
+**Implementation Priorities:**
+
+**Week 1: Dynamic Branding System**
+- 📋 Branding service with CSS variable injection
+- 📋 Brand studio interface for customization
+- 📋 Logo and asset management system
+- 📋 Custom domain support
+
+**Week 2: Multi-Language Implementation**
+- 📋 Translation service with tenant overrides
+- 📋 AI translation integration (OpenAI/DeepL)
+- 📋 Translation management interface
+- 📋 Locale formatting utilities
+
+**Week 3: Integration & Testing**
+- 📋 End-to-end multi-tenant testing
+- 📋 White-label theme preview system
+- 📋 Translation fallback validation
+- 📋 Performance optimization
+
+### Phase 4: Hotel Operations Modules 📋 PLANNED
+**Duration**: 6 weeks (October - November 2025)
+**Status**: Specifications defined in MODULES.md
+
+**Module Implementation Order:**
+
+**Week 1-2: Front Desk Operations**
+- 📋 Guest check-in/check-out system
+- 📋 Reservation management
+- 📋 Room assignment and status
+- 📋 Walk-in registration
+
+**Week 3-4: Housekeeping Management**
+- 📋 Room status board
+- 📋 Cleaning assignments
+- 📋 Inventory tracking
+- 📋 Quality control checklists
+
+**Week 5-6: Maintenance & Inventory**
+- 📋 Work order management
+- 📋 Asset tracking
+- 📋 Preventive maintenance scheduling
+- 📋 Stock level management
+
+### Phase 5: Business Intelligence & Integrations 📋 FUTURE
+**Duration**: 4 weeks (December 2025)
+**Status**: Roadmap defined
+
+**Advanced Features:**
+- 📋 Cross-module analytics dashboard
+- 📋 PMS integration capabilities
+- 📋 Channel manager connections
+- 📋 Revenue management tools
+
+## Technology Stack Evolution
+
+### Current Implementation Status
+
+**Backend (apps/bff) - Needs Multi-Tenant Upgrade**
+- ✅ NestJS foundation with modular architecture
+- 🔄 **Requires**: Tenant context middleware
+- 🔄 **Requires**: Multi-tenant database schema
+- 🔄 **Requires**: Organization/property management
+- ✅ JWT authentication (needs tenant claims)
+- ✅ Role-based access control (needs hierarchy expansion)
+
+**Frontend (apps/web) - Needs Multi-Tenant Features**
+- ✅ React + Vite + TypeScript foundation
+- ✅ Tailwind CSS (needs CSS variables system)
+- 🔄 **Requires**: react-i18next integration
+- 🔄 **Requires**: Dynamic theming system
+- 🔄 **Requires**: Tenant context provider
+- ✅ TanStack Query for state management
+
+**Database (packages/database) - Needs Schema Migration**
+- ✅ Prisma ORM foundation
+- 🔄 **Requires**: Multi-tenant schema (add organization_id, property_id)
+- 🔄 **Requires**: Branding and translation tables
+- 🔄 **Requires**: Module subscription tables
+- ✅ Audit logging structure
+
+**Storage Strategy - Migration Required**
+- 🔄 **Migration Needed**: Railway local → Cloudflare R2
+- 🔄 **Requires**: Tenant-scoped file organization
+- 🔄 **Requires**: Pre-signed URL service
+- 🔄 **Requires**: Global CDN integration
+
+### New Infrastructure Requirements
+
+**Cloudflare R2 Setup**
 ```env
-# Database (from Railway PostgreSQL)
+# Cloudflare R2 Configuration
+R2_ACCOUNT_ID=<cloudflare-account-id>
+R2_ACCESS_KEY_ID=<r2-access-key>
+R2_SECRET_ACCESS_KEY=<r2-secret-key>
+R2_BUCKET_NAME=hotel-ops-hub
+R2_PUBLIC_URL=<r2-public-domain>
+```
+
+**Multi-Tenant Environment Variables**
+```env
+# Database (Railway PostgreSQL with multi-tenant schema)
 DATABASE_URL=postgresql://...
 
-# Authentication
+# Authentication with tenant support
 JWT_SECRET=<generate-secure-key>
 JWT_EXPIRES_IN=7d
 
-# Application URLs
-FRONTEND_URL=https://<app-name>.up.railway.app
-VITE_API_URL=https://<app-name>-bff.up.railway.app
+# Multi-tenant application URLs
+VITE_API_URL=https://<app-name>.up.railway.app
+FRONTEND_URL=https://<app-name>-web.up.railway.app
 
-# Optional Services (can add later)
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-S3_BUCKET=
-SMTP_HOST=
-SMTP_USER=
-SMTP_PASS=
+# AI Translation Services
+OPENAI_API_KEY=<openai-key>
+DEEPL_API_KEY=<deepl-key>
+
+# Email notifications with tenant branding
+SMTP_HOST=smtp.sendgrid.net
+SMTP_USER=apikey
+SMTP_PASS=<sendgrid-api-key>
+
+# Platform admin settings
+PLATFORM_ADMIN_EMAIL=admin@hotel-ops-hub.com
+DEFAULT_LANGUAGE=en
+SUPPORTED_LANGUAGES=en,es
 ```
 
 ## Next Steps for Deployment
