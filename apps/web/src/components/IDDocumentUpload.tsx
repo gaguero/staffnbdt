@@ -1,35 +1,19 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
+import {
+  IdVerificationStatus,
+  IdDocumentStatus,
+  VerificationAction,
+  IDDocumentUploadProps,
+  FILE_CONSTRAINTS,
+  getStatusColor,
+  getStatusIcon,
+  formatFileSize,
+  formatDate,
+  validateFile
+} from '../types/profile';
 
-interface IDDocumentUploadProps {
-  onStatusUpdate?: (status: IdVerificationStatus) => void;
-  onDocumentUpdate?: (hasDocument: boolean) => void;
-  showAdminControls?: boolean;
-  userId?: string; // For admin view
-}
-
-interface IdDocumentStatus {
-  status: IdVerificationStatus;
-  uploadedAt?: string;
-  verifiedAt?: string;
-  verifiedBy?: string;
-  rejectionReason?: string;
-  filename?: string;
-  size?: number;
-}
-
-enum IdVerificationStatus {
-  PENDING = 'PENDING',
-  VERIFIED = 'VERIFIED',
-  REJECTED = 'REJECTED',
-  EXPIRED = 'EXPIRED',
-}
-
-interface VerificationAction {
-  status: IdVerificationStatus;
-  notes?: string;
-}
 
 const IDDocumentUpload: React.FC<IDDocumentUploadProps> = ({
   onStatusUpdate,
@@ -50,71 +34,12 @@ const IDDocumentUpload: React.FC<IDDocumentUploadProps> = ({
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // File validation constants
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-  const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-  const ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'];
+  // File validation constants from shared types
+  const { MAX_SIZE: MAX_FILE_SIZE, ALLOWED_TYPES, ALLOWED_EXTENSIONS } = FILE_CONSTRAINTS.ID_DOCUMENT;
 
   // Determine which user ID to use for API calls
   const targetUserId = showAdminControls && userId ? userId : user?.id;
 
-  const validateFile = (file: File): string | null => {
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return 'Please select a PDF, JPG, or PNG file.';
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      return 'File size must be less than 10MB.';
-    }
-    return null;
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getStatusColor = (status: IdVerificationStatus): string => {
-    switch (status) {
-      case IdVerificationStatus.VERIFIED:
-        return 'badge-success';
-      case IdVerificationStatus.PENDING:
-        return 'badge-info';
-      case IdVerificationStatus.REJECTED:
-        return 'badge-error';
-      case IdVerificationStatus.EXPIRED:
-        return 'badge-warning';
-      default:
-        return 'badge-neutral';
-    }
-  };
-
-  const getStatusIcon = (status: IdVerificationStatus): string => {
-    switch (status) {
-      case IdVerificationStatus.VERIFIED:
-        return '✓';
-      case IdVerificationStatus.PENDING:
-        return '⏳';
-      case IdVerificationStatus.REJECTED:
-        return '✗';
-      case IdVerificationStatus.EXPIRED:
-        return '⚠️';
-      default:
-        return '📄';
-    }
-  };
 
   const fetchDocumentStatus = async () => {
     if (!targetUserId) return;
@@ -163,7 +88,7 @@ const IDDocumentUpload: React.FC<IDDocumentUploadProps> = ({
   };
 
   const handleFileSelect = useCallback((file: File) => {
-    const validationError = validateFile(file);
+    const validationError = validateFile(file, FILE_CONSTRAINTS.ID_DOCUMENT);
     if (validationError) {
       setError(validationError);
       return;
