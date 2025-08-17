@@ -454,7 +454,11 @@ const DepartmentsPage: React.FC = () => {
                 )}
               </div>
               <p className="text-sm text-gray-600">
-                Manager: {getManagerName(department)} • {getEmployeeCount(department)} employees
+                Manager: {getManagerName(department)} • {
+                  expandedUserLists.has(department.id) && department.users && department.users.length > 0
+                    ? department.users.map(user => `${user.firstName} ${user.lastName}`).join(', ')
+                    : `${getEmployeeCount(department)} employees`
+                }
               </p>
               {department.location && (
                 <p className="text-xs text-gray-500">📍 {department.location}</p>
@@ -523,103 +527,6 @@ const DepartmentsPage: React.FC = () => {
             </div>
           </div>
         </div>
-        
-        {/* Expandable user list */}
-        {expandedUserLists.has(department.id) && department.users && department.users.length > 0 && (
-          <div 
-            className="ml-6 mt-2 p-3 bg-gray-50 rounded-lg border-l-2 border-blue-300"
-            style={{ marginLeft: `${(level + 1) * 24}px` }}
-          >
-            <h5 className="text-xs font-medium text-gray-700 mb-2">Staff Members:</h5>
-            <div className="space-y-1">
-              {department.users.map(user => (
-                <div 
-                  key={user.id} 
-                  className="group flex items-center justify-between py-1 px-2 hover:bg-white rounded text-sm"
-                >
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-800">{user.firstName} {user.lastName}</span>
-                    <span className="text-xs text-gray-500">({user.role})</span>
-                    {user.position && (
-                      <span className="text-xs text-gray-400">- {user.position}</span>
-                    )}
-                  </div>
-                  
-                  {/* Hover actions for each user */}
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {currentUser?.role === 'SUPERADMIN' && (
-                      <>
-                        <button 
-                          className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-1 py-0.5 rounded"
-                          title="Edit User"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Navigate to user edit page or open modal
-                            window.open(`/users/${user.id}/edit`, '_blank');
-                          }}
-                        >
-                          ✏️
-                        </button>
-                        <button 
-                          className="text-xs bg-green-100 hover:bg-green-200 text-green-700 px-1 py-0.5 rounded"
-                          title="Change Department"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            const newDeptId = prompt(`Change ${user.firstName} ${user.lastName}'s department. Enter new department ID (leave empty to remove from department):`);
-                            if (newDeptId !== null) {
-                              try {
-                                await userService.updateUser(user.id, { 
-                                  departmentId: newDeptId || undefined 
-                                });
-                                // Refresh the hierarchy
-                                await loadHierarchy();
-                                alert('Department changed successfully!');
-                              } catch (error) {
-                                alert('Failed to change department');
-                              }
-                            }
-                          }}
-                        >
-                          🔄
-                        </button>
-                        <button 
-                          className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-1 py-0.5 rounded"
-                          title="Deactivate User"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (confirm(`Are you sure you want to deactivate ${user.firstName} ${user.lastName}?`)) {
-                              try {
-                                await userService.deleteUser(user.id);
-                                // Refresh the hierarchy
-                                await loadHierarchy();
-                                alert('User deactivated successfully!');
-                              } catch (error) {
-                                alert('Failed to deactivate user');
-                              }
-                            }
-                          }}
-                        >
-                          🚫
-                        </button>
-                      </>
-                    )}
-                    <button 
-                      className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-1 py-0.5 rounded"
-                      title="View Profile"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Navigate to user profile page
-                        window.open(`/users/${user.id}`, '_blank');
-                      }}
-                    >
-                      👁️
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         
         {/* Render children recursively */}
         {department.children && department.children.length > 0 && (
