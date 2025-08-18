@@ -35,7 +35,7 @@ const UsersPage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
-    role: 'STAFF' as 'STAFF' | 'DEPARTMENT_ADMIN' | 'PROPERTY_MANAGER',
+    role: 'STAFF' as 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF',
     departmentId: '',
     position: '',
     phoneNumber: '',

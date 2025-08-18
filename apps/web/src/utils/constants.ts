@@ -27,8 +27,6 @@ export const ROLES = {
   PROPERTY_MANAGER: 'PROPERTY_MANAGER',
   DEPARTMENT_ADMIN: 'DEPARTMENT_ADMIN',
   STAFF: 'STAFF',
-  // Legacy for compatibility
-  SUPERADMIN: 'SUPERADMIN',
 } as const;
 
 export const ROLE_LABELS = {
@@ -38,8 +36,6 @@ export const ROLE_LABELS = {
   PROPERTY_MANAGER: 'Property Manager',
   DEPARTMENT_ADMIN: 'Department Admin',
   STAFF: 'Staff',
-  // Legacy for compatibility
-  SUPERADMIN: 'Super Admin',
 } as const;
 
 export const DATE_FORMAT = 'MMM dd, yyyy';

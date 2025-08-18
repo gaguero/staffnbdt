@@ -174,9 +174,6 @@ enum Role {
   PROPERTY_MANAGER    // Manages individual hotel property
   DEPARTMENT_ADMIN    // Manages department within property
   STAFF              // Self-service access to own resources
-  
-  // Legacy roles for backward compatibility
-  SUPERADMIN         // Maps to PLATFORM_ADMIN
 }
 
 model Department {
