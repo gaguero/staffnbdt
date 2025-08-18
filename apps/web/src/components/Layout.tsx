@@ -19,61 +19,61 @@ const navigationItems: NavItem[] = [
     label: 'nav.dashboard',
     path: '/dashboard',
     icon: '📊',
-    roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
     label: 'nav.profile',
     path: '/profile',
     icon: '👤',
-    roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
     label: 'nav.documents',
     path: '/documents',
     icon: '📁',
-    roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
     label: 'nav.payroll',
     path: '/payroll',
     icon: '💰',
-    roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
     label: 'nav.vacation',
     path: '/vacation',
     icon: '🏖️',
-    roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
     label: 'nav.training',
     path: '/training',
     icon: '🎓',
-    roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
     label: 'nav.benefits',
     path: '/benefits',
     icon: '🎁',
-    roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
     label: 'nav.notifications',
     path: '/notifications',
     icon: '🔔',
-    roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN', 'STAFF']
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
   },
   {
     label: 'nav.users',
     path: '/users',
     icon: '👥',
-    roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN']
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']
   },
   {
     label: 'nav.departments',
     path: '/departments',
     icon: '🏢',
-    roles: ['SUPERADMIN']
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
   }
 ];
 

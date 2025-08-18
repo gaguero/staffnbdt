@@ -1,7 +1,13 @@
 export enum UserRole {
-  SUPERADMIN = 'SUPERADMIN',
-  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',
-  STAFF = 'STAFF',
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',           // SaaS platform admins - full system access
+  ORGANIZATION_OWNER = 'ORGANIZATION_OWNER',   // Hotel chain owner
+  ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN',   // Organization settings manager
+  PROPERTY_MANAGER = 'PROPERTY_MANAGER',       // Hotel property manager
+  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',       // Department manager
+  STAFF = 'STAFF',                             // Regular employees
+  
+  // Legacy role for backward compatibility
+  SUPERADMIN = 'SUPERADMIN',                   // Maps to PLATFORM_ADMIN
 }
 
 export type date = Date | string;

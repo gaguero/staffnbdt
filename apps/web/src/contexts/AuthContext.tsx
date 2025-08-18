@@ -7,7 +7,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'SUPERADMIN' | 'DEPARTMENT_ADMIN' | 'STAFF';
+  role: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF';
   departmentId?: string;
   profilePhoto?: string;
   phoneNumber?: string;

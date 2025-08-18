@@ -31,7 +31,7 @@ const UserManagementPage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
-    role: 'STAFF' as 'STAFF' | 'DEPARTMENT_ADMIN' | 'SUPERADMIN',
+    role: 'STAFF' as 'STAFF' | 'DEPARTMENT_ADMIN' | 'PROPERTY_MANAGER',
     departmentId: '',
     position: '',
     phoneNumber: '',
@@ -235,7 +235,7 @@ const UserManagementPage: React.FC = () => {
 
   const getRoleBadge = (role: string) => {
     const colors = {
-      SUPERADMIN: 'bg-purple-100 text-purple-800',
+      PROPERTY_MANAGER: 'bg-purple-100 text-purple-800',
       DEPARTMENT_ADMIN: 'bg-blue-100 text-blue-800',
       STAFF: 'bg-gray-100 text-gray-800',
     };

@@ -111,7 +111,7 @@ const DepartmentsPage: React.FC = () => {
         const users = response.data.data || [];
         // Filter for users who can be managers (Department Admins and Superadmins)
         const managers = users.filter((u: any) => 
-          u.role === 'DEPARTMENT_ADMIN' || u.role === 'SUPERADMIN'
+          ['DEPARTMENT_ADMIN', 'PROPERTY_MANAGER', 'ORGANIZATION_ADMIN', 'ORGANIZATION_OWNER', 'PLATFORM_ADMIN'].includes(u.role)
         );
         setAvailableManagers(managers);
       }
@@ -484,7 +484,7 @@ const DepartmentsPage: React.FC = () => {
 
             {/* Action buttons */}
             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              {currentUser?.role === 'SUPERADMIN' && (
+              {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
                 <>
                   <button 
                     onClick={(e) => {
@@ -759,7 +759,7 @@ const DepartmentsPage: React.FC = () => {
 
                       {/* Action Buttons */}
                       <div className="flex space-x-1">
-                        {currentUser?.role === 'SUPERADMIN' && (
+                        {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
                           <>
                             <button 
                               onClick={() => handleEdit(department)}

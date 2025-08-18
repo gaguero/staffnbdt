@@ -35,7 +35,7 @@ const UsersPage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
-    role: 'STAFF' as 'STAFF' | 'DEPARTMENT_ADMIN' | 'SUPERADMIN',
+    role: 'STAFF' as 'STAFF' | 'DEPARTMENT_ADMIN' | 'PROPERTY_MANAGER',
     departmentId: '',
     position: '',
     phoneNumber: '',
@@ -266,7 +266,7 @@ const UsersPage: React.FC = () => {
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'SUPERADMIN':
+      case 'PROPERTY_MANAGER':
         return <span className="badge bg-purple-100 text-purple-800">Super Admin</span>;
       case 'DEPARTMENT_ADMIN':
         return <span className="badge bg-blue-100 text-blue-800">Dept Admin</span>;
@@ -322,15 +322,15 @@ const UsersPage: React.FC = () => {
   };
 
   const canManageUser = (user: UserType) => {
-    if (currentUser?.role === 'SUPERADMIN') return true;
+    if (['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '')) return true;
     if (currentUser?.role === 'DEPARTMENT_ADMIN') {
       return user.departmentId === currentUser.departmentId && user.role === 'STAFF';
     }
     return false;
   };
 
-  const availableRoles = currentUser?.role === 'SUPERADMIN' 
-    ? ['STAFF', 'DEPARTMENT_ADMIN', 'SUPERADMIN']
+  const availableRoles = ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '')
+    ? ['STAFF', 'DEPARTMENT_ADMIN', 'PROPERTY_MANAGER']
     : ['STAFF'];
 
   // Filter users
@@ -356,7 +356,7 @@ const UsersPage: React.FC = () => {
     { value: '', label: 'All Roles' },
     { value: 'STAFF', label: 'Staff' },
     { value: 'DEPARTMENT_ADMIN', label: 'Department Admin' },
-    { value: 'SUPERADMIN', label: 'Super Admin' }
+    { value: 'PROPERTY_MANAGER', label: 'Property Manager' }
   ];
 
   const statuses = [
@@ -382,7 +382,7 @@ const UsersPage: React.FC = () => {
         </div>
         
         <div className="flex gap-2">
-          {currentUser?.role === 'SUPERADMIN' && (
+          {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
             <>
               <button
                 onClick={() => setShowBulkImport(true)}
@@ -590,7 +590,7 @@ const UsersPage: React.FC = () => {
                               >
                                 {user.deletedAt ? 'Activate' : 'Deactivate'}
                               </button>
-                              {user.deletedAt && currentUser?.role === 'SUPERADMIN' && (
+                              {user.deletedAt && ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
                                 <button 
                                   className="text-red-800 hover:text-red-900 font-medium"
                                   onClick={() => {
@@ -696,7 +696,7 @@ const UsersPage: React.FC = () => {
                   </select>
                 </div>
 
-                {formData.role !== 'SUPERADMIN' && (
+                {formData.role !== 'PROPERTY_MANAGER' && (
                   <div>
                     <label className="form-label">Department *</label>
                     <select

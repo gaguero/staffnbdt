@@ -1,7 +1,16 @@
 #!/usr/bin/env node
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
+
+// Hash password for all seeded users
+const DEFAULT_PASSWORD = 'password123';
+const SALT_ROUNDS = 10;
+
+async function hashPassword(password) {
+  return await bcrypt.hash(password, SALT_ROUNDS);
+}
 
 async function seedCompleteData() {
   console.log('🌱 Starting comprehensive database seeding...');
@@ -638,6 +647,11 @@ async function seedCompleteData() {
 
     // Create Users
     console.log('\n👥 Creating Users...');
+    console.log('🔐 Hashing passwords...');
+    
+    // Hash the default password for all users
+    const hashedPassword = await hashPassword(DEFAULT_PASSWORD);
+    console.log('✅ Password hashing completed');
     
     // === NAYARA BOCAS DEL TORO USERS ===
     console.log('   🏝️ Nayara Bocas del Toro staff...');
@@ -648,6 +662,7 @@ async function seedCompleteData() {
     const robertoMartinez = await prisma.user.create({
       data: {
         email: 'roberto.martinez@nayararesorts.com',
+        password: hashedPassword,
         firstName: 'Roberto',
         lastName: 'Martinez',
         role: 'PROPERTY_MANAGER',
