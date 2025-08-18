@@ -18,7 +18,7 @@ export class DepartmentsService {
     currentUser: User,
   ): Promise<Department> {
     // Only superadmins can create departments
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can create departments');
     }
 
@@ -273,7 +273,7 @@ export class DepartmentsService {
     currentUser: User,
   ): Promise<Department> {
     // Only superadmins can update departments
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can update departments');
     }
 
@@ -409,7 +409,7 @@ export class DepartmentsService {
 
   async remove(id: string, currentUser: User): Promise<void> {
     // Only superadmins can delete departments
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can delete departments');
     }
 
@@ -512,7 +512,7 @@ export class DepartmentsService {
 
   async getOverallStats(currentUser: User): Promise<any> {
     // Only superadmins can see overall stats
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can view overall statistics');
     }
 

@@ -117,7 +117,7 @@ export class PayrollService {
 
   async importCsvPayroll(csvData: string, currentUser: User): Promise<{ imported: number; errors: string[] }> {
     // Only superadmins can import payroll
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can import payroll data');
     }
 

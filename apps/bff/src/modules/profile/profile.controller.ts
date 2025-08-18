@@ -49,7 +49,7 @@ export class ProfileController {
   }
 
   @Get(':id')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'VIEW_PROFILE', entity: 'User' })
   @ApiOperation({ summary: 'Get user profile by ID (Admin only)' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully', type: ProfileResponseDto })
@@ -137,7 +137,7 @@ export class ProfileController {
   }
 
   @Get('id/:userId')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'VIEW_ID_DOCUMENT', entity: 'User' })
   @ApiOperation({ summary: 'Get ID document (Admin only)' })
   @ApiResponse({ status: 200, description: 'ID document retrieved successfully' })
@@ -164,7 +164,7 @@ export class ProfileController {
   }
 
   @Post('id/:userId/verify')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'VERIFY_ID_DOCUMENT', entity: 'User' })
   @ApiOperation({ summary: 'Verify ID document (Admin only)' })
   @ApiResponse({ status: 200, description: 'ID document verification updated successfully' })
@@ -192,7 +192,7 @@ export class ProfileController {
   }
 
   @Get('id/:userId/status')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @ApiOperation({ summary: 'Get ID document verification status for user (Admin only)' })
   @ApiResponse({ status: 200, description: 'ID document status retrieved successfully', type: IdDocumentStatusDto })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin required' })

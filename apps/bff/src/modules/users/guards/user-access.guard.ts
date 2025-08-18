@@ -34,7 +34,7 @@ export class UserAccessGuard implements CanActivate {
     }
 
     // Superadmins can access everything
-    if (currentUser.role === Role.SUPERADMIN) {
+    if (currentUser.role === Role.PLATFORM_ADMIN) {
       return true;
     }
 
@@ -42,7 +42,7 @@ export class UserAccessGuard implements CanActivate {
     switch (operation) {
       case 'create':
         // Only superadmins can create users
-        return currentUser.role === Role.SUPERADMIN;
+        return currentUser.role === Role.PLATFORM_ADMIN;
 
       case 'view':
         return this.canViewUser(currentUser, targetUserId);
@@ -52,7 +52,7 @@ export class UserAccessGuard implements CanActivate {
 
       case 'delete':
         // Only superadmins can delete users
-        return currentUser.role === Role.SUPERADMIN;
+        return currentUser.role === Role.PLATFORM_ADMIN;
 
       default:
         return false;
@@ -113,7 +113,7 @@ export class UserAccessGuard implements CanActivate {
       }
 
       // Cannot edit other admins
-      if (targetUser.role === Role.SUPERADMIN || targetUser.role === Role.DEPARTMENT_ADMIN) {
+      if (targetUser.role === Role.PLATFORM_ADMIN || targetUser.role === Role.DEPARTMENT_ADMIN) {
         return false;
       }
 

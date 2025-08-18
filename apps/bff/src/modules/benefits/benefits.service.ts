@@ -44,7 +44,7 @@ export class BenefitsService {
   }
 
   async create(data: any, currentUser: User): Promise<CommercialBenefit> {
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can create benefits');
     }
 
@@ -54,7 +54,7 @@ export class BenefitsService {
   }
 
   async update(id: string, data: any, currentUser: User): Promise<CommercialBenefit> {
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can update benefits');
     }
 
@@ -65,7 +65,7 @@ export class BenefitsService {
   }
 
   async remove(id: string, currentUser: User): Promise<void> {
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can delete benefits');
     }
 

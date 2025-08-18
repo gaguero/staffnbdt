@@ -449,7 +449,7 @@ export class ProfileService {
   }
 
   private canViewProfile(currentUser: User, targetUserId: string): boolean {
-    if (currentUser.role === Role.SUPERADMIN) {
+    if (currentUser.role === Role.PLATFORM_ADMIN) {
       return true;
     }
 
@@ -463,12 +463,12 @@ export class ProfileService {
   }
 
   private canViewIdDocument(currentUser: User, targetUserId: string): boolean {
-    return currentUser.role === Role.SUPERADMIN || 
+    return currentUser.role === Role.PLATFORM_ADMIN || 
            currentUser.role === Role.DEPARTMENT_ADMIN;
   }
 
   private canVerifyIdDocument(currentUser: User, targetUserId: string): boolean {
-    return currentUser.role === Role.SUPERADMIN || 
+    return currentUser.role === Role.PLATFORM_ADMIN || 
            currentUser.role === Role.DEPARTMENT_ADMIN;
   }
 

@@ -331,7 +331,7 @@ export class DocumentsService {
   ): void {
     switch (documentData.scope) {
       case DocumentScope.GENERAL:
-        if (currentUser.role !== Role.SUPERADMIN) {
+        if (currentUser.role !== Role.PLATFORM_ADMIN) {
           throw new ForbiddenException('Only superadmins can manage general documents');
         }
         break;
@@ -422,7 +422,7 @@ export class DocumentsService {
         scope: DocumentScope.USER,
         user: { departmentId: currentUser.departmentId },
       });
-    } else if (currentUser.role === Role.SUPERADMIN) {
+    } else if (currentUser.role === Role.PLATFORM_ADMIN) {
       filters.push({ scope: DocumentScope.USER });
     }
 

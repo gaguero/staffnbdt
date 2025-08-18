@@ -32,7 +32,7 @@ export class InvitationsController {
   constructor(private readonly invitationsService: InvitationsService) {}
 
   @Post()
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'CREATE', entity: 'Invitation' })
   @ApiOperation({ summary: 'Create and send an invitation' })
   @ApiResponseDecorator({
@@ -56,7 +56,7 @@ export class InvitationsController {
   }
 
   @Get()
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @ApiOperation({ summary: 'Get all invitations with filtering and pagination' })
   @ApiResponseDecorator({
     status: 200,
@@ -77,7 +77,7 @@ export class InvitationsController {
   }
 
   @Get('stats')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @ApiOperation({ summary: 'Get invitation statistics' })
   @ApiResponseDecorator({
     status: 200,
@@ -143,7 +143,7 @@ export class InvitationsController {
   }
 
   @Post(':id/resend')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'RESEND', entity: 'Invitation' })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Resend invitation email' })
@@ -168,7 +168,7 @@ export class InvitationsController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'CANCEL', entity: 'Invitation' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Cancel invitation' })
@@ -184,7 +184,7 @@ export class InvitationsController {
   }
 
   @Post('cleanup-expired')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
     summary: 'Cleanup expired invitations (admin only)',

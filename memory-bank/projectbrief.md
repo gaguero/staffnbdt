@@ -1,0 +1,175 @@
+# Hotel Operations Hub - Project Brief
+
+## Vision
+Transform from single-tenant "Nayara HR Portal" to **Hotel Operations Hub**: a comprehensive, multi-tenant, white-labeled ERP platform specifically designed for hotel operations management, supporting everything from independent boutique hotels to large international hotel chains.
+
+## Core Mission
+Provide a complete suite of operational modules that enable hotels to manage every aspect of their business through a single, integrated platform with complete tenant isolation, custom branding, and multi-language support.
+
+## Target Market
+
+### Primary Markets
+- **Independent Hotels**: Complete operations management with custom branding
+- **Hotel Chains**: Centralized management across multiple properties
+- **Hotel Management Groups**: Multi-client property management
+- **Boutique Resorts**: Personalized, branded experience
+
+### Market Segments
+- Single property (5-50 rooms) → Independent operators
+- Small chains (2-10 properties) → Regional brands
+- Large chains (10+ properties) → International operators
+- Management companies → Multi-brand operators
+
+## Core Requirements
+
+### 1. Multi-Tenant Architecture
+- **Complete tenant isolation** at organization and property levels
+- **Hierarchical structure**: Platform → Organization → Property → Department → User
+- **Module subscriptions** managed at organization level
+- **Cross-property operations** for hotel chains
+- **Tenant-aware APIs** with context validation
+
+### 2. White-Label Branding
+- **Dynamic theming** with CSS variables injection
+- **Custom logos, colors, fonts** per tenant
+- **Custom domain support** for branded access
+- **Brand studio interface** for real-time customization
+- **Tenant-branded communications** (emails, PDFs)
+
+### 3. Multi-Language Support
+- **Primary languages**: English, Spanish
+- **AI translation fallback** for missing translations
+- **Tenant-specific overrides** for custom terminology
+- **Locale formatting** (currency, dates, numbers)
+- **Extensible system** for additional languages
+
+### 4. Modular System
+- **Module marketplace** with enable/disable per property
+- **Independent module operation** with seamless integration
+- **Inter-module communication** via events and APIs
+- **Pricing tiers** based on enabled modules
+- **Custom module development** capabilities
+
+## Key Differentiators
+
+### Technical Excellence
+- **Zero-downtime deployments** on Railway platform
+- **Global CDN distribution** via Cloudflare R2
+- **Tenant-scoped file organization** for security and performance
+- **Real-time multi-language switching**
+- **Mobile-first responsive design**
+
+### Business Value
+- **Reduced operational costs** through consolidated platform
+- **Improved guest experience** via integrated operations
+- **Data-driven insights** across all hotel operations
+- **Scalable growth path** from single property to chain
+- **Custom branding** maintains hotel identity
+
+## Module Portfolio
+
+### Core Platform (Included)
+- Multi-tenant management
+- White-label branding
+- Multi-language support
+- User authentication/authorization
+- Document management
+
+### HR Module (Implemented)
+- User/profile management with ID verification
+- Payroll with CSV import and PDF generation
+- Vacation request/approval workflows
+- Training with certificates and progress tracking
+- Employee benefits directory
+- Audit logging and compliance
+
+### Hotel Operations Modules (Planned)
+- **Front Desk**: Check-in/out, reservations, guest services
+- **Housekeeping**: Room status, cleaning schedules, inventory
+- **Maintenance**: Work orders, preventive maintenance, assets
+- **Inventory**: Stock management, purchasing, suppliers
+- **F&B**: Restaurant, bar, room service management
+- **Concierge**: Guest requests, local recommendations
+- **Revenue Management**: Dynamic pricing, forecasting
+- **Business Intelligence**: Cross-property analytics
+
+## Technical Foundation
+
+### Architecture Principles
+- **Shared database with tenant isolation** (organization_id, property_id)
+- **API-first design** with comprehensive OpenAPI documentation
+- **Event-driven architecture** for module communication
+- **Microservices-ready monolith** for future scaling
+- **Security by design** with encryption and audit trails
+
+### Technology Stack
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Backend**: NestJS + Prisma + PostgreSQL
+- **Storage**: Cloudflare R2 with global CDN
+- **Deployment**: Railway with auto-scaling
+- **Languages**: react-i18next with AI translation
+- **Authentication**: JWT with tenant context
+
+## Success Metrics
+
+### Technical Metrics
+- **99.9% uptime** across all tenant operations
+- **<2s page load times** globally via CDN
+- **Complete tenant isolation** with zero data leakage
+- **Real-time language switching** under 100ms
+- **Mobile-responsive** across all device types
+
+### Business Metrics
+- **Single platform consolidation** reducing IT costs 40%+
+- **Improved operational efficiency** via integrated workflows
+- **Enhanced guest experience** through seamless operations
+- **Scalable growth** from single property to international chain
+- **Custom branding** maintaining hotel identity and values
+
+## Project Constraints
+
+### Technical Constraints
+- **Railway deployment platform** for all services
+- **PostgreSQL database** with shared multi-tenant schema
+- **Cloudflare R2 storage** for global performance
+- **English/Spanish languages** initially (expandable)
+- **Web-based platform** (mobile app future consideration)
+
+### Business Constraints
+- **Hotel industry focus** with deep operational understanding
+- **Multi-tenant SaaS model** with subscription pricing
+- **White-label requirements** for brand preservation
+- **Compliance requirements** for hospitality industry
+- **International deployment** with local data residency
+
+## Implementation Approach
+
+### Phase 1: Multi-Tenant Foundation (Completed)
+- ✅ Architecture design and documentation
+- ✅ Multi-tenant database schema design
+- ✅ White-labeling system architecture
+- ✅ Internationalization framework
+- ✅ Module system design
+
+### Phase 2: Core Platform Implementation (In Progress)
+- 🔄 Multi-tenant middleware and APIs
+- 🔄 Dynamic branding system
+- 🔄 Translation management with AI
+- 🔄 Module subscription system
+- 📋 Super admin portal
+
+### Phase 3: Hotel Operations Modules
+- 📋 Front desk operations
+- 📋 Housekeeping management
+- 📋 Maintenance and inventory
+- 📋 F&B operations
+- 📋 Analytics and reporting
+
+### Phase 4: Advanced Features
+- 📋 PMS integrations
+- 📋 Channel manager connections
+- 📋 Mobile applications
+- 📋 Advanced analytics
+- 📋 AI-powered insights
+
+This project brief serves as the foundational document that guides all development decisions, architectural choices, and business priorities for Hotel Operations Hub.

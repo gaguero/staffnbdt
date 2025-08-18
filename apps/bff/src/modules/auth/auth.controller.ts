@@ -177,7 +177,7 @@ export class AuthController {
         email: 'admin@nayara.com',
         firstName: 'Admin',
         lastName: 'User',
-        role: Role.SUPERADMIN,
+        role: Role.PLATFORM_ADMIN,
         organizationId: organization.id,
         propertyId: property.id,
         departmentId: department.id

@@ -65,7 +65,7 @@ export class InvitationsService {
         throw new ForbiddenException('Department admins can only invite to their own department');
       }
 
-      if (createInvitationDto.role === Role.SUPERADMIN) {
+      if (createInvitationDto.role === Role.PLATFORM_ADMIN) {
         throw new ForbiddenException('Department admins cannot invite superadmins');
       }
     }
@@ -596,7 +596,7 @@ export class InvitationsService {
       throw new BadRequestException('Department Admins must be assigned to a department');
     }
 
-    if (role === Role.SUPERADMIN && departmentId) {
+    if (role === Role.PLATFORM_ADMIN && departmentId) {
       throw new BadRequestException('Superadmins cannot be assigned to a specific department');
     }
   }

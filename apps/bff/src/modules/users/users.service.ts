@@ -19,7 +19,7 @@ export class UsersService {
     currentUser: User,
   ): Promise<UserWithDepartment> {
     // Only superadmins can create users
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can create users');
     }
 
@@ -261,7 +261,7 @@ export class UsersService {
 
   async remove(id: string, currentUser: User): Promise<void> {
     // Only superadmins can delete users
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can delete users');
     }
 
@@ -292,7 +292,7 @@ export class UsersService {
 
   async restore(id: string, currentUser: User): Promise<UserWithDepartment> {
     // Only superadmins can restore users
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can restore users');
     }
 
@@ -332,7 +332,7 @@ export class UsersService {
 
   async permanentDelete(id: string, currentUser: User): Promise<void> {
     // Only superadmins can permanently delete users
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can permanently delete users');
     }
 
@@ -467,7 +467,7 @@ export class UsersService {
     currentUser: User,
   ): Promise<UserWithDepartment> {
     // Only superadmins can change roles
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can change user roles');
     }
 
@@ -513,7 +513,7 @@ export class UsersService {
       data: {
         role: changeRoleDto.role,
         // If changing to SUPERADMIN, remove department assignment
-        departmentId: changeRoleDto.role === Role.SUPERADMIN ? null : existingUser.departmentId,
+        departmentId: changeRoleDto.role === Role.PLATFORM_ADMIN ? null : existingUser.departmentId,
       },
       include: {
         department: true,
@@ -538,7 +538,7 @@ export class UsersService {
     currentUser: User,
   ): Promise<UserWithDepartment> {
     // Only superadmins and department admins can change status
-    if (currentUser.role !== Role.SUPERADMIN && currentUser.role !== Role.DEPARTMENT_ADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN && currentUser.role !== Role.DEPARTMENT_ADMIN) {
       throw new ForbiddenException('Only admins can change user status');
     }
 
@@ -569,7 +569,7 @@ export class UsersService {
     // Department admin cannot change status of other admins
     if (
       currentUser.role === Role.DEPARTMENT_ADMIN &&
-      (existingUser.role === Role.SUPERADMIN || existingUser.role === Role.DEPARTMENT_ADMIN)
+      (existingUser.role === Role.PLATFORM_ADMIN || existingUser.role === Role.DEPARTMENT_ADMIN)
     ) {
       throw new ForbiddenException('Department admins cannot change status of other admins');
     }
@@ -627,7 +627,7 @@ export class UsersService {
     currentUser: User,
   ): Promise<UserWithDepartment> {
     // Only superadmins and department admins can change departments
-    if (currentUser.role !== Role.SUPERADMIN && currentUser.role !== Role.DEPARTMENT_ADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN && currentUser.role !== Role.DEPARTMENT_ADMIN) {
       throw new ForbiddenException('Only admins can change user departments');
     }
 
@@ -717,7 +717,7 @@ export class UsersService {
     currentUser: User,
   ): Promise<UserWithDepartment> {
     // Only superadmins and department admins can remove from departments
-    if (currentUser.role !== Role.SUPERADMIN && currentUser.role !== Role.DEPARTMENT_ADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN && currentUser.role !== Role.DEPARTMENT_ADMIN) {
       throw new ForbiddenException('Only admins can remove users from departments');
     }
 
@@ -787,7 +787,7 @@ export class UsersService {
     targetUserId: string,
     currentUser: User,
   ): Promise<UserPermissions> {
-    const isSuperAdmin = currentUser.role === Role.SUPERADMIN;
+    const isSuperAdmin = currentUser.role === Role.PLATFORM_ADMIN;
     const isDepartmentAdmin = currentUser.role === Role.DEPARTMENT_ADMIN;
     const isSelf = currentUser.id === targetUserId;
 
@@ -832,7 +832,7 @@ export class UsersService {
     // Department admin permissions
     if (isDepartmentAdmin) {
       const sameOrOwnDepartment = targetUser.departmentId === currentUser.departmentId;
-      const isTargetAdmin = targetUser.role === Role.SUPERADMIN || targetUser.role === Role.DEPARTMENT_ADMIN;
+      const isTargetAdmin = targetUser.role === Role.PLATFORM_ADMIN || targetUser.role === Role.DEPARTMENT_ADMIN;
 
       if (sameOrOwnDepartment) {
         permissions.canView = true;
@@ -878,7 +878,7 @@ export class UsersService {
     }
 
     // SUPERADMIN cannot have a department
-    if (role === Role.SUPERADMIN && departmentId) {
+    if (role === Role.PLATFORM_ADMIN && departmentId) {
       throw new BadRequestException('Superadmins cannot be assigned to a specific department');
     }
   }
@@ -901,7 +901,7 @@ export class UsersService {
     currentUser: User,
   ): Promise<BulkImportResultDto> {
     // Only superadmins can bulk import users
-    if (currentUser.role !== Role.SUPERADMIN) {
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
       throw new ForbiddenException('Only superadmins can bulk import users');
     }
 

@@ -1,0 +1,209 @@
+# Hotel Operations Hub - Project Intelligence
+
+## Critical Context
+Hotel Operations Hub is a **multi-tenant, white-labeled ERP platform** specifically designed for hotel operations. We're in the middle of transforming from a single-tenant HR portal to a comprehensive hotel operations system.
+
+**Current Status**: Phase 2 - Multi-Tenant Implementation (Foundation complete, implementation needed)
+
+## Critical Implementation Paths
+
+### 1. Multi-Tenant Architecture is THE Priority
+- **Database Schema**: ALL tables need `organization_id` and `property_id` columns
+- **API Middleware**: EVERY endpoint must validate tenant context
+- **Frontend Context**: React app needs tenant context provider throughout
+- **File Storage**: Must migrate to tenant-scoped R2 organization (org-id/property-id/)
+
+### 2. Railway-First Development Workflow
+- **NO local development** - we test directly on Railway deployment
+- **Push-and-test approach**: Commit → Railway auto-deploys → Test on production URLs
+- **Frontend URL**: https://frontend-production-55d3.up.railway.app
+- **Browser automation required** for ALL changes (Playwright/Puppeteer)
+
+### 3. Memory Bank is Essential
+- **ALWAYS read memory bank first** before any major task
+- **Memory bank location**: `/memory-bank/` directory
+- **Core files**: projectbrief.md, productContext.md, activeContext.md, systemPatterns.md, techContext.md, progress.md
+- **Update memory bank** when discovering new patterns or making significant changes
+
+## User Preferences & Workflow
+
+### Approval Protocol (CRITICAL)
+- **Always ask for approval** before:
+  - Making significant code changes
+  - Choosing between multiple technical approaches
+  - Deviating from agreed-upon plans
+  - Introducing new dependencies
+- **Provide clear options** with pros/cons and recommendations
+- **Group related steps** into plans rather than asking for every atomic action
+
+### Communication Style
+- **Proactive information sharing** about plans and options
+- **Concise explanations** with clear reasoning
+- **Forecast related steps** as grouped actions
+
+### Testing Requirements (MANDATORY)
+- **Context7 research** before implementing ANY fix or feature
+- **Browser automation testing** after EVERY change using Playwright/Puppeteer MCP
+- **Screenshots required** as proof of working features
+- **Console error checking** mandatory - no errors allowed
+- **Mobile and desktop views** must be tested
+
+## Project-Specific Patterns
+
+### Database Patterns
+- **Tenant isolation**: All queries filtered by organization_id/property_id
+- **Audit logging**: Track all sensitive operations
+- **Soft deletes**: Use deletedAt timestamps
+- **Prisma ORM**: Type-safe database operations throughout
+
+### API Patterns
+```typescript
+// ALWAYS use tenant context in API endpoints
+@Get('users')
+async getUsers(@Req() req: TenantRequest) {
+  const { organizationId, propertyId } = req.tenantContext;
+  return this.userService.findByTenant(organizationId, propertyId);
+}
+```
+
+### Frontend Patterns
+- **TanStack Query** for server state management
+- **React Hook Form** with Zod validation
+- **Tailwind CSS** with CSS variables for theming
+- **Mobile-first responsive design**
+
+### File Storage Patterns
+- **Cloudflare R2** with tenant-scoped paths: `/org-id/property-id/`
+- **Pre-signed URLs** with 5-minute expiry
+- **NO local filesystem storage** - everything goes to R2
+
+## Known Challenges & Solutions
+
+### Challenge: Multi-Tenant Data Migration
+- **Issue**: Existing single-tenant data needs organization/property assignment
+- **Solution**: Create default organization/property, assign all existing records
+- **Status**: Plan ready, execution needed
+
+### Challenge: Frontend Tenant Context
+- **Issue**: React app needs tenant awareness throughout component tree
+- **Solution**: Context provider with tenant information and property selector
+- **Status**: Architecture defined, implementation needed
+
+### Challenge: File Storage Migration
+- **Issue**: Railway local files → R2 with tenant paths
+- **Solution**: Background migration job with new tenant-scoped organization
+- **Status**: Migration script ready, needs execution
+
+## Technology Decisions Made
+
+### Backend Stack (DO NOT CHANGE)
+- **NestJS** for BFF API
+- **PostgreSQL** with Prisma ORM
+- **Railway** for deployment
+- **Cloudflare R2** for file storage
+- **JWT** with tenant context
+
+### Frontend Stack (DO NOT CHANGE)
+- **React** with TypeScript
+- **Vite** for bundling
+- **Tailwind CSS** for styling
+- **TanStack Query** for data fetching
+- **react-i18next** for internationalization
+
+### Architecture Decisions (DO NOT CHANGE)
+- **Shared database with tenant isolation** (NOT separate databases)
+- **API-level tenant validation** (NOT database-level RLS)
+- **CSS variables for theming** (NOT build-time themes)
+- **AI translation fallback** using OpenAI/DeepL
+
+## Development Workflow
+
+### Standard Development Process
+1. **Read memory bank** - Always start here
+2. **Research with Context7** - Look up best practices and solutions
+3. **Present plan with options** - Get approval before proceeding
+4. **Implement changes**
+5. **Test with browser automation** - Screenshots required
+6. **Update progress tracking**
+
+### Testing Protocol (MANDATORY)
+1. **Push changes** to trigger Railway deployment
+2. **Wait for deployment** completion
+3. **Use Playwright/Puppeteer** to navigate live application
+4. **Take screenshots** of working features
+5. **Check console** for any errors (none allowed)
+6. **Test mobile** and desktop responsive views
+
+## Module Development Guidelines
+
+### HR Module (Complete)
+- ✅ User management with role hierarchy
+- ✅ Profile system with photo/ID uploads
+- ✅ Payroll with CSV import
+- ✅ Vacation management
+- ✅ Training system
+- ✅ Commercial benefits
+- ✅ Document library
+
+### Next Modules (Planned Priority)
+1. **Front Desk Operations** - Check-in/out, reservations
+2. **Housekeeping Management** - Room status, schedules
+3. **Maintenance Management** - Work orders, assets
+4. **Business Intelligence** - Cross-module analytics
+
+## Security & Compliance
+
+### Data Protection
+- **ID documents encrypted** at rest
+- **Pre-signed URLs** for file access
+- **Audit trails** for all sensitive operations
+- **Role-based access control** throughout
+
+### Tenant Isolation (CRITICAL)
+- **Zero cross-tenant data access** - security requirement #1
+- **API-level validation** on every request
+- **File storage isolation** by tenant paths
+- **Audit logging** for tenant operations
+
+## Error Patterns to Avoid
+
+### DO NOT
+- **Skip tenant context** in any API endpoint
+- **Use local file storage** for new features  
+- **Make database changes** without considering tenant isolation
+- **Deploy without browser testing** - screenshots required
+- **Ignore mobile responsive** design requirements
+- **Proceed without approval** for significant changes
+
+### ALWAYS
+- **Validate tenant boundaries** in all operations
+- **Use browser automation** to verify changes
+- **Ask for approval** before major decisions
+- **Research with Context7** before implementing solutions
+- **Update memory bank** when discovering new patterns
+- **Test both mobile and desktop** views
+
+## Quick Reference Commands
+
+### Development Commands
+```bash
+# Backend development
+cd apps/bff && npm run start:dev
+
+# Frontend development  
+cd apps/web && npm run dev
+
+# Database operations
+cd packages/database && npx prisma studio
+cd packages/database && npx prisma migrate dev
+
+# Testing
+npm run test
+npm run test:e2e
+```
+
+### Railway URLs
+- **Frontend**: https://frontend-production-55d3.up.railway.app
+- **Backend API**: Auto-configured via Railway internal networking
+
+This project intelligence grows as we discover new patterns and make decisions. Always reference this file alongside the memory bank for complete context.

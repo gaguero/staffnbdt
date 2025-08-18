@@ -49,7 +49,7 @@ export class FilesService {
         return true;
 
       case DocumentScope.DEPARTMENT:
-        if (currentUser.role === Role.SUPERADMIN) {
+        if (currentUser.role === Role.PLATFORM_ADMIN) {
           return true;
         }
         if (currentUser.role === Role.DEPARTMENT_ADMIN || currentUser.role === Role.STAFF) {
@@ -58,7 +58,7 @@ export class FilesService {
         return false;
 
       case DocumentScope.USER:
-        if (currentUser.role === Role.SUPERADMIN) {
+        if (currentUser.role === Role.PLATFORM_ADMIN) {
           return true;
         }
         if (currentUser.role === Role.DEPARTMENT_ADMIN) {
@@ -121,7 +121,7 @@ export class FilesService {
         }
         const departmentId = pathParts[2];
         
-        if (currentUser.role === Role.SUPERADMIN) {
+        if (currentUser.role === Role.PLATFORM_ADMIN) {
           return true;
         }
         
@@ -133,7 +133,7 @@ export class FilesService {
         }
         const userId = pathParts[2];
         
-        if (currentUser.role === Role.SUPERADMIN) {
+        if (currentUser.role === Role.PLATFORM_ADMIN) {
           return true;
         }
         
@@ -161,7 +161,7 @@ export class FilesService {
 
     const userId = pathParts[1];
 
-    if (currentUser.role === Role.SUPERADMIN) {
+    if (currentUser.role === Role.PLATFORM_ADMIN) {
       return true;
     }
 
@@ -200,7 +200,7 @@ export class FilesService {
         }
         const submissionUserId = pathParts[2];
         
-        if (currentUser.role === Role.SUPERADMIN) {
+        if (currentUser.role === Role.PLATFORM_ADMIN) {
           return true;
         }
         

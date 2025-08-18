@@ -34,7 +34,7 @@ export class BenefitsController {
   }
 
   @Post()
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Create new benefit (Superadmin only)' })
   async create(@Body() createBenefitDto: any, @CurrentUser() currentUser: User) {
     const benefit = await this.benefitsService.create(createBenefitDto, currentUser);
@@ -42,7 +42,7 @@ export class BenefitsController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Update benefit (Superadmin only)' })
   async update(
     @Param('id') id: string,
@@ -54,7 +54,7 @@ export class BenefitsController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Delete benefit (Superadmin only)' })
   async remove(@Param('id') id: string, @CurrentUser() currentUser: User) {
     await this.benefitsService.remove(id, currentUser);

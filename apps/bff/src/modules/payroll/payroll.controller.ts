@@ -38,7 +38,7 @@ export class PayrollController {
   }
 
   @Post('import')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Import payroll from CSV (Superadmin only)' })
   async importCsv(
     @Body('csvData') csvData: string,
@@ -49,7 +49,7 @@ export class PayrollController {
   }
 
   @Get('stats')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @ApiOperation({ summary: 'Get payroll statistics' })
   async getStats(
     @Query('period') period: string,

@@ -35,7 +35,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @Audit({ action: 'CREATE', entity: 'User' })
   @ApiOperation({ summary: 'Create a new user (Superadmin only)' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
@@ -61,7 +61,7 @@ export class UsersController {
   }
 
   @Get('stats')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @ApiOperation({ summary: 'Get user statistics (Admin only)' })
   @ApiResponse({ status: 200, description: 'User statistics retrieved successfully' })
   async getStats(@CurrentUser() currentUser: User) {
@@ -70,7 +70,7 @@ export class UsersController {
   }
 
   @Get('department/:departmentId')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @ApiOperation({ summary: 'Get users by department (Admin only)' })
   @ApiResponse({ status: 200, description: 'Department users retrieved successfully' })
   async getUsersByDepartment(
@@ -110,7 +110,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @Audit({ action: 'DELETE', entity: 'User' })
   @ApiOperation({ summary: 'Delete user (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
@@ -125,7 +125,7 @@ export class UsersController {
   }
 
   @Post(':id/restore')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @Audit({ action: 'RESTORE', entity: 'User' })
   @ApiOperation({ summary: 'Restore deleted user (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'User restored successfully' })
@@ -140,7 +140,7 @@ export class UsersController {
   }
 
   @Patch(':id/role')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @Audit({ action: 'CHANGE_ROLE', entity: 'User' })
   @ApiOperation({ summary: 'Change user role (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'User role changed successfully' })
@@ -157,7 +157,7 @@ export class UsersController {
   }
 
   @Patch(':id/status')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'CHANGE_STATUS', entity: 'User' })
   @ApiOperation({ summary: 'Change user status (Admin only)' })
   @ApiResponse({ status: 200, description: 'User status changed successfully' })
@@ -174,7 +174,7 @@ export class UsersController {
   }
 
   @Patch(':id/department')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'CHANGE_DEPARTMENT', entity: 'User' })
   @ApiOperation({ summary: 'Change user department (Admin only)' })
   @ApiResponse({ status: 200, description: 'User department changed successfully' })
@@ -191,7 +191,7 @@ export class UsersController {
   }
 
   @Delete(':id/department')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'REMOVE_FROM_DEPARTMENT', entity: 'User' })
   @ApiOperation({ summary: 'Remove user from department (Admin only)' })
   @ApiResponse({ status: 200, description: 'User removed from department successfully' })
@@ -207,7 +207,7 @@ export class UsersController {
   }
 
   @Delete(':id/permanent')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @Audit({ action: 'PERMANENT_DELETE', entity: 'User' })
   @ApiOperation({ summary: 'Permanently delete user from database (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'User permanently deleted successfully' })
@@ -235,7 +235,7 @@ export class UsersController {
   }
 
   @Post('bulk')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @Audit({ action: 'BULK_IMPORT', entity: 'User' })
   @ApiOperation({ summary: 'Bulk import users (Superadmin only)' })
   @ApiResponse({ status: 201, description: 'Users imported successfully' })
@@ -250,7 +250,7 @@ export class UsersController {
   }
 
   @Post('import/csv')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   @Audit({ action: 'CSV_IMPORT', entity: 'User' })
   @ApiOperation({ summary: 'Import users from CSV file (Superadmin only)' })
@@ -279,7 +279,7 @@ export class UsersController {
   }
 
   @Get('export/csv')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @Audit({ action: 'EXPORT', entity: 'User' })
   @ApiOperation({ summary: 'Export users to CSV (Admin only)' })
   @ApiResponse({ status: 200, description: 'Users exported successfully' })
@@ -298,7 +298,7 @@ export class UsersController {
   }
 
   @Get('export/template')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Download CSV template for bulk import (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'CSV template downloaded successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden - Superadmin required' })
@@ -306,13 +306,13 @@ export class UsersController {
     const template = [
       '# User Import Template - Delete this comment line before importing',
       '# Required fields: Email, FirstName, LastName, Role',
-      '# Role must be one of: STAFF, DEPARTMENT_ADMIN, SUPERADMIN',
+      '# Role must be one of: STAFF, DEPARTMENT_ADMIN, PLATFORM_ADMIN',
       '# DepartmentId is required for STAFF and DEPARTMENT_ADMIN roles',
       '# Date format: YYYY-MM-DD',
       'Email,FirstName,LastName,Role,DepartmentId,Position,PhoneNumber,HireDate',
       'john.doe@example.com,John,Doe,STAFF,dept-id-123,Software Engineer,+1234567890,2024-01-15',
       'jane.smith@example.com,Jane,Smith,DEPARTMENT_ADMIN,dept-id-456,HR Manager,+0987654321,2023-06-01',
-      'admin@example.com,Super,Admin,SUPERADMIN,,System Administrator,,2023-01-01',
+      'admin@example.com,Super,Admin,PLATFORM_ADMIN,,System Administrator,,2023-01-01',
     ].join('\n');
 
     res.setHeader('Content-Type', 'text/csv');

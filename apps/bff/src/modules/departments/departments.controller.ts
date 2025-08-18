@@ -29,7 +29,7 @@ export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
   @Post()
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @Audit({ action: 'CREATE', entity: 'Department' })
   @ApiOperation({ summary: 'Create a new department (Superadmin only)' })
   @ApiResponse({ status: 201, description: 'Department created successfully' })
@@ -126,7 +126,7 @@ export class DepartmentsController {
   }
 
   @Get('stats/overall')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Get overall departments statistics (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'Overall statistics retrieved successfully' })
   async getOverallStats(@CurrentUser() currentUser: User) {
@@ -135,7 +135,7 @@ export class DepartmentsController {
   }
 
   @Get(':id/stats')
-  @Roles(Role.SUPERADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @ApiOperation({ summary: 'Get department statistics (Admin only)' })
   @ApiResponse({ status: 200, description: 'Department statistics retrieved successfully' })
   async getStats(
@@ -147,7 +147,7 @@ export class DepartmentsController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @Audit({ action: 'UPDATE', entity: 'Department' })
   @ApiOperation({ summary: 'Update department (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'Department updated successfully' })
@@ -163,7 +163,7 @@ export class DepartmentsController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.PLATFORM_ADMIN)
   @Audit({ action: 'DELETE', entity: 'Department' })
   @ApiOperation({ summary: 'Delete department (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'Department deleted successfully' })

@@ -13,7 +13,7 @@ export class DepartmentGuard implements CanActivate {
     }
 
     // Superadmins can access everything
-    if (user.role === Role.SUPERADMIN) {
+    if (user.role === Role.PLATFORM_ADMIN) {
       return true;
     }
 
