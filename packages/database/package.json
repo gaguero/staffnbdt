@@ -12,19 +12,29 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "seed:complete": "node scripts/seed-complete-data.js",
+    "seed:dev": "dotenv -e .env.dev -- node scripts/seed-complete-data.js",
+    "seed:local": "dotenv -e .env.local -- node scripts/seed-complete-data.js",
+    "seed:production": "dotenv -e .env.production -- node scripts/seed-complete-data.js",
+    "cleanup:production": "node scripts/cleanup-test-data.js",
+    "cleanup:confirm": "CONFIRM_CLEANUP=true node scripts/cleanup-test-data.js",
     "migrate:deploy": "node scripts/deploy-migrations.js",
     "migrate:create": "prisma migrate dev",
     "migrate:status": "prisma migrate status",
-    "migrate:reset": "prisma migrate reset"
+    "migrate:reset": "prisma migrate reset",
+    "studio:dev": "dotenv -e .env.dev -- prisma studio",
+    "studio:local": "dotenv -e .env.local -- prisma studio",
+    "studio:production": "dotenv -e .env.production -- prisma studio"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0"
+    "@prisma/client": "^5.22.0",
+    "bcrypt": "^6.0.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",
+    "dotenv-cli": "^7.3.0",
     "prisma": "^5.22.0",
     "tsx": "^4.7.0"
   }

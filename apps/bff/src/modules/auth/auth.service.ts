@@ -19,7 +19,7 @@ export interface JwtPayload {
 }
 
 export interface AuthResponse {
-  user: Omit<User, 'deletedAt'>;
+  user: Omit<User, 'deletedAt' | 'password'>;
   accessToken: string;
 }
 
@@ -44,11 +44,18 @@ export class AuthService {
       return null;
     }
 
-    // For demo purposes, accept any password. In production, implement proper password hashing
-    // const isPasswordValid = await bcrypt.compare(password, user.password);
-    // if (!isPasswordValid) {
-    //   return null;
-    // }
+    // Check if user has a password (for backward compatibility with magic-link users)
+    if (!user.password) {
+      // Allow magic-link users to login without password validation
+      // In production, you might want to enforce password creation for all users
+      return user;
+    }
+
+    // Validate password using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return null;
+    }
 
     return user;
   }

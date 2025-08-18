@@ -58,11 +58,23 @@ try {
     });
   }
   
-  // Generate with explicit schema path
+  // Generate with explicit schema path and output directory
   const command = `npx prisma generate --schema="${schemaPath}"`;
   console.log('Running:', command);
   
-  execSync(command, {
+  // Create temporary schema with local output
+  const tempSchemaPath = path.join(__dirname, 'temp-schema.prisma');
+  const originalSchema = fs.readFileSync(schemaPath, 'utf8');
+  const localSchema = originalSchema.replace(
+    'output   = "../node_modules/.prisma/client"',
+    `output   = "${outputPath.replace(/\\/g, '\\\\')}"`
+  );
+  fs.writeFileSync(tempSchemaPath, localSchema);
+  
+  const localCommand = `npx prisma generate --schema="${tempSchemaPath}"`;
+  console.log('Running:', localCommand);
+  
+  execSync(localCommand, {
     stdio: 'inherit',
     cwd: __dirname,
     env: {
@@ -71,6 +83,9 @@ try {
       PRISMA_GENERATE_DATAPROXY: 'false'
     }
   });
+  
+  // Clean up temp schema
+  fs.unlinkSync(tempSchemaPath);
   
   console.log('\n✅ Prisma Client generated successfully');
   

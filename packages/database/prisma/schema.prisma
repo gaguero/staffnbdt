@@ -5,6 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 model Organization {
@@ -126,6 +127,7 @@ model TenantSettings {
 model User {
   id               String       @id @default(cuid())
   email            String       @unique
+  password         String?      // Hashed password, nullable for magic-link only users
   firstName        String
   lastName         String
   role             Role
