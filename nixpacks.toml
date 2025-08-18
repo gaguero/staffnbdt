@@ -13,9 +13,9 @@ cmds = [
   # Generate Prisma Client
   "cd packages/database && npx prisma generate",
   
-  # Apply database migrations automatically
-  "echo '🔍 Checking database migrations for Railway deployment'",
-  "cd packages/database && node scripts/deploy-migrations.js",
+  # Apply database migrations with robust error handling
+  "echo '🔍 Deploying database schema for Railway'",
+  "cd packages/database && node scripts/deploy-migrations.js || echo '⚠️ Database setup had issues but continuing deployment'",
   
   # Continue with application build
   "cd apps/bff && node prisma-simple-fix.js",

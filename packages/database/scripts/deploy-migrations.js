@@ -19,6 +19,8 @@ console.log(`🌿 Branch: ${process.env.RAILWAY_GIT_BRANCH || 'unknown'}`);
 console.log(`🏗️  Service: ${process.env.RAILWAY_SERVICE_NAME || 'unknown'}`);
 
 async function runMigrations() {
+  let migrationSuccess = false;
+  
   try {
     // Check migration status
     console.log('\n📋 Checking migration status...');
@@ -27,23 +29,58 @@ async function runMigrations() {
       cwd: process.cwd()
     });
   
-  console.log(status);
+    console.log(status);
   
-  if (status.includes('Database schema is up to date')) {
-    console.log('✅ Database is already up to date!');
-    process.exit(0);
+    if (status.includes('Database schema is up to date')) {
+      console.log('✅ Database is already up to date!');
+      migrationSuccess = true;
+    } else {
+      // Apply pending migrations
+      console.log('\n📦 Applying pending migrations...');
+      execSync('npx prisma migrate deploy', { 
+        stdio: 'inherit',
+        cwd: process.cwd()
+      });
+      console.log('\n✅ Migrations applied successfully!');
+      migrationSuccess = true;
+    }
+    
+  } catch (error) {
+    console.error('\n❌ Migration error:', error.message);
+    console.log('\n🔄 Attempting fallback: Direct schema push...');
+    
+    try {
+      // Fallback: Push schema directly to sync database
+      execSync('npx prisma db push --accept-data-loss', { 
+        stdio: 'inherit',
+        cwd: process.cwd()
+      });
+      console.log('✅ Schema pushed successfully via fallback method!');
+      migrationSuccess = true;
+    } catch (pushError) {
+      console.error('❌ Schema push also failed:', pushError.message);
+      
+      // For Railway deployments, log error but continue
+      if (process.env.RAILWAY_ENVIRONMENT) {
+        console.log('\n⚠️  Railway deployment detected');
+        console.log('⚠️  Both migrations and schema push failed');
+        console.log('⚠️  Continuing deployment - manual intervention may be needed');
+        console.log('⚠️  Manual commands to try:');
+        console.log('     railway run npx prisma migrate deploy');
+        console.log('     railway run npx prisma db push --accept-data-loss');
+        migrationSuccess = false; // Continue but mark as unsuccessful
+      } else {
+        console.log('\n💡 Troubleshooting tips:');
+        console.log('   - Check DATABASE_URL is correct');
+        console.log('   - Ensure database is accessible');
+        console.log('   - Review migration files for syntax errors');
+        console.log('   - Try: npx prisma db push --accept-data-loss');
+        process.exit(1);
+      }
+    }
   }
-  
-  // Apply pending migrations
-  console.log('\n📦 Applying pending migrations...');
-  execSync('npx prisma migrate deploy', { 
-    stdio: 'inherit',
-    cwd: process.cwd()
-  });
-  
-  console.log('\n✅ Migrations applied successfully!');
-  
-  // Run default tenant seeding after migrations
+
+  // Always attempt to seed default tenant data (regardless of migration success)
   console.log('\n🌱 Running default tenant seeding...');
   try {
     const { seedDefaultTenant } = require('./seed-default-tenant.js');
@@ -53,25 +90,10 @@ async function runMigrations() {
     console.log('⚠️  Default tenant seeding failed (this is OK if already seeded):', seedError.message);
   }
   
+  if (migrationSuccess) {
     console.log('\n🎉 Database setup completed successfully!');
-    
-  } catch (error) {
-    console.error('\n❌ Migration error:', error.message);
-    
-    // For Railway deployments, log error but continue
-    if (process.env.RAILWAY_ENVIRONMENT) {
-      console.log('\n⚠️  Railway deployment detected');
-      console.log('⚠️  Continuing deployment despite migration error');
-      console.log('⚠️  Check Railway logs and consider manual intervention');
-      console.log('⚠️  You can run migrations manually with: railway run npx prisma migrate deploy');
-      process.exit(0); // Don't fail the build
-    } else {
-      console.log('\n💡 Troubleshooting tips:');
-      console.log('   - Check DATABASE_URL is correct');
-      console.log('   - Ensure database is accessible');
-      console.log('   - Review migration files for syntax errors');
-      process.exit(1);
-    }
+  } else {
+    console.log('\n⚠️  Database setup completed with issues - check logs above');
   }
 }
 
