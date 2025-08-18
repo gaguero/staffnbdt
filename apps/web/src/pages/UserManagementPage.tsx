@@ -284,7 +284,7 @@ const UserManagementPage: React.FC = () => {
         </div>
         
         <div className="flex gap-2">
-          {currentUser?.role === 'SUPERADMIN' && (
+          {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
             <>
               <button
                 onClick={() => setShowBulkImport(true)}
@@ -356,7 +356,7 @@ const UserManagementPage: React.FC = () => {
             <option value="">All Roles</option>
             <option value="STAFF">Staff</option>
             <option value="DEPARTMENT_ADMIN">Department Admin</option>
-            <option value="SUPERADMIN">Super Admin</option>
+            <option value="PROPERTY_MANAGER">Property Manager</option>
           </select>
         </div>
       </div>
@@ -469,30 +469,28 @@ const UserManagementPage: React.FC = () => {
                   >
                     <option value="STAFF">Staff</option>
                     <option value="DEPARTMENT_ADMIN">Department Admin</option>
-                    {currentUser?.role === 'SUPERADMIN' && (
+                    {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
                       <option value="PROPERTY_MANAGER">Property Manager</option>
                     )}
                   </select>
                 </div>
                 
-                {formData.role !== 'SUPERADMIN' && (
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Department *</label>
-                    <select
-                      value={formData.departmentId}
-                      onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                      className="form-input"
-                      required
-                    >
-                      <option value="">Select Department</option>
-                      {departments.map(dept => (
-                        <option key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Department *</label>
+                  <select
+                    value={formData.departmentId}
+                    onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                    className="form-input"
+                    required
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 
                 <input
                   type="text"
@@ -570,7 +568,7 @@ const UserManagementPage: React.FC = () => {
                   required
                   disabled
                 />
-                {currentUser?.role === 'SUPERADMIN' && (
+                {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
                   <div>
                     <label className="block text-sm font-medium mb-1">Role</label>
                     <select
@@ -585,24 +583,22 @@ const UserManagementPage: React.FC = () => {
                   </div>
                 )}
                 
-                {formData.role !== 'SUPERADMIN' && (
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Department *</label>
-                    <select
-                      value={formData.departmentId}
-                      onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                      className="form-input"
-                      required
-                    >
-                      <option value="">Select Department</option>
-                      {departments.map(dept => (
-                        <option key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Department *</label>
+                  <select
+                    value={formData.departmentId}
+                    onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                    className="form-input"
+                    required
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 
                 <input
                   type="text"
