@@ -2,10 +2,10 @@
 
 ## Test Accounts
 
-### SUPERADMIN
+### PLATFORM_ADMIN
 - **Email**: admin@nayara.com
 - **Password**: Any password (development mode accepts any password)
-- **Access**: Full system access, manages all departments and users
+- **Access**: Full platform access, manages all tenants and organizations
 
 ### DEPARTMENT ADMIN
 - **Email**: hr@nayara.com  

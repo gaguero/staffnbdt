@@ -100,7 +100,7 @@ async function main() {
       email: 'admin@nayara.com',
       firstName: 'Admin',
       lastName: 'User',
-      role: Role.SUPERADMIN,
+      role: Role.PLATFORM_ADMIN,
       position: 'System Administrator',
       phoneNumber: '+507-6000-0001',
       hireDate: new Date('2024-01-01'),

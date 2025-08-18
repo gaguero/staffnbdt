@@ -1,8 +1,11 @@
-// Role-based access control enums
+// Multi-tenant role-based access control enums
 export enum Role {
-  SUPERADMIN = 'SUPERADMIN',
-  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',
-  STAFF = 'STAFF'
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',        // Manages entire platform, all tenants
+  ORGANIZATION_OWNER = 'ORGANIZATION_OWNER', // Manages hotel chain/group
+  ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN', // Manages organization settings
+  PROPERTY_MANAGER = 'PROPERTY_MANAGER',     // Manages individual hotel property
+  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',     // Manages department within property
+  STAFF = 'STAFF'                           // Self-service access to own resources
 }
 
 // Document management enums

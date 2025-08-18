@@ -18,9 +18,9 @@ export class UsersService {
     createUserDto: CreateUserDto,
     currentUser: User,
   ): Promise<UserWithDepartment> {
-    // Only superadmins can create users
+    // Only platform admins can create users
     if (currentUser.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only superadmins can create users');
+      throw new ForbiddenException('Only platform admins can create users');
     }
 
     // Check if user already exists
@@ -260,9 +260,9 @@ export class UsersService {
   }
 
   async remove(id: string, currentUser: User): Promise<void> {
-    // Only superadmins can delete users
+    // Only platform admins can delete users
     if (currentUser.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only superadmins can delete users');
+      throw new ForbiddenException('Only platform admins can delete users');
     }
 
     // Cannot delete self
@@ -291,9 +291,9 @@ export class UsersService {
   }
 
   async restore(id: string, currentUser: User): Promise<UserWithDepartment> {
-    // Only superadmins can restore users
+    // Only platform admins can restore users
     if (currentUser.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only superadmins can restore users');
+      throw new ForbiddenException('Only platform admins can restore users');
     }
 
     const user = await this.prisma.user.findUnique({
@@ -331,9 +331,9 @@ export class UsersService {
   }
 
   async permanentDelete(id: string, currentUser: User): Promise<void> {
-    // Only superadmins can permanently delete users
+    // Only platform admins can permanently delete users
     if (currentUser.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only superadmins can permanently delete users');
+      throw new ForbiddenException('Only platform admins can permanently delete users');
     }
 
     // Cannot delete self
@@ -408,7 +408,7 @@ export class UsersService {
   }
 
   async getUserStats(currentUser: User): Promise<UserStats> {
-    // Only superadmins and department admins can view stats
+    // Only platform admins and department admins can view stats
     if (currentUser.role === Role.STAFF) {
       throw new ForbiddenException('Staff cannot access user statistics');
     }
@@ -466,9 +466,9 @@ export class UsersService {
     changeRoleDto: ChangeRoleDto,
     currentUser: User,
   ): Promise<UserWithDepartment> {
-    // Only superadmins can change roles
+    // Only platform admins can change roles
     if (currentUser.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only superadmins can change user roles');
+      throw new ForbiddenException('Only platform admins can change user roles');
     }
 
     // Cannot change own role
@@ -512,7 +512,7 @@ export class UsersService {
       where: { id },
       data: {
         role: changeRoleDto.role,
-        // If changing to SUPERADMIN, remove department assignment
+        // If changing to PLATFORM_ADMIN, remove department assignment
         departmentId: changeRoleDto.role === Role.PLATFORM_ADMIN ? null : existingUser.departmentId,
       },
       include: {
@@ -800,7 +800,7 @@ export class UsersService {
       canChangeStatus: false,
     };
 
-    // Superadmins can do everything
+    // Platform admins can do everything
     if (isSuperAdmin) {
       permissions.canView = true;
       permissions.canEdit = true;
@@ -877,9 +877,9 @@ export class UsersService {
       throw new BadRequestException(`${role.replace('_', ' ')} users must be assigned to a department`);
     }
 
-    // SUPERADMIN cannot have a department
+    // PLATFORM_ADMIN cannot have a department
     if (role === Role.PLATFORM_ADMIN && departmentId) {
-      throw new BadRequestException('Superadmins cannot be assigned to a specific department');
+      throw new BadRequestException('Platform admins cannot be assigned to a specific department');
     }
   }
 
@@ -900,9 +900,9 @@ export class UsersService {
     bulkImportDto: BulkImportDto,
     currentUser: User,
   ): Promise<BulkImportResultDto> {
-    // Only superadmins can bulk import users
+    // Only platform admins can bulk import users
     if (currentUser.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only superadmins can bulk import users');
+      throw new ForbiddenException('Only platform admins can bulk import users');
     }
 
     const result: BulkImportResultDto = {
