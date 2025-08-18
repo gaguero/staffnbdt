@@ -21,15 +21,25 @@ export const API_ENDPOINTS = {
 };
 
 export const ROLES = {
-  SUPERADMIN: 'SUPERADMIN',
+  PLATFORM_ADMIN: 'PLATFORM_ADMIN',
+  ORGANIZATION_OWNER: 'ORGANIZATION_OWNER',
+  ORGANIZATION_ADMIN: 'ORGANIZATION_ADMIN',
+  PROPERTY_MANAGER: 'PROPERTY_MANAGER',
   DEPARTMENT_ADMIN: 'DEPARTMENT_ADMIN',
   STAFF: 'STAFF',
+  // Legacy for compatibility
+  SUPERADMIN: 'SUPERADMIN',
 } as const;
 
 export const ROLE_LABELS = {
-  SUPERADMIN: 'Super Admin',
+  PLATFORM_ADMIN: 'Platform Admin',
+  ORGANIZATION_OWNER: 'Organization Owner',
+  ORGANIZATION_ADMIN: 'Organization Admin',
+  PROPERTY_MANAGER: 'Property Manager',
   DEPARTMENT_ADMIN: 'Department Admin',
   STAFF: 'Staff',
+  // Legacy for compatibility
+  SUPERADMIN: 'Super Admin',
 } as const;
 
 export const DATE_FORMAT = 'MMM dd, yyyy';
@@ -52,7 +62,7 @@ export const FILE_TYPE_ICONS = {
 } as const;
 
 export const ROLE_PERMISSIONS = {
-  SUPERADMIN: [
+  PROPERTY_MANAGER: [
     'users.create',
     'users.read',
     'users.update',

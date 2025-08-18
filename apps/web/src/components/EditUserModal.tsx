@@ -116,7 +116,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     return role.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  const availableRoles = ['STAFF', 'DEPARTMENT_ADMIN', 'SUPERADMIN'];
+  const availableRoles = ['STAFF', 'DEPARTMENT_ADMIN', 'PROPERTY_MANAGER'];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -349,7 +349,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           </div>
 
           {/* Role Assignment Warning */}
-          {formData.role === 'SUPERADMIN' && formData.departmentId && (
+          {formData.role === 'PROPERTY_MANAGER' && formData.departmentId && (
             <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <div className="flex items-start space-x-2">
                 <div className="text-yellow-600">⚠️</div>

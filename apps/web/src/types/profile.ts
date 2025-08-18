@@ -67,7 +67,7 @@ export interface ProfileData {
     name: string;
   };
   position?: string;
-  role: 'SUPERADMIN' | 'DEPARTMENT_ADMIN' | 'STAFF';
+  role: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF';
   createdAt: string;
   updatedAt: string;
 }

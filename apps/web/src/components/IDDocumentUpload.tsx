@@ -250,7 +250,7 @@ const IDDocumentUpload: React.FC<IDDocumentUploadProps> = ({
     fetchDocumentStatus();
   }, [targetUserId]);
 
-  const isAdmin = user?.role === 'SUPERADMIN' || user?.role === 'DEPARTMENT_ADMIN';
+  const isAdmin = ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN'].includes(user?.role || '');
   const canUpload = !showAdminControls && !isUploading;
   const canVerify = showAdminControls && isAdmin && documentStatus && documentStatus.status === IdVerificationStatus.PENDING;
 

@@ -254,7 +254,7 @@ const UserManagementPage: React.FC = () => {
   };
 
   const canManageUser = (user: User) => {
-    if (currentUser?.role === 'SUPERADMIN') return true;
+    if (['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '')) return true;
     if (currentUser?.role === 'DEPARTMENT_ADMIN') {
       return user.departmentId === currentUser.departmentId && user.role === 'STAFF';
     }
@@ -322,7 +322,7 @@ const UserManagementPage: React.FC = () => {
             <div className="text-2xl mb-2">👔</div>
             <p className="text-sm text-gray-600">Admins</p>
             <p className="text-2xl font-bold">
-              {(stats.byRole.SUPERADMIN || 0) + (stats.byRole.DEPARTMENT_ADMIN || 0)}
+              {(stats.byRole.PROPERTY_MANAGER || 0) + (stats.byRole.DEPARTMENT_ADMIN || 0)}
             </p>
           </div>
           <div className="card p-4 text-center">
@@ -470,7 +470,7 @@ const UserManagementPage: React.FC = () => {
                     <option value="STAFF">Staff</option>
                     <option value="DEPARTMENT_ADMIN">Department Admin</option>
                     {currentUser?.role === 'SUPERADMIN' && (
-                      <option value="SUPERADMIN">Super Admin</option>
+                      <option value="PROPERTY_MANAGER">Property Manager</option>
                     )}
                   </select>
                 </div>
@@ -580,7 +580,7 @@ const UserManagementPage: React.FC = () => {
                     >
                       <option value="STAFF">Staff</option>
                       <option value="DEPARTMENT_ADMIN">Department Admin</option>
-                      <option value="SUPERADMIN">Super Admin</option>
+                      <option value="PROPERTY_MANAGER">Property Manager</option>
                     </select>
                   </div>
                 )}

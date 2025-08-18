@@ -57,7 +57,7 @@ const DashboardPage: React.FC = () => {
       icon: '👥',
       path: '/users',
       color: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200',
-      roles: ['SUPERADMIN', 'DEPARTMENT_ADMIN']
+      roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']
     },
     {
       title: 'Departments',
@@ -65,7 +65,7 @@ const DashboardPage: React.FC = () => {
       icon: '🏢',
       path: '/departments',
       color: 'bg-teal-50 hover:bg-teal-100 border-teal-200',
-      roles: ['SUPERADMIN']
+      roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
     }
   ];
 

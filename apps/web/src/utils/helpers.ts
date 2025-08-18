@@ -92,7 +92,13 @@ export function hasPermission(userRole: UserRole, permission: string): boolean {
  * Check if user can access admin features
  */
 export function canAccessAdmin(userRole: UserRole): boolean {
-  return userRole === UserRole.SUPERADMIN || userRole === UserRole.DEPARTMENT_ADMIN
+  return [
+    UserRole.PLATFORM_ADMIN, 
+    UserRole.ORGANIZATION_OWNER, 
+    UserRole.ORGANIZATION_ADMIN, 
+    UserRole.PROPERTY_MANAGER, 
+    UserRole.DEPARTMENT_ADMIN
+  ].includes(userRole)
 }
 
 /**

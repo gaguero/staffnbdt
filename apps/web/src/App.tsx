@@ -212,7 +212,7 @@ const App: React.FC = () => {
         <Route 
           path="/users" 
           element={
-            <ProtectedRoute roles={['SUPERADMIN', 'DEPARTMENT_ADMIN']}>
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
               <Layout>
                 <UsersPage />
               </Layout>
@@ -222,7 +222,7 @@ const App: React.FC = () => {
         <Route 
           path="/departments" 
           element={
-            <ProtectedRoute roles={['SUPERADMIN']}>
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}>
               <Layout>
                 <DepartmentsPage />
               </Layout>
