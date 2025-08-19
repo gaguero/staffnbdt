@@ -164,6 +164,12 @@ export const PERMISSIONS = {
     DELETE_DEPARTMENT: 'users.delete.department',
     CHANGE_ROLE: 'users.change_role.platform',
     INVITE: 'users.invite.department',
+    ASSIGN_PLATFORM: 'user.assign.platform',
+    ASSIGN_ORGANIZATION: 'user.assign.organization',
+    ASSIGN_PROPERTY: 'user.assign.property',
+    REMOVE_PLATFORM: 'user.remove.platform',
+    REMOVE_ORGANIZATION: 'user.remove.organization',
+    REMOVE_PROPERTY: 'user.remove.property',
   },
   
   // Profile management
@@ -245,5 +251,37 @@ export const PERMISSIONS = {
     CREATE_PROPERTY: 'benefits.create.property',
     UPDATE_PROPERTY: 'benefits.update.property',
     DELETE_PROPERTY: 'benefits.delete.property',
+  },
+
+  // Organization management
+  ORGANIZATION: {
+    CREATE_PLATFORM: 'organization.create.platform',
+    READ_PLATFORM: 'organization.read.platform',
+    READ_ORGANIZATION: 'organization.read.organization',
+    UPDATE_PLATFORM: 'organization.update.platform',
+    UPDATE_ORGANIZATION: 'organization.update.organization',
+    DELETE_PLATFORM: 'organization.delete.platform',
+  },
+
+  // Property management
+  PROPERTY: {
+    CREATE_PLATFORM: 'property.create.platform',
+    CREATE_ORGANIZATION: 'property.create.organization',
+    READ_PLATFORM: 'property.read.platform',
+    READ_ORGANIZATION: 'property.read.organization',
+    READ_PROPERTY: 'property.read.property',
+    UPDATE_PLATFORM: 'property.update.platform',
+    UPDATE_ORGANIZATION: 'property.update.organization',
+    UPDATE_PROPERTY: 'property.update.property',
+    DELETE_PLATFORM: 'property.delete.platform',
+    DELETE_ORGANIZATION: 'property.delete.organization',
+  },
+
+  // Role management
+  ROLE: {
+    ASSIGN_PLATFORM: 'role.assign.platform',
+    ASSIGN_ORGANIZATION: 'role.assign.organization',
+    ASSIGN_PROPERTY: 'role.assign.property',
+    ASSIGN_DEPARTMENT: 'role.assign.department',
   },
 } as const;

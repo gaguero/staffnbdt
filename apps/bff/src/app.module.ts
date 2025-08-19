@@ -33,6 +33,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ProfileModule } from './modules/profile/profile.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { PermissionModule } from './modules/permissions/permission.module';
+import { OrganizationModule } from './modules/organizations/organization.module';
+import { PropertyModule } from './modules/properties/property.module';
 
 @Module({
   imports: [
@@ -84,6 +86,8 @@ import { PermissionModule } from './modules/permissions/permission.module';
     ProfileModule,
     InvitationsModule,
     PermissionModule,
+    OrganizationModule,
+    PropertyModule,
   ],
   controllers: [],
   providers: [
