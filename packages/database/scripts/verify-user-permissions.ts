@@ -94,10 +94,16 @@ async function findUserByEmail(email: string) {
   return await prisma.user.findUnique({
     where: { email },
     include: {
-      customRole: {
+      customRoles: {
+        where: { isActive: true },
         include: {
-          rolePermissions: {
-            include: { permission: true }
+          role: {
+            include: {
+              permissions: {
+                where: { granted: true },
+                include: { permission: true }
+              }
+            }
           }
         }
       },
@@ -112,10 +118,16 @@ async function findUserById(userId: string) {
   return await prisma.user.findUnique({
     where: { id: userId },
     include: {
-      customRole: {
+      customRoles: {
+        where: { isActive: true },
         include: {
-          rolePermissions: {
-            include: { permission: true }
+          role: {
+            include: {
+              permissions: {
+                where: { granted: true },
+                include: { permission: true }
+              }
+            }
           }
         }
       },
@@ -138,25 +150,25 @@ async function analyzeUserPermissions(identifier: string): Promise<UserPermissio
     return null;
   }
 
-  // Get effective permissions
+  // Get effective permissions from all active custom roles
   const effectivePermissions: string[] = [];
   const permissionsByScope: Record<string, number> = {};
   const permissionsByCategory: Record<string, number> = {};
 
-  if (user.customRole) {
-    user.customRole.rolePermissions.forEach(rp => {
-      if (rp.granted) {
-        const permissionKey = `${rp.permission.resource}.${rp.permission.action}.${rp.permission.scope}`;
+  user.customRoles.forEach(userRole => {
+    userRole.role.permissions.forEach(rp => {
+      const permissionKey = `${rp.permission.resource}.${rp.permission.action}.${rp.permission.scope}`;
+      if (!effectivePermissions.includes(permissionKey)) {
         effectivePermissions.push(permissionKey);
-        
-        // Count by scope
-        permissionsByScope[rp.permission.scope] = (permissionsByScope[rp.permission.scope] || 0) + 1;
-        
-        // Count by category
-        permissionsByCategory[rp.permission.category] = (permissionsByCategory[rp.permission.category] || 0) + 1;
       }
+      
+      // Count by scope
+      permissionsByScope[rp.permission.scope] = (permissionsByScope[rp.permission.scope] || 0) + 1;
+      
+      // Count by category
+      permissionsByCategory[rp.permission.category] = (permissionsByCategory[rp.permission.category] || 0) + 1;
     });
-  }
+  });
 
   // Analyze endpoint access
   const endpointAccess = CRITICAL_ENDPOINTS.map(endpoint => {
@@ -196,7 +208,7 @@ async function analyzeUserPermissions(identifier: string): Promise<UserPermissio
   // Generate recommendations
   const recommendations: string[] = [];
 
-  if (!user.customRole) {
+  if (user.customRoles.length === 0) {
     recommendations.push('User has no custom role assigned. Assign appropriate custom role based on legacy role.');
   }
 
@@ -228,7 +240,7 @@ async function analyzeUserPermissions(identifier: string): Promise<UserPermissio
       id: user.id,
       email: user.email,
       legacyRole: user.role,
-      customRoleName: user.customRole?.name || null,
+      customRoleName: user.customRoles.map(ur => ur.role.name).join(', ') || null,
       isActive: user.isActive
     },
     context: {

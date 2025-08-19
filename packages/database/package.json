@@ -32,6 +32,7 @@
     "permissions:check:production": "tsx scripts/check-production-permissions.ts",
     "permissions:fix:production": "tsx scripts/fix-production-permissions.ts",
     "permissions:verify:user": "tsx scripts/verify-user-permissions.ts",
+    "permissions:verify:fix": "tsx scripts/verify-production-fix.ts",
     "deploy:production:permissions": "tsx scripts/deploy-production-permissions.ts",
     "deploy:production:schema-only": "SKIP_PERMISSION_INIT=true tsx scripts/deploy-production-permissions.ts",
     "deploy:production:dry-run": "DRY_RUN=true tsx scripts/deploy-production-permissions.ts",

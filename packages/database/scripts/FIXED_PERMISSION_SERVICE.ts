@@ -512,3 +512,5 @@ export class PermissionService {
     return this.getLegacyRolePermissions(role);
   }
 }
+
+// Copy this entire file to: apps/bff/src/shared/services/permission.service.ts

@@ -31,7 +31,7 @@ async function checkCurrentState(): Promise<{
     prisma.permission.count(),
     prisma.customRole.count({ where: { isSystemRole: true } }),
     prisma.rolePermission.count(),
-    prisma.user.count({ where: { customRoleId: null } })
+    prisma.user.count({ where: { customRoles: { none: {} } } })
   ]);
 
   return {
@@ -142,7 +142,7 @@ async function updateUserRoles(dryRun: boolean): Promise<number> {
   
   // Find users without custom role assignments
   const usersWithoutCustomRoles = await prisma.user.findMany({
-    where: { customRoleId: null },
+    where: { customRoles: { none: {} } },
     select: {
       id: true,
       email: true,
@@ -180,9 +180,12 @@ async function updateUserRoles(dryRun: boolean): Promise<number> {
     console.log(`    Assigning ${user.email} (${user.role}) → ${targetRoleName}`);
 
     if (!dryRun) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { customRoleId: systemRole.id }
+      await prisma.userCustomRole.create({
+        data: {
+          userId: user.id,
+          roleId: systemRole.id,
+          isActive: true
+        }
       });
       updatedUsers++;
     } else {
@@ -224,13 +227,27 @@ async function grantPlatformAdminAccess(userId: string, dryRun: boolean): Promis
   console.log(`    Target: Super Administrator`);
 
   if (!dryRun) {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { 
-        customRoleId: superAdminRole.id,
-        role: Role.PLATFORM_ADMIN // Also update legacy role for consistency
+    // Remove any existing role assignments
+    await prisma.userCustomRole.updateMany({
+      where: { userId: userId },
+      data: { isActive: false }
+    });
+    
+    // Add super admin role
+    await prisma.userCustomRole.create({
+      data: {
+        userId: userId,
+        roleId: superAdminRole.id,
+        isActive: true
       }
     });
+    
+    // Also update legacy role for consistency
+    await prisma.user.update({
+      where: { id: userId },
+      data: { role: Role.PLATFORM_ADMIN }
+    });
+    
     console.log(`    ✅ Granted Platform Admin access to ${user.email}`);
     return true;
   } else {
@@ -246,7 +263,7 @@ async function verifyFixes(): Promise<void> {
     prisma.permission.count(),
     prisma.customRole.count({ where: { isSystemRole: true } }),
     prisma.rolePermission.count(),
-    prisma.user.count({ where: { customRoleId: null } })
+    prisma.user.count({ where: { customRoles: { none: {} } } })
   ]);
 
   console.log(`  Permissions: ${permissionCount} (Expected: 81)`);

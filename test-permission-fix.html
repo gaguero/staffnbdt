@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permission System Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .test-section { 
+            background: white; 
+            padding: 20px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        .result { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 4px; 
+            font-family: monospace; 
+        }
+        .success { background: #d4edda; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; border-left: 4px solid #dc3545; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .info { background: #d1ecf1; border-left: 4px solid #17a2b8; }
+        button { 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        input[type="text"] { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            margin: 5px 0; 
+        }
+        pre { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 4px; 
+            overflow-x: auto; 
+            font-size: 12px; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Permission System Detection Test</h1>
+    <p>This tool tests the fixed permission system detection in the Railway deployment.</p>
+
+    <div class="test-section">
+        <h2>Configuration</h2>
+        <label>Backend URL:</label>
+        <input type="text" id="backendUrl" value="https://bff-production-d034.up.railway.app">
+        
+        <label>Authorization Token (get from browser dev tools after login):</label>
+        <input type="text" id="authToken" placeholder="Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+        
+        <button onclick="testConnectivity()">Test Connectivity</button>
+        <button onclick="testSystemStatus()">Check System Status</button>
+        <button onclick="testReinitialize()">Force Reinitialize</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Expected vs Actual</h2>
+        <div class="info">
+            <strong>Expected Behavior After Fix:</strong>
+            <ul>
+                <li>✅ Permission tables should be detected correctly</li>
+                <li>✅ System status should show permissionTablesExist: true</li>
+                <li>✅ Table stats should show counts for each permission table</li>
+                <li>✅ No "permission tables do not exist" errors in logs</li>
+                <li>✅ Permission system should initialize successfully</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+
+        function addResult(type, title, content) {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${title}</strong><br>${content}`;
+            resultsDiv.appendChild(div);
+        }
+
+        function addJsonResult(type, title, jsonData) {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${title}</strong><br><pre>${JSON.stringify(jsonData, null, 2)}</pre>`;
+            resultsDiv.appendChild(div);
+        }
+
+        async function testConnectivity() {
+            const url = document.getElementById('backendUrl').value;
+            addResult('info', 'Testing Connectivity', 'Checking if backend is responding...');
+
+            try {
+                const response = await fetch(`${url}/api`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok || response.status === 404) {
+                    addResult('success', 'Connectivity Test', `✅ Backend is responding (${response.status})`);
+                    return true;
+                } else {
+                    addResult('error', 'Connectivity Test', `❌ Unexpected response: ${response.status}`);
+                    return false;
+                }
+            } catch (error) {
+                addResult('error', 'Connectivity Test', `❌ Connection failed: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testSystemStatus() {
+            const url = document.getElementById('backendUrl').value;
+            const token = document.getElementById('authToken').value;
+
+            if (!token) {
+                addResult('warning', 'System Status Test', '⚠️ Authorization token required. Please login and get token from browser dev tools.');
+                return;
+            }
+
+            addResult('info', 'System Status Test', 'Checking permission system status...');
+
+            try {
+                const response = await fetch(`${url}/api/permissions/system/status`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addJsonResult('success', '✅ System Status Retrieved', data);
+                    
+                    // Analyze the results
+                    if (data.permissionTablesExist) {
+                        addResult('success', 'Table Detection', '✅ Permission tables detected successfully!');
+                    } else {
+                        addResult('error', 'Table Detection', '❌ Permission tables still not detected. Check logs.');
+                    }
+
+                    if (data.tableStats) {
+                        addResult('success', 'Table Stats', `✅ Tables accessible: ${Object.keys(data.tableStats).length} tables with data`);
+                    }
+
+                } else if (response.status === 401) {
+                    addResult('warning', 'System Status Test', '⚠️ Authentication failed. Token may be invalid or expired.');
+                } else if (response.status === 403) {
+                    addResult('warning', 'System Status Test', '⚠️ Access denied. Requires PLATFORM_ADMIN role.');
+                } else {
+                    const error = await response.text();
+                    addResult('error', 'System Status Test', `❌ Failed: ${response.status} - ${error}`);
+                }
+            } catch (error) {
+                addResult('error', 'System Status Test', `❌ Request failed: ${error.message}`);
+            }
+        }
+
+        async function testReinitialize() {
+            const url = document.getElementById('backendUrl').value;
+            const token = document.getElementById('authToken').value;
+
+            if (!token) {
+                addResult('warning', 'Reinitialize Test', '⚠️ Authorization token required.');
+                return;
+            }
+
+            if (!confirm('This will force reinitialize the permission system. Continue?')) {
+                return;
+            }
+
+            addResult('info', 'Reinitialize Test', 'Forcing permission system reinitialization...');
+
+            try {
+                const response = await fetch(`${url}/api/permissions/system/reinitialize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addJsonResult('success', '✅ Reinitialization Result', data);
+
+                    if (data.success) {
+                        addResult('success', 'Reinitialization', '✅ Permission system reinitialized successfully!');
+                    } else {
+                        addResult('error', 'Reinitialization', `❌ Reinitialization failed: ${data.error}`);
+                    }
+
+                } else if (response.status === 401) {
+                    addResult('warning', 'Reinitialize Test', '⚠️ Authentication failed.');
+                } else if (response.status === 403) {
+                    addResult('warning', 'Reinitialize Test', '⚠️ Access denied. Requires PLATFORM_ADMIN role.');
+                } else {
+                    const error = await response.text();
+                    addResult('error', 'Reinitialize Test', `❌ Failed: ${response.status} - ${error}`);
+                }
+            } catch (error) {
+                addResult('error', 'Reinitialize Test', `❌ Request failed: ${error.message}`);
+            }
+        }
+
+        // Instructions for getting auth token
+        function showTokenInstructions() {
+            addResult('info', 'How to Get Auth Token', `
+                1. Open the frontend application in another tab<br>
+                2. Login as a platform admin user<br>
+                3. Open browser dev tools (F12)<br>
+                4. Go to Application/Storage tab<br>
+                5. Find the JWT token in localStorage or sessionStorage<br>
+                6. Copy the full token including "Bearer " prefix<br>
+                7. Paste it in the Authorization Token field above
+            `);
+        }
+
+        // Auto-test connectivity on page load
+        window.onload = function() {
+            addResult('info', 'Permission System Fix Test', 'Testing the PostgreSQL table detection fix implemented in the backend.');
+            showTokenInstructions();
+        };
+    </script>
+</body>
+</html>
