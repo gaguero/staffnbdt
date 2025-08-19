@@ -19,10 +19,10 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule, {
       logger: LoggingConfig.getLogLevels(),
-      bufferLogs: false, // Disable log buffering for better performance
+      bufferLogs: true, // Buffer logs until custom logger is ready (NestJS v11 requirement)
     });
     
-    // Use custom logger service
+    // Wait for app to fully initialize before setting custom logger
     const customLogger = app.get(LoggerService);
     app.useLogger(customLogger);
 
@@ -123,7 +123,28 @@ async function bootstrap() {
     logger.log(`💾 Database: ${configService.get('DATABASE_URL') ? 'Connected' : 'Not configured'}`);
     
   } catch (error) {
-    logger.error('Failed to start application:', error);
+    // Enhanced error logging for better debugging
+    logger.error('Failed to start application:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      cause: error.cause,
+    });
+    
+    // Fallback console logging for production debugging
+    if (process.env.NODE_ENV === 'production') {
+      console.error('Bootstrap failed - Full error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        databaseUrl: process.env.DATABASE_URL ? 'SET' : 'NOT_SET',
+        port: process.env.PORT,
+        nodeVersion: process.version,
+      });
+    }
+    
     process.exit(1);
   }
 }
