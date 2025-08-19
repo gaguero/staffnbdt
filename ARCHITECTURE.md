@@ -4,6 +4,31 @@
 
 Hotel Operations Hub is designed as a **multi-tenant, white-labeled, modular ERP platform** specifically for hotel operations. The architecture supports everything from single independent properties to large international hotel chains with hundreds of properties.
 
+## Implementation Status Overview
+
+### ✅ **FULLY IMPLEMENTED** (Production Ready)
+- **Database Schema**: Complete multi-tenant foundation with organization and property tables
+- **Permission System**: Advanced RBAC + ABAC hybrid (82 permissions, 7 roles)
+- **JWT Integration**: Tokens include full tenant context (organizationId, propertyId, departmentId)
+- **TenantService**: Basic tenant context management and default tenant creation
+- **Migration**: 20240817000000_add_multi_tenant applied to all existing tables
+
+### 🔄 **PARTIALLY IMPLEMENTED** (In Progress)
+- **API Layer Tenant Isolation**: Manual filtering in services (SECURITY GAP - see critical notes below)
+- **Authentication Flow**: JWT includes tenant context but frontend doesn't consume it
+
+### ⚠️ **CRITICAL SECURITY GAPS**
+- **Missing Global Tenant Middleware**: No automatic tenant injection on API requests
+- **Manual Tenant Filtering**: Relies on individual service implementations (risk of data leakage)
+- **Frontend Tenant Context**: No tenant-aware routing or context provider
+
+### ❌ **NOT YET IMPLEMENTED** (Planned)
+- Organization/Property Management APIs
+- White-label branding system implementation
+- Multi-language i18n system
+- Cloudflare R2 integration
+- Module system implementation
+
 ## Multi-Tenant Architecture
 
 ### Tenant Hierarchy
@@ -23,13 +48,13 @@ Platform Level (Super Admin)
 
 ### Tenant Isolation Strategy
 
-**Database Design: Shared Database with Tenant Isolation**
+**Database Design: Shared Database with Tenant Isolation** ✅ **IMPLEMENTED**
 
 We use a **shared database model** with tenant isolation through:
-- `organization_id` and `property_id` columns on all tenant-scoped tables
-- Row-level security enforced at the API layer
-- Tenant context passed in JWT tokens
-- Middleware validation on every request
+- ✅ `organizationId` and `propertyId` columns added to ALL existing tables
+- ✅ Foreign key relationships properly configured
+- ✅ Tenant context included in JWT tokens
+- ❌ **MISSING**: Global middleware validation on every request
 
 **Benefits:**
 - Cost-effective for smaller tenants
@@ -37,60 +62,71 @@ We use a **shared database model** with tenant isolation through:
 - Efficient resource utilization
 - Simplified backup and monitoring
 
-**Security:**
-- API-level tenant validation
-- No cross-tenant data leakage
-- Audit logging for all operations
-- Role-based access within tenant scope
+**Current Security Status:**
+- ✅ JWT tokens include full tenant context
+- ⚠️ **CRITICAL GAP**: Manual tenant filtering in services (potential data leakage)
+- ❌ **MISSING**: Automatic tenant validation middleware
+- ❌ **MISSING**: Audit logging for tenant operations
+- ✅ Advanced RBAC + ABAC permission system within tenant scope
 
 ### Data Models
 
-#### Core Platform Tables
+#### Core Platform Tables ✅ **FULLY IMPLEMENTED**
+
+**Current Schema Status**: All tables implemented with complete tenant isolation
 
 ```sql
--- Platform management
-organizations (
-  id UUID PRIMARY KEY,
-  name TEXT NOT NULL,
-  type ENUM('CHAIN', 'INDEPENDENT', 'MANAGEMENT_GROUP'),
-  tier ENUM('STARTER', 'PROFESSIONAL', 'ENTERPRISE'),
-  subscription_status ENUM('ACTIVE', 'SUSPENDED', 'TRIAL'),
-  settings JSONB,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
-)
+-- ✅ IMPLEMENTED: Platform management
+Organization {
+  id: String (UUID) @id @default(cuid())
+  name: String
+  description: String?
+  website: String?
+  contactEmail: String?
+  contactPhone: String?
+  address: Json?
+  timezone: String @default("UTC")
+  currency: String @default("USD")
+  settings: Json @default("{}")
+  branding: Json @default("{}")
+  subscriptionTier: SubscriptionTier @default(STARTER)
+  subscriptionStatus: SubscriptionStatus @default(TRIAL)
+  createdAt: DateTime @default(now())
+  updatedAt: DateTime @updatedAt
+  
+  // Relations
+  properties: Property[]
+  users: User[]
+}
 
--- Individual hotels/properties
-properties (
-  id UUID PRIMARY KEY,
-  organization_id UUID REFERENCES organizations(id),
-  name TEXT NOT NULL,
-  code TEXT UNIQUE, -- Property code for identification
-  type ENUM('HOTEL', 'RESORT', 'MOTEL', 'BOUTIQUE'),
-  rooms INTEGER,
-  location JSONB, -- {country, city, timezone, currency}
-  settings JSONB,
-  status ENUM('ACTIVE', 'INACTIVE', 'MAINTENANCE'),
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
-)
+-- ✅ IMPLEMENTED: Individual hotels/properties  
+Property {
+  id: String (UUID) @id @default(cuid())
+  organizationId: String
+  name: String
+  address: Json?
+  contactInfo: Json @default("{}")
+  settings: Json @default("{}")
+  timezone: String @default("UTC")
+  currency: String @default("USD")
+  createdAt: DateTime @default(now())
+  updatedAt: DateTime @updatedAt
+  
+  // Relations
+  organization: Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  users: User[]
+  departments: Department[]
+}
 
--- Grouping properties (for chains)
-property_groups (
-  id UUID PRIMARY KEY,
-  organization_id UUID REFERENCES organizations(id),
-  name TEXT NOT NULL, -- "East Coast Properties"
-  description TEXT,
-  manager_id UUID REFERENCES users(id),
-  created_at TIMESTAMP
-)
-
-property_group_members (
-  group_id UUID REFERENCES property_groups(id),
-  property_id UUID REFERENCES properties(id),
-  PRIMARY KEY (group_id, property_id)
-)
+-- ⚠️ PLANNED: Property grouping (not yet implemented)
+-- property_groups and property_group_members tables not yet created
 ```
+
+**Multi-Tenant Migration Applied**: `20240817000000_add_multi_tenant`
+- ✅ All existing tables updated with `organizationId` and `propertyId` columns
+- ✅ Foreign key relationships established
+- ✅ Proper indexes created for tenant filtering
+- ✅ Default tenant creation implemented in TenantService
 
 #### Module Management
 
@@ -162,12 +198,31 @@ user_property_access (
 )
 ```
 
-## White-Label Architecture
+## White-Label Architecture ⚠️ **SCHEMA EXISTS, NO IMPLEMENTATION**
 
-### Branding System
+### Branding System Status
 
+**Database Schema**: ✅ Branding fields exist in Organization table
+
+```prisma
+// ✅ SCHEMA EXISTS: Organization table includes branding field
+Organization {
+  // ... other fields
+  branding: Json @default("{}")
+  // Contains: colors, logos, typography, custom CSS, etc.
+}
+```
+
+**Current Implementation Status**:
+- ✅ Database schema supports branding configuration
+- ❌ **NOT IMPLEMENTED**: Branding management APIs
+- ❌ **NOT IMPLEMENTED**: Dynamic theme injection system
+- ❌ **NOT IMPLEMENTED**: Custom domain support
+- ❌ **NOT IMPLEMENTED**: Frontend branding provider
+
+**Planned Full Schema** (for dedicated branding table):
 ```sql
--- Branding configurations
+-- ❌ NOT YET IMPLEMENTED: Dedicated branding configurations table
 branding_configs (
   id UUID PRIMARY KEY,
   organization_id UUID REFERENCES organizations(id),
@@ -201,10 +256,13 @@ branding_configs (
 )
 ```
 
-### Dynamic Theming Implementation
+### Dynamic Theming Implementation ❌ **NOT YET IMPLEMENTED**
 
-**CSS Variables Approach:**
+**Current Status**: Static Tailwind CSS theme, no dynamic theming
+
+**Planned CSS Variables Approach:**
 ```css
+/* ❌ NOT IMPLEMENTED: Dynamic CSS variables */
 :root {
   --primary-color: var(--tenant-primary, #f5ebd7);
   --secondary-color: var(--tenant-secondary, #aa8e67);
@@ -213,10 +271,11 @@ branding_configs (
 }
 ```
 
-**Runtime Theme Injection:**
+**Planned Runtime Theme Injection:**
 ```typescript
-// Theme provider loads tenant branding and injects CSS variables
+// ❌ NOT IMPLEMENTED: Theme provider with dynamic branding
 const ThemeProvider: React.FC = ({ children }) => {
+  // ❌ Missing: useAuth hook doesn't provide tenant context
   const { organizationId, propertyId } = useAuth();
   const { data: branding } = useQuery(['branding', organizationId, propertyId]);
   
@@ -243,12 +302,21 @@ const ThemeProvider: React.FC = ({ children }) => {
 };
 ```
 
-## Internationalization Architecture
+**Implementation Dependencies**:
+1. ❌ Frontend tenant context provider
+2. ❌ Branding management APIs
+3. ❌ CSS variable injection system
 
-### Translation System
+## Internationalization Architecture ❌ **NOT YET IMPLEMENTED**
+
+### Translation System Status
+
+**Current Status**: Static English-only interface, no i18n system
+
+**Planned Translation Database Schema** (not yet created):
 
 ```sql
--- Language configurations
+-- ❌ NOT IMPLEMENTED: Language configurations
 languages (
   code TEXT PRIMARY KEY, -- 'en', 'es', 'fr'
   name TEXT NOT NULL, -- 'English', 'Español'
@@ -258,7 +326,7 @@ languages (
   created_at TIMESTAMP
 )
 
--- Translation keys and values
+-- ❌ NOT IMPLEMENTED: Translation keys and values
 translations (
   id UUID PRIMARY KEY,
   key TEXT NOT NULL, -- 'dashboard.welcome'
@@ -275,7 +343,7 @@ translations (
   UNIQUE (key, namespace, language_code)
 )
 
--- Organization-specific translation overrides
+-- ❌ NOT IMPLEMENTED: Organization-specific translation overrides
 organization_translations (
   organization_id UUID REFERENCES organizations(id),
   translation_id UUID REFERENCES translations(id),
@@ -285,7 +353,7 @@ organization_translations (
   PRIMARY KEY (organization_id, translation_id)
 )
 
--- Property-specific translation overrides
+-- ❌ NOT IMPLEMENTED: Property-specific translation overrides
 property_translations (
   property_id UUID REFERENCES properties(id),
   translation_id UUID REFERENCES translations(id),
@@ -295,6 +363,12 @@ property_translations (
   PRIMARY KEY (property_id, translation_id)
 )
 ```
+
+**Implementation Status**:
+- ❌ No database tables created
+- ❌ No translation management system
+- ❌ No frontend i18n integration
+- ❌ No AI translation service
 
 ### AI Translation Integration
 
@@ -335,20 +409,22 @@ class TranslationService {
 }
 ```
 
-## Storage Architecture
+## Storage Architecture ❌ **NOT YET IMPLEMENTED**
 
-### Cloudflare R2 Integration
+### Cloudflare R2 Integration Status
 
-**Benefits over local filesystem:**
+**Current Status**: Using local filesystem storage (not production-ready)
+
+**Planned Benefits of R2:**
 - Global CDN distribution
 - Infinite scalability
 - Zero egress fees
 - Multi-region replication
 - Integration with Cloudflare security
 
-**Implementation:**
+**Planned Implementation** (not yet built):
 ```typescript
-// R2 storage service
+// ❌ NOT IMPLEMENTED: R2 storage service
 class R2StorageService {
   private s3Client: S3Client;
   
@@ -397,6 +473,12 @@ class R2StorageService {
 }
 ```
 
+**Current Implementation Dependencies**:
+- ❌ R2 environment variables not configured
+- ❌ S3 client not integrated
+- ❌ File upload endpoints use local storage
+- ❌ No tenant-based file organization
+
 **File Organization:**
 ```
 R2 Bucket Structure:
@@ -414,49 +496,78 @@ R2 Bucket Structure:
 
 ## API Architecture
 
-### Tenant Context Middleware
+### Tenant Context Implementation Status
+
+#### ⚠️ **CRITICAL SECURITY GAP**: Missing Global Tenant Middleware
+
+**Current Status**: Manual tenant filtering in individual services
 
 ```typescript
-// Tenant context middleware
+// ❌ NOT YET IMPLEMENTED: Global tenant context middleware
+// SECURITY RISK: No automatic tenant validation on API requests
+
+// ✅ CURRENT IMPLEMENTATION: Manual filtering in services
+// Example from UsersService (IMPLEMENTED)
+export class UsersService {
+  async findAll(user: User, filters?: any) {
+    return this.prisma.user.findMany({
+      where: {
+        // ✅ Manual tenant filtering applied
+        organizationId: user.organizationId,
+        propertyId: user.propertyId,
+        ...filters,
+      },
+    });
+  }
+}
+
+// ⚠️ SECURITY CONCERN: Other services may not implement proper filtering
+// Risk of cross-tenant data leakage without global enforcement
+```
+
+**Required Implementation** (High Priority):
+```typescript
+// 🚨 NEEDED: Global tenant context middleware
 @Injectable()
 export class TenantContextMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     const user = req.user; // From JWT authentication
     
-    // Extract tenant context from JWT or headers
+    // Extract tenant context from JWT
     req.tenantContext = {
       organizationId: user.organizationId,
-      propertyId: req.headers['x-property-id'] || user.primaryPropertyId,
+      propertyId: user.propertyId,
+      departmentId: user.departmentId,
       userId: user.id,
-      role: user.globalRole,
+      role: user.role,
     };
     
-    // Validate property access
-    if (req.tenantContext.propertyId) {
-      this.validatePropertyAccess(user.id, req.tenantContext.propertyId);
-    }
+    // 🚨 CRITICAL: Validate tenant access for every request
+    this.validateTenantAccess(req.tenantContext);
     
     next();
   }
 }
 
-// Tenant-aware base service
+// 🚨 NEEDED: Tenant-aware base service with automatic filtering
 export abstract class TenantBaseService {
   protected addTenantFilter(query: any, tenantContext: TenantContext): any {
     return {
       ...query,
       organizationId: tenantContext.organizationId,
-      ...(tenantContext.propertyId && { propertyId: tenantContext.propertyId }),
+      propertyId: tenantContext.propertyId,
     };
   }
 }
 ```
 
-### Module System
+### Module System ❌ **NOT YET IMPLEMENTED**
 
-**Module Registration:**
+**Current Status**: Static module structure, no dynamic module system
+
+**Planned Implementation:**
 ```typescript
-// Module registry
+// ❌ NOT YET IMPLEMENTED: Module registry
 interface Module {
   code: string;
   name: string;
@@ -467,6 +578,7 @@ interface Module {
   databaseSchema?: string;
 }
 
+// ❌ NOT YET IMPLEMENTED: Dynamic module loading
 @Injectable()
 export class ModuleRegistry {
   private modules = new Map<string, Module>();
@@ -484,6 +596,12 @@ export class ModuleRegistry {
   }
 }
 ```
+
+**Current Module Structure**: Fixed modules in monorepo structure
+- HR module (partially implemented)
+- Inventory module (planned)
+- Front Desk module (planned)
+- Maintenance module (planned)
 
 ## Performance & Scalability
 
@@ -538,50 +656,119 @@ CREATE INDEX idx_reservations_property_date ON reservations(property_id, check_i
 
 ## Security Architecture
 
-### Tenant Isolation Security
+### Tenant Isolation Security Status
 
-**API Level:**
-- JWT tokens include tenant context
-- Middleware validates tenant access on every request
-- No direct database access from frontend
-- All queries filtered by tenant context
+**API Level** ⚠️ **PARTIALLY IMPLEMENTED WITH CRITICAL GAPS:**
+- ✅ JWT tokens include full tenant context
+- ❌ **CRITICAL GAP**: No global middleware validates tenant access on every request
+- ✅ No direct database access from frontend
+- ⚠️ **INCONSISTENT**: Only some queries properly filtered by tenant context
 
-**Database Level:**
-- No shared primary keys across tenants
-- Tenant ID required on all tenant-scoped tables
-- Foreign key constraints respect tenant boundaries
-- Audit logging for all tenant operations
-
-**File Storage:**
-- Tenant-specific directory structures
-- Pre-signed URLs with tenant validation
-- File access audit logging
-- Automatic encryption at rest
-
-### Authentication & Authorization
-
-**Multi-Level Permissions:**
+**Current Security Implementation**:
 ```typescript
-interface TenantPermissions {
-  platformLevel: PlatformPermission[]; // PLATFORM_ADMIN only
-  organizationLevel: OrganizationPermission[]; // ORG_OWNER, ORG_ADMIN
-  propertyLevel: PropertyPermission[]; // PROPERTY_MANAGER, DEPT_ADMIN
-  moduleLevel: ModulePermission[]; // Per-module permissions
+// ✅ IMPLEMENTED: JWT includes tenant context
+const jwtPayload = {
+  organizationId: user.organizationId,
+  propertyId: user.propertyId,
+  departmentId: user.departmentId,
+  // ... other fields
+};
+
+// ⚠️ PARTIAL: Manual tenant filtering in some services
+export class UsersService {
+  async findAll(user: User) {
+    // ✅ This service properly filters by tenant
+    return this.prisma.user.findMany({
+      where: {
+        organizationId: user.organizationId,
+        propertyId: user.propertyId,
+      },
+    });
+  }
+}
+
+// 🚨 RISK: Other services may not implement proper filtering
+// Without global middleware, risk of data leakage exists
+```
+
+**Database Level** ✅ **WELL IMPLEMENTED:**
+- ✅ No shared primary keys across tenants
+- ✅ organizationId/propertyId required on all tenant-scoped tables
+- ✅ Foreign key constraints respect tenant boundaries
+- ❌ **MISSING**: Audit logging for tenant operations
+
+**File Storage** ❌ **NOT YET IMPLEMENTED:**
+- ❌ Currently using local filesystem (not tenant-isolated)
+- ❌ No tenant-specific directory structures
+- ❌ No pre-signed URLs with tenant validation
+- ❌ No file access audit logging
+- ❌ No encryption at rest
+
+### **IMMEDIATE SECURITY PRIORITIES**:
+
+1. 🚨 **CRITICAL**: Implement global tenant context middleware
+2. 🚨 **HIGH**: Audit all services for proper tenant filtering
+3. ⚠️ **MEDIUM**: Implement audit logging system
+4. ⚠️ **MEDIUM**: Migrate to Cloudflare R2 with tenant isolation
+
+### Authentication & Authorization ✅ **ADVANCED SYSTEM IMPLEMENTED**
+
+**Current Implementation Status**:
+- ✅ **82 granular permissions** across all modules
+- ✅ **7 hierarchical roles** (Platform Admin → Staff)
+- ✅ **RBAC + ABAC hybrid system** with conditional permissions
+- ✅ **JWT tokens include full tenant context**
+- ✅ **Permission guards and decorators** for API endpoints
+- ✅ **Frontend permission hooks** for UI components
+
+**Implemented Permission System:**
+```typescript
+// ✅ FULLY IMPLEMENTED: Advanced permission structure
+interface UserPermissions {
+  // Platform-level permissions (PLATFORM_ADMIN only)
+  platform: string[]; // ['platform.manage.all']
+  
+  // Organization-level permissions
+  organization: string[]; // ['org.manage.settings', 'org.view.analytics']
+  
+  // Property-level permissions  
+  property: string[]; // ['property.manage.users', 'property.view.reports']
+  
+  // Department-level permissions
+  department: string[]; // ['user.create.department', 'schedule.manage.department']
+  
+  // Module-specific permissions with scope
+  modules: {
+    hr: string[]; // ['user.read.property', 'payroll.manage.department']
+    inventory: string[]; // ['item.create.property', 'order.approve.department']
+    maintenance: string[]; // ['request.assign.property', 'task.complete.own']
+  };
 }
 ```
 
-**JWT Structure:**
+**Current JWT Structure** ✅ **IMPLEMENTED:**
 ```json
 {
   "sub": "user-id",
   "email": "user@example.com",
   "role": "PROPERTY_MANAGER",
-  "organizationId": "org-123",
-  "propertyId": "prop-456",
-  "permissions": ["hr:read", "hr:write", "inventory:read"],
+  "organizationId": "clx123abc",
+  "propertyId": "clx456def", 
+  "departmentId": "clx789ghi",
+  "permissions": {
+    "department": ["user.create.department", "user.read.department"],
+    "property": ["user.read.property", "schedule.read.property"],
+    "organization": ["analytics.view.organization"]
+  },
   "iat": 1234567890,
   "exp": 1234567890
 }
 ```
+
+**Implementation Files**:
+- ✅ `/apps/bff/src/modules/permissions/permission.service.ts` - Core permission logic
+- ✅ `/apps/bff/src/modules/permissions/guards/permission.guard.ts` - API protection
+- ✅ `/apps/bff/src/shared/decorators/require-permission.decorator.ts` - Endpoint decorators
+- ✅ `/apps/web/src/hooks/usePermissions.ts` - Frontend integration
 
 This architecture provides a solid foundation for the Hotel Operations Hub platform, ensuring scalability, security, and flexibility while maintaining performance and ease of development.

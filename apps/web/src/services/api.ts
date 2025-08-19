@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { TOKEN_STORAGE_KEY } from '../utils/constants';
+import { TOKEN_STORAGE_KEY, TENANT_STORAGE_KEY } from '../utils/constants';
 
 // Use VITE_API_URL if set, otherwise use relative paths (for Railway deployment)
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -11,7 +11,7 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add token
+// Request interceptor to add token and tenant context
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
@@ -19,9 +19,31 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
+    // Add tenant context headers
+    const tenantInfo = localStorage.getItem(TENANT_STORAGE_KEY);
+    if (tenantInfo) {
+      try {
+        const parsedTenant = JSON.parse(tenantInfo);
+        if (parsedTenant.organizationId) {
+          config.headers['X-Organization-Id'] = parsedTenant.organizationId;
+        }
+        if (parsedTenant.propertyId) {
+          config.headers['X-Property-Id'] = parsedTenant.propertyId;
+        }
+      } catch (error) {
+        console.warn('Failed to parse tenant info for headers:', error);
+      }
+    }
+    
     // Log requests in development
     if (import.meta.env.DEV) {
-      console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, config.data);
+      console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, {
+        data: config.data,
+        tenantHeaders: {
+          'X-Organization-Id': config.headers['X-Organization-Id'],
+          'X-Property-Id': config.headers['X-Property-Id']
+        }
+      });
     }
     
     return config;
@@ -49,7 +71,14 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(TENANT_STORAGE_KEY);
       window.location.href = '/login';
+    }
+    
+    // Handle tenant-related errors
+    if (error.response?.status === 403 && error.response?.data?.code === 'TENANT_ACCESS_DENIED') {
+      console.error('Tenant access denied:', error.response.data.message);
+      // Could trigger a property selector or show a tenant error modal
     }
     
     // Extract meaningful error message

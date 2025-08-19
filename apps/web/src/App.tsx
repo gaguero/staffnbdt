@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { TenantProvider } from './contexts/TenantContext';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -120,7 +121,8 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <Routes>
+      <TenantProvider>
+        <Routes>
         {/* Public routes */}
         <Route 
           path="/login" 
@@ -270,7 +272,8 @@ const App: React.FC = () => {
             </ProtectedRoute>
           } 
         />
-      </Routes>
+        </Routes>
+      </TenantProvider>
     </ErrorBoundary>
   );
 };

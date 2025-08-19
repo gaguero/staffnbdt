@@ -3,12 +3,13 @@ import { useAuth } from '../contexts/AuthContext';
 import InvitationModal from '../components/InvitationModal';
 import EmergencyContactsForm from '../components/EmergencyContactsForm';
 import VerificationQueue from '../components/VerificationQueue';
+import TenantDemo from '../components/TenantDemo';
 
 const ComponentsTestPage: React.FC = () => {
   const { user } = useAuth();
   const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [isEditingEmergencyContacts, setIsEditingEmergencyContacts] = useState(false);
-  const [activeTab, setActiveTab] = useState('invitation');
+  const [activeTab, setActiveTab] = useState('tenant');
 
   // Mock emergency contacts data for testing
   const mockEmergencyContacts = {
@@ -27,6 +28,7 @@ const ComponentsTestPage: React.FC = () => {
   };
 
   const tabs = [
+    { id: 'tenant', label: 'Tenant Context', icon: '🏨' },
     { id: 'invitation', label: 'Invitation Modal', icon: '📧' },
     { id: 'emergency', label: 'Emergency Contacts', icon: '🚨' },
     { id: 'verification', label: 'Verification Queue', icon: '📋' },
@@ -84,6 +86,13 @@ const ComponentsTestPage: React.FC = () => {
 
       {/* Content */}
       <div className="px-4 py-6">
+        {/* Tenant Context Test */}
+        {activeTab === 'tenant' && (
+          <div className="max-w-7xl mx-auto">
+            <TenantDemo />
+          </div>
+        )}
+
         {/* Invitation Modal Test */}
         {activeTab === 'invitation' && (
           <div className="max-w-4xl mx-auto space-y-6">

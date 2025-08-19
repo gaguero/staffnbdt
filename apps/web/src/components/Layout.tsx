@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTenant } from '../contexts/TenantContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { NavLink, useLocation } from 'react-router-dom';
+import PropertySelector from './PropertySelector';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -79,6 +81,7 @@ const navigationItems: NavItem[] = [
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
+  const { getCurrentOrganizationName, getCurrentPropertyName } = useTenant();
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -150,8 +153,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           ))}
         </nav>
 
-        {/* User info in sidebar */}
-        <div className="border-t border-gray-200 p-4">
+        {/* User info and property selector in sidebar */}
+        <div className="border-t border-gray-200 p-4 space-y-3">
+          {/* Property Selector */}
+          <div>
+            <PropertySelector 
+              variant="dropdown" 
+              showOrganization={true}
+              className="w-full"
+            />
+          </div>
+          
+          {/* User Info */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-warm-gold rounded-full flex items-center justify-center text-white font-medium">
               {user?.firstName?.[0]?.toUpperCase()}
@@ -194,15 +207,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </svg>
             </button>
 
-            {/* Page title */}
+            {/* Page title with tenant context */}
             <div className="flex-1 lg:ml-0 ml-4">
               <h1 className="text-2xl font-heading text-charcoal uppercase">
                 {t(navigationItems.find(item => item.path === location.pathname)?.label || 'nav.dashboard')}
               </h1>
+              <div className="text-xs text-gray-500 mt-1 lg:hidden">
+                {getCurrentOrganizationName()} • {getCurrentPropertyName()}
+              </div>
             </div>
 
             {/* User menu */}
             <div className="flex items-center space-x-4">
+              {/* Property Selector for desktop header */}
+              <div className="hidden lg:block">
+                <PropertySelector 
+                  variant="dropdown" 
+                  showOrganization={true}
+                  className="min-w-48"
+                />
+              </div>
+              
               {/* Language Switcher */}
               <button
                 onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}

@@ -1,8 +1,35 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from '../services/api';
-import { TOKEN_STORAGE_KEY, USER_STORAGE_KEY } from '../utils/constants';
+import { TOKEN_STORAGE_KEY, USER_STORAGE_KEY, TENANT_STORAGE_KEY } from '../utils/constants';
 import permissionService from '../services/permissionService';
 import { Permission, UserPermissionSummary } from '../types/permission';
+
+interface Organization {
+  id: string;
+  name: string;
+  code: string;
+  branding?: {
+    logo?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
+}
+
+interface Property {
+  id: string;
+  name: string;
+  code: string;
+  address?: string;
+  organizationId: string;
+}
+
+interface TenantInfo {
+  organizationId?: string;
+  organization?: Organization;
+  propertyId?: string;
+  property?: Property;
+  availableProperties?: Property[];
+}
 
 interface User {
   id: string;
@@ -13,10 +40,14 @@ interface User {
   departmentId?: string;
   profilePhoto?: string;
   phoneNumber?: string;
+  organizationId?: string;
+  propertyId?: string;
+  properties?: Property[];
 }
 
 interface AuthContextType {
   user: User | null;
+  tenantInfo: TenantInfo;
   isAuthenticated: boolean;
   isLoading: boolean;
   permissions: Permission[];
@@ -26,6 +57,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (user: User) => void;
+  switchProperty: (propertyId: string) => Promise<void>;
   refreshPermissions: () => Promise<void>;
   clearPermissionCache: () => Promise<void>;
 }
@@ -46,6 +78,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [tenantInfo, setTenantInfo] = useState<TenantInfo>({});
   const [isLoading, setIsLoading] = useState(true);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [permissionSummary, setPermissionSummary] = useState<UserPermissionSummary | null>(null);
@@ -56,6 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check for stored auth on mount
     const storedUser = localStorage.getItem(USER_STORAGE_KEY);
     const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+    const storedTenant = localStorage.getItem(TENANT_STORAGE_KEY);
     
     if (storedUser && storedToken) {
       try {
@@ -63,12 +97,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(parsedUser);
         api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
         
+        // Restore tenant context
+        if (storedTenant) {
+          const parsedTenant = JSON.parse(storedTenant);
+          setTenantInfo(parsedTenant);
+        } else {
+          // Initialize tenant context from user data
+          const tenantFromUser: TenantInfo = {
+            organizationId: parsedUser.organizationId,
+            propertyId: parsedUser.propertyId,
+            availableProperties: parsedUser.properties || []
+          };
+          setTenantInfo(tenantFromUser);
+          localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(tenantFromUser));
+        }
+        
         // Load permissions for stored user
         loadPermissions(parsedUser);
       } catch (error) {
-        console.error('Failed to parse stored user data');
+        console.error('Failed to parse stored data:', error);
         localStorage.removeItem(USER_STORAGE_KEY);
         localStorage.removeItem(TOKEN_STORAGE_KEY);
+        localStorage.removeItem(TENANT_STORAGE_KEY);
       }
     }
     
@@ -78,7 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { user, accessToken } = response.data.data;
+      const { user, accessToken, organization, property, availableProperties } = response.data.data;
       
       // Store auth data
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
@@ -87,7 +137,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Set axios header
       api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
       
+      // Initialize tenant context
+      const tenant: TenantInfo = {
+        organizationId: user.organizationId || organization?.id,
+        organization,
+        propertyId: user.propertyId || property?.id,
+        property,
+        availableProperties: availableProperties || user.properties || []
+      };
+      
+      localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(tenant));
+      
       setUser(user);
+      setTenantInfo(tenant);
       
       // Load permissions after successful login
       await loadPermissions(user);
@@ -101,6 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Clear storage
     localStorage.removeItem(USER_STORAGE_KEY);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(TENANT_STORAGE_KEY);
     
     // Clear axios header
     delete api.defaults.headers.common['Authorization'];
@@ -110,6 +173,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     // Reset state
     setUser(null);
+    setTenantInfo({});
     setPermissions([]);
     setPermissionSummary(null);
     setPermissionsError(null);
@@ -119,9 +183,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(updatedUser);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
     
+    // Update tenant info if organization or property changed
+    if (updatedUser.organizationId !== user?.organizationId || updatedUser.propertyId !== user?.propertyId) {
+      const updatedTenant: TenantInfo = {
+        ...tenantInfo,
+        organizationId: updatedUser.organizationId,
+        propertyId: updatedUser.propertyId,
+        availableProperties: updatedUser.properties || tenantInfo.availableProperties
+      };
+      setTenantInfo(updatedTenant);
+      localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(updatedTenant));
+    }
+    
     // If role changed, refresh permissions
     if (user && user.role !== updatedUser.role) {
       loadPermissions(updatedUser);
+    }
+  };
+
+  const switchProperty = async (propertyId: string) => {
+    if (!user || !tenantInfo.availableProperties) {
+      throw new Error('Cannot switch property - no user or available properties');
+    }
+
+    const targetProperty = tenantInfo.availableProperties.find(p => p.id === propertyId);
+    if (!targetProperty) {
+      throw new Error('Property not found in available properties');
+    }
+
+    try {
+      // Call API to switch property context
+      const response = await api.post('/auth/switch-property', { propertyId });
+      const { user: updatedUser, accessToken } = response.data.data;
+      
+      // Update token if provided (some implementations may issue new token)
+      if (accessToken) {
+        localStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
+      // Update user with new property context
+      const userWithNewProperty = {
+        ...user,
+        propertyId: propertyId
+      };
+      
+      setUser(userWithNewProperty);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithNewProperty));
+      
+      // Update tenant context
+      const updatedTenant: TenantInfo = {
+        ...tenantInfo,
+        propertyId: propertyId,
+        property: targetProperty
+      };
+      
+      setTenantInfo(updatedTenant);
+      localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(updatedTenant));
+      
+      // Refresh permissions as they may be property-specific
+      await loadPermissions(userWithNewProperty);
+      
+    } catch (error) {
+      console.error('Failed to switch property:', error);
+      throw error;
     }
   };
 
@@ -178,6 +303,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
+        tenantInfo,
         isAuthenticated: !!user,
         isLoading,
         permissions,
@@ -187,6 +313,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         login,
         logout,
         updateUser,
+        switchProperty,
         refreshPermissions,
         clearPermissionCache,
       }}

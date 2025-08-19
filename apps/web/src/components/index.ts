@@ -5,3 +5,4 @@ export { default as ProtectedRoute } from './ProtectedRoute';
 export { default as PermissionGate, withPermission, usePermissionGate } from './PermissionGate';
 export { default as RoleBasedComponent, withRoles, useRoleCheck } from './RoleBasedComponent';
 export { default as PermissionDemo } from './PermissionDemo';
+export { default as PropertySelector } from './PropertySelector';

@@ -10,11 +10,13 @@ import { LoggerModule } from './shared/logger/logger.module';
 import { AuditModule } from './shared/audit/audit.module';
 import { StorageModule } from './shared/storage/storage.module';
 import { SharedModule } from './shared/shared.module';
+import { TenantModule } from './shared/tenant/tenant.module';
 
 // Guards, filters, and interceptors
 import { JwtAuthGuard } from './shared/guards/jwt-auth.guard';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
+import { TenantInterceptor } from './shared/tenant/tenant.interceptor';
 
 // Feature modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -65,6 +67,7 @@ import { PermissionModule } from './modules/permissions/permission.module';
     AuditModule,
     StorageModule,
     SharedModule,
+    TenantModule,
 
     // Feature modules
     AuthModule,
@@ -94,7 +97,11 @@ import { PermissionModule } from './modules/permissions/permission.module';
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
     },
-    // Global interceptors
+    // Global interceptors (order matters: TenantInterceptor should run before AuditInterceptor)
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TenantInterceptor,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: AuditInterceptor,

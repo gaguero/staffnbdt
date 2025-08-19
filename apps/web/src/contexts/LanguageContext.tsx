@@ -122,6 +122,14 @@ const translations = {
     'users.delete': 'Delete',
     'users.role': 'Role',
     
+    // Property Selector
+    'propertySelector.selectProperty': 'Select Property',
+    'propertySelector.currentProperty': 'Current Property',
+    'propertySelector.switchProperty': 'Switch Property',
+    'propertySelector.noProperties': 'No Properties Available',
+    'propertySelector.loading': 'Switching Property...',
+    'propertySelector.error': 'Failed to switch property',
+    
     // Common
     'common.loading': 'Loading...',
     'common.error': 'Error',
@@ -253,6 +261,14 @@ const translations = {
     'users.edit': 'Editar',
     'users.delete': 'Eliminar',
     'users.role': 'Rol',
+    
+    // Property Selector
+    'propertySelector.selectProperty': 'Seleccionar Propiedad',
+    'propertySelector.currentProperty': 'Propiedad Actual',
+    'propertySelector.switchProperty': 'Cambiar Propiedad',
+    'propertySelector.noProperties': 'No hay Propiedades Disponibles',
+    'propertySelector.loading': 'Cambiando Propiedad...',
+    'propertySelector.error': 'Error al cambiar propiedad',
     
     // Common
     'common.loading': 'Cargando...',

@@ -1,5 +1,6 @@
 export const TOKEN_STORAGE_KEY = 'nayara_auth_token';
 export const USER_STORAGE_KEY = 'nayara_user_data';
+export const TENANT_STORAGE_KEY = 'nayara_tenant_context';
 
 export const API_ENDPOINTS = {
   AUTH: {
