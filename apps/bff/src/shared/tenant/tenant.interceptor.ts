@@ -5,7 +5,6 @@ import {
   CallHandler,
   UnauthorizedException,
   Logger,
-  ConsoleLogger,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { TenantContextService } from './tenant-context.service';
@@ -14,20 +13,12 @@ import { TenantService } from './tenant.service';
 
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
-  private readonly logger: Logger;
+  private readonly logger = new Logger(TenantInterceptor.name);
 
   constructor(
     private readonly tenantContextService: TenantContextService,
     private readonly tenantService: TenantService,
-  ) {
-    // Initialize logger with fallback to ensure it's always available
-    try {
-      this.logger = new Logger(TenantInterceptor.name);
-    } catch (error) {
-      // Fallback to console logger if Logger fails to initialize
-      this.logger = new ConsoleLogger(TenantInterceptor.name);
-    }
-  }
+  ) {}
 
   async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
