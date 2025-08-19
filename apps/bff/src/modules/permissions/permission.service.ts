@@ -262,7 +262,7 @@ export class PermissionService implements OnModuleInit {
       if (hasLegacyPermission) {
         const result = await this.evaluatePermissionConditions(permission, evaluationContext);
         if (result.allowed) {
-          await this.cachePermissionResult(cacheKey, result, evaluationContext);
+          await this.cachePermissionResult(cacheKey, result, evaluationContext, resource, action, scope);
           return { ...result, source: 'role' };
         }
       }
@@ -284,7 +284,7 @@ export class PermissionService implements OnModuleInit {
             rolePermission.conditions
           );
           if (result.allowed) {
-            await this.cachePermissionResult(cacheKey, result, evaluationContext);
+            await this.cachePermissionResult(cacheKey, result, evaluationContext, resource, action, scope);
             return { ...result, source: 'role' };
           }
         }
@@ -304,7 +304,7 @@ export class PermissionService implements OnModuleInit {
             reason: 'Explicitly denied by user permission',
             source: 'user',
           };
-          await this.cachePermissionResult(cacheKey, result, evaluationContext);
+          await this.cachePermissionResult(cacheKey, result, evaluationContext, resource, action, scope);
           return result;
         }
 
@@ -313,7 +313,7 @@ export class PermissionService implements OnModuleInit {
           evaluationContext,
           userPermission.conditions
         );
-        await this.cachePermissionResult(cacheKey, result, evaluationContext);
+        await this.cachePermissionResult(cacheKey, result, evaluationContext, resource, action, scope);
         return { ...result, source: 'user' };
       }
 
@@ -323,7 +323,7 @@ export class PermissionService implements OnModuleInit {
         reason: 'No matching permission found',
         source: 'default',
       };
-      await this.cachePermissionResult(cacheKey, result, evaluationContext);
+      await this.cachePermissionResult(cacheKey, result, evaluationContext, resource, action, scope);
       return result;
 
     } catch (error) {
@@ -1137,6 +1137,9 @@ export class PermissionService implements OnModuleInit {
     cacheKey: string,
     result: PermissionEvaluationResult,
     context: PermissionEvaluationContext,
+    resource: string,
+    action: string,
+    scope: string,
   ): Promise<void> {
     if (!this.permissionTablesExist) {
       return;
@@ -1151,9 +1154,9 @@ export class PermissionService implements OnModuleInit {
           userId: context.userId,
           organizationId: context.organizationId,
           propertyId: context.propertyId,
-          resource: context.resource || '',
-          action: '',
-          scope: '',
+          resource: resource || '',
+          action: action || '',
+          scope: scope || '',
           allowed: result.allowed,
           conditions: result.conditions,
           cacheKey,
@@ -1169,6 +1172,7 @@ export class PermissionService implements OnModuleInit {
       });
     } catch (error) {
       this.logger.error('Error caching permission result:', error);
+      // Don't throw - permission should still work even if caching fails
     }
   }
 
