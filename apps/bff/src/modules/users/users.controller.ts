@@ -37,12 +37,12 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
-  @RequirePermission('user.create.organization')
+  @Roles(Role.PLATFORM_ADMIN, Role.PROPERTY_MANAGER, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.create.organization', 'user.create.property', 'user.create.department')
   @Audit({ action: 'CREATE', entity: 'User' })
-  @ApiOperation({ summary: 'Create a new user (Superadmin only)' })
+  @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Superadmin required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
   async create(
     @Body() createUserDto: CreateUserDto,
     @CurrentUser() currentUser: User,

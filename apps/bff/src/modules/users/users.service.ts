@@ -18,10 +18,8 @@ export class UsersService {
     createUserDto: CreateUserDto,
     currentUser: User,
   ): Promise<UserWithDepartment> {
-    // Only platform admins can create users
-    if (currentUser.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only platform admins can create users');
-    }
+    // Validate user creation permissions based on role hierarchy
+    this.validateUserCreationPermissions(currentUser, createUserDto);
 
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
@@ -34,6 +32,9 @@ export class UsersService {
 
     // Validate department assignment rules
     this.validateDepartmentAssignment(createUserDto.role, createUserDto.departmentId);
+
+    // Apply scope restrictions based on current user's role
+    this.applyCreationScopeRestrictions(currentUser, createUserDto);
 
     // Validate department exists if provided
     if (createUserDto.departmentId) {
@@ -880,6 +881,61 @@ export class UsersService {
     if (role === Role.PLATFORM_ADMIN && departmentId) {
       throw new BadRequestException('Platform admins cannot be assigned to a specific department');
     }
+  }
+
+  /**
+   * Validate if the current user has permission to create users
+   */
+  private validateUserCreationPermissions(currentUser: User, createUserDto: CreateUserDto): void {
+    // Platform admins can create any user
+    if (currentUser.role === Role.PLATFORM_ADMIN) {
+      return;
+    }
+
+    // Property managers can create users within their property (except platform admins)
+    if (currentUser.role === Role.PROPERTY_MANAGER) {
+      if (createUserDto.role === Role.PLATFORM_ADMIN) {
+        throw new ForbiddenException('Property managers cannot create platform administrators');
+      }
+      if (createUserDto.role === Role.ORGANIZATION_OWNER || createUserDto.role === Role.ORGANIZATION_ADMIN) {
+        throw new ForbiddenException('Property managers cannot create organization-level roles');
+      }
+      return;
+    }
+
+    // Department admins can only create staff within their department
+    if (currentUser.role === Role.DEPARTMENT_ADMIN) {
+      if (createUserDto.role !== Role.STAFF) {
+        throw new ForbiddenException('Department admins can only create staff users');
+      }
+      if (!createUserDto.departmentId || createUserDto.departmentId !== currentUser.departmentId) {
+        throw new ForbiddenException('Department admins can only create users in their own department');
+      }
+      return;
+    }
+
+    // All other roles cannot create users
+    throw new ForbiddenException('Insufficient permissions to create users');
+  }
+
+  /**
+   * Apply scope restrictions based on current user's role
+   */
+  private applyCreationScopeRestrictions(currentUser: User, createUserDto: CreateUserDto): void {
+    // Department admin restrictions are already handled in validateUserCreationPermissions
+    if (currentUser.role === Role.DEPARTMENT_ADMIN) {
+      return;
+    }
+
+    // Property manager creating users - they must be in the same property
+    if (currentUser.role === Role.PROPERTY_MANAGER) {
+      // For property manager, the new user should inherit their property/organization
+      // This is already handled in the create method where we set organizationId and propertyId
+      return;
+    }
+
+    // Platform admin has no restrictions
+    // Organization roles would have organization-level restrictions (not implemented yet)
   }
 
   /**
