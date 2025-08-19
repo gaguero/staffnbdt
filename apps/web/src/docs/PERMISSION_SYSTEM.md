@@ -178,12 +178,52 @@ function MyComponent() {
 ### 7. Higher-Order Component Pattern
 
 ```tsx
-import { withPermission } from '../components';
+import React from 'react';
+import { PermissionGate } from './PermissionGate';
 
-const ProtectedComponent = withPermission(MyComponent, {
+interface WithPermissionOptions {
+  resource?: string;
+  action?: string;
+  scope?: string;
+  permissions?: Array<{resource: string; action: string; scope?: string}>;
+  commonPermission?: any;
+  requireAll?: boolean;
+  fallback?: React.ReactNode;
+  unauthorized?: React.ReactNode;
+}
+
+export function withPermission<P extends object>(
+  Component: React.ComponentType<P>,
+  options: WithPermissionOptions
+) {
+  const WithPermissionComponent = (props: P) => {
+    return (
+      <PermissionGate {...options}>
+        <Component {...props} />
+      </PermissionGate>
+    );
+  };
+
+  WithPermissionComponent.displayName = `withPermission(${Component.displayName || Component.name})`;
+  
+  return WithPermissionComponent;
+}
+
+// Usage
+const ProtectedUserForm = withPermission(UserForm, {
   resource: 'user',
   action: 'create',
-  scope: 'department'
+  scope: 'department',
+  unauthorized: <div>You cannot create users</div>
+});
+
+const ProtectedAdminPanel = withPermission(AdminPanel, {
+  permissions: [
+    { resource: 'user', action: 'create', scope: 'department' },
+    { resource: 'department', action: 'read', scope: 'property' }
+  ],
+  requireAll: true,
+  fallback: <div>Loading admin panel...</div>
 });
 ```
 
@@ -250,6 +290,262 @@ export const COMMON_PERMISSIONS = {
 } as const;
 ```
 
+## Complete Implementation Examples
+
+### User Management Page
+```tsx
+import React from 'react';
+import { PermissionGate } from '../components';
+import { COMMON_PERMISSIONS } from '../types/permission';
+
+const UserManagementPage = () => {
+  return (
+    <div className="user-management">
+      <div className="page-header">
+        <h1>User Management</h1>
+        
+        {/* Create User Button - Department Admins and above */}
+        <PermissionGate 
+          commonPermission={COMMON_PERMISSIONS.CREATE_USER}
+          unauthorized={null} // Hide button if no permission
+        >
+          <CreateUserButton />
+        </PermissionGate>
+      </div>
+
+      {/* User List - All authenticated users can view */}
+      <PermissionGate
+        resource="user"
+        action="read"
+        scope="department"
+        fallback={<div>Loading user list...</div>}
+      >
+        <UserList />
+      </PermissionGate>
+
+      {/* Bulk Operations - Platform/Organization admins only */}
+      <PermissionGate
+        permissions={[
+          { resource: 'user', action: 'import', scope: 'organization' },
+          { resource: 'user', action: 'export', scope: 'organization' }
+        ]}
+        requireAll={false} // User needs either import OR export
+      >
+        <BulkOperationsPanel />
+      </PermissionGate>
+
+      {/* Admin Dashboard - Multiple permissions required */}
+      <PermissionGate
+        permissions={[
+          { resource: 'user', action: 'create', scope: 'department' },
+          { resource: 'user', action: 'update', scope: 'department' },
+          { resource: 'department', action: 'read', scope: 'property' }
+        ]}
+        requireAll={true} // User needs ALL permissions
+        unauthorized={
+          <div className="text-gray-500">
+            You need additional permissions to access the admin dashboard.
+          </div>
+        }
+      >
+        <AdminDashboard />
+      </PermissionGate>
+    </div>
+  );
+};
+```
+
+### Dynamic Context-Aware Permissions
+```tsx
+const DocumentCard = ({ document, currentUser }) => {
+  const { hasPermission } = usePermissions();
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
+
+  useEffect(() => {
+    // Check permissions with document context
+    const checkPermissions = async () => {
+      const editPermission = await hasPermission(
+        'document', 
+        'update', 
+        'department',
+        {
+          departmentId: document.departmentId,
+          documentType: document.type,
+          ownerId: document.createdBy
+        }
+      );
+      
+      const deletePermission = await hasPermission(
+        'document', 
+        'delete', 
+        'department',
+        {
+          departmentId: document.departmentId,
+          documentType: document.type,
+          ownerId: document.createdBy,
+          // Only allow deletion of own documents or if admin
+          requireOwnership: currentUser.role === 'STAFF'
+        }
+      );
+      
+      setCanEdit(editPermission);
+      setCanDelete(deletePermission);
+    };
+
+    checkPermissions();
+  }, [document, currentUser, hasPermission]);
+
+  return (
+    <div className="document-card">
+      <h3>{document.title}</h3>
+      <p>{document.description}</p>
+      
+      <div className="document-actions">
+        {canEdit && (
+          <button onClick={() => editDocument(document.id)}>
+            Edit
+          </button>
+        )}
+        
+        {canDelete && (
+          <button 
+            onClick={() => deleteDocument(document.id)}
+            className="text-red-600"
+          >
+            Delete
+          </button>
+        )}
+        
+        {/* Download is always allowed for department members */}
+        <PermissionGate
+          resource="document"
+          action="read"
+          scope="department"
+          context={{ departmentId: document.departmentId }}
+        >
+          <button onClick={() => downloadDocument(document.id)}>
+            Download
+          </button>
+        </PermissionGate>
+      </div>
+    </div>
+  );
+};
+```
+
+### Complex Permission Logic
+```tsx
+const PayrollSection = ({ employee, currentUser }) => {
+  return (
+    <div className="payroll-section">
+      {/* Own payroll - staff can view their own */}
+      <PermissionGate
+        resource="payroll"
+        action="read"
+        scope="own"
+        context={{ userId: employee.id, currentUserId: currentUser.id }}
+      >
+        <OwnPayrollView employee={employee} />
+      </PermissionGate>
+
+      {/* Department payroll - admins can view department members */}
+      <PermissionGate
+        resource="payroll"
+        action="read"
+        scope="department"
+        context={{ 
+          departmentId: employee.departmentId,
+          viewerDepartmentId: currentUser.departmentId 
+        }}
+      >
+        <DepartmentPayrollView employee={employee} />
+      </PermissionGate>
+
+      {/* Payroll management - special permissions for HR */}
+      <PermissionGate
+        permissions={[
+          { resource: 'payroll', action: 'create', scope: 'department' },
+          { resource: 'payroll', action: 'update', scope: 'department' },
+          { resource: 'user', action: 'read', scope: 'department' }
+        ]}
+        requireAll={true}
+        context={{ departmentId: employee.departmentId }}
+      >
+        <PayrollManagementPanel employee={employee} />
+      </PermissionGate>
+    </div>
+  );
+};
+```
+
+### Conditional Navigation
+```tsx
+const Navigation = () => {
+  const { hasAnyPermission } = usePermissions();
+  const [navigationItems, setNavigationItems] = useState([]);
+
+  useEffect(() => {
+    const buildNavigation = async () => {
+      const items = [];
+
+      // Dashboard - always visible
+      items.push({ path: '/dashboard', label: 'Dashboard' });
+
+      // Users - if can view users
+      if (await hasPermission('user', 'read', 'department')) {
+        items.push({ path: '/users', label: 'Users' });
+      }
+
+      // Departments - if can view departments
+      if (await hasPermission('department', 'read', 'property')) {
+        items.push({ path: '/departments', label: 'Departments' });
+      }
+
+      // Payroll - complex permission check
+      const hasPayrollAccess = await hasAnyPermission([
+        { resource: 'payroll', action: 'read', scope: 'own' },
+        { resource: 'payroll', action: 'read', scope: 'department' },
+        { resource: 'payroll', action: 'create', scope: 'department' }
+      ]);
+      
+      if (hasPayrollAccess) {
+        items.push({ path: '/payroll', label: 'Payroll' });
+      }
+
+      // Admin section - multiple admin permissions
+      const hasAdminAccess = await hasAnyPermission([
+        { resource: 'user', action: 'create', scope: 'department' },
+        { resource: 'benefit', action: 'create', scope: 'organization' },
+        { resource: 'training', action: 'create', scope: 'department' }
+      ]);
+      
+      if (hasAdminAccess) {
+        items.push({ path: '/admin', label: 'Administration' });
+      }
+
+      setNavigationItems(items);
+    };
+
+    buildNavigation();
+  }, [hasPermission, hasAnyPermission]);
+
+  return (
+    <nav className="sidebar">
+      {navigationItems.map((item) => (
+        <NavLink 
+          key={item.path} 
+          to={item.path} 
+          className="nav-item"
+        >
+          {item.label}
+        </NavLink>
+      ))}
+    </nav>
+  );
+};
+```
+
 ## Migration Guide
 
 ### Step 1: Identify Current Role Checks
@@ -258,23 +554,65 @@ export const COMMON_PERMISSIONS = {
 {currentUser?.role === 'DEPARTMENT_ADMIN' && (
   <CreateUserButton />
 )}
+
+// Multiple role checks
+{['DEPARTMENT_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role) && (
+  <AdminPanel />
+)}
+
+// Complex role logic
+{(currentUser?.role === 'DEPARTMENT_ADMIN' || 
+  (currentUser?.role === 'STAFF' && currentUser?.id === user.id)) && (
+  <EditProfileButton />
+)}
 ```
 
-### Step 2: Add Permission Props
+### Step 2: Add Permission Props (Gradual Migration)
 ```tsx
-// During migration (mixed)
+// During migration (mixed) - backwards compatible
 <RoleBasedComponent
   roles={['DEPARTMENT_ADMIN']}
   resource="user"
   action="create"
   scope="department"
-  usePermissions={true}
+  usePermissions={true} // Enable permission checking
+  fallbackToRoles={true} // Fall back to roles if permission check fails
 >
   <CreateUserButton />
 </RoleBasedComponent>
+
+// Multiple roles to multiple permissions
+<RoleBasedComponent
+  roles={['DEPARTMENT_ADMIN', 'PROPERTY_MANAGER']}
+  permissions={[
+    { resource: 'admin', action: 'access', scope: 'department' },
+    { resource: 'admin', action: 'access', scope: 'property' }
+  ]}
+  usePermissions={true}
+  requireAll={false} // OR logic
+>
+  <AdminPanel />
+</RoleBasedComponent>
+
+// Complex logic to context-aware permissions
+<RoleBasedComponent
+  roles={['DEPARTMENT_ADMIN', 'STAFF']}
+  resource="profile"
+  action="update"
+  scope="own"
+  context={{ 
+    userId: user.id, 
+    currentUserId: currentUser.id,
+    departmentId: user.departmentId,
+    viewerDepartmentId: currentUser.departmentId
+  }}
+  usePermissions={true}
+>
+  <EditProfileButton />
+</RoleBasedComponent>
 ```
 
-### Step 3: Pure Permission-Based
+### Step 3: Pure Permission-Based (Final State)
 ```tsx
 // After migration (permission-based)
 <PermissionGate
@@ -284,6 +622,163 @@ export const COMMON_PERMISSIONS = {
 >
   <CreateUserButton />
 </PermissionGate>
+
+// Multiple permissions
+<PermissionGate
+  permissions={[
+    { resource: 'admin', action: 'access', scope: 'department' },
+    { resource: 'admin', action: 'access', scope: 'property' }
+  ]}
+  requireAll={false}
+>
+  <AdminPanel />
+</PermissionGate>
+
+// Context-aware permissions
+<PermissionGate
+  resource="profile"
+  action="update"
+  scope="own"
+  context={{ 
+    userId: user.id, 
+    currentUserId: currentUser.id,
+    departmentId: user.departmentId,
+    viewerDepartmentId: currentUser.departmentId
+  }}
+>
+  <EditProfileButton />
+</PermissionGate>
+```
+
+### Step 4: Cleanup Legacy Code
+```tsx
+// Remove role-based checks
+// Delete RoleBasedComponent imports
+// Update prop types to remove role references
+// Clean up unused role constants
+```
+
+## Advanced Patterns
+
+### Permission-Aware Form Fields
+```tsx
+const UserForm = ({ user, isEditing }) => {
+  const { hasPermission } = usePermissions();
+  const [fieldPermissions, setFieldPermissions] = useState({});
+
+  useEffect(() => {
+    const checkFieldPermissions = async () => {
+      const permissions = {
+        email: await hasPermission('user', 'update_email', 'department'),
+        role: await hasPermission('user', 'change_role', 'department'),
+        department: await hasPermission('user', 'change_department', 'property'),
+        salary: await hasPermission('payroll', 'update', 'department')
+      };
+      setFieldPermissions(permissions);
+    };
+
+    if (isEditing) {
+      checkFieldPermissions();
+    }
+  }, [isEditing, hasPermission]);
+
+  return (
+    <form>
+      <input 
+        name="name" 
+        defaultValue={user.name}
+        // Name can always be edited
+      />
+      
+      <input 
+        name="email" 
+        defaultValue={user.email}
+        disabled={!fieldPermissions.email}
+        className={!fieldPermissions.email ? 'bg-gray-100' : ''}
+      />
+      
+      {fieldPermissions.role && (
+        <select name="role" defaultValue={user.role}>
+          <option value="STAFF">Staff</option>
+          <option value="DEPARTMENT_ADMIN">Department Admin</option>
+        </select>
+      )}
+      
+      {fieldPermissions.department && (
+        <DepartmentSelector 
+          defaultValue={user.departmentId}
+          name="departmentId"
+        />
+      )}
+      
+      {fieldPermissions.salary && (
+        <input 
+          name="salary" 
+          type="number"
+          defaultValue={user.salary}
+        />
+      )}
+    </form>
+  );
+};
+```
+
+### Permission-Based Data Filtering
+```tsx
+const useFilteredData = (data, resourceType) => {
+  const { hasPermission } = usePermissions();
+  const [filteredData, setFilteredData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const filterData = async () => {
+      setLoading(true);
+      
+      const filtered = [];
+      for (const item of data) {
+        // Check if user can read this specific item
+        const canRead = await hasPermission(
+          resourceType,
+          'read',
+          'department',
+          {
+            departmentId: item.departmentId,
+            ownerId: item.createdBy
+          }
+        );
+        
+        if (canRead) {
+          filtered.push(item);
+        }
+      }
+      
+      setFilteredData(filtered);
+      setLoading(false);
+    };
+
+    if (data.length > 0) {
+      filterData();
+    }
+  }, [data, resourceType, hasPermission]);
+
+  return { data: filteredData, loading };
+};
+
+// Usage
+const DocumentList = () => {
+  const [documents] = useState(/* fetch documents */);
+  const { data: visibleDocuments, loading } = useFilteredData(documents, 'document');
+
+  if (loading) return <LoadingSpinner />;
+
+  return (
+    <div>
+      {visibleDocuments.map(doc => (
+        <DocumentCard key={doc.id} document={doc} />
+      ))}
+    </div>
+  );
+};
 ```
 
 ## Performance Considerations
@@ -469,4 +964,320 @@ interface UsePermissionsReturn {
 }
 ```
 
-This permission system provides a robust foundation for implementing fine-grained access control in the React frontend while maintaining backwards compatibility and performance.
+## Frontend Service Implementation
+
+### Permission Service (permissionService.ts)
+```typescript
+import { api } from './api';
+
+interface Permission {
+  id: string;
+  name: string;
+  resource: string;
+  action: string;
+  scope: string;
+  module: string;
+}
+
+interface PermissionCheckResult {
+  allowed: boolean;
+  reason?: string;
+  context?: any;
+}
+
+class PermissionService {
+  private cache = new Map<string, { result: boolean; expiry: number }>();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  async hasPermission(
+    resource: string, 
+    action: string, 
+    scope?: string, 
+    context?: any
+  ): Promise<boolean> {
+    const cacheKey = `${resource}.${action}.${scope || 'default'}.${JSON.stringify(context || {})}`;
+    
+    // Check cache first
+    const cached = this.cache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      return cached.result;
+    }
+
+    try {
+      const response = await api.post<PermissionCheckResult>('/permissions/check', {
+        resource,
+        action,
+        scope,
+        context
+      });
+
+      const result = response.data.allowed;
+      
+      // Cache the result
+      this.cache.set(cacheKey, {
+        result,
+        expiry: Date.now() + this.CACHE_TTL
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Permission check failed:', error);
+      return false; // Fail closed
+    }
+  }
+
+  async hasAnyPermission(permissions: Array<{resource: string; action: string; scope?: string}>): Promise<boolean> {
+    try {
+      const response = await api.post<PermissionCheckResult>('/permissions/check-bulk', {
+        permissions,
+        requireAll: false
+      });
+      return response.data.allowed;
+    } catch (error) {
+      console.error('Bulk permission check failed:', error);
+      return false;
+    }
+  }
+
+  async hasAllPermissions(permissions: Array<{resource: string; action: string; scope?: string}>): Promise<boolean> {
+    try {
+      const response = await api.post<PermissionCheckResult>('/permissions/check-bulk', {
+        permissions,
+        requireAll: true
+      });
+      return response.data.allowed;
+    } catch (error) {
+      console.error('Bulk permission check failed:', error);
+      return false;
+    }
+  }
+
+  async getUserPermissions(): Promise<Permission[]> {
+    try {
+      const response = await api.get<Permission[]>('/permissions/user');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch user permissions:', error);
+      return [];
+    }
+  }
+
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  getCacheStats(): { size: number; hitRate: number } {
+    return {
+      size: this.cache.size,
+      hitRate: 0.85 // Would need to track hits/misses for real calculation
+    };
+  }
+}
+
+export const permissionService = new PermissionService();
+```
+
+### usePermissions Hook (usePermissions.ts)
+```typescript
+import { useState, useEffect, useCallback, useContext } from 'react';
+import { permissionService } from '../services/permissionService';
+import { AuthContext } from '../contexts/AuthContext';
+
+export const usePermissions = () => {
+  const { user } = useContext(AuthContext);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadPermissions = useCallback(async () => {
+    if (!user) {
+      setPermissions([]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      const userPermissions = await permissionService.getUserPermissions();
+      setPermissions(userPermissions);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load permissions');
+      console.error('Failed to load permissions:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadPermissions();
+  }, [loadPermissions]);
+
+  const hasPermission = useCallback(
+    (resource: string, action: string, scope?: string, context?: any) => {
+      return permissionService.hasPermission(resource, action, scope, context);
+    },
+    []
+  );
+
+  const hasAnyPermission = useCallback(
+    (permissions: Array<{resource: string; action: string; scope?: string}>) => {
+      return permissionService.hasAnyPermission(permissions);
+    },
+    []
+  );
+
+  const hasAllPermissions = useCallback(
+    (permissions: Array<{resource: string; action: string; scope?: string}>) => {
+      return permissionService.hasAllPermissions(permissions);
+    },
+    []
+  );
+
+  const refreshPermissions = useCallback(() => {
+    permissionService.clearCache();
+    return loadPermissions();
+  }, [loadPermissions]);
+
+  const clearCache = useCallback(() => {
+    permissionService.clearCache();
+  }, []);
+
+  const getCacheStats = useCallback(() => {
+    return permissionService.getCacheStats();
+  }, []);
+
+  return {
+    permissions,
+    isLoading,
+    error,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    refreshPermissions,
+    clearCache,
+    getCacheStats
+  };
+};
+```
+
+### Enhanced PermissionGate Component
+```typescript
+import React, { useState, useEffect, ReactNode } from 'react';
+import { usePermissions } from '../hooks/usePermissions';
+import { COMMON_PERMISSIONS } from '../types/permission';
+
+interface PermissionGateProps {
+  children: ReactNode;
+  
+  // Single permission
+  resource?: string;
+  action?: string;
+  scope?: string;
+  context?: any;
+  
+  // Multiple permissions
+  permissions?: Array<{resource: string; action: string; scope?: string}>;
+  commonPermission?: typeof COMMON_PERMISSIONS[keyof typeof COMMON_PERMISSIONS];
+  requireAll?: boolean;
+  
+  // UI options
+  fallback?: ReactNode;
+  unauthorized?: ReactNode;
+  loading?: ReactNode;
+  hideOnDenied?: boolean;
+  showLoading?: boolean;
+  
+  // Debug
+  debug?: boolean;
+}
+
+export const PermissionGate: React.FC<PermissionGateProps> = ({
+  children,
+  resource,
+  action,
+  scope,
+  context,
+  permissions,
+  commonPermission,
+  requireAll = false,
+  fallback,
+  unauthorized,
+  loading: loadingComponent,
+  hideOnDenied = true,
+  showLoading = true,
+  debug = false
+}) => {
+  const { hasPermission, hasAnyPermission, hasAllPermissions } = usePermissions();
+  const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkPermission = async () => {
+      setIsLoading(true);
+      let allowed = false;
+
+      try {
+        if (commonPermission) {
+          allowed = await hasPermission(
+            commonPermission.resource,
+            commonPermission.action,
+            commonPermission.scope,
+            context
+          );
+        } else if (permissions) {
+          allowed = requireAll 
+            ? await hasAllPermissions(permissions)
+            : await hasAnyPermission(permissions);
+        } else if (resource && action) {
+          allowed = await hasPermission(resource, action, scope, context);
+        }
+
+        if (debug) {
+          console.log('Permission check result:', {
+            resource,
+            action,
+            scope,
+            context,
+            permissions,
+            commonPermission,
+            requireAll,
+            allowed
+          });
+        }
+
+        setIsAllowed(allowed);
+      } catch (error) {
+        console.error('Permission check error:', error);
+        setIsAllowed(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkPermission();
+  }, [resource, action, scope, context, permissions, commonPermission, requireAll, hasPermission, hasAnyPermission, hasAllPermissions, debug]);
+
+  if (isLoading) {
+    if (showLoading && loadingComponent) {
+      return <>{loadingComponent}</>;
+    }
+    if (showLoading && fallback) {
+      return <>{fallback}</>;
+    }
+    return null;
+  }
+
+  if (isAllowed) {
+    return <>{children}</>;
+  }
+
+  if (hideOnDenied) {
+    return null;
+  }
+
+  return <>{unauthorized || fallback}</>;
+};
+```
+
+This permission system provides a robust, performant, and flexible foundation for implementing fine-grained access control in the React frontend while maintaining backwards compatibility and excellent developer experience.

@@ -12,6 +12,12 @@ Hotel Operations Hub is built on a modern, scalable technology stack optimized f
 - **Vite 4.0+** for fast development and building
 - **React Router v6** for routing
 
+### Permission Integration
+- **PermissionGate** component for conditional rendering
+- **usePermissions** hook for permission checking
+- **Permission Service** for bulk permission validation
+- **Context-aware** permission evaluation
+
 ### UI & Styling
 - **Tailwind CSS 3.3+** with CSS variables for theming
 - **HeadlessUI** for accessible components
@@ -56,6 +62,13 @@ Hotel Operations Hub is built on a modern, scalable technology stack optimized f
 - **Express.js** as HTTP server (NestJS default)
 - **Helmet** for security headers
 
+### Permission Engine
+- **Hybrid RBAC/ABAC** permission system
+- **Condition Evaluators** for time, department, ownership rules
+- **Permission Caching** with Redis-like performance
+- **Migration Tools** for role-to-permission transition
+- **Validation Suite** ensuring 100% coverage
+
 ### Database & ORM
 - **PostgreSQL 15+** on Railway
 - **Prisma 5.0+** as ORM and query builder
@@ -66,7 +79,11 @@ Hotel Operations Hub is built on a modern, scalable technology stack optimized f
 - **Passport.js** with JWT strategy
 - **@nestjs/jwt** for token management
 - **bcrypt** for password hashing
-- **Role-based access control** (RBAC)
+- **Advanced Permission System** (RBAC + ABAC hybrid)
+- **82 Granular Permissions** across 9 categories
+- **7 System Roles** with inheritance hierarchy
+- **Condition-based Evaluation** with caching
+- **Custom Roles & Direct Permissions** for flexibility
 
 ### Validation & Serialization
 - **class-validator** for DTO validation

@@ -59,6 +59,27 @@ ROLLBACK=true npx ts-node migrate-permissions.ts
 AUTO_ROLLBACK=true npx ts-node migrate-permissions.ts
 ```
 
+### 3. `validate-permission-coverage.ts`
+
+Validates that all endpoints are properly covered by permission checks.
+
+**What it does:**
+- Scans all controller endpoints for permission decorators
+- Identifies missing permission checks
+- Validates permission definitions match usage
+- Generates coverage report
+
+**Usage:**
+```bash
+cd packages/database/scripts
+npx ts-node validate-permission-coverage.ts
+```
+
+**Output:**
+- Coverage report showing protected/unprotected endpoints
+- List of missing permissions
+- Recommendations for improving security
+
 ## Permission Structure
 
 ### Permission Format
@@ -251,40 +272,333 @@ Replace `@Roles()` decorators with `@RequirePermission()` in controllers.
 ### Step 5: Test
 Verify all functionality works with permission-based system.
 
-## Troubleshooting
+## Production Deployment Procedures
+
+### Pre-Deployment Checklist
+
+1. **Environment Variables**
+   ```bash
+   # Verify all required environment variables are set
+   DATABASE_URL
+   REDIS_URL
+   JWT_SECRET
+   NODE_ENV=production
+   ```
+
+2. **Database Backup**
+   ```bash
+   # Create backup before migration
+   pg_dump $DATABASE_URL > backup_$(date +%Y%m%d_%H%M%S).sql
+   ```
+
+3. **Schema Migration**
+   ```bash
+   # Deploy schema changes
+   cd packages/database
+   npx prisma migrate deploy
+   npx prisma generate
+   ```
+
+### Deployment Steps
+
+#### Step 1: Deploy Schema Changes
+```bash
+cd packages/database
+npx prisma migrate deploy
+```
+
+#### Step 2: Seed Permissions
+```bash
+cd packages/database/scripts
+NODE_ENV=production npx ts-node seed-permissions.ts
+```
+
+#### Step 3: Migrate Users (Production)
+```bash
+# Run with production safety checks
+PRODUCTION=true AUTO_ROLLBACK=true npx ts-node migrate-permissions.ts
+```
+
+#### Step 4: Validate Coverage
+```bash
+# Ensure all endpoints are protected
+npx ts-node validate-permission-coverage.ts
+```
+
+#### Step 5: Deploy Application
+```bash
+# Deploy backend with new permission system
+git push origin main  # Triggers Railway deployment
+```
+
+### Post-Deployment Verification
+
+1. **Health Check**
+   ```bash
+   curl https://your-app.railway.app/health
+   ```
+
+2. **Permission System Status**
+   ```bash
+   curl https://your-app.railway.app/api/permissions/health
+   ```
+
+3. **Test User Access**
+   ```bash
+   # Test with different role users
+   curl -H "Authorization: Bearer $JWT_TOKEN" \
+        https://your-app.railway.app/api/users
+   ```
+
+### Rollback Procedures
+
+#### Immediate Rollback (if issues detected)
+```bash
+# 1. Rollback application deployment
+git revert HEAD
+git push origin main
+
+# 2. Rollback permission migration
+ROLLBACK=true npx ts-node migrate-permissions.ts
+
+# 3. Restore database if needed
+psql $DATABASE_URL < backup_YYYYMMDD_HHMMSS.sql
+```
+
+#### Gradual Rollback
+```bash
+# 1. Switch backend to role-based mode
+export USE_LEGACY_ROLES=true
+
+# 2. Deploy with feature flag
+# 3. Monitor for 24 hours
+# 4. Complete rollback if needed
+```
+
+## Troubleshooting Guide
 
 ### Common Issues
 
-**Permission not found errors:**
-- Ensure `seed-permissions.ts` ran successfully
-- Check for typos in permission IDs
+#### 1. Permission Not Found Errors
+**Symptoms:**
+- 403 errors with "Permission not found" message
+- Missing permission IDs in logs
 
-**Migration validation failures:**
-- Verify Prisma schema is up to date
-- Check database connectivity
+**Diagnosis:**
+```bash
+# Check if permissions were seeded
+psql $DATABASE_URL -c "SELECT COUNT(*) FROM Permission;"
 
-**Access denied after migration:**
-- Confirm user has expected permissions
-- Check permission scope matches operation
+# Expected: 60+ permissions
+```
+
+**Resolution:**
+```bash
+# Re-run permission seeding
+cd packages/database/scripts
+npx ts-node seed-permissions.ts
+```
+
+#### 2. Migration Validation Failures
+**Symptoms:**
+- Migration script fails with validation errors
+- User count mismatches
+
+**Diagnosis:**
+```bash
+# Check database schema
+npx prisma db pull
+npx prisma generate
+
+# Verify user count
+psql $DATABASE_URL -c "SELECT COUNT(*) FROM User;"
+```
+
+**Resolution:**
+```bash
+# Update schema and retry
+npx prisma migrate deploy
+npx prisma generate
+npx ts-node migrate-permissions.ts
+```
+
+#### 3. Access Denied After Migration
+**Symptoms:**
+- Users cannot access previously available features
+- 403 errors for legitimate operations
+
+**Diagnosis:**
+```sql
+-- Check user permissions
+SELECT u.email, u.role, p.id as permission_id, p.name
+FROM User u
+LEFT JOIN UserPermission up ON u.id = up.userId
+LEFT JOIN Permission p ON up.permissionId = p.id
+WHERE u.email = 'user@example.com'
+ORDER BY p.name;
+
+-- Check role permissions
+SELECT rp.role, COUNT(*) as permission_count
+FROM RolePermission rp
+GROUP BY rp.role;
+```
+
+**Resolution:**
+```bash
+# Re-assign permissions based on role
+psql $DATABASE_URL -c "
+INSERT INTO UserPermission (userId, permissionId, grantedAt, grantedBy)
+SELECT u.id, rp.permissionId, NOW(), 'system'
+FROM User u
+JOIN RolePermission rp ON u.role = rp.role
+WHERE NOT EXISTS (
+  SELECT 1 FROM UserPermission up 
+  WHERE up.userId = u.id AND up.permissionId = rp.permissionId
+);"
+```
+
+#### 4. Performance Issues
+**Symptoms:**
+- Slow permission checks
+- High database load
+- Timeout errors
+
+**Diagnosis:**
+```sql
+-- Check permission query performance
+EXPLAIN ANALYZE
+SELECT p.* FROM Permission p
+JOIN UserPermission up ON p.id = up.permissionId
+WHERE up.userId = 'user-id';
+
+-- Check index usage
+\d+ UserPermission
+\d+ RolePermission
+```
+
+**Resolution:**
+```sql
+-- Add performance indexes
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_user_permission_user_id 
+ON UserPermission(userId);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_role_permission_role 
+ON RolePermission(role);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_permission_resource_action 
+ON Permission(resource, action);
+```
+
+#### 5. Cache Issues
+**Symptoms:**
+- Stale permission data
+- Inconsistent access behavior
+- Permission changes not reflected
+
+**Diagnosis:**
+```bash
+# Check Redis cache
+redis-cli -u $REDIS_URL
+> KEYS permission:*
+> TTL permission:user:123
+```
+
+**Resolution:**
+```bash
+# Clear permission cache
+redis-cli -u $REDIS_URL FLUSHDB
+
+# Or specific user
+redis-cli -u $REDIS_URL DEL permission:user:123
+```
 
 ### Debug Commands
 
-```bash
-# Check permission count
-npx prisma db seed --preview-feature
+#### Database Queries
+```sql
+-- Check permission count by module
+SELECT module, COUNT(*) as permission_count 
+FROM Permission 
+GROUP BY module 
+ORDER BY permission_count DESC;
 
-# View user permissions
-SELECT u.email, p.id, p.name 
-FROM User u 
-JOIN UserPermission up ON u.id = up.userId 
-JOIN Permission p ON up.permissionId = p.id 
-WHERE u.email = 'user@example.com';
+-- Check user permission distribution
+SELECT u.role, COUNT(DISTINCT up.permissionId) as permission_count
+FROM User u
+LEFT JOIN UserPermission up ON u.id = up.userId
+GROUP BY u.role
+ORDER BY permission_count DESC;
 
-# Check role mappings
-SELECT r.role, COUNT(*) as permission_count 
-FROM RolePermission r 
-GROUP BY r.role;
+-- Find users without permissions
+SELECT u.id, u.email, u.role
+FROM User u
+LEFT JOIN UserPermission up ON u.id = up.userId
+WHERE up.userId IS NULL;
+
+-- Check permission conflicts
+SELECT p1.id, p1.name, p2.id, p2.name
+FROM Permission p1, Permission p2
+WHERE p1.resource = p2.resource 
+  AND p1.action = p2.action 
+  AND p1.scope = p2.scope 
+  AND p1.id != p2.id;
 ```
+
+#### Application Health
+```bash
+# Check permission service health
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+     https://your-app.railway.app/api/permissions/health
+
+# Test specific permission
+curl -X POST \
+     -H "Authorization: Bearer $USER_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"resource":"user","action":"create","scope":"department"}' \
+     https://your-app.railway.app/api/permissions/check
+
+# Get user permissions
+curl -H "Authorization: Bearer $USER_TOKEN" \
+     https://your-app.railway.app/api/permissions/user
+```
+
+### Monitoring and Alerts
+
+#### Key Metrics
+- Permission check latency (should be < 100ms)
+- Cache hit rate (should be > 90%)
+- Failed permission checks rate
+- Permission grant/revoke operations
+
+#### Log Patterns to Monitor
+```bash
+# Permission denied events
+grep "Permission denied" /var/log/app.log
+
+# Permission system errors
+grep "PermissionService error" /var/log/app.log
+
+# Slow permission queries
+grep "Slow permission query" /var/log/app.log
+```
+
+### Maintenance Tasks
+
+#### Daily
+- Monitor permission check error rates
+- Check cache performance metrics
+- Review permission denied logs
+
+#### Weekly
+- Audit permission assignments
+- Clean up expired cache entries
+- Review performance metrics
+
+#### Monthly
+- Update permission definitions
+- Review and update role mappings
+- Optimize database queries
+- Security audit of permission grants
 
 ## Future Enhancements
 
