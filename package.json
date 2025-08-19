@@ -28,10 +28,10 @@
     "test:report": "npx playwright show-report"
   },
   "devDependencies": {
-    "turbo": "^2.4.0",
     "@playwright/test": "^1.54.2",
     "@types/node": "^22.10.2",
-    "vitest": "^2.1.8"
+    "turbo": "^2.4.0",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=18.0.0"
