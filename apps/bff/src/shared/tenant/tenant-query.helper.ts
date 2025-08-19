@@ -15,9 +15,10 @@ export class TenantQueryHelper {
    */
   static applyTenantFilters<T extends Record<string, any>>(
     query: T,
-    tenantContext: TenantContextService
+    tenantContext: TenantContextService,
+    request: any
   ): T {
-    const filters = tenantContext.getPropertyFilters();
+    const filters = tenantContext.getPropertyFilters(request);
     
     const enhancedQuery = {
       ...query,
@@ -38,10 +39,11 @@ export class TenantQueryHelper {
    */
   static applyDepartmentScopedFilters<T extends Record<string, any>>(
     query: T,
-    tenantContext: TenantContextService
+    tenantContext: TenantContextService,
+    request: any
   ): T {
-    const filters = tenantContext.getPropertyFilters();
-    const departmentId = tenantContext.getDepartmentId();
+    const filters = tenantContext.getPropertyFilters(request);
+    const departmentId = tenantContext.getDepartmentId(request);
     
     // Only add department filter if user belongs to a department and is department-scoped
     const whereClause: any = {
@@ -50,7 +52,7 @@ export class TenantQueryHelper {
       propertyId: filters.propertyId,
     };
 
-    if (departmentId && tenantContext.isDepartmentScoped()) {
+    if (departmentId && tenantContext.isDepartmentScoped(request)) {
       whereClause.departmentId = departmentId;
       this.logger.debug(`Applied department-scoped filters: org=${filters.organizationId}, property=${filters.propertyId}, dept=${departmentId}`);
     } else {
@@ -68,9 +70,10 @@ export class TenantQueryHelper {
    */
   static applyOrganizationFilters<T extends Record<string, any>>(
     query: T,
-    tenantContext: TenantContextService
+    tenantContext: TenantContextService,
+    request: any
   ): T {
-    const filters = tenantContext.getOrganizationFilters();
+    const filters = tenantContext.getOrganizationFilters(request);
     
     const enhancedQuery = {
       ...query,
@@ -89,10 +92,11 @@ export class TenantQueryHelper {
    */
   static applyUserScopedFilters<T extends Record<string, any>>(
     query: T,
-    tenantContext: TenantContextService
+    tenantContext: TenantContextService,
+    request: any
   ): T {
-    const filters = tenantContext.getPropertyFilters();
-    const userId = tenantContext.getUserId();
+    const filters = tenantContext.getPropertyFilters(request);
+    const userId = tenantContext.getUserId(request);
     
     const enhancedQuery = {
       ...query,
@@ -115,10 +119,11 @@ export class TenantQueryHelper {
   static applyRoleBasedFilters<T extends Record<string, any>>(
     query: T,
     tenantContext: TenantContextService,
+    request: any,
     resourceType: 'user' | 'department' | 'document' | 'generic' = 'generic'
   ): T {
-    const userRole = tenantContext.getUserRole();
-    const filters = tenantContext.getPropertyFilters();
+    const userRole = tenantContext.getUserRole(request);
+    const filters = tenantContext.getPropertyFilters(request);
 
     let whereClause: any = {
       ...query.where,
@@ -140,7 +145,7 @@ export class TenantQueryHelper {
 
       case Role.DEPARTMENT_ADMIN:
         // Department admins are limited to their department
-        const deptId = tenantContext.getDepartmentId();
+        const deptId = tenantContext.getDepartmentId(request);
         if (deptId) {
           if (resourceType === 'user') {
             whereClause.departmentId = deptId;
@@ -156,7 +161,7 @@ export class TenantQueryHelper {
 
       case Role.STAFF:
         // Staff can only see their own resources in most cases
-        const userId = tenantContext.getUserId();
+        const userId = tenantContext.getUserId(request);
         if (resourceType === 'user') {
           whereClause.id = userId; // For user resources, only show self
         } else {
@@ -181,14 +186,15 @@ export class TenantQueryHelper {
   static validateTenantOwnership(
     result: any,
     tenantContext: TenantContextService,
+    request: any,
     resourceName: string = 'resource'
   ): boolean {
     if (!result) {
       return true; // No result to validate
     }
 
-    const expectedOrgId = tenantContext.getOrganizationId();
-    const expectedPropertyId = tenantContext.getPropertyId();
+    const expectedOrgId = tenantContext.getOrganizationId(request);
+    const expectedPropertyId = tenantContext.getPropertyId(request);
 
     // Handle arrays
     if (Array.isArray(result)) {
@@ -232,6 +238,7 @@ export class TenantQueryHelper {
   static createSafeQuery<T extends Record<string, any>>(
     baseQuery: T,
     tenantContext: TenantContextService,
+    request: any,
     options: {
       scope?: 'organization' | 'property' | 'department' | 'user';
       resourceType?: 'user' | 'department' | 'document' | 'generic';
@@ -241,7 +248,7 @@ export class TenantQueryHelper {
     const { scope = 'property', resourceType = 'generic', skipTenantFilters = false } = options;
 
     // Only skip tenant filters for platform admins and when explicitly requested
-    if (skipTenantFilters && tenantContext.getUserRole() === Role.PLATFORM_ADMIN) {
+    if (skipTenantFilters && tenantContext.getUserRole(request) === Role.PLATFORM_ADMIN) {
       this.logger.warn('Skipping tenant filters for platform admin query');
       return baseQuery;
     }
@@ -249,14 +256,14 @@ export class TenantQueryHelper {
     // Apply appropriate filters based on scope
     switch (scope) {
       case 'organization':
-        return this.applyOrganizationFilters(baseQuery, tenantContext);
+        return this.applyOrganizationFilters(baseQuery, tenantContext, request);
       case 'department':
-        return this.applyDepartmentScopedFilters(baseQuery, tenantContext);
+        return this.applyDepartmentScopedFilters(baseQuery, tenantContext, request);
       case 'user':
-        return this.applyUserScopedFilters(baseQuery, tenantContext);
+        return this.applyUserScopedFilters(baseQuery, tenantContext, request);
       case 'property':
       default:
-        return this.applyRoleBasedFilters(baseQuery, tenantContext, resourceType);
+        return this.applyRoleBasedFilters(baseQuery, tenantContext, request, resourceType);
     }
   }
 
@@ -277,6 +284,7 @@ export class TenantQueryHelper {
   static ensureTenantContext<T extends Record<string, any>>(
     data: T,
     tenantContext: TenantContextService,
+    request: any,
     options: {
       scope?: 'organization' | 'property' | 'department' | 'user';
       includeUserId?: boolean;
@@ -287,13 +295,13 @@ export class TenantQueryHelper {
     const enhancedData = { ...data } as any;
 
     // Always include organization and property
-    const filters = tenantContext.getPropertyFilters();
+    const filters = tenantContext.getPropertyFilters(request);
     enhancedData.organizationId = filters.organizationId;
     enhancedData.propertyId = filters.propertyId;
 
     // Include department if appropriate
     if (scope === 'department') {
-      const deptId = tenantContext.getDepartmentId();
+      const deptId = tenantContext.getDepartmentId(request);
       if (deptId) {
         enhancedData.departmentId = deptId;
       }
@@ -301,7 +309,7 @@ export class TenantQueryHelper {
 
     // Include user ID if requested
     if (includeUserId) {
-      enhancedData.userId = tenantContext.getUserId();
+      enhancedData.userId = tenantContext.getUserId(request);
     }
 
     this.logger.debug(`Enhanced data with tenant context: org=${filters.organizationId}, property=${filters.propertyId}`);
@@ -314,6 +322,7 @@ export class TenantQueryHelper {
   static createTenantAwareWhereClause(
     baseWhere: any,
     tenantContext: TenantContextService,
+    request: any,
     options: {
       includeDeleted?: boolean;
       scope?: 'organization' | 'property' | 'department' | 'user';
@@ -326,7 +335,7 @@ export class TenantQueryHelper {
 
     // Apply tenant filters
     const tempQuery = { where: whereClause };
-    const filteredQuery = this.createSafeQuery(tempQuery, tenantContext, { scope });
+    const filteredQuery = this.createSafeQuery(tempQuery, tenantContext, request, { scope });
     whereClause = filteredQuery.where;
 
     // Apply soft delete filter if not including deleted
