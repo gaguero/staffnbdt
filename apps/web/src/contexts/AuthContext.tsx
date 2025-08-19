@@ -214,7 +214,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // Call API to switch property context
       const response = await api.post('/auth/switch-property', { propertyId });
-      const { user: updatedUser, accessToken } = response.data.data;
+      const { accessToken } = response.data.data;
       
       // Update token if provided (some implementations may issue new token)
       if (accessToken) {

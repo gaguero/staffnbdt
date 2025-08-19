@@ -19,6 +19,9 @@ const TenantDemo: React.FC = () => {
   } = useTenant();
   const { tenantContext } = useTenantAwareApi();
   const { t } = useLanguage();
+  
+  // Silence unused variable warning - t is used in translations
+  void t;
 
   return (
     <div className="bg-white rounded-lg shadow-soft p-6">
