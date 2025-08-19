@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { ScheduleModule } from '@nestjs/schedule';
+// Removed ScheduleModule due to crypto module unavailability in Railway environment
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 
 // Core modules
@@ -60,8 +60,8 @@ import { PropertyModule } from './modules/properties/property.module';
       ],
     }),
 
-    // Task scheduling
-    ScheduleModule.forRoot(),
+    // Task scheduling removed due to crypto module issues in Railway
+    // Manual scheduling implemented in individual services
 
     // Core modules
     DatabaseModule,

@@ -7,7 +7,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Cron, CronExpression } from '@nestjs/schedule';
+// Removed @nestjs/schedule import due to crypto module unavailability in Railway
 import { 
   Permission, 
   CustomRole, 
@@ -77,6 +77,7 @@ export class PermissionService implements OnModuleInit {
     this.skipPermissionInit = this.configService.get<boolean>('SKIP_PERMISSION_INIT', false);
     this.forcePermissionSystem = this.configService.get<boolean>('FORCE_PERMISSION_SYSTEM', false);
     this.initializeConditionEvaluators();
+    this.initializeCronJobs();
   }
 
   async onModuleInit() {
@@ -626,8 +627,8 @@ export class PermissionService implements OnModuleInit {
 
   /**
    * Clean up expired cache entries
+   * Only run in environments where crypto module is available
    */
-  @Cron(CronExpression.EVERY_HOUR)
   async cleanupExpiredCache(): Promise<void> {
     if (!this.permissionTablesExist) {
       this.logger.debug('Skipping cache cleanup - permission tables not available');
@@ -647,6 +648,36 @@ export class PermissionService implements OnModuleInit {
     } catch (error) {
       this.logger.error('Error cleaning up expired cache:', error);
     }
+  }
+
+  /**
+   * Initialize cron job if crypto module is available
+   */
+  private initializeCronJobs(): void {
+    try {
+      // Check if crypto module is available
+      require('crypto');
+      
+      // If crypto is available, schedule the cleanup job
+      if (this.configService.get('NODE_ENV') !== 'test') {
+        this.logger.log('Crypto module available - enabling scheduled cache cleanup');
+        // Manual scheduling using setTimeout for now
+        this.scheduleCleanupJob();
+      }
+    } catch (error) {
+      this.logger.warn('Crypto module not available - disabling scheduled cache cleanup:', error.message);
+    }
+  }
+
+  private scheduleCleanupJob(): void {
+    // Run cleanup every hour (3600000 ms)
+    setInterval(async () => {
+      try {
+        await this.cleanupExpiredCache();
+      } catch (error) {
+        this.logger.error('Scheduled cleanup failed:', error);
+      }
+    }, 3600000);
   }
 
   /**
