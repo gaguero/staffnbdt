@@ -355,11 +355,40 @@ export async function seedPermissions() {
     },
   ];
 
+  // Get or create default organization for custom roles
+  let defaultOrg = await prisma.organization.findFirst({
+    where: { slug: 'nayara-group' }
+  });
+
+  if (!defaultOrg) {
+    console.log('Creating default organization for custom roles...');
+    defaultOrg = await prisma.organization.create({
+      data: {
+        name: 'Nayara Group',
+        slug: 'nayara-group',
+        description: 'Default organization for Hotel Operations Hub',
+        timezone: 'America/Costa_Rica',
+        settings: {
+          defaultLanguage: 'en',
+          supportedLanguages: ['en', 'es'],
+          theme: 'nayara'
+        },
+        branding: {
+          primaryColor: '#AA8E67',
+          secondaryColor: '#F5EBD7',
+          accentColor: '#4A4A4A',
+          logoUrl: null
+        },
+        isActive: true
+      }
+    });
+  }
+
   for (const role of customRoles) {
     const createdRole = await prisma.customRole.upsert({
       where: {
         organizationId_propertyId_name: {
-          organizationId: null,
+          organizationId: defaultOrg.id,
           propertyId: null,
           name: role.name,
         },
@@ -367,6 +396,7 @@ export async function seedPermissions() {
       create: {
         name: role.name,
         description: role.description,
+        organizationId: defaultOrg.id,
         isSystemRole: role.isSystemRole,
         priority: role.priority,
         isActive: true,

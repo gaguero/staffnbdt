@@ -1266,12 +1266,41 @@ export class PermissionService implements OnModuleInit {
 
       this.logger.log(`Creating/updating ${systemRoles.length} system roles...`);
       
+      // Get or create default organization for system roles
+      let defaultOrg = await this.prisma.organization.findFirst({
+        where: { slug: 'nayara-group' }
+      });
+
+      if (!defaultOrg) {
+        this.logger.log('Creating default organization for system roles...');
+        defaultOrg = await this.prisma.organization.create({
+          data: {
+            name: 'Nayara Group',
+            slug: 'nayara-group',
+            description: 'Default organization for Hotel Operations Hub',
+            timezone: 'America/Costa_Rica',
+            settings: {
+              defaultLanguage: 'en',
+              supportedLanguages: ['en', 'es'],
+              theme: 'nayara'
+            },
+            branding: {
+              primaryColor: '#AA8E67',
+              secondaryColor: '#F5EBD7',
+              accentColor: '#4A4A4A',
+              logoUrl: null
+            },
+            isActive: true
+          }
+        });
+      }
+      
       for (const role of systemRoles) {
         try {
           await this.prisma.customRole.upsert({
             where: { 
               organizationId_propertyId_name: { 
-                organizationId: null, 
+                organizationId: defaultOrg.id, 
                 propertyId: null,
                 name: role.name 
               } 
@@ -1279,6 +1308,7 @@ export class PermissionService implements OnModuleInit {
             create: {
               name: role.name,
               description: role.description,
+              organizationId: defaultOrg.id,
               isSystemRole: role.isSystemRole,
               priority: role.priority,
               isActive: true,
