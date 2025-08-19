@@ -883,8 +883,9 @@ export class PermissionService implements OnModuleInit {
   private async getUserWithRoles(userId: string): Promise<UserWithRoles | null> {
     if (!this.permissionTablesExist) {
       // Return a basic user object without custom roles/permissions when tables don't exist
+      // In legacy mode, we simplify the query to avoid complex where clauses
       const user = await this.prisma.user.findUnique({
-        where: { id: userId, deletedAt: null },
+        where: { id: userId },
         select: {
           id: true,
           role: true,
@@ -903,7 +904,10 @@ export class PermissionService implements OnModuleInit {
       } as UserWithRoles;
     }
     return this.prisma.user.findUnique({
-      where: { id: userId, deletedAt: null },
+      where: { 
+        id: userId,
+        deletedAt: null 
+      },
       select: {
         id: true,
         role: true,
