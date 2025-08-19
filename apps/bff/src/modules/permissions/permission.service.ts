@@ -313,8 +313,15 @@ export class PermissionService implements OnModuleInit {
       return result;
 
     } catch (error) {
-      this.logger.error(`Error evaluating permission for user ${userId}:`, error);
-      return { allowed: false, reason: 'Evaluation error', source: 'default' };
+      this.logger.error(`Error evaluating permission for user ${userId}:`, {
+        message: error.message,
+        stack: error.stack,
+        resource,
+        action,
+        scope,
+        permissionTablesExist: this.permissionTablesExist,
+      });
+      return { allowed: false, reason: `Evaluation error: ${error.message}`, source: 'default' };
     }
   }
 
@@ -585,7 +592,27 @@ export class PermissionService implements OnModuleInit {
    */
   async getUserPermissionSummary(userId: string): Promise<UserPermissionSummary> {
     if (!this.permissionTablesExist) {
-      throw new ForbiddenException('Permission system not available - permission tables do not exist. Use getSystemStatus() to debug.');
+      this.logger.debug('Permission tables not available, returning legacy mode summary');
+      
+      // Return a basic summary for legacy mode
+      const user = await this.getUserWithRoles(userId);
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
+      return {
+        userId,
+        roles: [], // No custom roles in legacy mode
+        permissions: [], // No advanced permissions in legacy mode
+        inheritedPermissions: [],
+        directPermissions: [],
+        deniedPermissions: [],
+        cacheStats: {
+          totalCached: 0,
+          expiredCached: 0,
+          validCached: 0,
+        },
+      };
     }
 
     const user = await this.getUserWithRoles(userId);
