@@ -63,6 +63,8 @@ export class PermissionService implements OnModuleInit {
   private readonly cacheDefaultTtl: number;
   private readonly maxCacheSize: number;
   private readonly conditionEvaluators = new Map<string, PermissionConditionEvaluator>();
+  private permissionTablesExist = false;
+  private skipPermissionInit = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -71,13 +73,34 @@ export class PermissionService implements OnModuleInit {
   ) {
     this.cacheDefaultTtl = this.configService.get<number>('PERMISSION_CACHE_TTL', 3600); // 1 hour
     this.maxCacheSize = this.configService.get<number>('PERMISSION_MAX_CACHE_SIZE', 10000);
+    this.skipPermissionInit = this.configService.get<boolean>('SKIP_PERMISSION_INIT', false);
     this.initializeConditionEvaluators();
   }
 
   async onModuleInit() {
-    await this.ensureSystemPermissions();
-    await this.ensureSystemRoles();
-    this.logger.log('Permission service initialized with system permissions and roles');
+    if (this.skipPermissionInit) {
+      this.logger.warn('Permission system initialization skipped due to SKIP_PERMISSION_INIT=true');
+      return;
+    }
+
+    try {
+      // Check if permission tables exist before attempting initialization
+      this.permissionTablesExist = await this.hasPermissionTables();
+      
+      if (!this.permissionTablesExist) {
+        this.logger.warn('Permission tables do not exist, running in legacy mode with @Roles decorators only');
+        return;
+      }
+
+      // Only initialize if tables exist
+      await this.ensureSystemPermissions();
+      await this.ensureSystemRoles();
+      this.logger.log('Permission service initialized with system permissions and roles');
+    } catch (error) {
+      this.logger.error('Failed to initialize permission system, falling back to legacy mode:', error);
+      this.permissionTablesExist = false;
+      // Don't throw - allow app to start with legacy @Roles system
+    }
   }
 
   /**
@@ -98,6 +121,12 @@ export class PermissionService implements OnModuleInit {
    * Get all permissions for a user
    */
   async getUserPermissions(userId: string, context?: Partial<PermissionEvaluationContext>): Promise<Permission[]> {
+    // Return empty array if permission tables don't exist
+    if (!this.permissionTablesExist) {
+      this.logger.debug('Permission tables not available, returning empty permissions array');
+      return [];
+    }
+
     try {
       // Check cache first
       const cacheKey = this.generateUserPermissionsCacheKey(userId, context);
@@ -168,6 +197,12 @@ export class PermissionService implements OnModuleInit {
     scope: string,
     context?: Partial<PermissionEvaluationContext>,
   ): Promise<PermissionEvaluationResult> {
+    // Return default deny if permission tables don't exist
+    if (!this.permissionTablesExist) {
+      this.logger.debug('Permission tables not available, defaulting to deny');
+      return { allowed: false, reason: 'Permission system not available - use legacy @Roles', source: 'legacy' };
+    }
+
     try {
       const evaluationContext: PermissionEvaluationContext = {
         userId,
@@ -323,6 +358,10 @@ export class PermissionService implements OnModuleInit {
    * Grant a permission to a user
    */
   async grantPermission(request: PermissionGrantRequest): Promise<void> {
+    if (!this.permissionTablesExist) {
+      throw new ForbiddenException('Permission system not available - permission tables do not exist');
+    }
+
     try {
       // Validate permission exists
       const permission = await this.prisma.permission.findUnique({
@@ -400,6 +439,10 @@ export class PermissionService implements OnModuleInit {
    * Revoke a permission from a user
    */
   async revokePermission(request: PermissionRevokeRequest): Promise<void> {
+    if (!this.permissionTablesExist) {
+      throw new ForbiddenException('Permission system not available - permission tables do not exist');
+    }
+
     try {
       const userPermission = await this.prisma.userPermission.findUnique({
         where: {
@@ -453,6 +496,10 @@ export class PermissionService implements OnModuleInit {
    * Assign a role to a user
    */
   async assignRole(request: RoleAssignmentRequest): Promise<void> {
+    if (!this.permissionTablesExist) {
+      throw new ForbiddenException('Permission system not available - permission tables do not exist');
+    }
+
     try {
       // Validate role exists
       const role = await this.prisma.customRole.findUnique({
@@ -528,6 +575,10 @@ export class PermissionService implements OnModuleInit {
    * Get user permission summary
    */
   async getUserPermissionSummary(userId: string): Promise<UserPermissionSummary> {
+    if (!this.permissionTablesExist) {
+      throw new ForbiddenException('Permission system not available - permission tables do not exist');
+    }
+
     const user = await this.getUserWithRoles(userId);
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);
@@ -570,6 +621,11 @@ export class PermissionService implements OnModuleInit {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async cleanupExpiredCache(): Promise<void> {
+    if (!this.permissionTablesExist) {
+      this.logger.debug('Skipping cache cleanup - permission tables not available');
+      return;
+    }
+
     try {
       const deleted = await this.prisma.permissionCache.deleteMany({
         where: {
@@ -589,6 +645,11 @@ export class PermissionService implements OnModuleInit {
    * Clear all cache for a user
    */
   async clearUserPermissionCache(userId: string): Promise<void> {
+    if (!this.permissionTablesExist) {
+      this.logger.debug('Skipping cache clear - permission tables not available');
+      return;
+    }
+
     try {
       await this.prisma.permissionCache.deleteMany({
         where: { userId },
@@ -601,7 +662,49 @@ export class PermissionService implements OnModuleInit {
 
   // Private helper methods
 
+  /**
+   * Check if permission tables exist in the database
+   */
+  private async hasPermissionTables(): Promise<boolean> {
+    try {
+      // Try to query the Permission table to see if it exists
+      await this.prisma.permission.findFirst({ take: 1 });
+      // If we get here, the table exists
+      return true;
+    } catch (error) {
+      // If we get a database error about missing table, return false
+      if (error.message?.includes('relation') || error.message?.includes('table') || error.message?.includes('does not exist')) {
+        this.logger.debug('Permission tables do not exist in database');
+        return false;
+      }
+      // For other errors, assume tables exist but there's a different issue
+      this.logger.warn('Error checking permission tables existence:', error);
+      return false;
+    }
+  }
+
   private async getUserWithRoles(userId: string): Promise<UserWithRoles | null> {
+    if (!this.permissionTablesExist) {
+      // Return a basic user object without custom roles/permissions when tables don't exist
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId, deletedAt: null },
+        select: {
+          id: true,
+          role: true,
+          organizationId: true,
+          propertyId: true,
+          departmentId: true,
+        },
+      });
+      
+      if (!user) return null;
+      
+      return {
+        ...user,
+        customRoles: [],
+        userPermissions: [],
+      } as UserWithRoles;
+    }
     return this.prisma.user.findUnique({
       where: { id: userId, deletedAt: null },
       select: {
@@ -645,6 +748,10 @@ export class PermissionService implements OnModuleInit {
   }
 
   private async findPermission(resource: string, action: string, scope: string): Promise<PermissionWithRelations | null> {
+    if (!this.permissionTablesExist) {
+      return null;
+    }
+    
     return this.prisma.permission.findUnique({
       where: {
         resource_action_scope: { resource, action, scope },
@@ -657,6 +764,11 @@ export class PermissionService implements OnModuleInit {
   }
 
   private async getLegacyRolePermissions(role: Role): Promise<Permission[]> {
+    // Return empty array when permission tables don't exist
+    if (!this.permissionTablesExist) {
+      return [];
+    }
+    
     // This would map legacy roles to permissions
     // Implementation depends on how you want to handle backwards compatibility
     const rolePermissionMapping: Record<Role, string[]> = {
@@ -670,8 +782,13 @@ export class PermissionService implements OnModuleInit {
 
     const permissionPatterns = rolePermissionMapping[role] || [];
     if (permissionPatterns.includes('*.*.*')) {
-      // Return all permissions for platform admin
-      return this.prisma.permission.findMany({ where: { isSystem: true } });
+      try {
+        // Return all permissions for platform admin
+        return this.prisma.permission.findMany({ where: { isSystem: true } });
+      } catch (error) {
+        this.logger.warn('Error fetching permissions for platform admin:', error);
+        return [];
+      }
     }
 
     // For other roles, you'd implement pattern matching
@@ -732,6 +849,10 @@ export class PermissionService implements OnModuleInit {
   }
 
   private async getCachedPermission(cacheKey: string): Promise<CachedPermission | null> {
+    if (!this.permissionTablesExist) {
+      return null;
+    }
+    
     try {
       const cached = await this.prisma.permissionCache.findUnique({
         where: { cacheKey },
@@ -769,6 +890,10 @@ export class PermissionService implements OnModuleInit {
     result: PermissionEvaluationResult,
     context: PermissionEvaluationContext,
   ): Promise<void> {
+    if (!this.permissionTablesExist) {
+      return;
+    }
+    
     try {
       const expiresAt = new Date(Date.now() + this.cacheDefaultTtl * 1000);
       
@@ -805,6 +930,14 @@ export class PermissionService implements OnModuleInit {
   }
 
   private async getUserCacheStats(userId: string) {
+    if (!this.permissionTablesExist) {
+      return {
+        totalCached: 0,
+        expiredCached: 0,
+        validCached: 0,
+      };
+    }
+    
     const stats = await this.prisma.permissionCache.groupBy({
       by: ['userId'],
       where: { userId },
@@ -867,8 +1000,14 @@ export class PermissionService implements OnModuleInit {
   }
 
   private async ensureSystemPermissions(): Promise<void> {
-    // Create default system permissions if they don't exist
-    const systemPermissions = [
+    if (!this.permissionTablesExist) {
+      this.logger.warn('Skipping system permissions creation - tables do not exist');
+      return;
+    }
+    
+    try {
+      // Create default system permissions if they don't exist
+      const systemPermissions = [
       { resource: 'user', action: 'create', scope: 'department', name: 'Create Department Users', category: 'HR' },
       { resource: 'user', action: 'read', scope: 'own', name: 'View Own Profile', category: 'HR' },
       { resource: 'user', action: 'update', scope: 'own', name: 'Update Own Profile', category: 'HR' },
@@ -896,12 +1035,22 @@ export class PermissionService implements OnModuleInit {
         },
       });
     }
+    } catch (error) {
+      this.logger.error('Error ensuring system permissions:', error);
+      throw error;
+    }
   }
 
   private async ensureSystemRoles(): Promise<void> {
-    // Create default system roles if they don't exist
-    // This would map to the legacy Role enum for backwards compatibility
-    const systemRoles = [
+    if (!this.permissionTablesExist) {
+      this.logger.warn('Skipping system roles creation - tables do not exist');
+      return;
+    }
+    
+    try {
+      // Create default system roles if they don't exist
+      // This would map to the legacy Role enum for backwards compatibility
+      const systemRoles = [
       { name: 'Platform Administrator', description: 'Full platform access', isSystemRole: true, priority: 1000 },
       { name: 'Organization Owner', description: 'Organization-wide access', isSystemRole: true, priority: 900 },
       { name: 'Property Manager', description: 'Property-wide access', isSystemRole: true, priority: 800 },
@@ -929,6 +1078,10 @@ export class PermissionService implements OnModuleInit {
           priority: role.priority,
         },
       });
+    }
+    } catch (error) {
+      this.logger.error('Error ensuring system roles:', error);
+      throw error;
     }
   }
 }

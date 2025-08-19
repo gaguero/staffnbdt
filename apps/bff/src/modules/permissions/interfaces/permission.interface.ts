@@ -17,7 +17,7 @@ export interface PermissionEvaluationResult {
   allowed: boolean;
   reason?: string;
   conditions?: any;
-  source: 'role' | 'user' | 'cached' | 'default';
+  source: 'role' | 'user' | 'cached' | 'default' | 'legacy';
   ttl?: number; // Time to live for cache in seconds
 }
 

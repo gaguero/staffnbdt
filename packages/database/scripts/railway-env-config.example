@@ -1,0 +1,61 @@
+# Railway Environment Variables Configuration
+# Copy this file and set these variables in your Railway dashboard
+
+# Core Application Configuration
+NODE_ENV=production
+JWT_SECRET=your-very-secure-jwt-secret-here-change-this
+JWT_EXPIRES_IN=7d
+
+# Permission System Configuration
+# Set to true for initial schema-only deployment, then false to enable permissions
+SKIP_PERMISSION_INIT=true
+
+# Deployment Safety Configuration (Optional)
+AUTO_ROLLBACK=true
+BACKUP_ENABLED=true
+DRY_RUN=false
+
+# Monitoring Configuration (Optional)
+ALERT_ON_FAILURE=false
+JSON_OUTPUT=false
+DETAILED=false
+
+# Emergency Controls (Keep false unless emergency)
+EMERGENCY_ROLLBACK=false
+CONFIRM_ROLLBACK=false
+
+# Additional Application Variables (as needed)
+# AUTH_PROVIDER=auth0
+# AUTH_DOMAIN=your-domain.auth0.com
+# AUTH_CLIENT_ID=your-auth0-client-id
+# AUTH_CLIENT_SECRET=your-auth0-client-secret
+
+# Storage Configuration (if using file storage)
+# R2_ACCOUNT_ID=your-cloudflare-account-id
+# R2_ACCESS_KEY_ID=your-r2-access-key
+# R2_SECRET_ACCESS_KEY=your-r2-secret-key
+# R2_BUCKET_NAME=your-bucket-name
+# R2_PUBLIC_URL=https://your-bucket.your-domain.com
+
+# Email Configuration (if using notifications)
+# SMTP_HOST=smtp.yourprovider.com
+# SMTP_PORT=587
+# SMTP_USER=your-smtp-user
+# SMTP_PASS=your-smtp-password
+# EMAIL_FROM=noreply@yourdomain.com
+
+# Multi-Tenant Configuration (for future use)
+# DEFAULT_ORGANIZATION_ID=your-default-org-id
+# DEFAULT_PROPERTY_ID=your-default-property-id
+# TENANT_ISOLATION_MODE=strict
+
+# White-Label Configuration (for future use)
+# ALLOW_CUSTOM_BRANDING=true
+# ALLOW_CUSTOM_DOMAINS=true
+# ALLOW_CUSTOM_CSS=true
+
+# Internationalization (for future use)
+# DEFAULT_LANGUAGE=en
+# SUPPORTED_LANGUAGES=en,es
+# AI_TRANSLATION_ENABLED=false
+# AI_TRANSLATION_PROVIDER=openai

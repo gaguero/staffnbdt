@@ -28,7 +28,17 @@
     "permissions:migrate": "tsx scripts/migrate-permissions.ts",
     "permissions:rollback": "ROLLBACK=true tsx scripts/migrate-permissions.ts",
     "permissions:validate": "tsx scripts/validate-permission-coverage.ts",
-    "permissions:setup": "npm run permissions:seed && npm run permissions:migrate && npm run permissions:validate"
+    "permissions:setup": "npm run permissions:seed && npm run permissions:migrate && npm run permissions:validate",
+    "deploy:production:permissions": "tsx scripts/deploy-production-permissions.ts",
+    "deploy:production:schema-only": "SKIP_PERMISSION_INIT=true tsx scripts/deploy-production-permissions.ts",
+    "deploy:production:dry-run": "DRY_RUN=true tsx scripts/deploy-production-permissions.ts",
+    "verify:production": "tsx scripts/verify-production-deployment.ts",
+    "verify:production:detailed": "DETAILED=true tsx scripts/verify-production-deployment.ts",
+    "rollback:production:permissions": "tsx scripts/rollback-production-permissions.ts",
+    "rollback:production:dry-run": "DRY_RUN=true tsx scripts/rollback-production-permissions.ts",
+    "health:production": "tsx scripts/health-check-production.ts",
+    "health:production:json": "JSON_OUTPUT=true tsx scripts/health-check-production.ts",
+    "health:production:alert": "ALERT_ON_FAILURE=true tsx scripts/health-check-production.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
