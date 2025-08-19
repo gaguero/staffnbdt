@@ -1,21 +1,29 @@
 import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
 import * as winston from 'winston';
+import { LoggingConfig } from '../../config/logging.config';
 
 @Injectable()
 export class LoggerService implements NestLoggerService {
   private readonly logger: winston.Logger;
 
   constructor() {
+    const logLevel = LoggingConfig.getWinstonLogLevel();
+    const shouldUseFileLogging = LoggingConfig.shouldUseFileLogging();
+    
     this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
+      level: logLevel,
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.errors({ stack: true }),
         winston.format.json(),
       ),
-      defaultMeta: { service: 'staffnbdt-bff' },
+      defaultMeta: { 
+        service: 'staffnbdt-bff',
+        environment: process.env.NODE_ENV || 'development'
+      },
       transports: [
         new winston.transports.Console({
+          level: logLevel,
           format: winston.format.combine(
             winston.format.colorize(),
             winston.format.simple(),
@@ -24,17 +32,21 @@ export class LoggerService implements NestLoggerService {
       ],
     });
 
-    // Add file transport in production
-    if (process.env.NODE_ENV === 'production') {
+    // Only add file logging in non-production environments to reduce I/O and log volume
+    if (shouldUseFileLogging) {
       this.logger.add(
         new winston.transports.File({
           filename: 'logs/error.log',
           level: 'error',
+          maxsize: 5242880, // 5MB
+          maxFiles: 2,
         }),
       );
       this.logger.add(
         new winston.transports.File({
           filename: 'logs/combined.log',
+          maxsize: 5242880, // 5MB
+          maxFiles: 2,
         }),
       );
     }

@@ -32,7 +32,7 @@ export class TenantService {
   }
 
   private async createDefaultTenant(): Promise<TenantContext> {
-    console.log('Creating default organization and property...');
+    this.logger.log('Creating default organization and property...');
 
     // Create default organization
     const organization = await this.prisma.organization.create({
@@ -95,11 +95,11 @@ export class TenantService {
         });
       } catch (error) {
         // Ignore if module subscription already exists
-        console.log(`Module ${moduleName} subscription may already exist:`, error.message);
+        this.logger.warn(`Module ${moduleName} subscription may already exist:`, error.message);
       }
     }
 
-    console.log(`✅ Created default tenant: ${organization.name} -> ${property.name}`);
+    this.logger.log(`Created default tenant: ${organization.name} -> ${property.name}`);
     return { organization, property };
   }
 

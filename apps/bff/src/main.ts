@@ -5,14 +5,26 @@ import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import { AppModule } from './app.module';
+import { LoggingConfig } from './config/logging.config';
+import { LoggerService } from './shared/logger/logger.service';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   
+  // Set LOG_LEVEL environment variable if not set
+  if (!process.env.LOG_LEVEL) {
+    process.env.LOG_LEVEL = LoggingConfig.getWinstonLogLevel();
+  }
+  
   try {
     const app = await NestFactory.create(AppModule, {
-      logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+      logger: LoggingConfig.getLogLevels(),
+      bufferLogs: false, // Disable log buffering for better performance
     });
+    
+    // Use custom logger service
+    const customLogger = app.get(LoggerService);
+    app.useLogger(customLogger);
 
     const configService = app.get(ConfigService);
     const port = configService.get('PORT') || 3000;
@@ -118,12 +130,14 @@ async function bootstrap() {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  const logger = new Logger('UncaughtException');
+  logger.error('Uncaught Exception:', error);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  const logger = new Logger('UnhandledRejection');
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
 

@@ -81,14 +81,14 @@ export class UsersService {
     // Apply soft delete filtering conditionally
     // When includeInactive is true, include both active and inactive users
     // When includeInactive is false, only include active users (exclude deleted)
-    console.log('UsersService.findAll - includeInactive type:', typeof includeInactive, 'value:', includeInactive);
+    // Debug logging removed to prevent excessive log volume
     
     // The Transform decorator in DTO should have already converted to boolean
     const includeDeleted = includeInactive === true;
-    console.log('UsersService.findAll - includeDeleted:', includeDeleted);
+    // Debug logging removed to prevent excessive log volume
     
     const queryWithSoftDelete = applySoftDelete({ where: whereClause }, includeDeleted);
-    console.log('UsersService.findAll - queryWithSoftDelete:', JSON.stringify(queryWithSoftDelete, null, 2));
+    // Debug logging removed to prevent excessive log volume
     whereClause = queryWithSoftDelete.where || {};
 
     // Apply role-based filtering
@@ -122,7 +122,7 @@ export class UsersService {
       ];
     }
 
-    console.log('UsersService.findAll - final whereClause:', JSON.stringify(whereClause, null, 2));
+    // Debug logging removed to prevent excessive log volume
     
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
@@ -139,8 +139,7 @@ export class UsersService {
       this.prisma.user.count({ where: whereClause }),
     ]);
 
-    console.log('UsersService.findAll - found users:', users.length, 'total:', total);
-    console.log('UsersService.findAll - users:', users.map(u => ({ id: u.id, email: u.email, deletedAt: u.deletedAt })));
+    // Debug logging removed to prevent excessive log volume
 
     return new PaginatedResponse(users, total, limit, offset);
   }
