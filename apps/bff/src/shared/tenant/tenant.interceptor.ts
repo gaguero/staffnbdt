@@ -56,23 +56,14 @@ export class TenantInterceptor implements NestInterceptor {
         }
       }
 
-      // Set tenant context for this request
+      // Set tenant context for this request (this also sets it on the request object)
       await this.tenantContextService.setTenantContext({
         userId: jwtPayload.sub,
         organizationId,
         propertyId,
         departmentId: jwtPayload.departmentId,
         userRole: jwtPayload.role,
-      });
-
-      // Inject tenant info into request for controllers that need it
-      request.tenantContext = {
-        organizationId,
-        propertyId,
-        departmentId: jwtPayload.departmentId,
-        userId: jwtPayload.sub,
-        userRole: jwtPayload.role,
-      };
+      }, request);
 
       this.safeLog('debug', `Tenant context set successfully for ${jwtPayload.email}`);
     } catch (error) {
