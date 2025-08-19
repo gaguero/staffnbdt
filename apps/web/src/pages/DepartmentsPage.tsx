@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import DepartmentStaffModal from '../components/DepartmentStaffModal';
+import DepartmentStats from '../components/DepartmentStats';
 import { departmentService } from '../services/departmentService';
 import { userService } from '../services/userService';
 import { useAuth } from '../contexts/AuthContext';
@@ -57,7 +58,7 @@ const DepartmentsPage: React.FC = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [selectedDepartmentForStaff, setSelectedDepartmentForStaff] = useState<Department | null>(null);
   const [expandedUserLists, setExpandedUserLists] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'cards' | 'hierarchy'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'hierarchy' | 'analytics'>('cards');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
   const [deleteOptions, setDeleteOptions] = useState({
@@ -604,28 +605,47 @@ const DepartmentsPage: React.FC = () => {
           </div>
 
           {/* View Toggle */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <span className="text-sm text-gray-600">View:</span>
             <div className="flex border border-gray-300 rounded-lg overflow-hidden">
               <button
                 onClick={() => setViewMode('cards')}
-                className={`px-3 py-1 text-sm ${
+                className={`px-3 py-2 text-sm ${
                   viewMode === 'cards'
                     ? 'bg-blue-500 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                📊 Cards
+                <span className="flex items-center space-x-1">
+                  <span>📊</span>
+                  <span className="hidden sm:inline">Cards</span>
+                </span>
               </button>
               <button
                 onClick={() => setViewMode('hierarchy')}
-                className={`px-3 py-1 text-sm ${
+                className={`px-3 py-2 text-sm ${
                   viewMode === 'hierarchy'
                     ? 'bg-blue-500 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                🌳 Hierarchy
+                <span className="flex items-center space-x-1">
+                  <span>🌳</span>
+                  <span className="hidden sm:inline">Hierarchy</span>
+                </span>
+              </button>
+              <button
+                onClick={() => setViewMode('analytics')}
+                className={`px-3 py-2 text-sm ${
+                  viewMode === 'analytics'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <span className="flex items-center space-x-1">
+                  <span>📈</span>
+                  <span className="hidden sm:inline">Analytics</span>
+                </span>
               </button>
             </div>
           </div>
@@ -795,7 +815,7 @@ const DepartmentsPage: React.FC = () => {
           ))}
         </div>
         )
-      ) : (
+      ) : viewMode === 'hierarchy' ? (
         // Hierarchy View
         <div className="card">
           <div className="card-header">
@@ -814,7 +834,10 @@ const DepartmentsPage: React.FC = () => {
             )}
           </div>
         </div>
-      )}
+      ) : viewMode === 'analytics' ? (
+        // Analytics View
+        <DepartmentStats className="mt-6" />
+      ) : null}
 
       {/* Add/Edit Department Modal */}
       {(showAddDepartment || showEditDepartment) && (

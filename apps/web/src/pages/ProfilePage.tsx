@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
 import IDDocumentUpload from '../components/IDDocumentUpload';
+import EmergencyContactsForm from '../components/EmergencyContactsForm';
 import profileService, { Profile } from '../services/profileService';
 import toast from 'react-hot-toast';
 
@@ -242,6 +243,7 @@ const ProfilePage: React.FC = () => {
         <div className="flex overflow-x-auto px-4">
           {[
             { id: 'personal', label: 'Personal', icon: '👤' },
+            { id: 'emergency', label: 'Emergency Contacts', icon: '🚨' },
             { id: 'photo', label: 'Foto', icon: '📸' },
             { id: 'documents', label: 'Documentos', icon: '📄' },
             { id: 'security', label: 'Seguridad', icon: '🔒' }
@@ -416,6 +418,41 @@ const ProfilePage: React.FC = () => {
                     )}
                   </form>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Emergency Contacts Tab */}
+        {activeTab === 'emergency' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <span className="mr-2">🚨</span>
+                  Emergency Contacts
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Manage your emergency contact information
+                </p>
+              </div>
+              <div className="p-6">
+                <EmergencyContactsForm
+                  initialData={profile?.emergencyContact}
+                  onSuccess={() => {
+                    // Reload profile to get updated data
+                    const loadProfile = async () => {
+                      try {
+                        const profileData = await profileService.getProfile();
+                        setProfile(profileData);
+                      } catch (error) {
+                        console.error('Failed to reload profile:', error);
+                      }
+                    };
+                    loadProfile();
+                  }}
+                  standalone={true}
+                />
               </div>
             </div>
           </div>

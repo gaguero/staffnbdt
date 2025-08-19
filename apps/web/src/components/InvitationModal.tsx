@@ -2,63 +2,68 @@ import React, { useState, useEffect } from 'react';
 import { invitationService, CreateInvitationData } from '../services/invitationService';
 import { departmentService, Department } from '../services/departmentService';
 import LoadingSpinner from './LoadingSpinner';
+import PermissionGate from './PermissionGate';
+import { COMMON_PERMISSIONS } from '../types/permission';
 import toast from 'react-hot-toast';
 
 interface InvitationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
+  prefilledData?: Partial<CreateInvitationData>;
 }
 
 const InvitationModal: React.FC<InvitationModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  prefilledData = {},
 }) => {
   const [formData, setFormData] = useState<CreateInvitationData>({
     email: '',
     role: 'STAFF',
     departmentId: '',
+    propertyId: '',
   });
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Load departments when modal opens
+  // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
-      loadDepartments();
-      // Reset form when opening
       setFormData({
-        email: '',
-        role: 'STAFF',
-        departmentId: '',
+        email: prefilledData.email || '',
+        role: prefilledData.role || 'STAFF',
+        departmentId: prefilledData.departmentId || '',
+        propertyId: prefilledData.propertyId || '',
       });
       setErrors({});
+      loadDepartments();
     }
-  }, [isOpen]);
+  }, [isOpen, prefilledData]);
 
   const loadDepartments = async () => {
     try {
-      setLoading(true);
+      setLoadingDepartments(true);
       const response = await departmentService.getDepartments();
       setDepartments(response.data || []);
     } catch (error) {
       console.error('Failed to load departments:', error);
       toast.error('Failed to load departments');
     } finally {
-      setLoading(false);
+      setLoadingDepartments(false);
     }
   };
 
   const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: Record<string, string> = {};
 
     // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       newErrors.email = 'Please enter a valid email address';
     }
 
@@ -67,8 +72,8 @@ const InvitationModal: React.FC<InvitationModalProps> = ({
       newErrors.role = 'Role is required';
     }
 
-    // Department validation for specific roles
-    if ((formData.role === 'STAFF' || formData.role === 'DEPARTMENT_ADMIN') && !formData.departmentId) {
+    // Department validation for non-super admin roles
+    if (['STAFF', 'DEPARTMENT_ADMIN'].includes(formData.role) && !formData.departmentId) {
       newErrors.departmentId = 'Department is required for this role';
     }
 
@@ -83,12 +88,13 @@ const InvitationModal: React.FC<InvitationModalProps> = ({
       [name]: value,
     }));
 
-    // Clear error when user starts typing
+    // Clear error for this field when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: '',
-      }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
 
@@ -100,84 +106,92 @@ const InvitationModal: React.FC<InvitationModalProps> = ({
     }
 
     try {
-      setSubmitting(true);
+      setLoading(true);
       
       const invitationData: CreateInvitationData = {
         email: formData.email.trim(),
         role: formData.role,
+        departmentId: formData.departmentId || undefined,
+        propertyId: formData.propertyId || undefined,
       };
-
-      // Only include departmentId if role requires it
-      if (formData.role !== 'PROPERTY_MANAGER' && formData.departmentId) {
-        invitationData.departmentId = formData.departmentId;
-      }
 
       await invitationService.createInvitation(invitationData);
       
-      toast.success(`Invitation sent successfully to ${formData.email}`);
-      onSuccess();
+      toast.success(`Invitation sent to ${invitationData.email}`);
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+      
       onClose();
     } catch (error: any) {
       console.error('Failed to send invitation:', error);
       const errorMessage = error?.response?.data?.message || 'Failed to send invitation';
-      toast.error(errorMessage);
       
-      // Set server-side errors
-      if (error?.response?.data?.field) {
-        setErrors({
-          [error.response.data.field]: errorMessage,
-        });
+      // Handle specific errors
+      if (errorMessage.includes('already exists')) {
+        setErrors({ email: 'A user with this email already exists' });
+      } else if (errorMessage.includes('pending invitation')) {
+        setErrors({ email: 'A pending invitation already exists for this email' });
+      } else {
+        toast.error(errorMessage);
       }
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    setFormData({
-      email: '',
-      role: 'STAFF',
-      departmentId: '',
-    });
-    setErrors({});
-    onClose();
-  };
-
   const availableRoles = [
-    { value: 'STAFF', label: 'Staff' },
-    { value: 'DEPARTMENT_ADMIN', label: 'Department Admin' },
-    { value: 'PROPERTY_MANAGER', label: 'Property Manager' },
+    { value: 'STAFF', label: 'Staff', description: 'Basic user access' },
+    { value: 'DEPARTMENT_ADMIN', label: 'Department Admin', description: 'Manage department users' },
+    { value: 'PROPERTY_MANAGER', label: 'Property Manager', description: 'Manage entire property' },
+    { value: 'ORGANIZATION_ADMIN', label: 'Organization Admin', description: 'Manage organization settings' },
+    { value: 'ORGANIZATION_OWNER', label: 'Organization Owner', description: 'Full organization access' },
   ];
 
-  const formatRole = (role: string) => {
-    return role.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
-  };
-
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <PermissionGate 
+          commonPermission={COMMON_PERMISSIONS.CREATE_USER}
+          fallback={
+            <div className="p-6 text-center">
+              <div className="text-4xl mb-3">🔒</div>
+              <h3 className="text-lg font-bold text-charcoal mb-2">Access Denied</h3>
+              <p className="text-gray-600 mb-4">You don't have permission to send user invitations.</p>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+              >
+                Close
+              </button>
+            </div>
+          }
+        >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 bg-sand">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-warm-gold text-white rounded-full flex items-center justify-center">
                 <span className="text-lg">📧</span>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-charcoal">
-                  Send Invitation
-                </h2>
+                <h3 className="text-lg font-bold text-charcoal">
+                  Send User Invitation
+                </h3>
                 <p className="text-sm text-gray-600">
                   Invite a new user to join the platform
                 </p>
               </div>
             </div>
             <button
-              onClick={handleCancel}
+              onClick={onClose}
+              disabled={loading}
               className="text-gray-400 hover:text-gray-600 text-2xl"
-              disabled={submitting}
               aria-label="Close modal"
             >
               ✕
@@ -185,184 +199,133 @@ const InvitationModal: React.FC<InvitationModalProps> = ({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
-          {loading ? (
-            <div className="py-8">
-              <LoadingSpinner size="lg" text="Loading departments..." />
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email Field */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address *
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold transition-colors ${
-                    errors.email 
-                      ? 'border-red-300 focus:border-red-300 focus:ring-red-200' 
-                      : 'border-gray-300 focus:border-warm-gold'
-                  }`}
-                  placeholder="user@example.com"
-                  disabled={submitting}
-                  required
-                  aria-describedby={errors.email ? 'email-error' : undefined}
-                />
-                {errors.email && (
-                  <p id="email-error" className="mt-1 text-sm text-red-600 flex items-center">
-                    <span className="mr-1">⚠️</span>
-                    {errors.email}
-                  </p>
-                )}
-              </div>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Email */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address *
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-warm-gold ${
+                errors.email ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="user@example.com"
+              disabled={loading}
+              required
+            />
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+            )}
+          </div>
 
-              {/* Role Field */}
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                  Role *
-                </label>
+          {/* Role */}
+          <div>
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+              Role *
+            </label>
+            <select
+              id="role"
+              name="role"
+              value={formData.role}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-warm-gold ${
+                errors.role ? 'border-red-500' : 'border-gray-300'
+              }`}
+              disabled={loading}
+              required
+            >
+              {availableRoles.map(role => (
+                <option key={role.value} value={role.value}>
+                  {role.label}
+                </option>
+              ))}
+            </select>
+            {errors.role && (
+              <p className="mt-1 text-sm text-red-600">{errors.role}</p>
+            )}
+            {formData.role && (
+              <p className="mt-1 text-xs text-gray-500">
+                {availableRoles.find(r => r.value === formData.role)?.description}
+              </p>
+            )}
+          </div>
+
+          {/* Department (required for STAFF and DEPARTMENT_ADMIN) */}
+          {['STAFF', 'DEPARTMENT_ADMIN'].includes(formData.role) && (
+            <div>
+              <label htmlFor="departmentId" className="block text-sm font-medium text-gray-700 mb-2">
+                Department *
+              </label>
+              {loadingDepartments ? (
+                <div className="flex items-center justify-center py-2">
+                  <LoadingSpinner size="sm" />
+                  <span className="ml-2 text-sm text-gray-600">Loading departments...</span>
+                </div>
+              ) : (
                 <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
+                  id="departmentId"
+                  name="departmentId"
+                  value={formData.departmentId}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold transition-colors ${
-                    errors.role 
-                      ? 'border-red-300 focus:border-red-300 focus:ring-red-200' 
-                      : 'border-gray-300 focus:border-warm-gold'
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-warm-gold ${
+                    errors.departmentId ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  disabled={submitting}
+                  disabled={loading}
                   required
-                  aria-describedby={errors.role ? 'role-error' : undefined}
                 >
-                  {availableRoles.map(role => (
-                    <option key={role.value} value={role.value}>
-                      {role.label}
+                  <option value="">Select Department</option>
+                  {departments.map(dept => (
+                    <option key={dept.id} value={dept.id}>
+                      {'  '.repeat(dept.level || 0)}{dept.name}
+                      {dept.parent ? ` (under ${dept.parent.name})` : ''}
                     </option>
                   ))}
                 </select>
-                {errors.role && (
-                  <p id="role-error" className="mt-1 text-sm text-red-600 flex items-center">
-                    <span className="mr-1">⚠️</span>
-                    {errors.role}
-                  </p>
-                )}
-              </div>
-
-              {/* Department Field - Only show for roles that need it */}
-              {formData.role !== 'PROPERTY_MANAGER' && (
-                <div>
-                  <label htmlFor="departmentId" className="block text-sm font-medium text-gray-700 mb-1">
-                    Department {(formData.role === 'STAFF' || formData.role === 'DEPARTMENT_ADMIN') && '*'}
-                  </label>
-                  <select
-                    id="departmentId"
-                    name="departmentId"
-                    value={formData.departmentId}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold transition-colors ${
-                      errors.departmentId 
-                        ? 'border-red-300 focus:border-red-300 focus:ring-red-200' 
-                        : 'border-gray-300 focus:border-warm-gold'
-                    }`}
-                    disabled={submitting}
-                    required={formData.role === 'STAFF' || formData.role === 'DEPARTMENT_ADMIN'}
-                    aria-describedby={errors.departmentId ? 'department-error' : undefined}
-                  >
-                    <option value="">
-                      {(formData.role === 'STAFF' || formData.role === 'DEPARTMENT_ADMIN') 
-                        ? 'Select Department' 
-                        : 'No Department'
-                      }
-                    </option>
-                    {departments.map(dept => (
-                      <option key={dept.id} value={dept.id}>
-                        {'  '.repeat(dept.level || 0)}{dept.name}
-                        {dept.parent ? ` (under ${dept.parent.name})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.departmentId && (
-                    <p id="department-error" className="mt-1 text-sm text-red-600 flex items-center">
-                      <span className="mr-1">⚠️</span>
-                      {errors.departmentId}
-                    </p>
-                  )}
-                </div>
               )}
-
-              {/* Role Info */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="flex items-start space-x-2">
-                  <span className="text-blue-600 text-sm">ℹ️</span>
-                  <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">About {formatRole(formData.role)} Role:</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs">
-                      {formData.role === 'STAFF' && (
-                        <>
-                          <li>Basic access to assigned department resources</li>
-                          <li>Can view and update own profile information</li>
-                          <li>Limited administrative capabilities</li>
-                        </>
-                      )}
-                      {formData.role === 'DEPARTMENT_ADMIN' && (
-                        <>
-                          <li>Manage users within assigned department</li>
-                          <li>Access to department reports and analytics</li>
-                          <li>Can assign tasks and manage schedules</li>
-                        </>
-                      )}
-                      {formData.role === 'PROPERTY_MANAGER' && (
-                        <>
-                          <li>Full access to all hotel operations</li>
-                          <li>Manage all departments and users</li>
-                          <li>Access to comprehensive reporting</li>
-                        </>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Warning for Property Manager role */}
-              {formData.role === 'PROPERTY_MANAGER' && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <div className="flex items-start space-x-2">
-                    <span className="text-yellow-600">⚠️</span>
-                    <div className="text-sm text-yellow-800">
-                      <strong>Note:</strong> Property Managers have full access to all hotel operations and don't belong to specific departments.
-                    </div>
-                  </div>
-                </div>
+              {errors.departmentId && (
+                <p className="mt-1 text-sm text-red-600">{errors.departmentId}</p>
               )}
-            </form>
+            </div>
           )}
-        </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex justify-end space-x-3">
+          {/* Info Box */}
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="flex items-start space-x-3">
+              <div className="text-blue-600 text-lg">ℹ️</div>
+              <div className="text-sm text-blue-700">
+                <h4 className="font-medium mb-1">What happens next?</h4>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>An invitation email will be sent to the provided address</li>
+                  <li>The recipient can accept the invitation within 7 days</li>
+                  <li>They'll be prompted to set up their password and profile</li>
+                  <li>You can track invitation status in the User Management page</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
             <button
               type="button"
-              onClick={handleCancel}
-              disabled={submitting}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 transition-colors"
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              onClick={handleSubmit}
-              disabled={submitting || loading || !formData.email || !formData.role}
-              className="px-6 py-2 bg-warm-gold text-white rounded-md hover:bg-opacity-90 disabled:opacity-50 font-medium transition-colors flex items-center"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-warm-gold text-white rounded-md hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center"
             >
-              {submitting ? (
+              {loading ? (
                 <>
                   <LoadingSpinner size="sm" className="mr-2" />
                   Sending...
@@ -375,7 +338,8 @@ const InvitationModal: React.FC<InvitationModalProps> = ({
               )}
             </button>
           </div>
-        </div>
+        </form>
+        </PermissionGate>
       </div>
     </div>
   );

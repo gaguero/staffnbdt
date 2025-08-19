@@ -581,7 +581,7 @@ const UserManagementPage: React.FC = () => {
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">Add New User</h3>
               <form onSubmit={handleCreateUser} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="text"
                     placeholder="First Name"
@@ -688,7 +688,7 @@ const UserManagementPage: React.FC = () => {
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">Edit User</h3>
               <form onSubmit={handleUpdateUser} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="text"
                     placeholder="First Name"
@@ -864,7 +864,7 @@ const UserManagementPage: React.FC = () => {
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">Import Results</h3>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="card p-4 bg-green-50">
                     <p className="text-sm text-gray-600">Successful</p>
                     <p className="text-2xl font-bold text-green-600">{importResults.successCount}</p>

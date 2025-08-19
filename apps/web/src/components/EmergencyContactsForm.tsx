@@ -3,103 +3,112 @@ import { profileService, EmergencyContactsData } from '../services/profileServic
 import LoadingSpinner from './LoadingSpinner';
 import toast from 'react-hot-toast';
 
-interface EmergencyContact {
+interface EmergencyContactsFormProps {
+  initialData?: EmergencyContactsData;
+  onSuccess?: (data: EmergencyContactsData) => void;
+  onCancel?: () => void;
+  className?: string;
+  standalone?: boolean; // Whether this is a standalone form or part of a larger form
+}
+
+interface ContactData {
   name: string;
   relationship: string;
   phoneNumber: string;
-  email?: string;
-}
-
-interface EmergencyContactsFormProps {
-  initialData?: EmergencyContactsData | null;
-  onSave?: (data: EmergencyContactsData) => void;
-  onCancel?: () => void;
-  isEditing: boolean;
-  className?: string;
+  email: string;
 }
 
 const EmergencyContactsForm: React.FC<EmergencyContactsFormProps> = ({
   initialData,
-  onSave,
+  onSuccess,
   onCancel,
-  isEditing,
   className = '',
+  standalone = false,
 }) => {
-  const [formData, setFormData] = useState<EmergencyContactsData>({
-    primaryContact: {
-      name: '',
-      relationship: '',
-      phoneNumber: '',
-      email: '',
-    },
-    secondaryContact: {
-      name: '',
-      relationship: '',
-      phoneNumber: '',
-      email: '',
-    },
+  const [primaryContact, setPrimaryContact] = useState<ContactData>({
+    name: '',
+    relationship: '',
+    phoneNumber: '',
+    email: '',
   });
+
+  const [secondaryContact, setSecondaryContact] = useState<ContactData>({
+    name: '',
+    relationship: '',
+    phoneNumber: '',
+    email: '',
+  });
+
+  const [hasSecondaryContact, setHasSecondaryContact] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Initialize form data
   useEffect(() => {
     if (initialData) {
-      setFormData({
-        primaryContact: {
-          name: initialData.primaryContact?.name || '',
-          relationship: initialData.primaryContact?.relationship || '',
-          phoneNumber: initialData.primaryContact?.phoneNumber || '',
-          email: initialData.primaryContact?.email || '',
-        },
-        secondaryContact: {
-          name: initialData.secondaryContact?.name || '',
-          relationship: initialData.secondaryContact?.relationship || '',
-          phoneNumber: initialData.secondaryContact?.phoneNumber || '',
-          email: initialData.secondaryContact?.email || '',
-        },
-      });
+      if (initialData.primaryContact) {
+        setPrimaryContact({
+          name: initialData.primaryContact.name || '',
+          relationship: initialData.primaryContact.relationship || '',
+          phoneNumber: initialData.primaryContact.phoneNumber || '',
+          email: initialData.primaryContact.email || '',
+        });
+      }
+
+      if (initialData.secondaryContact) {
+        setSecondaryContact({
+          name: initialData.secondaryContact.name || '',
+          relationship: initialData.secondaryContact.relationship || '',
+          phoneNumber: initialData.secondaryContact.phoneNumber || '',
+          email: initialData.secondaryContact.email || '',
+        });
+        setHasSecondaryContact(true);
+      }
     }
   }, [initialData]);
 
   const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: Record<string, string> = {};
 
     // Primary contact validation
-    if (!formData.primaryContact?.name?.trim()) {
-      newErrors['primaryContact.name'] = 'Primary contact name is required';
+    if (!primaryContact.name.trim()) {
+      newErrors.primaryName = 'Primary contact name is required';
     }
 
-    if (!formData.primaryContact?.phoneNumber?.trim()) {
-      newErrors['primaryContact.phoneNumber'] = 'Primary contact phone number is required';
-    } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(formData.primaryContact.phoneNumber.replace(/[\s\-\(\)]/g, ''))) {
-      newErrors['primaryContact.phoneNumber'] = 'Please enter a valid phone number';
+    if (!primaryContact.relationship.trim()) {
+      newErrors.primaryRelationship = 'Primary contact relationship is required';
     }
 
-    if (!formData.primaryContact?.relationship?.trim()) {
-      newErrors['primaryContact.relationship'] = 'Relationship is required';
+    if (!primaryContact.phoneNumber.trim()) {
+      newErrors.primaryPhoneNumber = 'Primary contact phone number is required';
+    } else if (!/^[\+]?[0-9\s\-\(\)]+$/.test(primaryContact.phoneNumber.trim())) {
+      newErrors.primaryPhoneNumber = 'Please enter a valid phone number';
     }
 
-    // Primary contact email validation (optional but if provided must be valid)
-    if (formData.primaryContact?.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.primaryContact.email)) {
-      newErrors['primaryContact.email'] = 'Please enter a valid email address';
+    // Email validation for primary contact (optional but must be valid if provided)
+    if (primaryContact.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(primaryContact.email.trim())) {
+      newErrors.primaryEmail = 'Please enter a valid email address';
     }
 
-    // Secondary contact validation (optional but if name is provided, phone is required)
-    if (formData.secondaryContact?.name?.trim()) {
-      if (!formData.secondaryContact?.phoneNumber?.trim()) {
-        newErrors['secondaryContact.phoneNumber'] = 'Phone number is required when name is provided';
-      } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(formData.secondaryContact.phoneNumber.replace(/[\s\-\(\)]/g, ''))) {
-        newErrors['secondaryContact.phoneNumber'] = 'Please enter a valid phone number';
+    // Secondary contact validation (if enabled)
+    if (hasSecondaryContact) {
+      if (!secondaryContact.name.trim()) {
+        newErrors.secondaryName = 'Secondary contact name is required';
       }
 
-      if (!formData.secondaryContact?.relationship?.trim()) {
-        newErrors['secondaryContact.relationship'] = 'Relationship is required when name is provided';
+      if (!secondaryContact.relationship.trim()) {
+        newErrors.secondaryRelationship = 'Secondary contact relationship is required';
       }
 
-      // Secondary contact email validation (optional but if provided must be valid)
-      if (formData.secondaryContact?.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.secondaryContact.email)) {
-        newErrors['secondaryContact.email'] = 'Please enter a valid email address';
+      if (!secondaryContact.phoneNumber.trim()) {
+        newErrors.secondaryPhoneNumber = 'Secondary contact phone number is required';
+      } else if (!/^[\+]?[0-9\s\-\(\)]+$/.test(secondaryContact.phoneNumber.trim())) {
+        newErrors.secondaryPhoneNumber = 'Please enter a valid phone number';
+      }
+
+      // Email validation for secondary contact (optional but must be valid if provided)
+      if (secondaryContact.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(secondaryContact.email.trim())) {
+        newErrors.secondaryEmail = 'Please enter a valid email address';
       }
     }
 
@@ -107,94 +116,76 @@ const EmergencyContactsForm: React.FC<EmergencyContactsFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (contactType: 'primaryContact' | 'secondaryContact', field: keyof EmergencyContact, value: string) => {
-    setFormData(prev => ({
+  const handleContactChange = (
+    type: 'primary' | 'secondary',
+    field: keyof ContactData,
+    value: string
+  ) => {
+    const setter = type === 'primary' ? setPrimaryContact : setSecondaryContact;
+    
+    setter(prev => ({
       ...prev,
-      [contactType]: {
-        ...prev[contactType],
-        [field]: value,
-      },
+      [field]: value,
     }));
 
-    // Clear error when user starts typing
-    const errorKey = `${contactType}.${field}`;
+    // Clear error for this field
+    const errorKey = `${type}${field.charAt(0).toUpperCase() + field.slice(1)}`;
     if (errors[errorKey]) {
-      setErrors(prev => ({
-        ...prev,
-        [errorKey]: '',
-      }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[errorKey];
+        return newErrors;
+      });
     }
   };
 
-  const handleSave = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+
     if (!validateForm()) {
-      toast.error('Please fix the errors before saving');
-      return;
+      return false;
     }
 
     try {
       setLoading(true);
 
-      // Prepare data for API
-      const dataToSave: EmergencyContactsData = {};
+      const emergencyContactsData: EmergencyContactsData = {
+        primaryContact: {
+          name: primaryContact.name.trim(),
+          relationship: primaryContact.relationship.trim(),
+          phoneNumber: primaryContact.phoneNumber.trim(),
+          email: primaryContact.email.trim() || undefined,
+        },
+      };
 
-      // Always include primary contact if it has data
-      if (formData.primaryContact?.name?.trim()) {
-        dataToSave.primaryContact = {
-          name: formData.primaryContact.name.trim(),
-          relationship: formData.primaryContact.relationship.trim(),
-          phoneNumber: formData.primaryContact.phoneNumber.trim(),
-          email: formData.primaryContact.email?.trim() || undefined,
+      if (hasSecondaryContact && secondaryContact.name.trim()) {
+        emergencyContactsData.secondaryContact = {
+          name: secondaryContact.name.trim(),
+          relationship: secondaryContact.relationship.trim(),
+          phoneNumber: secondaryContact.phoneNumber.trim(),
+          email: secondaryContact.email.trim() || undefined,
         };
       }
 
-      // Include secondary contact only if it has data
-      if (formData.secondaryContact?.name?.trim()) {
-        dataToSave.secondaryContact = {
-          name: formData.secondaryContact.name.trim(),
-          relationship: formData.secondaryContact.relationship.trim(),
-          phoneNumber: formData.secondaryContact.phoneNumber.trim(),
-          email: formData.secondaryContact.email?.trim() || undefined,
-        };
+      if (standalone) {
+        await profileService.updateEmergencyContacts(emergencyContactsData);
+        toast.success('Emergency contacts updated successfully');
       }
 
-      await profileService.updateEmergencyContacts(dataToSave);
-      toast.success('Emergency contacts updated successfully!');
-      
-      if (onSave) {
-        onSave(dataToSave);
+      if (onSuccess) {
+        onSuccess(emergencyContactsData);
       }
+
+      return true;
     } catch (error: any) {
       console.error('Failed to update emergency contacts:', error);
       const errorMessage = error?.response?.data?.message || 'Failed to update emergency contacts';
       toast.error(errorMessage);
+      return false;
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCancel = () => {
-    // Reset form to initial data
-    if (initialData) {
-      setFormData({
-        primaryContact: {
-          name: initialData.primaryContact?.name || '',
-          relationship: initialData.primaryContact?.relationship || '',
-          phoneNumber: initialData.primaryContact?.phoneNumber || '',
-          email: initialData.primaryContact?.email || '',
-        },
-        secondaryContact: {
-          name: initialData.secondaryContact?.name || '',
-          relationship: initialData.secondaryContact?.relationship || '',
-          phoneNumber: initialData.secondaryContact?.phoneNumber || '',
-          email: initialData.secondaryContact?.email || '',
-        },
-      });
-    }
-    setErrors({});
-    
-    if (onCancel) {
-      onCancel();
     }
   };
 
@@ -205,71 +196,73 @@ const EmergencyContactsForm: React.FC<EmergencyContactsFormProps> = ({
     'Sibling',
     'Friend',
     'Colleague',
+    'Other Family Member',
+    'Guardian',
+    'Partner',
     'Other',
   ];
 
-  const ContactSection: React.FC<{
-    contactType: 'primaryContact' | 'secondaryContact';
+  const ContactSection = ({
+    title,
+    contact,
+    type,
+    canRemove = false,
+    onRemove,
+  }: {
     title: string;
-    required: boolean;
-    contact: EmergencyContact;
-  }> = ({ contactType, title, required, contact }) => (
-    <div className="space-y-4">
-      <div className="flex items-center space-x-2">
-        <h4 className="text-lg font-semibold text-charcoal">
+    contact: ContactData;
+    type: 'primary' | 'secondary';
+    canRemove?: boolean;
+    onRemove?: () => void;
+  }) => (
+    <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="font-medium text-charcoal flex items-center">
+          <span className="mr-2">{type === 'primary' ? '👤' : '👥'}</span>
           {title}
         </h4>
-        {required && (
-          <span className="text-red-500 text-sm">*</span>
+        {canRemove && onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-red-600 hover:text-red-800 text-sm"
+          >
+            Remove
+          </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Name */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name {required && '*'}
+            Name *
           </label>
           <input
             type="text"
             value={contact.name}
-            onChange={(e) => handleInputChange(contactType, 'name', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold transition-colors ${
-              !isEditing ? 'bg-gray-50' : 'bg-white'
-            } ${
-              errors[`${contactType}.name`] 
-                ? 'border-red-300 focus:border-red-300 focus:ring-red-200' 
-                : 'border-gray-300 focus:border-warm-gold'
+            onChange={(e) => handleContactChange(type, 'name', e.target.value)}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-warm-gold ${
+              errors[`${type}Name`] ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="Contact's full name"
-            disabled={!isEditing || loading}
-            required={required}
+            placeholder="Full name"
+            disabled={loading}
           />
-          {errors[`${contactType}.name`] && (
-            <p className="mt-1 text-sm text-red-600 flex items-center">
-              <span className="mr-1">⚠️</span>
-              {errors[`${contactType}.name`]}
-            </p>
+          {errors[`${type}Name`] && (
+            <p className="mt-1 text-xs text-red-600">{errors[`${type}Name`]}</p>
           )}
         </div>
 
-        {/* Relationship */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Relationship {(required || contact.name) && '*'}
+            Relationship *
           </label>
           <select
             value={contact.relationship}
-            onChange={(e) => handleInputChange(contactType, 'relationship', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold transition-colors ${
-              !isEditing ? 'bg-gray-50' : 'bg-white'
-            } ${
-              errors[`${contactType}.relationship`] 
-                ? 'border-red-300 focus:border-red-300 focus:ring-red-200' 
-                : 'border-gray-300 focus:border-warm-gold'
+            onChange={(e) => handleContactChange(type, 'relationship', e.target.value)}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-warm-gold ${
+              errors[`${type}Relationship`] ? 'border-red-500' : 'border-gray-300'
             }`}
-            disabled={!isEditing || loading}
-            required={required || !!contact.name}
+            disabled={loading}
           >
             <option value="">Select relationship</option>
             {relationshipOptions.map(option => (
@@ -278,66 +271,48 @@ const EmergencyContactsForm: React.FC<EmergencyContactsFormProps> = ({
               </option>
             ))}
           </select>
-          {errors[`${contactType}.relationship`] && (
-            <p className="mt-1 text-sm text-red-600 flex items-center">
-              <span className="mr-1">⚠️</span>
-              {errors[`${contactType}.relationship`]}
-            </p>
+          {errors[`${type}Relationship`] && (
+            <p className="mt-1 text-xs text-red-600">{errors[`${type}Relationship`]}</p>
           )}
         </div>
+      </div>
 
-        {/* Phone Number */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number {(required || contact.name) && '*'}
+            Phone Number *
           </label>
           <input
             type="tel"
             value={contact.phoneNumber}
-            onChange={(e) => handleInputChange(contactType, 'phoneNumber', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold transition-colors ${
-              !isEditing ? 'bg-gray-50' : 'bg-white'
-            } ${
-              errors[`${contactType}.phoneNumber`] 
-                ? 'border-red-300 focus:border-red-300 focus:ring-red-200' 
-                : 'border-gray-300 focus:border-warm-gold'
+            onChange={(e) => handleContactChange(type, 'phoneNumber', e.target.value)}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-warm-gold ${
+              errors[`${type}PhoneNumber`] ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="+1 (555) 123-4567"
-            disabled={!isEditing || loading}
-            required={required || !!contact.name}
+            disabled={loading}
           />
-          {errors[`${contactType}.phoneNumber`] && (
-            <p className="mt-1 text-sm text-red-600 flex items-center">
-              <span className="mr-1">⚠️</span>
-              {errors[`${contactType}.phoneNumber`]}
-            </p>
+          {errors[`${type}PhoneNumber`] && (
+            <p className="mt-1 text-xs text-red-600">{errors[`${type}PhoneNumber`]}</p>
           )}
         </div>
 
-        {/* Email */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Email (Optional)
           </label>
           <input
             type="email"
-            value={contact.email || ''}
-            onChange={(e) => handleInputChange(contactType, 'email', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold transition-colors ${
-              !isEditing ? 'bg-gray-50' : 'bg-white'
-            } ${
-              errors[`${contactType}.email`] 
-                ? 'border-red-300 focus:border-red-300 focus:ring-red-200' 
-                : 'border-gray-300 focus:border-warm-gold'
+            value={contact.email}
+            onChange={(e) => handleContactChange(type, 'email', e.target.value)}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-warm-gold ${
+              errors[`${type}Email`] ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="contact@example.com"
-            disabled={!isEditing || loading}
+            disabled={loading}
           />
-          {errors[`${contactType}.email`] && (
-            <p className="mt-1 text-sm text-red-600 flex items-center">
-              <span className="mr-1">⚠️</span>
-              {errors[`${contactType}.email`]}
-            </p>
+          {errors[`${type}Email`] && (
+            <p className="mt-1 text-xs text-red-600">{errors[`${type}Email`]}</p>
           )}
         </div>
       </div>
@@ -346,90 +321,124 @@ const EmergencyContactsForm: React.FC<EmergencyContactsFormProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-            <span className="text-red-600">🚨</span>
+      {standalone && (
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+            <span className="text-red-600 text-lg">🚨</span>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-charcoal">
+            <h3 className="text-lg font-bold text-charcoal">
               Emergency Contacts
             </h3>
             <p className="text-sm text-gray-600">
-              Provide contact information for emergencies
+              People to contact in case of emergency
             </p>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Important Notice */}
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <span className="text-red-600 flex-shrink-0">ℹ️</span>
-          <div className="text-sm text-red-800">
-            <p className="font-medium mb-1">Important:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>At least one primary emergency contact is required</li>
-              <li>These contacts will be notified in case of workplace emergencies</li>
-              <li>Please ensure contact information is current and accurate</li>
-              <li>Secondary contact is optional but recommended</li>
-            </ul>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Primary Contact */}
+        <ContactSection
+          title="Primary Emergency Contact"
+          contact={primaryContact}
+          type="primary"
+        />
+
+        {/* Secondary Contact */}
+        {hasSecondaryContact ? (
+          <ContactSection
+            title="Secondary Emergency Contact"
+            contact={secondaryContact}
+            type="secondary"
+            canRemove
+            onRemove={() => {
+              setHasSecondaryContact(false);
+              setSecondaryContact({
+                name: '',
+                relationship: '',
+                phoneNumber: '',
+                email: '',
+              });
+              // Clear secondary contact errors
+              const newErrors = { ...errors };
+              Object.keys(newErrors).forEach(key => {
+                if (key.startsWith('secondary')) {
+                  delete newErrors[key];
+                }
+              });
+              setErrors(newErrors);
+            }}
+          />
+        ) : (
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <div className="text-gray-400 text-4xl mb-3">👥</div>
+            <h4 className="text-sm font-medium text-gray-600 mb-2">
+              Add Secondary Emergency Contact
+            </h4>
+            <p className="text-xs text-gray-500 mb-4">
+              Having a backup contact ensures we can always reach someone in an emergency
+            </p>
+            <button
+              type="button"
+              onClick={() => setHasSecondaryContact(true)}
+              disabled={loading}
+              className="px-4 py-2 text-warm-gold hover:text-orange-600 border border-warm-gold hover:border-orange-600 rounded-md transition-colors disabled:opacity-50"
+            >
+              + Add Secondary Contact
+            </button>
+          </div>
+        )}
+
+        {/* Important Notice */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+          <div className="flex items-start space-x-3">
+            <div className="text-yellow-600 text-lg">⚠️</div>
+            <div className="text-sm text-yellow-800">
+              <h4 className="font-medium mb-1">Important</h4>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Emergency contacts should be available 24/7</li>
+                <li>Make sure they know they're listed as your emergency contact</li>
+                <li>Keep this information updated when contacts change</li>
+                <li>At least one contact should live locally or be easily reachable</li>
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Primary Contact */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <ContactSection
-          contactType="primaryContact"
-          title="Primary Emergency Contact"
-          required={true}
-          contact={formData.primaryContact!}
-        />
-      </div>
-
-      {/* Secondary Contact */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <ContactSection
-          contactType="secondaryContact"
-          title="Secondary Emergency Contact"
-          required={false}
-          contact={formData.secondaryContact!}
-        />
-      </div>
-
-      {/* Action Buttons */}
-      {isEditing && (
-        <div className="flex flex-col sm:flex-row gap-3 pt-4">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={loading}
-            className="flex-1 bg-warm-gold text-white py-3 px-6 rounded-lg font-medium hover:bg-warm-gold/90 transition-colors focus:ring-2 focus:ring-warm-gold focus:ring-offset-2 disabled:opacity-50 flex items-center justify-center"
-          >
-            {loading ? (
-              <>
-                <LoadingSpinner size="sm" className="mr-2" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <span className="mr-2">💾</span>
-                Save Emergency Contacts
-              </>
+        {/* Action Buttons (only for standalone form) */}
+        {standalone && (
+          <div className="flex space-x-3 pt-4">
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={loading}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
             )}
-          </button>
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={loading}
-            className="flex-1 sm:flex-none bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-warm-gold text-white rounded-md hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center"
+            >
+              {loading ? (
+                <>
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <span className="mr-2">💾</span>
+                  Save Emergency Contacts
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </form>
     </div>
   );
 };

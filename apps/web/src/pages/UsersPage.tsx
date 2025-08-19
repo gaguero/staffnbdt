@@ -3,6 +3,9 @@ import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UserDetailsModal from '../components/UserDetailsModal';
 import EditUserModal from '../components/EditUserModal';
+import InvitationModal from '../components/InvitationModal';
+import PermissionGate from '../components/PermissionGate';
+import { COMMON_PERMISSIONS } from '../types/permission';
 import { userService, User as UserType, UserFilter, BulkImportResult } from '../services/userService';
 import { departmentService, Department } from '../services/departmentService';
 
@@ -46,6 +49,10 @@ const UsersPage: React.FC = () => {
   const [sendInvitations, setSendInvitations] = useState(true);
   const [showPermanentDeleteModal, setShowPermanentDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<'deactivate' | 'activate' | 'delete' | 'invite' | 'changeRole' | ''>('');
 
   // Load users
   const loadUsers = useCallback(async () => {
@@ -98,6 +105,67 @@ const UsersPage: React.FC = () => {
     loadStats();
     loadDepartments();
   }, [loadUsers, loadStats, loadDepartments]);
+
+  // Bulk selection helper functions
+  const handleSelectUser = (userId: string) => {
+    const newSelected = new Set(selectedUsers);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedUsers(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedUsers.size === filteredUsers.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(filteredUsers.map(user => user.id)));
+    }
+  };
+
+  const handleBulkAction = async (action: string) => {
+    if (selectedUsers.size === 0) return;
+    
+    setBulkActionType(action as any);
+    setShowBulkActions(true);
+  };
+
+  const executeBulkAction = async () => {
+    try {
+      const userIds = Array.from(selectedUsers);
+      
+      switch (bulkActionType) {
+        case 'deactivate':
+          // Bulk deactivate users
+          for (const userId of userIds) {
+            await userService.deactivateUser(userId);
+          }
+          break;
+        case 'activate':
+          // Bulk activate users
+          for (const userId of userIds) {
+            await userService.activateUser(userId);
+          }
+          break;
+        case 'delete':
+          // Bulk delete users
+          for (const userId of userIds) {
+            await userService.deleteUser(userId);
+          }
+          break;
+        // Add more bulk actions as needed
+      }
+      
+      setSelectedUsers(new Set());
+      setShowBulkActions(false);
+      setBulkActionType('');
+      loadUsers(); // Reload users after bulk action
+    } catch (error) {
+      console.error('Bulk action failed:', error);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -385,6 +453,12 @@ const UsersPage: React.FC = () => {
           {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
             <>
               <button
+                onClick={() => setShowInvitationModal(true)}
+                className="btn btn-secondary"
+              >
+                📧 Send Invitation
+              </button>
+              <button
                 onClick={() => setShowBulkImport(true)}
                 className="btn btn-secondary"
               >
@@ -399,13 +473,15 @@ const UsersPage: React.FC = () => {
               </button>
             </>
           )}
-          <button
-            onClick={() => setShowAddUser(true)}
-            className="btn btn-primary"
-          >
-            <span className="mr-2">➕</span>
-            Add User
-          </button>
+          <PermissionGate commonPermission={COMMON_PERMISSIONS.CREATE_USER}>
+            <button
+              onClick={() => setShowAddUser(true)}
+              className="btn btn-primary"
+            >
+              <span className="mr-2">➕</span>
+              Add User
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -438,6 +514,55 @@ const UsersPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedUsers.size > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-medium text-blue-900">
+                {selectedUsers.size} user{selectedUsers.size > 1 ? 's' : ''} selected
+              </span>
+              <button
+                onClick={() => setSelectedUsers(new Set())}
+                className="text-xs text-blue-600 hover:text-blue-800 underline"
+              >
+                Clear selection
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
+                <>
+                  <button
+                    onClick={() => handleBulkAction('activate')}
+                    className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                  >
+                    ✅ Activate
+                  </button>
+                  <button
+                    onClick={() => handleBulkAction('deactivate')}
+                    className="px-3 py-1.5 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700 transition-colors"
+                  >
+                    ⏸️ Deactivate
+                  </button>
+                  <button
+                    onClick={() => handleBulkAction('delete')}
+                    className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                  >
+                    🗑️ Delete
+                  </button>
+                  <button
+                    onClick={() => handleBulkAction('invite')}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                  >
+                    📧 Send Invites
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="card p-4">
@@ -510,6 +635,14 @@ const UsersPage: React.FC = () => {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
+                        onChange={handleSelectAll}
+                        className="rounded border-gray-300 text-warm-gold focus:ring-warm-gold"
+                      />
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       User
                     </th>
@@ -533,6 +666,14 @@ const UsersPage: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredUsers.map((user) => (
                     <tr key={user.id} className={`hover:bg-gray-50 ${user.deletedAt ? 'opacity-75 bg-gray-50' : ''}`}>
+                      <td className="px-6 py-4 whitespace-nowrap w-12">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.has(user.id)}
+                          onChange={() => handleSelectUser(user.id)}
+                          className="rounded border-gray-300 text-warm-gold focus:ring-warm-gold"
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium mr-4 ${user.deletedAt ? 'bg-gray-400' : 'bg-warm-gold'}`}>
@@ -562,25 +703,27 @@ const UsersPage: React.FC = () => {
                         <div className="flex space-x-2">
                           {canManageUser(user) && (
                             <>
-                              <button 
-                                className="text-blue-600 hover:text-blue-800"
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setFormData({
-                                    firstName: user.firstName,
-                                    lastName: user.lastName,
-                                    email: user.email,
-                                    role: user.role,
-                                    departmentId: user.departmentId || '',
-                                    position: user.position || '',
-                                    phoneNumber: user.phoneNumber || '',
-                                    hireDate: user.hireDate ? user.hireDate.split('T')[0] : '',
-                                  });
-                                  setShowEditUser(true);
-                                }}
-                              >
-                                Edit
-                              </button>
+                              <PermissionGate commonPermission={COMMON_PERMISSIONS.EDIT_USER}>
+                                <button 
+                                  className="text-blue-600 hover:text-blue-800"
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setFormData({
+                                      firstName: user.firstName,
+                                      lastName: user.lastName,
+                                      email: user.email,
+                                      role: user.role,
+                                      departmentId: user.departmentId || '',
+                                      position: user.position || '',
+                                      phoneNumber: user.phoneNumber || '',
+                                      hireDate: user.hireDate ? user.hireDate.split('T')[0] : '',
+                                    });
+                                    setShowEditUser(true);
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                              </PermissionGate>
                               <button 
                                 className="text-red-600 hover:text-red-800"
                                 onClick={() => user.deletedAt 
@@ -590,16 +733,18 @@ const UsersPage: React.FC = () => {
                               >
                                 {user.deletedAt ? 'Activate' : 'Deactivate'}
                               </button>
-                              {user.deletedAt && ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
-                                <button 
-                                  className="text-red-800 hover:text-red-900 font-medium"
-                                  onClick={() => {
-                                    setUserToDelete(user);
-                                    setShowPermanentDeleteModal(true);
-                                  }}
-                                >
-                                  Delete Forever
-                                </button>
+                              {user.deletedAt && (
+                                <PermissionGate commonPermission={COMMON_PERMISSIONS.DELETE_USER}>
+                                  <button 
+                                    className="text-red-800 hover:text-red-900 font-medium"
+                                    onClick={() => {
+                                      setUserToDelete(user);
+                                      setShowPermanentDeleteModal(true);
+                                    }}
+                                  >
+                                    Delete Forever
+                                  </button>
+                                </PermissionGate>
                               )}
                             </>
                           )}
@@ -642,7 +787,7 @@ const UsersPage: React.FC = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">First Name</label>
                     <input
@@ -986,6 +1131,60 @@ const UsersPage: React.FC = () => {
                   ) : (
                     'Delete Forever'
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invitation Modal */}
+      <InvitationModal
+        isOpen={showInvitationModal}
+        onClose={() => setShowInvitationModal(false)}
+        onSuccess={loadUsers}
+      />
+
+      {/* Bulk Action Confirmation Modal */}
+      {showBulkActions && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-charcoal mb-4">
+                Confirm Bulk Action
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to {bulkActionType.replace(/([A-Z])/g, ' $1').toLowerCase()} {selectedUsers.size} user{selectedUsers.size > 1 ? 's' : ''}?
+                {bulkActionType === 'delete' && (
+                  <span className="block mt-2 text-red-600 font-medium">
+                    ⚠️ This action cannot be undone.
+                  </span>
+                )}
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowBulkActions(false);
+                    setBulkActionType('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeBulkAction}
+                  className={`flex-1 px-4 py-2 text-white rounded-md transition-colors ${
+                    bulkActionType === 'delete'
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : bulkActionType === 'deactivate'
+                      ? 'bg-yellow-600 hover:bg-yellow-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {bulkActionType === 'delete' ? 'Delete' : 
+                   bulkActionType === 'deactivate' ? 'Deactivate' :
+                   bulkActionType === 'activate' ? 'Activate' :
+                   bulkActionType === 'invite' ? 'Send Invitations' : 'Confirm'}
                 </button>
               </div>
             </div>
