@@ -389,7 +389,7 @@ export async function seedPermissions() {
     let createdRole = await prisma.customRole.findFirst({
       where: {
         organizationId: defaultOrg.id,
-        propertyId: '',
+        propertyId: null,
         name: role.name
       }
     });
@@ -409,7 +409,7 @@ export async function seedPermissions() {
           name: role.name,
           description: role.description,
           organizationId: defaultOrg.id,
-          propertyId: '',
+          propertyId: null,
           isSystemRole: role.isSystemRole,
           priority: role.priority,
           isActive: true,

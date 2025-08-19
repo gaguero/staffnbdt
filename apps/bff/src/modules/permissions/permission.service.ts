@@ -1301,7 +1301,7 @@ export class PermissionService implements OnModuleInit {
           let existingRole = await this.prisma.customRole.findFirst({
             where: {
               organizationId: defaultOrg.id,
-              propertyId: '',
+              propertyId: null,
               name: role.name
             }
           });
@@ -1321,7 +1321,7 @@ export class PermissionService implements OnModuleInit {
                 name: role.name,
                 description: role.description,
                 organizationId: defaultOrg.id,
-                propertyId: '',
+                propertyId: null,
                 isSystemRole: role.isSystemRole,
                 priority: role.priority,
                 isActive: true,
