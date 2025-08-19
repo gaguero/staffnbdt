@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { profileService, IdVerificationStatus, VerificationAction, IdDocumentStatus } from '../services/profileService';
 import { userService, User } from '../services/userService';
 import LoadingSpinner from './LoadingSpinner';
+import PermissionGate from './PermissionGate';
+import { COMMON_PERMISSIONS } from '../types/permission';
 import toast from 'react-hot-toast';
 
 interface DocumentToVerify {
@@ -22,7 +24,7 @@ const VerificationQueue: React.FC<VerificationQueueProps> = ({ className = '' })
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [documentBlob, setDocumentBlob] = useState<string | null>(null);
   const [loadingDocument, setLoadingDocument] = useState(false);
-  const [filter, setFilter] = useState<IdVerificationStatus | 'ALL'>('PENDING');
+  const [filter, setFilter] = useState<IdVerificationStatus | 'ALL'>('ALL');
   const [verificationNotes, setVerificationNotes] = useState('');
 
   // Load documents that need verification
@@ -183,7 +185,16 @@ const VerificationQueue: React.FC<VerificationQueueProps> = ({ className = '' })
   });
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <PermissionGate 
+      commonPermission={COMMON_PERMISSIONS.VIEW_DOCUMENTS}
+      fallback={
+        <div className="text-center p-8 text-gray-500">
+          <div className="text-4xl mb-3">🔒</div>
+          <p>You don't have permission to access the document verification queue.</p>
+        </div>
+      }
+    >
+      <div className={`space-y-6 ${className}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-3">
@@ -217,7 +228,7 @@ const VerificationQueue: React.FC<VerificationQueueProps> = ({ className = '' })
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -424,7 +435,7 @@ const VerificationQueue: React.FC<VerificationQueueProps> = ({ className = '' })
             </div>
 
             {/* Content */}
-            <div className="flex flex-col lg:flex-row h-[70vh]">
+            <div className="flex flex-col lg:flex-row h-[60vh] lg:h-[70vh]">
               {/* Document Viewer */}
               <div className="flex-1 p-6 bg-gray-50">
                 {loadingDocument ? (
@@ -448,7 +459,7 @@ const VerificationQueue: React.FC<VerificationQueueProps> = ({ className = '' })
               </div>
 
               {/* Verification Panel */}
-              <div className="w-full lg:w-80 p-6 border-l border-gray-200">
+              <div className="w-full lg:w-80 p-4 lg:p-6 border-t lg:border-t-0 lg:border-l border-gray-200">
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-semibold text-charcoal mb-2">Document Status</h4>
@@ -527,7 +538,8 @@ const VerificationQueue: React.FC<VerificationQueueProps> = ({ className = '' })
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PermissionGate>
   );
 };
 
