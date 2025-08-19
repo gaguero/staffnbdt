@@ -65,6 +65,7 @@ export class PermissionService implements OnModuleInit {
   private readonly conditionEvaluators = new Map<string, PermissionConditionEvaluator>();
   private permissionTablesExist = false;
   private skipPermissionInit = false;
+  private forcePermissionSystem = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -74,6 +75,7 @@ export class PermissionService implements OnModuleInit {
     this.cacheDefaultTtl = this.configService.get<number>('PERMISSION_CACHE_TTL', 3600); // 1 hour
     this.maxCacheSize = this.configService.get<number>('PERMISSION_MAX_CACHE_SIZE', 10000);
     this.skipPermissionInit = this.configService.get<boolean>('SKIP_PERMISSION_INIT', false);
+    this.forcePermissionSystem = this.configService.get<boolean>('FORCE_PERMISSION_SYSTEM', false);
     this.initializeConditionEvaluators();
   }
 
@@ -84,8 +86,14 @@ export class PermissionService implements OnModuleInit {
     }
 
     try {
-      // Check if permission tables exist before attempting initialization
-      this.permissionTablesExist = await this.hasPermissionTables();
+      // Check force override first
+      if (this.forcePermissionSystem) {
+        this.logger.warn('FORCE_PERMISSION_SYSTEM=true - bypassing table existence check');
+        this.permissionTablesExist = true;
+      } else {
+        // Check if permission tables exist before attempting initialization with retry
+        this.permissionTablesExist = await this.hasPermissionTablesWithRetry();
+      }
       
       if (!this.permissionTablesExist) {
         this.logger.warn('Permission tables do not exist, running in legacy mode with @Roles decorators only');
@@ -576,7 +584,7 @@ export class PermissionService implements OnModuleInit {
    */
   async getUserPermissionSummary(userId: string): Promise<UserPermissionSummary> {
     if (!this.permissionTablesExist) {
-      throw new ForbiddenException('Permission system not available - permission tables do not exist');
+      throw new ForbiddenException('Permission system not available - permission tables do not exist. Use getSystemStatus() to debug.');
     }
 
     const user = await this.getUserWithRoles(userId);
@@ -660,25 +668,156 @@ export class PermissionService implements OnModuleInit {
     }
   }
 
+  /**
+   * Force re-initialization of the permission system
+   * Useful for debugging and manual system recovery
+   */
+  async forceReinitialize(): Promise<{
+    success: boolean;
+    tablesExist: boolean;
+    error?: string;
+    systemStatus?: any;
+  }> {
+    this.logger.warn('Force reinitializing permission system...');
+    
+    try {
+      // Reset state
+      this.permissionTablesExist = false;
+      
+      // Check tables again
+      this.permissionTablesExist = await this.hasPermissionTablesWithRetry();
+      
+      if (!this.permissionTablesExist) {
+        return {
+          success: false,
+          tablesExist: false,
+          error: 'Permission tables still not detected after reinitialization',
+        };
+      }
+      
+      // Try to initialize
+      await this.ensureSystemPermissions();
+      await this.ensureSystemRoles();
+      
+      const systemStatus = await this.getSystemStatus();
+      
+      this.logger.log('Permission system force reinitialization completed successfully');
+      return {
+        success: true,
+        tablesExist: true,
+        systemStatus,
+      };
+      
+    } catch (error) {
+      this.logger.error('Force reinitialization failed:', error);
+      return {
+        success: false,
+        tablesExist: this.permissionTablesExist,
+        error: error.message,
+      };
+    }
+  }
+
   // Private helper methods
 
   /**
-   * Check if permission tables exist in the database
+   * Check if permission tables exist with retry logic
+   */
+  private async hasPermissionTablesWithRetry(maxRetries: number = 3): Promise<boolean> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        this.logger.log(`Checking permission tables existence (attempt ${attempt}/${maxRetries})...`);
+        const result = await this.hasPermissionTables();
+        if (result) {
+          this.logger.log('Permission tables detected successfully');
+        }
+        return result;
+      } catch (error) {
+        this.logger.warn(`Permission table check attempt ${attempt} failed:`, error.message);
+        if (attempt === maxRetries) {
+          this.logger.error('All permission table check attempts failed');
+          return false;
+        }
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Check if permission tables exist in the database using PostgreSQL-specific queries
    */
   private async hasPermissionTables(): Promise<boolean> {
     try {
-      // Try to query the Permission table to see if it exists
-      await this.prisma.permission.findFirst({ take: 1 });
-      // If we get here, the table exists
-      return true;
-    } catch (error) {
-      // If we get a database error about missing table, return false
-      if (error.message?.includes('relation') || error.message?.includes('table') || error.message?.includes('does not exist')) {
-        this.logger.debug('Permission tables do not exist in database');
+      // Get database connection details for logging
+      const databaseUrl = this.configService.get<string>('DATABASE_URL');
+      const dbName = databaseUrl ? new URL(databaseUrl).pathname.slice(1) : 'unknown';
+      this.logger.log(`Checking permission tables in database: ${dbName}`);
+
+      // Check for required permission tables using PostgreSQL information_schema
+      const requiredTables = ['Permission', 'CustomRole', 'RolePermission', 'UserPermission', 'PermissionCache'];
+      const schema = 'public'; // Default PostgreSQL schema
+      
+      this.logger.log(`Checking for tables: ${requiredTables.join(', ')} in schema: ${schema}`);
+
+      for (const tableName of requiredTables) {
+        const query = `
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = $1 
+            AND table_name = $2
+          ) as table_exists
+        `;
+        
+        this.logger.debug(`Executing query for table ${tableName}: ${query}`);
+        const result = await this.prisma.$queryRaw<[{table_exists: boolean}]>`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = ${schema}
+            AND table_name = ${tableName}
+          ) as table_exists
+        `;
+        
+        const tableExists = result[0]?.table_exists || false;
+        this.logger.log(`Table ${tableName} exists: ${tableExists}`);
+        
+        if (!tableExists) {
+          this.logger.warn(`Required permission table '${tableName}' does not exist in schema '${schema}'`);
+          return false;
+        }
+      }
+
+      this.logger.log('All required permission tables found in database');
+      
+      // Additional verification: try to count records in Permission table
+      try {
+        const count = await this.prisma.permission.count();
+        this.logger.log(`Permission table accessible with ${count} records`);
+        return true;
+      } catch (accessError) {
+        this.logger.error('Permission tables exist but are not accessible:', accessError);
         return false;
       }
-      // For other errors, assume tables exist but there's a different issue
-      this.logger.warn('Error checking permission tables existence:', error);
+      
+    } catch (error) {
+      this.logger.error('Error checking permission tables existence:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
+      // Check for specific PostgreSQL error types
+      if (error.message?.includes('relation') || 
+          error.message?.includes('table') || 
+          error.message?.includes('does not exist') ||
+          error.code === '42P01') { // PostgreSQL "relation does not exist" error
+        this.logger.debug('Permission tables do not exist in database (PostgreSQL error detected)');
+        return false;
+      }
+      
+      // For connection or other errors, assume tables don't exist to be safe
+      this.logger.warn('Assuming permission tables do not exist due to database error');
       return false;
     }
   }
@@ -999,6 +1138,55 @@ export class PermissionService implements OnModuleInit {
     return hours + minutes / 60;
   }
 
+  /**
+   * Get permission system status for debugging
+   */
+  async getSystemStatus(): Promise<{
+    permissionTablesExist: boolean;
+    tablesChecked: string[];
+    databaseUrl: string;
+    forceEnabled: boolean;
+    skipInit: boolean;
+    tableStats?: Record<string, number>;
+    lastError?: string;
+  }> {
+    const databaseUrl = this.configService.get<string>('DATABASE_URL', 'Not configured');
+    const maskedUrl = databaseUrl.replace(/\/\/[^@]+@/, '//***:***@'); // Mask credentials
+    
+    const status = {
+      permissionTablesExist: this.permissionTablesExist,
+      tablesChecked: ['Permission', 'CustomRole', 'RolePermission', 'UserPermission', 'PermissionCache'],
+      databaseUrl: maskedUrl,
+      forceEnabled: this.forcePermissionSystem,
+      skipInit: this.skipPermissionInit,
+    };
+
+    // If tables exist, get table stats
+    if (this.permissionTablesExist) {
+      try {
+        const tableStats = {
+          permissions: await this.prisma.permission.count(),
+          customRoles: await this.prisma.customRole.count(),
+          rolePermissions: await this.prisma.rolePermission.count(),
+          userPermissions: await this.prisma.userPermission.count(),
+          permissionCache: await this.prisma.permissionCache.count(),
+        };
+        return { ...status, tableStats };
+      } catch (error) {
+        return { ...status, lastError: error.message };
+      }
+    }
+
+    // If tables don't exist, try to check why
+    try {
+      await this.hasPermissionTables();
+    } catch (error) {
+      return { ...status, lastError: error.message };
+    }
+
+    return status;
+  }
+
   private async ensureSystemPermissions(): Promise<void> {
     if (!this.permissionTablesExist) {
       this.logger.warn('Skipping system permissions creation - tables do not exist');
@@ -1006,37 +1194,53 @@ export class PermissionService implements OnModuleInit {
     }
     
     try {
+      this.logger.log('Starting system permissions initialization...');
+      
       // Create default system permissions if they don't exist
       const systemPermissions = [
-      { resource: 'user', action: 'create', scope: 'department', name: 'Create Department Users', category: 'HR' },
-      { resource: 'user', action: 'read', scope: 'own', name: 'View Own Profile', category: 'HR' },
-      { resource: 'user', action: 'update', scope: 'own', name: 'Update Own Profile', category: 'HR' },
-      { resource: 'payslip', action: 'read', scope: 'own', name: 'View Own Payslips', category: 'HR' },
-      { resource: 'vacation', action: 'create', scope: 'own', name: 'Create Vacation Request', category: 'HR' },
-      { resource: 'training', action: 'read', scope: 'department', name: 'View Department Training', category: 'Training' },
-      { resource: 'document', action: 'read', scope: 'department', name: 'View Department Documents', category: 'Documents' },
-      // Add more system permissions as needed
-    ];
+        { resource: 'user', action: 'create', scope: 'department', name: 'Create Department Users', category: 'HR' },
+        { resource: 'user', action: 'read', scope: 'own', name: 'View Own Profile', category: 'HR' },
+        { resource: 'user', action: 'update', scope: 'own', name: 'Update Own Profile', category: 'HR' },
+        { resource: 'payslip', action: 'read', scope: 'own', name: 'View Own Payslips', category: 'HR' },
+        { resource: 'vacation', action: 'create', scope: 'own', name: 'Create Vacation Request', category: 'HR' },
+        { resource: 'training', action: 'read', scope: 'department', name: 'View Department Training', category: 'Training' },
+        { resource: 'document', action: 'read', scope: 'department', name: 'View Department Documents', category: 'Documents' },
+        // Add more system permissions as needed
+      ];
 
-    for (const perm of systemPermissions) {
-      await this.prisma.permission.upsert({
-        where: { resource_action_scope: { resource: perm.resource, action: perm.action, scope: perm.scope } },
-        create: {
-          resource: perm.resource,
-          action: perm.action,
-          scope: perm.scope,
-          name: perm.name,
-          category: perm.category,
-          isSystem: true,
-        },
-        update: {
-          name: perm.name,
-          category: perm.category,
-        },
-      });
-    }
+      this.logger.log(`Creating/updating ${systemPermissions.length} system permissions...`);
+      
+      for (const perm of systemPermissions) {
+        try {
+          await this.prisma.permission.upsert({
+            where: { resource_action_scope: { resource: perm.resource, action: perm.action, scope: perm.scope } },
+            create: {
+              resource: perm.resource,
+              action: perm.action,
+              scope: perm.scope,
+              name: perm.name,
+              category: perm.category,
+              isSystem: true,
+            },
+            update: {
+              name: perm.name,
+              category: perm.category,
+            },
+          });
+          this.logger.debug(`✓ Permission created/updated: ${perm.resource}.${perm.action}.${perm.scope}`);
+        } catch (permError) {
+          this.logger.error(`Failed to create permission ${perm.resource}.${perm.action}.${perm.scope}:`, permError);
+          throw permError;
+        }
+      }
+      
+      this.logger.log('System permissions initialization completed successfully');
     } catch (error) {
-      this.logger.error('Error ensuring system permissions:', error);
+      this.logger.error('Error ensuring system permissions:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
       throw error;
     }
   }
@@ -1048,39 +1252,55 @@ export class PermissionService implements OnModuleInit {
     }
     
     try {
+      this.logger.log('Starting system roles initialization...');
+      
       // Create default system roles if they don't exist
       // This would map to the legacy Role enum for backwards compatibility
       const systemRoles = [
-      { name: 'Platform Administrator', description: 'Full platform access', isSystemRole: true, priority: 1000 },
-      { name: 'Organization Owner', description: 'Organization-wide access', isSystemRole: true, priority: 900 },
-      { name: 'Property Manager', description: 'Property-wide access', isSystemRole: true, priority: 800 },
-      { name: 'Department Admin', description: 'Department-specific access', isSystemRole: true, priority: 700 },
-      { name: 'Staff Member', description: 'Basic staff access', isSystemRole: true, priority: 100 },
-    ];
+        { name: 'Platform Administrator', description: 'Full platform access', isSystemRole: true, priority: 1000 },
+        { name: 'Organization Owner', description: 'Organization-wide access', isSystemRole: true, priority: 900 },
+        { name: 'Property Manager', description: 'Property-wide access', isSystemRole: true, priority: 800 },
+        { name: 'Department Admin', description: 'Department-specific access', isSystemRole: true, priority: 700 },
+        { name: 'Staff Member', description: 'Basic staff access', isSystemRole: true, priority: 100 },
+      ];
 
-    for (const role of systemRoles) {
-      await this.prisma.customRole.upsert({
-        where: { 
-          unique_org_role: { 
-            organizationId: null, 
-            name: role.name 
-          } 
-        },
-        create: {
-          name: role.name,
-          description: role.description,
-          isSystemRole: role.isSystemRole,
-          priority: role.priority,
-          isActive: true,
-        },
-        update: {
-          description: role.description,
-          priority: role.priority,
-        },
-      });
-    }
+      this.logger.log(`Creating/updating ${systemRoles.length} system roles...`);
+      
+      for (const role of systemRoles) {
+        try {
+          await this.prisma.customRole.upsert({
+            where: { 
+              unique_org_role: { 
+                organizationId: null, 
+                name: role.name 
+              } 
+            },
+            create: {
+              name: role.name,
+              description: role.description,
+              isSystemRole: role.isSystemRole,
+              priority: role.priority,
+              isActive: true,
+            },
+            update: {
+              description: role.description,
+              priority: role.priority,
+            },
+          });
+          this.logger.debug(`✓ Role created/updated: ${role.name}`);
+        } catch (roleError) {
+          this.logger.error(`Failed to create role ${role.name}:`, roleError);
+          throw roleError;
+        }
+      }
+      
+      this.logger.log('System roles initialization completed successfully');
     } catch (error) {
-      this.logger.error('Error ensuring system roles:', error);
+      this.logger.error('Error ensuring system roles:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
       throw error;
     }
   }

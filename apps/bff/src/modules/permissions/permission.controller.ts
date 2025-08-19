@@ -280,4 +280,48 @@ export class PermissionController {
       context,
     );
   }
+
+  @Get('system/status')
+  @ApiOperation({ summary: 'Get permission system status for debugging' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'System status retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        permissionTablesExist: { type: 'boolean' },
+        tablesChecked: { type: 'array', items: { type: 'string' } },
+        databaseUrl: { type: 'string' },
+        forceEnabled: { type: 'boolean' },
+        skipInit: { type: 'boolean' },
+        tableStats: { type: 'object' },
+        lastError: { type: 'string' },
+      },
+    },
+  })
+  @Roles(Role.PLATFORM_ADMIN)
+  async getSystemStatus() {
+    return this.permissionService.getSystemStatus();
+  }
+
+  @Post('system/reinitialize')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Force reinitialize the permission system' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Reinitialization attempted',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        tablesExist: { type: 'boolean' },
+        error: { type: 'string' },
+        systemStatus: { type: 'object' },
+      },
+    },
+  })
+  @Roles(Role.PLATFORM_ADMIN)
+  async forceReinitialize() {
+    return this.permissionService.forceReinitialize();
+  }
 }
