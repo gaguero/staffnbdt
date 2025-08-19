@@ -164,7 +164,7 @@ const ComponentsTestPage: React.FC = () => {
               <EmergencyContactsForm
                 initialData={mockEmergencyContacts}
                 isEditing={isEditingEmergencyContacts}
-                onSave={(data) => {
+                onSave={(data: any) => {
                   console.log('Emergency contacts saved:', data);
                   setIsEditingEmergencyContacts(false);
                 }}

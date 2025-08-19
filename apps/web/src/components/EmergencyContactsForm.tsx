@@ -9,6 +9,8 @@ interface EmergencyContactsFormProps {
   onCancel?: () => void;
   className?: string;
   standalone?: boolean; // Whether this is a standalone form or part of a larger form
+  isEditing?: boolean;
+  onSave?: (data: any) => void;
 }
 
 interface ContactData {

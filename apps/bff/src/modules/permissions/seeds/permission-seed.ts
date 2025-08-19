@@ -358,7 +358,7 @@ export async function seedPermissions() {
   for (const role of customRoles) {
     const createdRole = await prisma.customRole.upsert({
       where: {
-        unique_org_role: {
+        organizationId_name: {
           organizationId: null,
           name: role.name,
         },

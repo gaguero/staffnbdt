@@ -438,7 +438,7 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="p-6">
                 <EmergencyContactsForm
-                  initialData={profile?.emergencyContact}
+                  initialData={profile?.emergencyContact || undefined}
                   onSuccess={() => {
                     // Reload profile to get updated data
                     const loadProfile = async () => {

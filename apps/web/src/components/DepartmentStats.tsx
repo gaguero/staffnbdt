@@ -69,9 +69,9 @@ const DepartmentStats: React.FC<DepartmentStatsProps> = ({
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
       const totalUsers = users.length;
-      const activeUsers = users.filter(user => !user.deletedAt).length;
+      const activeUsers = users.filter((user: any) => !user.deletedAt).length;
       const inactiveUsers = totalUsers - activeUsers;
-      const recentJoins = users.filter(user => 
+      const recentJoins = users.filter((user: any) => 
         new Date(user.createdAt) >= thirtyDaysAgo && !user.deletedAt
       ).length;
 
@@ -324,7 +324,7 @@ const DepartmentStats: React.FC<DepartmentStatsProps> = ({
             Growth Trend
           </h3>
           <div className="space-y-2">
-            {stats.growthTrend.map((monthData, index) => (
+            {stats.growthTrend.map((monthData) => (
               <div key={monthData.month} className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 w-8">{monthData.month}</span>
                 <div className="flex-1 mx-3">

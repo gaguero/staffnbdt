@@ -128,6 +128,16 @@ class UserService {
     return response.data;
   }
 
+  async deactivateUser(id: string) {
+    const response = await api.patch(`/users/${id}/deactivate`);
+    return response.data;
+  }
+
+  async activateUser(id: string) {
+    const response = await api.patch(`/users/${id}/activate`);
+    return response.data;
+  }
+
   async importUsersFromCsv(file: File, validateOnly = false, sendInvitations = true): Promise<BulkImportResult> {
     const formData = new FormData();
     formData.append('file', file);

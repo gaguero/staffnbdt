@@ -1270,7 +1270,7 @@ export class PermissionService implements OnModuleInit {
         try {
           await this.prisma.customRole.upsert({
             where: { 
-              unique_org_role: { 
+              organizationId_name: { 
                 organizationId: null, 
                 name: role.name 
               } 

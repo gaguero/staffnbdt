@@ -305,8 +305,8 @@ const UserActivityLog: React.FC<UserActivityLogProps> = ({
                             {activity.details.changed_fields.map((field: string) => (
                               <div key={field} className="flex flex-col">
                                 <span className="font-medium">{field}:</span>
-                                <span className="text-red-600">- {activity.details.old_values?.[field] || 'N/A'}</span>
-                                <span className="text-green-600">+ {activity.details.new_values?.[field] || 'N/A'}</span>
+                                <span className="text-red-600">- {activity.details?.old_values?.[field] || 'N/A'}</span>
+                                <span className="text-green-600">+ {activity.details?.new_values?.[field] || 'N/A'}</span>
                               </div>
                             ))}
                           </div>
@@ -350,7 +350,7 @@ const UserActivityLog: React.FC<UserActivityLogProps> = ({
           <button
             onClick={() => {
               // Implement load more functionality
-              toast.info('Load more functionality would be implemented here');
+              toast('Load more functionality would be implemented here');
             }}
             className="px-4 py-2 text-warm-gold hover:text-orange-600 border border-warm-gold hover:border-orange-600 rounded-md transition-colors"
           >
