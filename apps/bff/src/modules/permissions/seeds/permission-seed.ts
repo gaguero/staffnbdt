@@ -389,7 +389,7 @@ export async function seedPermissions() {
       where: {
         organizationId_propertyId_name: {
           organizationId: defaultOrg.id,
-          propertyId: null,
+          propertyId: '',
           name: role.name,
         },
       },
@@ -397,6 +397,7 @@ export async function seedPermissions() {
         name: role.name,
         description: role.description,
         organizationId: defaultOrg.id,
+        propertyId: '',
         isSystemRole: role.isSystemRole,
         priority: role.priority,
         isActive: true,
