@@ -173,8 +173,8 @@ const ComponentsTestPage: React.FC = () => {
               <EmergencyContactsForm
                 initialData={mockEmergencyContacts}
                 isEditing={isEditingEmergencyContacts}
-                onSave={(data: any) => {
-                  console.log('Emergency contacts saved:', data);
+                onSave={(_data: any) => {
+                  // Emergency contacts saved
                   setIsEditingEmergencyContacts(false);
                 }}
                 onCancel={() => setIsEditingEmergencyContacts(false)}
@@ -219,7 +219,7 @@ const ComponentsTestPage: React.FC = () => {
         isOpen={showInvitationModal}
         onClose={() => setShowInvitationModal(false)}
         onSuccess={() => {
-          console.log('Invitation sent successfully');
+          // Invitation sent successfully
           setShowInvitationModal(false);
         }}
       />

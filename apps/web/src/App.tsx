@@ -36,7 +36,10 @@ const LoginPage = () => {
     try {
       await login(email, password);
     } catch (err: any) {
-      console.error('Login error:', err);
+      // Only log errors in development
+      if (import.meta.env.DEV) {
+        console.error('Login error:', err);
+      }
       // Extract error message from API response
       const errorMessage = err?.response?.data?.message || 
                           err?.response?.data?.error || 

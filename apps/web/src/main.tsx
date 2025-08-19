@@ -71,7 +71,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           />
           </AuthProvider>
         </LanguageProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
+        {import.meta.env.DEV && !import.meta.env.VITE_DISABLE_REACT_QUERY_DEVTOOLS && (
+          <ReactQueryDevtools initialIsOpen={false} />
+        )}
       </QueryClientProvider>
     </BrowserRouter>
   </React.StrictMode>,

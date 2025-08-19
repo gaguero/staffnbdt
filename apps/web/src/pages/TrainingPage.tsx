@@ -118,13 +118,13 @@ const TrainingPage: React.FC = () => {
     }
   };
 
-  const handleStartModule = (moduleId: string) => {
-    console.log('Starting module:', moduleId);
+  const handleStartModule = (_moduleId: string) => {
+    // Module started
     // TODO: Navigate to training module or start training
   };
 
-  const handleContinueModule = (moduleId: string) => {
-    console.log('Continuing module:', moduleId);
+  const handleContinueModule = (_moduleId: string) => {
+    // Module continued
     // TODO: Navigate to training module
   };
 

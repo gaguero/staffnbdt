@@ -87,7 +87,7 @@ const VacationPage: React.FC = () => {
 
     try {
       // TODO: Implement vacation request API call
-      console.log('Submitting vacation request:', formData);
+      // Submitting vacation request
       
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));

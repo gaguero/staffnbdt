@@ -40,12 +40,12 @@ export const UserIDUploadExample: React.FC = () => {
       <h2 className="heading-2 mb-6">User ID Document Upload</h2>
       
       <IDDocumentUpload
-        onStatusUpdate={(status) => {
-          console.log('Verification status changed:', status);
+        onStatusUpdate={(_status) => {
+          // Verification status changed
           // Handle status updates (e.g., show notifications)
         }}
-        onDocumentUpdate={(hasDocument) => {
-          console.log('Document upload status:', hasDocument);
+        onDocumentUpdate={(_hasDocument) => {
+          // Document upload status changed
           // Update UI based on document presence
         }}
       />
@@ -64,8 +64,8 @@ export const AdminVerificationExample: React.FC = () => {
       <IDDocumentUpload
         showAdminControls={true}
         userId={userId}
-        onStatusUpdate={(status) => {
-          console.log('Admin updated status to:', status);
+        onStatusUpdate={(_status) => {
+          // Admin updated status
           // Refresh user list or update verification queue
         }}
       />
@@ -89,13 +89,13 @@ export const ProfilePageIntegrationExample: React.FC = () => {
         </div>
         <div className="card-body">
           <IDDocumentUpload
-            onStatusUpdate={(status) => {
+            onStatusUpdate={(_status) => {
               // Update profile completion status
-              console.log('ID verification status:', status);
+              // ID verification status updated
             }}
-            onDocumentUpdate={(hasDocument) => {
+            onDocumentUpdate={(_hasDocument) => {
               // Update profile completeness indicator
-              console.log('Has ID document:', hasDocument);
+              // Has ID document status updated
             }}
           />
         </div>
@@ -127,8 +127,8 @@ export const VerificationQueueExample: React.FC = () => {
               <IDDocumentUpload
                 showAdminControls={true}
                 userId={user.id}
-                onStatusUpdate={(status) => {
-                  console.log(`${user.name} verification updated to:`, status);
+                onStatusUpdate={(_status) => {
+                  // User verification updated
                   // Remove from queue or update status
                 }}
               />

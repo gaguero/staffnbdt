@@ -21,7 +21,13 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+    // Log error to console in development only
+    if (import.meta.env.DEV) {
+      console.error('Error caught by boundary:', error, errorInfo);
+    }
+    
+    // In production, you might want to log to an error reporting service
+    // e.g., Sentry, LogRocket, etc.
   }
 
   render() {
@@ -53,7 +59,7 @@ class ErrorBoundary extends Component<Props, State> {
                   Try Again
                 </button>
               </div>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <details className="mt-6 text-left">
                   <summary className="cursor-pointer text-sm text-gray-500 mb-2">
                     Error Details (Development Only)

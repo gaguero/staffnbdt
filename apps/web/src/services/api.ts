@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { TOKEN_STORAGE_KEY, TENANT_STORAGE_KEY } from '../utils/constants';
+import { logApiRequest, logApiResponse, logApiError } from '../utils/logger';
 
 // Use VITE_API_URL if set, otherwise use relative paths (for Railway deployment)
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -31,20 +32,25 @@ api.interceptors.request.use(
           config.headers['X-Property-Id'] = parsedTenant.propertyId;
         }
       } catch (error) {
-        console.warn('Failed to parse tenant info for headers:', error);
+        // Silently handle invalid tenant info in production
+        if (import.meta.env.DEV) {
+          console.warn('Failed to parse tenant info for headers:', error);
+        }
       }
     }
     
     // Log requests in development
-    if (import.meta.env.DEV) {
-      console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, {
+    logApiRequest(
+      config.method || 'GET',
+      config.url || '',
+      {
         data: config.data,
         tenantHeaders: {
           'X-Organization-Id': config.headers['X-Organization-Id'],
           'X-Property-Id': config.headers['X-Property-Id']
         }
-      });
-    }
+      }
+    );
     
     return config;
   },
@@ -57,16 +63,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // Log successful responses in development
-    if (import.meta.env.DEV) {
-      console.log(`[API Response] ${response.config.url}`, response.data);
-    }
+    logApiResponse(response.config.url || '', response.data);
     return response;
   },
   (error) => {
-    // Log errors in development
-    if (import.meta.env.DEV) {
-      console.error(`[API Error] ${error.config?.url}`, error.response?.data || error.message);
-    }
+    // Log errors (always logged)
+    logApiError(error.config?.url || '', error.response?.data || error.message);
     
     if (error.response?.status === 401) {
       // Token expired or invalid
@@ -77,7 +79,7 @@ api.interceptors.response.use(
     
     // Handle tenant-related errors
     if (error.response?.status === 403 && error.response?.data?.code === 'TENANT_ACCESS_DENIED') {
-      console.error('Tenant access denied:', error.response.data.message);
+      logApiError('Tenant access denied', error.response.data.message);
       // Could trigger a property selector or show a tenant error modal
     }
     

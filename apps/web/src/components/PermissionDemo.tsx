@@ -59,12 +59,12 @@ const PermissionDemo: React.FC = () => {
 
   // Test permission gate hook
   const testPermissionGateHook = async () => {
-    const result = await checkPermissionGate({
+    await checkPermissionGate({
       resource: 'document',
       action: 'create',
       scope: 'department',
     });
-    console.log('Permission gate hook result:', result);
+    // Permission gate hook result logged
   };
 
   const cacheStats = getCacheStats();

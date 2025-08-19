@@ -446,7 +446,7 @@ const ProfilePage: React.FC = () => {
                         const profileData = await profileService.getProfile();
                         setProfile(profileData);
                       } catch (error) {
-                        console.error('Failed to reload profile:', error);
+                        // Failed to reload profile
                       }
                     };
                     loadProfile();
@@ -517,11 +517,11 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="p-6">
                 <IDDocumentUpload
-                  onStatusUpdate={(status) => {
-                    console.log('ID verification status updated:', status);
+                  onStatusUpdate={(_status) => {
+                    // ID verification status updated
                   }}
-                  onDocumentUpdate={(hasDocument) => {
-                    console.log('Document upload status:', hasDocument);
+                  onDocumentUpdate={(_hasDocument) => {
+                    // Document upload status updated
                   }}
                 />
               </div>

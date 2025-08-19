@@ -38,6 +38,7 @@ const TenantSwitcher: React.FC<TenantSwitcherProps> = ({
       }, 3000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [notification]);
 
   if (!hasOrganization) {

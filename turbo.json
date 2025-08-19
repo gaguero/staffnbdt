@@ -19,6 +19,19 @@
       "dependsOn": ["build"],
       "cache": false
     },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["test-results/**", "playwright-report/**"]
+    },
+    "test:logging": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "test:performance": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },

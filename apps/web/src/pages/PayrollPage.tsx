@@ -66,11 +66,11 @@ const PayrollPage: React.FC = () => {
     }
   };
 
-  const handleDownloadPayslip = async (payslipId: string) => {
+  const handleDownloadPayslip = async (_payslipId: string) => {
     setIsLoading(true);
     try {
       // TODO: Implement payslip download API call
-      console.log('Downloading payslip:', payslipId);
+      // Downloading payslip
       
       // Simulate download delay
       await new Promise(resolve => setTimeout(resolve, 1000));

@@ -312,7 +312,7 @@ const NotificationsPage: React.FC = () => {
                           onClick={() => {
                             markAsRead(notification.id);
                             // TODO: Navigate to action URL
-                            console.log('Navigate to:', notification.actionUrl);
+                            // Navigate to action URL
                           }}
                           className="btn btn-outline btn-sm"
                         >

@@ -90,12 +90,7 @@ const RoleBasedComponent: React.FC<RoleBasedComponentProps> = ({
   // If usePermissions is enabled and we have permission props, use PermissionGate
   if (usePermissions && resource && action) {
     if (debug) {
-      console.log('RoleBasedComponent: Using permission-based access control', {
-        resource,
-        action,
-        scope,
-        user: user?.email,
-      });
+      // Using permission-based access control
     }
 
     return (
@@ -133,7 +128,7 @@ const RoleBasedComponent: React.FC<RoleBasedComponentProps> = ({
   if (rolesToCheck.length === 0) {
     // No roles specified, allow by default
     if (debug) {
-      console.warn('RoleBasedComponent: No roles specified, allowing access by default');
+      // No roles specified, allowing access by default
     }
     return <>{children}</>;
   }
@@ -150,13 +145,7 @@ const RoleBasedComponent: React.FC<RoleBasedComponentProps> = ({
   }
 
   if (debug) {
-    console.log('RoleBasedComponent: Role check result', {
-      userRole: user.role,
-      requiredRoles: rolesToCheck,
-      requireAll,
-      hasAccess,
-      user: user.email,
-    });
+    // Role check completed
   }
 
   // Check if user has access based on roles

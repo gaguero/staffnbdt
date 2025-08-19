@@ -151,7 +151,7 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
         setIsAllowed(true);
         setIsLoading(false);
         if (debug) {
-          console.warn('PermissionGate: No permissions specified, allowing access by default');
+          // No permissions specified, allowing access by default
         }
         return;
       }
@@ -183,15 +183,10 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
         setIsAllowed(allowed);
 
         if (debug) {
-          console.log('PermissionGate check result:', {
-            permissions: permissionsToCheck,
-            requireAll,
-            allowed,
-            user: user.email,
-          });
+          // Permission check result logged
         }
       } catch (err) {
-        console.error('PermissionGate: Permission check failed:', err);
+        // Permission check failed
         setError(err instanceof Error ? err.message : 'Permission check failed');
         setIsAllowed(false); // Fail closed for security
       } finally {
@@ -344,7 +339,7 @@ export function usePermissionGate() {
         }
       }
     } catch (error) {
-      console.error('Permission gate check failed:', error);
+      // Permission gate check failed
       return false;
     }
   };

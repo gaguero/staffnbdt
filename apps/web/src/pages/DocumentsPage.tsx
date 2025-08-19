@@ -76,7 +76,7 @@ const DocumentsPage: React.FC = () => {
     setIsUploading(true);
     try {
       // TODO: Implement file upload API call
-      console.log('Uploading file:', file.name);
+      // Uploading file
       
       // Simulate upload delay
       await new Promise(resolve => setTimeout(resolve, 2000));

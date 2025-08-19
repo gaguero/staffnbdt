@@ -19,10 +19,10 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
+    port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         changeOrigin: true
       }
     }
@@ -35,16 +35,23 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
+    target: 'es2020',
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
           query: ['@tanstack/react-query'],
-          ui: ['lucide-react', 'framer-motion']
+          ui: ['lucide-react', 'framer-motion'],
+          utils: ['axios', 'date-fns', 'zod', 'clsx']
         }
       }
-    }
+    },
+    chunkSizeWarningLimit: 1000
+  },
+  define: {
+    __DEV__: JSON.stringify(process.env.NODE_ENV === 'development')
   }
 })
