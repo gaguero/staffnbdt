@@ -385,28 +385,38 @@ export async function seedPermissions() {
   }
 
   for (const role of customRoles) {
-    const createdRole = await prisma.customRole.upsert({
+    // Use findFirst + create/update pattern instead of upsert
+    let createdRole = await prisma.customRole.findFirst({
       where: {
-        organizationId_propertyId_name: {
-          organizationId: defaultOrg.id,
-          propertyId: '',
-          name: role.name,
-        },
-      },
-      create: {
-        name: role.name,
-        description: role.description,
         organizationId: defaultOrg.id,
         propertyId: '',
-        isSystemRole: role.isSystemRole,
-        priority: role.priority,
-        isActive: true,
-      },
-      update: {
-        description: role.description,
-        priority: role.priority,
-      },
+        name: role.name
+      }
     });
+
+    if (createdRole) {
+      createdRole = await prisma.customRole.update({
+        where: { id: createdRole.id },
+        data: {
+          description: role.description,
+          priority: role.priority,
+        }
+      });
+      console.log(`✓ Custom role updated: ${role.name}`);
+    } else {
+      createdRole = await prisma.customRole.create({
+        data: {
+          name: role.name,
+          description: role.description,
+          organizationId: defaultOrg.id,
+          propertyId: '',
+          isSystemRole: role.isSystemRole,
+          priority: role.priority,
+          isActive: true,
+        }
+      });
+      console.log(`✓ Custom role created: ${role.name}`);
+    }
 
     // Assign permissions to role
     for (const permissionKey of role.permissions) {

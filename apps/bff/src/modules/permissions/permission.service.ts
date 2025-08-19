@@ -1297,29 +1297,38 @@ export class PermissionService implements OnModuleInit {
       
       for (const role of systemRoles) {
         try {
-          await this.prisma.customRole.upsert({
-            where: { 
-              organizationId_propertyId_name: { 
-                organizationId: defaultOrg.id, 
-                propertyId: '',
-                name: role.name 
-              } 
-            },
-            create: {
-              name: role.name,
-              description: role.description,
+          // Use findFirst + create/update pattern instead of upsert
+          let existingRole = await this.prisma.customRole.findFirst({
+            where: {
               organizationId: defaultOrg.id,
               propertyId: '',
-              isSystemRole: role.isSystemRole,
-              priority: role.priority,
-              isActive: true,
-            },
-            update: {
-              description: role.description,
-              priority: role.priority,
-            },
+              name: role.name
+            }
           });
-          this.logger.debug(`✓ Role created/updated: ${role.name}`);
+
+          if (existingRole) {
+            await this.prisma.customRole.update({
+              where: { id: existingRole.id },
+              data: {
+                description: role.description,
+                priority: role.priority,
+              }
+            });
+            this.logger.debug(`✓ System role updated: ${role.name}`);
+          } else {
+            await this.prisma.customRole.create({
+              data: {
+                name: role.name,
+                description: role.description,
+                organizationId: defaultOrg.id,
+                propertyId: '',
+                isSystemRole: role.isSystemRole,
+                priority: role.priority,
+                isActive: true,
+              }
+            });
+            this.logger.debug(`✓ System role created: ${role.name}`);
+          }
         } catch (roleError) {
           this.logger.error(`Failed to create role ${role.name}:`, roleError);
           throw roleError;
