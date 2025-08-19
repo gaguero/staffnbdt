@@ -32,15 +32,15 @@ export class FilesController {
     private readonly storageService: StorageService,
   ) {}
 
-  @Get('serve/:fileKey(*)')
+  @Get('serve/*path')
   @Audit({ action: 'DOWNLOAD', entity: 'File' })
   @ApiOperation({ summary: 'Serve a file with authentication and authorization' })
-  @ApiParam({ name: 'fileKey', description: 'The file key/path to serve' })
+  @ApiParam({ name: 'path', description: 'The file path to serve (supports wildcard paths)' })
   @ApiResponse({ status: 200, description: 'File served successfully' })
   @ApiResponse({ status: 404, description: 'File not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   async serveFile(
-    @Param('fileKey') fileKey: string,
+    @Param('path') fileKey: string,
     @CurrentUser() currentUser: User,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
