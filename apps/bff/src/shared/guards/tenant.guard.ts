@@ -65,7 +65,7 @@ export class TenantGuard implements CanActivate {
 
   private async validateDefaultAccess(request: any): Promise<boolean> {
     try {
-      const tenantContext = this.tenantContextService.getTenantContextSafe();
+      const tenantContext = this.tenantContextService.getTenantContextSafe(request);
       
       if (!tenantContext) {
         this.logger.error('No tenant context available in guard validation');
@@ -91,7 +91,7 @@ export class TenantGuard implements CanActivate {
     const { level, resourceIdParam } = tenantAccess;
     
     try {
-      const tenantContext = this.tenantContextService.getTenantContext();
+      const tenantContext = this.tenantContextService.getTenantContext(request);
       const userId = tenantContext.userId;
 
       // Extract resource ID from request parameters if specified
@@ -112,7 +112,7 @@ export class TenantGuard implements CanActivate {
         case 'property':
           return this.validatePropertyAccess(userId, resourceId);
         case 'department':
-          return this.validateDepartmentAccess(userId, resourceId);
+          return this.validateDepartmentAccess(userId, resourceId, request);
         default:
           this.logger.error(`Invalid tenant access level: ${level}`);
           throw new ForbiddenException('Invalid tenant access configuration');
@@ -168,15 +168,16 @@ export class TenantGuard implements CanActivate {
 
   private async validateDepartmentAccess(
     userId: string,
-    departmentId?: string
+    departmentId?: string,
+    request?: any
   ): Promise<boolean> {
     // If no specific department ID provided, use role-based access
     if (!departmentId) {
-      const tenantContext = this.tenantContextService.getTenantContext();
+      const tenantContext = this.tenantContextService.getTenantContext(request);
       
       // Department admins and staff are limited to their own department
-      if (this.tenantContextService.isDepartmentScoped()) {
-        const userDeptId = this.tenantContextService.getDepartmentId();
+      if (this.tenantContextService.isDepartmentScoped(request)) {
+        const userDeptId = this.tenantContextService.getDepartmentId(request);
         if (!userDeptId) {
           throw new ForbiddenException('User is not assigned to a department');
         }
