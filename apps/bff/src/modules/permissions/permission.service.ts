@@ -98,7 +98,21 @@ export class PermissionService implements OnModuleInit {
       
       if (!this.permissionTablesExist) {
         this.logger.warn('Permission tables do not exist, running in legacy mode with @Roles decorators only');
-        return;
+        
+        // Extra verification - try a direct count query to double-check
+        try {
+          const permissionCount = await this.prisma.permission.count();
+          if (permissionCount > 0) {
+            this.logger.warn(`Found ${permissionCount} permissions in database - tables DO exist! Enabling permission system.`);
+            this.permissionTablesExist = true;
+          }
+        } catch (countError) {
+          this.logger.debug('Direct permission count failed, tables likely do not exist:', countError.message);
+        }
+        
+        if (!this.permissionTablesExist) {
+          return;
+        }
       }
 
       // Only initialize if tables exist
