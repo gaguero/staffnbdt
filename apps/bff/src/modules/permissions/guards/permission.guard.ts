@@ -1,0 +1,90 @@
+import { Injectable, CanActivate, ExecutionContext, SetMetadata } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { PermissionService } from '../permission.service';
+
+export const PERMISSIONS_KEY = 'permissions';
+export const Permissions = (...permissions: string[]) => SetMetadata(PERMISSIONS_KEY, permissions);
+
+export interface PermissionRequirement {
+  resource: string;
+  action: string;
+  scope: string;
+  operator?: 'AND' | 'OR'; // For multiple permissions
+}
+
+export const RequirePermissions = (...requirements: (string | PermissionRequirement)[]) => {
+  const formatted = requirements.map(req => {
+    if (typeof req === 'string') {
+      const [resource, action, scope] = req.split('.');
+      return { resource, action, scope, operator: 'AND' };
+    }
+    return { ...req, operator: req.operator || 'AND' };
+  });
+  return SetMetadata(PERMISSIONS_KEY, formatted);
+};
+
+@Injectable()
+export class PermissionGuard implements CanActivate {
+  constructor(
+    private reflector: Reflector,
+    private permissionService: PermissionService,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const requiredPermissions = this.reflector.getAllAndOverride<PermissionRequirement[]>(
+      PERMISSIONS_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (!requiredPermissions) {
+      return true; // No permissions required
+    }
+
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    if (!user) {
+      return false; // No authenticated user
+    }
+
+    // Build evaluation context from request
+    const evaluationContext = {
+      userId: user.sub,
+      organizationId: user.organizationId,
+      propertyId: user.propertyId,
+      departmentId: user.departmentId,
+      resource: request.params?.id,
+      resourceId: request.params?.id,
+      userAgent: request.get('User-Agent'),
+      ipAddress: request.ip,
+    };
+
+    // Check permissions
+    const results = await Promise.all(
+      requiredPermissions.map(async (permission) => {
+        return this.permissionService.evaluatePermission(
+          user.sub,
+          permission.resource,
+          permission.action,
+          permission.scope,
+          evaluationContext,
+        );
+      })
+    );
+
+    // Apply operator logic
+    const hasAnyAnd = requiredPermissions.some(p => p.operator === 'AND');
+    const hasAnyOr = requiredPermissions.some(p => p.operator === 'OR');
+
+    if (hasAnyAnd && !hasAnyOr) {
+      // All must be true (AND logic)
+      return results.every(result => result.allowed);
+    } else if (hasAnyOr && !hasAnyAnd) {
+      // At least one must be true (OR logic)
+      return results.some(result => result.allowed);
+    } else {
+      // Mixed operators - default to AND
+      return results.every(result => result.allowed);
+    }
+  }
+}

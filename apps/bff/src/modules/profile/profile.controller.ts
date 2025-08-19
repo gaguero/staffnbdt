@@ -19,6 +19,8 @@ import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Roles } from '../../shared/decorators/roles.decorator';
+import { RequirePermission, PERMISSIONS } from '../../shared/decorators/require-permission.decorator';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { Audit } from '../../shared/decorators/audit.decorator';
 import { ApiResponse as CustomApiResponse } from '../../shared/dto/response.dto';
 import { 
@@ -35,12 +37,13 @@ import { stat } from 'fs/promises';
 
 @ApiTags('Profile')
 @Controller('profile')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionGuard)
 @ApiBearerAuth()
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get()
+  @RequirePermission('user.read.own')
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully', type: ProfileResponseDto })
   async getProfile(@CurrentUser() currentUser: User) {
@@ -49,7 +52,8 @@ export class ProfileController {
   }
 
   @Get(':id')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @Audit({ action: 'VIEW_PROFILE', entity: 'User' })
   @ApiOperation({ summary: 'Get user profile by ID (Admin only)' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully', type: ProfileResponseDto })
@@ -64,6 +68,7 @@ export class ProfileController {
   }
 
   @Put()
+  @RequirePermission('user.update.own')
   @Audit({ action: 'UPDATE_PROFILE', entity: 'User' })
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
@@ -81,6 +86,7 @@ export class ProfileController {
   }
 
   @Post('photo')
+  @RequirePermission('user.update.own')
   @UseInterceptors(FileInterceptor('photo', profilePhotoConfig))
   @Audit({ action: 'UPLOAD_PROFILE_PHOTO', entity: 'User' })
   @ApiOperation({ summary: 'Upload profile photo' })
@@ -104,6 +110,7 @@ export class ProfileController {
   }
 
   @Delete('photo')
+  @RequirePermission('user.update.own')
   @Audit({ action: 'DELETE_PROFILE_PHOTO', entity: 'User' })
   @ApiOperation({ summary: 'Delete profile photo' })
   @ApiResponse({ status: 200, description: 'Profile photo deleted successfully' })
@@ -114,6 +121,7 @@ export class ProfileController {
   }
 
   @Post('id')
+  @RequirePermission('user.update.own')
   @UseInterceptors(FileInterceptor('idDocument', idDocumentConfig))
   @Audit({ action: 'UPLOAD_ID_DOCUMENT', entity: 'User' })
   @ApiOperation({ summary: 'Upload ID document' })
@@ -137,7 +145,8 @@ export class ProfileController {
   }
 
   @Get('id/:userId')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @Audit({ action: 'VIEW_ID_DOCUMENT', entity: 'User' })
   @ApiOperation({ summary: 'Get ID document (Admin only)' })
   @ApiResponse({ status: 200, description: 'ID document retrieved successfully' })
@@ -164,7 +173,8 @@ export class ProfileController {
   }
 
   @Post('id/:userId/verify')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.update.all', 'user.update.organization', 'user.update.property', 'user.update.department')
   @Audit({ action: 'VERIFY_ID_DOCUMENT', entity: 'User' })
   @ApiOperation({ summary: 'Verify ID document (Admin only)' })
   @ApiResponse({ status: 200, description: 'ID document verification updated successfully' })
@@ -184,6 +194,7 @@ export class ProfileController {
   }
 
   @Get('id/status')
+  @RequirePermission('user.read.own')
   @ApiOperation({ summary: 'Get ID document verification status' })
   @ApiResponse({ status: 200, description: 'ID document status retrieved successfully', type: IdDocumentStatusDto })
   async getIdDocumentStatus(@CurrentUser() currentUser: User) {
@@ -192,7 +203,8 @@ export class ProfileController {
   }
 
   @Get('id/:userId/status')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @ApiOperation({ summary: 'Get ID document verification status for user (Admin only)' })
   @ApiResponse({ status: 200, description: 'ID document status retrieved successfully', type: IdDocumentStatusDto })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin required' })
@@ -206,6 +218,7 @@ export class ProfileController {
   }
 
   @Post('emergency-contacts')
+  @RequirePermission('user.update.own')
   @Audit({ action: 'UPDATE_EMERGENCY_CONTACTS', entity: 'User' })
   @ApiOperation({ summary: 'Update emergency contacts' })
   @ApiResponse({ status: 200, description: 'Emergency contacts updated successfully' })

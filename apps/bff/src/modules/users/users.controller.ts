@@ -21,6 +21,8 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { DepartmentGuard } from '../../shared/guards/department.guard';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Roles } from '../../shared/decorators/roles.decorator';
+import { RequirePermission, PERMISSIONS } from '../../shared/decorators/require-permission.decorator';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { Audit } from '../../shared/decorators/audit.decorator';
 import { ApiResponse as CustomApiResponse } from '../../shared/dto/response.dto';
 import { CreateUserDto, UpdateUserDto, UserFilterDto, ChangeRoleDto, ChangeStatusDto, ChangeDepartmentDto, BulkImportDto, CsvImportDto } from './dto';
@@ -29,13 +31,14 @@ import { memoryStorage } from 'multer';
 
 @ApiTags('Users')
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard, DepartmentGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionGuard, DepartmentGuard)
 @ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.create.organization')
   @Audit({ action: 'CREATE', entity: 'User' })
   @ApiOperation({ summary: 'Create a new user (Superadmin only)' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
@@ -49,6 +52,7 @@ export class UsersController {
   }
 
   @Get()
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @ApiOperation({ summary: 'Get all users (with role-based filtering)' })
   @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
   async findAll(
@@ -61,7 +65,8 @@ export class UsersController {
   }
 
   @Get('stats')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @ApiOperation({ summary: 'Get user statistics (Admin only)' })
   @ApiResponse({ status: 200, description: 'User statistics retrieved successfully' })
   async getStats(@CurrentUser() currentUser: User) {
@@ -70,7 +75,8 @@ export class UsersController {
   }
 
   @Get('department/:departmentId')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @ApiOperation({ summary: 'Get users by department (Admin only)' })
   @ApiResponse({ status: 200, description: 'Department users retrieved successfully' })
   async getUsersByDepartment(
@@ -82,6 +88,7 @@ export class UsersController {
   }
 
   @Get(':id')
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department', 'user.read.own')
   @Audit({ action: 'VIEW', entity: 'User' })
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiResponse({ status: 200, description: 'User retrieved successfully' })
@@ -95,6 +102,7 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @RequirePermission('user.update.all', 'user.update.organization', 'user.update.property', 'user.update.department', 'user.update.own')
   @Audit({ action: 'UPDATE', entity: 'User' })
   @ApiOperation({ summary: 'Update user' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
@@ -110,7 +118,8 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.delete.all', 'user.delete.organization', 'user.delete.property', 'user.delete.department')
   @Audit({ action: 'DELETE', entity: 'User' })
   @ApiOperation({ summary: 'Delete user (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
@@ -125,7 +134,8 @@ export class UsersController {
   }
 
   @Post(':id/restore')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.update.all', 'user.update.organization', 'user.update.property', 'user.update.department')
   @Audit({ action: 'RESTORE', entity: 'User' })
   @ApiOperation({ summary: 'Restore deleted user (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'User restored successfully' })
@@ -140,7 +150,8 @@ export class UsersController {
   }
 
   @Patch(':id/role')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('role.assign.organization', 'role.assign.property', 'role.assign.department')
   @Audit({ action: 'CHANGE_ROLE', entity: 'User' })
   @ApiOperation({ summary: 'Change user role (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'User role changed successfully' })
@@ -157,7 +168,8 @@ export class UsersController {
   }
 
   @Patch(':id/status')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.update.all', 'user.update.organization', 'user.update.property', 'user.update.department')
   @Audit({ action: 'CHANGE_STATUS', entity: 'User' })
   @ApiOperation({ summary: 'Change user status (Admin only)' })
   @ApiResponse({ status: 200, description: 'User status changed successfully' })
@@ -174,7 +186,8 @@ export class UsersController {
   }
 
   @Patch(':id/department')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.update.all', 'user.update.organization', 'user.update.property', 'user.update.department')
   @Audit({ action: 'CHANGE_DEPARTMENT', entity: 'User' })
   @ApiOperation({ summary: 'Change user department (Admin only)' })
   @ApiResponse({ status: 200, description: 'User department changed successfully' })
@@ -191,7 +204,8 @@ export class UsersController {
   }
 
   @Delete(':id/department')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.update.all', 'user.update.organization', 'user.update.property', 'user.update.department')
   @Audit({ action: 'REMOVE_FROM_DEPARTMENT', entity: 'User' })
   @ApiOperation({ summary: 'Remove user from department (Admin only)' })
   @ApiResponse({ status: 200, description: 'User removed from department successfully' })
@@ -207,7 +221,8 @@ export class UsersController {
   }
 
   @Delete(':id/permanent')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.delete.all', 'user.delete.organization', 'user.delete.property', 'user.delete.department')
   @Audit({ action: 'PERMANENT_DELETE', entity: 'User' })
   @ApiOperation({ summary: 'Permanently delete user from database (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'User permanently deleted successfully' })
@@ -223,6 +238,7 @@ export class UsersController {
   }
 
   @Get(':id/permissions')
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department', 'user.read.own')
   @ApiOperation({ summary: 'Get user permissions for current user context' })
   @ApiResponse({ status: 200, description: 'User permissions retrieved successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
@@ -235,7 +251,8 @@ export class UsersController {
   }
 
   @Post('bulk')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.create.organization', 'user.create.property', 'user.create.department')
   @Audit({ action: 'BULK_IMPORT', entity: 'User' })
   @ApiOperation({ summary: 'Bulk import users (Superadmin only)' })
   @ApiResponse({ status: 201, description: 'Users imported successfully' })
@@ -250,7 +267,8 @@ export class UsersController {
   }
 
   @Post('import/csv')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.create.organization', 'user.create.property', 'user.create.department')
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   @Audit({ action: 'CSV_IMPORT', entity: 'User' })
   @ApiOperation({ summary: 'Import users from CSV file (Superadmin only)' })
@@ -279,7 +297,8 @@ export class UsersController {
   }
 
   @Get('export/csv')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @Audit({ action: 'EXPORT', entity: 'User' })
   @ApiOperation({ summary: 'Export users to CSV (Admin only)' })
   @ApiResponse({ status: 200, description: 'Users exported successfully' })
@@ -298,7 +317,8 @@ export class UsersController {
   }
 
   @Get('export/template')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.create.organization', 'user.create.property', 'user.create.department')
   @ApiOperation({ summary: 'Download CSV template for bulk import (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'CSV template downloaded successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden - Superadmin required' })

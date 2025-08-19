@@ -2,3 +2,6 @@ export { default as Layout } from './Layout';
 export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as ProtectedRoute } from './ProtectedRoute';
+export { default as PermissionGate, withPermission, usePermissionGate } from './PermissionGate';
+export { default as RoleBasedComponent, withRoles, useRoleCheck } from './RoleBasedComponent';
+export { default as PermissionDemo } from './PermissionDemo';

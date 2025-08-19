@@ -127,3 +127,6 @@ export interface AuditLog {
   userAgent?: string;
   createdAt: date;
 }
+
+// Re-export permission types
+export * from './permission';

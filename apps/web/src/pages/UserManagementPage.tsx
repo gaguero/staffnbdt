@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { userService, User, UserFilter, BulkImportResult } from '../services/userService';
 import { departmentService, Department } from '../services/departmentService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { PermissionGate, RoleBasedComponent } from '../components';
+import { COMMON_PERMISSIONS } from '../types/permission';
 
 const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -284,34 +286,126 @@ const UserManagementPage: React.FC = () => {
         </div>
         
         <div className="flex gap-2">
-          {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
-            <>
-              <button
-                onClick={() => setShowBulkImport(true)}
-                className="btn btn-secondary"
+          {/* Bulk Import - Permission-based with role fallback */}
+          <PermissionGate
+            resource="user"
+            action="import"
+            scope="department"
+            fallback={
+              <RoleBasedComponent
+                roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}
+                hideOnDenied
               >
-                📤 Bulk Import
-              </button>
-              <button
-                onClick={handleExport}
-                className="btn btn-secondary"
-                disabled={loading}
-              >
-                📥 Export CSV
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => setShowAddUser(true)}
-            className="btn btn-primary"
+                <button
+                  onClick={() => setShowBulkImport(true)}
+                  className="btn btn-secondary"
+                >
+                  📤 Bulk Import
+                </button>
+              </RoleBasedComponent>
+            }
           >
-            ➕ Add User
-          </button>
+            <button
+              onClick={() => setShowBulkImport(true)}
+              className="btn btn-secondary"
+            >
+              📤 Bulk Import
+            </button>
+          </PermissionGate>
+          
+          {/* Export CSV - Permission-based with role fallback */}
+          <PermissionGate
+            resource="user"
+            action="export"
+            scope="department"
+            fallback={
+              <RoleBasedComponent
+                roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}
+                hideOnDenied
+              >
+                <button
+                  onClick={handleExport}
+                  className="btn btn-secondary"
+                  disabled={loading}
+                >
+                  📥 Export CSV
+                </button>
+              </RoleBasedComponent>
+            }
+          >
+            <button
+              onClick={handleExport}
+              className="btn btn-secondary"
+              disabled={loading}
+            >
+              📥 Export CSV
+            </button>
+          </PermissionGate>
+          
+          {/* Add User - Using common permission */}
+          <PermissionGate
+            commonPermission={COMMON_PERMISSIONS.CREATE_USER}
+            fallback={
+              <RoleBasedComponent
+                roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}
+                hideOnDenied
+              >
+                <button
+                  onClick={() => setShowAddUser(true)}
+                  className="btn btn-primary"
+                >
+                  ➕ Add User
+                </button>
+              </RoleBasedComponent>
+            }
+          >
+            <button
+              onClick={() => setShowAddUser(true)}
+              className="btn btn-primary"
+            >
+              ➕ Add User
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
       {/* Statistics */}
-      {currentUser?.role !== 'STAFF' && (
+      <PermissionGate
+        resource="user"
+        action="read"
+        scope="department"
+        fallback={
+          <RoleBasedComponent
+            roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}
+            hideOnDenied
+          >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="card p-4 text-center">
+                <div className="text-2xl mb-2">👥</div>
+                <p className="text-sm text-gray-600">Total Users</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+              <div className="card p-4 text-center">
+                <div className="text-2xl mb-2">👔</div>
+                <p className="text-sm text-gray-600">Admins</p>
+                <p className="text-2xl font-bold">
+                  {(stats.byRole.PROPERTY_MANAGER || 0) + (stats.byRole.DEPARTMENT_ADMIN || 0)}
+                </p>
+              </div>
+              <div className="card p-4 text-center">
+                <div className="text-2xl mb-2">👷</div>
+                <p className="text-sm text-gray-600">Staff</p>
+                <p className="text-2xl font-bold">{stats.byRole.STAFF || 0}</p>
+              </div>
+              <div className="card p-4 text-center">
+                <div className="text-2xl mb-2">🏢</div>
+                <p className="text-sm text-gray-600">Departments</p>
+                <p className="text-2xl font-bold">{Object.keys(stats.byDepartment).length}</p>
+              </div>
+            </div>
+          </RoleBasedComponent>
+        }
+      >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="card p-4 text-center">
             <div className="text-2xl mb-2">👥</div>
@@ -336,7 +430,7 @@ const UserManagementPage: React.FC = () => {
             <p className="text-2xl font-bold">{Object.keys(stats.byDepartment).length}</p>
           </div>
         </div>
-      )}
+      </PermissionGate>
 
       {/* Filters */}
       <div className="card p-4">
@@ -393,30 +487,83 @@ const UserManagementPage: React.FC = () => {
                   <td className="px-6 py-4">{getStatusBadge(user)}</td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      {canManageUser(user) && (
-                        <>
+                      {/* Edit User - Permission-based with role fallback */}
+                      <PermissionGate
+                        resource="user"
+                        action="update"
+                        scope="department"
+                        context={{ targetUserId: user.id }}
+                        fallback={
+                          canManageUser(user) ? (
+                            <button
+                              onClick={() => openEditModal(user)}
+                              className="text-blue-600 hover:text-blue-800 text-sm"
+                            >
+                              Edit
+                            </button>
+                          ) : null
+                        }
+                        hideOnDenied
+                      >
+                        <button
+                          onClick={() => openEditModal(user)}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          Edit
+                        </button>
+                      </PermissionGate>
+                      
+                      {/* Restore/Deactivate User - Permission-based with role fallback */}
+                      {user.deletedAt ? (
+                        <PermissionGate
+                          resource="user"
+                          action="update"
+                          scope="department"
+                          context={{ targetUserId: user.id, action: 'restore' }}
+                          fallback={
+                            canManageUser(user) ? (
+                              <button
+                                onClick={() => handleRestoreUser(user.id)}
+                                className="text-green-600 hover:text-green-800 text-sm"
+                              >
+                                Restore
+                              </button>
+                            ) : null
+                          }
+                          hideOnDenied
+                        >
                           <button
-                            onClick={() => openEditModal(user)}
-                            className="text-blue-600 hover:text-blue-800 text-sm"
+                            onClick={() => handleRestoreUser(user.id)}
+                            className="text-green-600 hover:text-green-800 text-sm"
                           >
-                            Edit
+                            Restore
                           </button>
-                          {user.deletedAt ? (
-                            <button
-                              onClick={() => handleRestoreUser(user.id)}
-                              className="text-green-600 hover:text-green-800 text-sm"
-                            >
-                              Restore
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleChangeStatus(user.id, false)}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              Deactivate
-                            </button>
-                          )}
-                        </>
+                        </PermissionGate>
+                      ) : (
+                        <PermissionGate
+                          resource="user"
+                          action="delete"
+                          scope="department"
+                          context={{ targetUserId: user.id }}
+                          fallback={
+                            canManageUser(user) ? (
+                              <button
+                                onClick={() => handleChangeStatus(user.id, false)}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                Deactivate
+                              </button>
+                            ) : null
+                          }
+                          hideOnDenied
+                        >
+                          <button
+                            onClick={() => handleChangeStatus(user.id, false)}
+                            className="text-red-600 hover:text-red-800 text-sm"
+                          >
+                            Deactivate
+                          </button>
+                        </PermissionGate>
                       )}
                     </div>
                   </td>

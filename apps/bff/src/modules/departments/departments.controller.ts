@@ -16,6 +16,8 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { DepartmentGuard } from '../../shared/guards/department.guard';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Roles } from '../../shared/decorators/roles.decorator';
+import { RequirePermission, PERMISSIONS } from '../../shared/decorators/require-permission.decorator';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { Audit } from '../../shared/decorators/audit.decorator';
 import { ApiResponse as CustomApiResponse } from '../../shared/dto/response.dto';
 import { CreateDepartmentDto, UpdateDepartmentDto } from './dto';
@@ -23,13 +25,14 @@ import { User, Role } from '@prisma/client';
 
 @ApiTags('Departments')
 @Controller('departments')
-@UseGuards(JwtAuthGuard, RolesGuard, DepartmentGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionGuard, DepartmentGuard)
 @ApiBearerAuth()
 export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
   @Post()
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('department.create.property')
   @Audit({ action: 'CREATE', entity: 'Department' })
   @ApiOperation({ summary: 'Create a new department (Superadmin only)' })
   @ApiResponse({ status: 201, description: 'Department created successfully' })
@@ -43,6 +46,7 @@ export class DepartmentsController {
   }
 
   @Get()
+  @RequirePermission('department.read.all', 'department.read.organization', 'department.read.property')
   @ApiOperation({ summary: 'Get all departments (with role-based filtering)' })
   @ApiResponse({ status: 200, description: 'Departments retrieved successfully' })
   async findAll(@CurrentUser() currentUser: User) {
@@ -51,6 +55,7 @@ export class DepartmentsController {
   }
 
   @Get('hierarchy')
+  @RequirePermission('department.read.all', 'department.read.organization', 'department.read.property')
   @ApiOperation({ summary: 'Get departments in hierarchical tree structure' })
   @ApiResponse({ status: 200, description: 'Department hierarchy retrieved successfully' })
   async getHierarchy(@CurrentUser() currentUser: User) {
@@ -59,6 +64,7 @@ export class DepartmentsController {
   }
 
   @Get('dropdown')
+  @RequirePermission('department.read.all', 'department.read.organization', 'department.read.property')
   @ApiOperation({ summary: 'Get departments for dropdown selection' })
   @ApiResponse({ status: 200, description: 'Dropdown departments retrieved successfully' })
   async getDropdownDepartments(@CurrentUser() currentUser: User) {
@@ -67,6 +73,7 @@ export class DepartmentsController {
   }
 
   @Get('dropdown/:excludeId')
+  @RequirePermission('department.read.all', 'department.read.organization', 'department.read.property')
   @ApiOperation({ summary: 'Get departments for dropdown selection excluding specified department and its descendants' })
   @ApiResponse({ status: 200, description: 'Dropdown departments retrieved successfully' })
   async getDropdownDepartmentsWithExclusion(
@@ -78,6 +85,7 @@ export class DepartmentsController {
   }
 
   @Get('search')
+  @RequirePermission('department.read.all', 'department.read.organization', 'department.read.property')
   @ApiOperation({ summary: 'Search departments by name or description' })
   @ApiResponse({ status: 200, description: 'Search results retrieved successfully' })
   async search(
@@ -89,6 +97,7 @@ export class DepartmentsController {
   }
 
   @Get(':id')
+  @RequirePermission('department.read.all', 'department.read.organization', 'department.read.property')
   @Audit({ action: 'VIEW', entity: 'Department' })
   @ApiOperation({ summary: 'Get department by ID' })
   @ApiResponse({ status: 200, description: 'Department retrieved successfully' })
@@ -102,6 +111,7 @@ export class DepartmentsController {
   }
 
   @Get(':id/ancestors')
+  @RequirePermission('department.read.all', 'department.read.organization', 'department.read.property')
   @ApiOperation({ summary: 'Get department ancestors (parent chain)' })
   @ApiResponse({ status: 200, description: 'Department ancestors retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Department not found' })
@@ -114,6 +124,7 @@ export class DepartmentsController {
   }
 
   @Get(':id/descendants')
+  @RequirePermission('department.read.all', 'department.read.organization', 'department.read.property')
   @ApiOperation({ summary: 'Get department descendants (all sub-departments)' })
   @ApiResponse({ status: 200, description: 'Department descendants retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Department not found' })
@@ -126,7 +137,8 @@ export class DepartmentsController {
   }
 
   @Get('stats/overall')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('department.read.all')
   @ApiOperation({ summary: 'Get overall departments statistics (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'Overall statistics retrieved successfully' })
   async getOverallStats(@CurrentUser() currentUser: User) {
@@ -135,7 +147,8 @@ export class DepartmentsController {
   }
 
   @Get(':id/stats')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('department.read.all', 'department.read.organization', 'department.read.property')
   @ApiOperation({ summary: 'Get department statistics (Admin only)' })
   @ApiResponse({ status: 200, description: 'Department statistics retrieved successfully' })
   async getStats(
@@ -147,7 +160,8 @@ export class DepartmentsController {
   }
 
   @Patch(':id')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('department.update.property')
   @Audit({ action: 'UPDATE', entity: 'Department' })
   @ApiOperation({ summary: 'Update department (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'Department updated successfully' })
@@ -163,7 +177,8 @@ export class DepartmentsController {
   }
 
   @Delete(':id')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('department.delete.property')
   @Audit({ action: 'DELETE', entity: 'Department' })
   @ApiOperation({ summary: 'Delete department (Superadmin only)' })
   @ApiResponse({ status: 200, description: 'Department deleted successfully' })

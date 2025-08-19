@@ -201,6 +201,14 @@ async function main() {
     }
   }
 
+  // Seed permissions if they don't exist
+  const permissionCount = await prisma.permission?.count().catch(() => 0) || 0;
+  if (permissionCount === 0) {
+    console.log('\n🔐 Permissions not found, consider running: npx ts-node scripts/seed-permissions.ts');
+  } else {
+    console.log(`\n🔐 Found ${permissionCount} permissions in system`);
+  }
+
   // Display summary
   const totalUsers = await prisma.user.count();
   const totalDepartments = await prisma.department.count();
@@ -209,6 +217,10 @@ async function main() {
   console.log(`  - Total departments: ${totalDepartments}`);
   console.log(`  - Total users: ${totalUsers}`);
   console.log('✅ Seeding completed successfully!');
+  console.log('\n📝 Next steps:');
+  console.log('  1. Run permission seeding: npx ts-node scripts/seed-permissions.ts');
+  console.log('  2. Migrate users to permissions: npx ts-node scripts/migrate-permissions.ts');
+  console.log('  3. Validate coverage: npx ts-node scripts/validate-permission-coverage.ts');
 }
 
 main()

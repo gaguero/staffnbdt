@@ -18,6 +18,8 @@ import { PaginatedResponse } from '../../shared/dto/pagination.dto';
 import { ApiResponse } from '../../shared/dto/response.dto';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Roles } from '../../shared/decorators/roles.decorator';
+import { RequirePermission, PERMISSIONS } from '../../shared/decorators/require-permission.decorator';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { Public } from '../../shared/decorators/public.decorator';
 import { Audit } from '../../shared/decorators/audit.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
@@ -26,13 +28,14 @@ import { User, Role } from '@prisma/client';
 
 @ApiTags('Invitations')
 @Controller('invitations')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionGuard)
 @ApiBearerAuth()
 export class InvitationsController {
   constructor(private readonly invitationsService: InvitationsService) {}
 
   @Post()
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.create.organization', 'user.create.property', 'user.create.department')
   @Audit({ action: 'CREATE', entity: 'Invitation' })
   @ApiOperation({ summary: 'Create and send an invitation' })
   @ApiResponseDecorator({
@@ -56,7 +59,8 @@ export class InvitationsController {
   }
 
   @Get()
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @ApiOperation({ summary: 'Get all invitations with filtering and pagination' })
   @ApiResponseDecorator({
     status: 200,
@@ -77,7 +81,8 @@ export class InvitationsController {
   }
 
   @Get('stats')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @ApiOperation({ summary: 'Get invitation statistics' })
   @ApiResponseDecorator({
     status: 200,
@@ -143,7 +148,8 @@ export class InvitationsController {
   }
 
   @Post(':id/resend')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.create.organization', 'user.create.property', 'user.create.department')
   @Audit({ action: 'RESEND', entity: 'Invitation' })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Resend invitation email' })
@@ -168,7 +174,8 @@ export class InvitationsController {
   }
 
   @Delete(':id')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.delete.all', 'user.delete.organization', 'user.delete.property', 'user.delete.department')
   @Audit({ action: 'CANCEL', entity: 'Invitation' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Cancel invitation' })
@@ -184,7 +191,8 @@ export class InvitationsController {
   }
 
   @Post('cleanup-expired')
-  @Roles(Role.PLATFORM_ADMIN)
+  @Roles(Role.PLATFORM_ADMIN)  // Backwards compatibility
+  @RequirePermission('user.delete.all')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
     summary: 'Cleanup expired invitations (admin only)',

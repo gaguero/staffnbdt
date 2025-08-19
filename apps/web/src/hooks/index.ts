@@ -1,0 +1,1 @@
+export { usePermissions, default as usePermissionsDefault } from './usePermissions';

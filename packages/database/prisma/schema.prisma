@@ -9,27 +9,28 @@ generator client {
 }
 
 model Organization {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  description String?
-  logoUrl     String?
-  website     String?
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  description  String?
+  logoUrl      String?
+  website      String?
   contactEmail String?
   contactPhone String?
-  address     Json?     // Structured address object
-  timezone    String    @default("UTC")
-  settings    Json?     // Organization-level settings
-  branding    Json?     // Branding configuration
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  address      Json? // Structured address object
+  timezone     String    @default("UTC")
+  settings     Json? // Organization-level settings
+  branding     Json? // Branding configuration
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
-  properties  Property[]
-  users       User[]
+  properties          Property[]
+  users               User[]
   moduleSubscriptions ModuleSubscription[]
-  
+  customRoles         CustomRole[]
+
   @@index([slug])
   @@index([isActive])
 }
@@ -42,35 +43,36 @@ model Property {
   slug           String
   description    String?
   propertyType   PropertyType @default(HOTEL)
-  address        Json?        // Structured address object
+  address        Json? // Structured address object
   timezone       String       @default("UTC")
   phoneNumber    String?
   email          String?
   website        String?
-  settings       Json?        // Property-specific settings
-  branding       Json?        // Property-specific branding overrides
+  settings       Json? // Property-specific settings
+  branding       Json? // Property-specific branding overrides
   isActive       Boolean      @default(true)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   deletedAt      DateTime?
 
-  users          User[]
-  departments    Department[]
-  documents      Document[]
-  payslips       Payslip[]
-  vacations      Vacation[]
-  trainingSessions TrainingSession[]
+  users              User[]
+  departments        Department[]
+  documents          Document[]
+  payslips           Payslip[]
+  vacations          Vacation[]
+  trainingSessions   TrainingSession[]
   commercialBenefits CommercialBenefit[]
-  notifications  Notification[]
-  invitations    Invitation[]
-  auditLogs      AuditLog[]
-  
+  notifications      Notification[]
+  invitations        Invitation[]
+  auditLogs          AuditLog[]
+
   // Core platform relations
-  units          Unit[]
-  guests         Guest[]
-  reservations   Reservation[]
-  tasks          Task[]
-  
+  units        Unit[]
+  guests       Guest[]
+  reservations Reservation[]
+  tasks        Task[]
+  customRoles  CustomRole[]
+
   @@unique([organizationId, slug])
   @@index([organizationId])
   @@index([isActive])
@@ -93,31 +95,31 @@ model ModuleSubscription {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  moduleName     String       // HR, FRONT_DESK, HOUSEKEEPING, etc.
+  moduleName     String // HR, FRONT_DESK, HOUSEKEEPING, etc.
   isEnabled      Boolean      @default(true)
   enabledAt      DateTime?
   disabledAt     DateTime?
-  settings       Json?        // Module-specific settings
+  settings       Json? // Module-specific settings
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  
+
   @@unique([organizationId, moduleName])
   @@index([organizationId])
   @@index([moduleName])
 }
 
 model TenantSettings {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   organizationId String?
   propertyId     String?
   key            String
   value          Json
-  category       String?   // branding, features, integrations, etc.
+  category       String? // branding, features, integrations, etc.
   description    String?
-  isPublic       Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  
+  isPublic       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
   @@unique([organizationId, propertyId, key])
   @@index([organizationId])
   @@index([propertyId])
@@ -125,79 +127,84 @@ model TenantSettings {
 }
 
 model User {
-  id               String       @id @default(cuid())
-  email            String       @unique
-  password         String?      // Hashed password, nullable for magic-link only users
+  id               String        @id @default(cuid())
+  email            String        @unique
+  password         String? // Hashed password, nullable for magic-link only users
   firstName        String
   lastName         String
-  role             Role
-  organizationId   String?      // Make nullable for gradual migration
+  role             Role // Legacy role enum - kept for backwards compatibility
+  organizationId   String? // Make nullable for gradual migration
   organization     Organization? @relation(fields: [organizationId], references: [id])
   propertyId       String?
-  property         Property?    @relation(fields: [propertyId], references: [id])
+  property         Property?     @relation(fields: [propertyId], references: [id])
   departmentId     String?
-  department       Department?  @relation(fields: [departmentId], references: [id])
+  department       Department?   @relation(fields: [departmentId], references: [id])
   position         String?
   hireDate         DateTime?
   phoneNumber      String?
   emergencyContact Json?
-  idDocument       String?      // Encrypted
+  idDocument       String? // Encrypted
   profilePhoto     String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
   deletedAt        DateTime?
-  
-  documents        Document[]
-  payslips         Payslip[]
-  vacations        Vacation[]
-  enrollments      Enrollment[]
-  notifications    Notification[]
-  auditLogs        AuditLog[]
-  invitationsSent  Invitation[] @relation("InvitedBy")
-  invitationsAccepted Invitation[] @relation("AcceptedBy")
-  managedDepartments Department[] @relation("DepartmentManager")
-  
+
+  documents           Document[]
+  payslips            Payslip[]
+  vacations           Vacation[]
+  enrollments         Enrollment[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  invitationsSent     Invitation[]   @relation("InvitedBy")
+  invitationsAccepted Invitation[]   @relation("AcceptedBy")
+  managedDepartments  Department[]   @relation("DepartmentManager")
+
   // Task relations
-  assignedTasks    Task[]
-  createdTasks     Task[]       @relation("CreatedTasks")
-  completedTasks   Task[]       @relation("CompletedTasks")
-  
+  assignedTasks  Task[]
+  createdTasks   Task[] @relation("CreatedTasks")
+  completedTasks Task[] @relation("CompletedTasks")
+
+  // Custom permission system relations
+  customRoles      UserCustomRole[]
+  userPermissions  UserPermission[]
+  permissionCaches PermissionCache[]
+
   @@index([organizationId])
   @@index([propertyId])
   @@index([departmentId])
 }
 
 enum Role {
-  PLATFORM_ADMIN      // Manages entire platform, all tenants
-  ORGANIZATION_OWNER  // Manages hotel chain/group
-  ORGANIZATION_ADMIN  // Manages organization settings
-  PROPERTY_MANAGER    // Manages individual hotel property
-  DEPARTMENT_ADMIN    // Manages department within property
-  STAFF              // Self-service access to own resources
+  PLATFORM_ADMIN // Manages entire platform, all tenants
+  ORGANIZATION_OWNER // Manages hotel chain/group
+  ORGANIZATION_ADMIN // Manages organization settings
+  PROPERTY_MANAGER // Manages individual hotel property
+  DEPARTMENT_ADMIN // Manages department within property
+  STAFF // Self-service access to own resources
 }
 
 model Department {
-  id          String     @id @default(cuid())
-  name        String
-  description String?
-  location    String?
-  budget      Decimal?   @db.Decimal(12, 2)
-  propertyId  String?    // Make nullable for gradual migration
-  property    Property?  @relation(fields: [propertyId], references: [id])
-  managerId   String?
-  manager     User?      @relation("DepartmentManager", fields: [managerId], references: [id])
-  parentId    String?
-  parent      Department? @relation("DepartmentHierarchy", fields: [parentId], references: [id])
-  children    Department[] @relation("DepartmentHierarchy")
-  level       Int        @default(0)
-  users       User[]
-  documents   Document[]
-  invitations Invitation[]
+  id               String            @id @default(cuid())
+  name             String
+  description      String?
+  location         String?
+  budget           Decimal?          @db.Decimal(12, 2)
+  propertyId       String? // Make nullable for gradual migration
+  property         Property?         @relation(fields: [propertyId], references: [id])
+  managerId        String?
+  manager          User?             @relation("DepartmentManager", fields: [managerId], references: [id])
+  parentId         String?
+  parent           Department?       @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children         Department[]      @relation("DepartmentHierarchy")
+  level            Int               @default(0)
+  users            User[]
+  documents        Document[]
+  invitations      Invitation[]
   trainingSessions TrainingSession[]
-  tasks       Task[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  
+  tasks            Task[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
   // @@unique([propertyId, name]) // Temporarily disabled during migration
   @@index([propertyId])
   @@index([parentId])
@@ -205,26 +212,26 @@ model Department {
 }
 
 model Document {
-  id           String       @id @default(cuid())
+  id           String        @id @default(cuid())
   title        String
   description  String?
-  fileUrl      String?      // Legacy field for backwards compatibility
-  fileKey      String?      // New field for local storage file paths
+  fileUrl      String? // Legacy field for backwards compatibility
+  fileKey      String? // New field for local storage file paths
   fileSize     Int
   mimeType     String
   scope        DocumentScope
-  propertyId   String?      // Make nullable for gradual migration
-  property     Property?    @relation(fields: [propertyId], references: [id])
+  propertyId   String? // Make nullable for gradual migration
+  property     Property?     @relation(fields: [propertyId], references: [id])
   departmentId String?
-  department   Department?  @relation(fields: [departmentId], references: [id])
+  department   Department?   @relation(fields: [departmentId], references: [id])
   userId       String?
-  user         User?        @relation(fields: [userId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
   uploadedBy   String
   tags         String[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   deletedAt    DateTime?
-  
+
   @@index([propertyId])
   @@index([departmentId])
   @@index([scope])
@@ -237,22 +244,22 @@ enum DocumentScope {
 }
 
 model Payslip {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  propertyId   String?  // Make nullable for gradual migration
-  property     Property? @relation(fields: [propertyId], references: [id])
-  period       String   // "2024-01"
-  grossSalary  Decimal  @db.Decimal(10, 2)
-  deductions   Json
-  netSalary    Decimal  @db.Decimal(10, 2)
-  currency     String   @default("USD")
-  pdfUrl       String?  // Legacy field for backwards compatibility
-  fileKey      String?  // New field for local storage file paths
-  importBatch  String?  // For tracking CSV imports
-  createdAt    DateTime @default(now())
-  viewedAt     DateTime?
-  
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  propertyId  String? // Make nullable for gradual migration
+  property    Property? @relation(fields: [propertyId], references: [id])
+  period      String // "2024-01"
+  grossSalary Decimal   @db.Decimal(10, 2)
+  deductions  Json
+  netSalary   Decimal   @db.Decimal(10, 2)
+  currency    String    @default("USD")
+  pdfUrl      String? // Legacy field for backwards compatibility
+  fileKey     String? // New field for local storage file paths
+  importBatch String? // For tracking CSV imports
+  createdAt   DateTime  @default(now())
+  viewedAt    DateTime?
+
   // @@unique([userId, period, propertyId]) // Temporarily disabled during migration
   @@unique([userId, period]) // Keep original constraint for now
   @@index([propertyId])
@@ -264,7 +271,7 @@ model Vacation {
   id             String         @id @default(cuid())
   userId         String
   user           User           @relation(fields: [userId], references: [id])
-  propertyId     String?        // Make nullable for gradual migration
+  propertyId     String? // Make nullable for gradual migration
   property       Property?      @relation(fields: [propertyId], references: [id])
   type           VacationType
   startDate      DateTime
@@ -277,7 +284,7 @@ model Vacation {
   attachments    String[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  
+
   @@index([propertyId])
   @@index([userId, status])
   @@index([startDate, endDate])
@@ -298,25 +305,25 @@ enum VacationStatus {
 }
 
 model TrainingSession {
-  id           String      @id @default(cuid())
-  title        String
-  description  String
-  category     String
-  version      Int         @default(1)
-  isActive     Boolean     @default(true)
-  passingScore Int?
-  duration     Int?        // in minutes
-  contentBlocks Json       // Array of content blocks
-  propertyId   String?     // Make nullable for gradual migration
-  property     Property?   @relation(fields: [propertyId], references: [id])
-  departmentId String?     // Optional department-specific training
-  department   Department? @relation(fields: [departmentId], references: [id])
-  createdBy    String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  
-  enrollments  Enrollment[]
-  
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  category      String
+  version       Int         @default(1)
+  isActive      Boolean     @default(true)
+  passingScore  Int?
+  duration      Int? // in minutes
+  contentBlocks Json // Array of content blocks
+  propertyId    String? // Make nullable for gradual migration
+  property      Property?   @relation(fields: [propertyId], references: [id])
+  departmentId  String? // Optional department-specific training
+  department    Department? @relation(fields: [departmentId], references: [id])
+  createdBy     String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  enrollments Enrollment[]
+
   // @@unique([propertyId, title, version]) // Temporarily disabled during migration
   @@unique([title, version]) // Keep original constraint for now
   @@index([propertyId])
@@ -325,20 +332,20 @@ model TrainingSession {
 }
 
 model Enrollment {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  sessionId     String
-  session       TrainingSession @relation(fields: [sessionId], references: [id])
-  status        EnrollmentStatus @default(IN_PROGRESS)
-  progress      Json      // Track which blocks viewed
-  answers       Json?     // Store quiz answers
-  score         Int?
-  completedAt   DateTime?
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id])
+  sessionId      String
+  session        TrainingSession  @relation(fields: [sessionId], references: [id])
+  status         EnrollmentStatus @default(IN_PROGRESS)
+  progress       Json // Track which blocks viewed
+  answers        Json? // Store quiz answers
+  score          Int?
+  completedAt    DateTime?
   certificateUrl String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
   @@unique([userId, sessionId])
   @@index([status])
 }
@@ -350,65 +357,65 @@ enum EnrollmentStatus {
 }
 
 model CommercialBenefit {
-  id           String    @id @default(cuid())
-  partnerName  String
-  category     String
-  description  String    @db.Text
-  discount     String
-  imageUrl     String?
-  websiteUrl   String?
-  contactInfo  String?
-  propertyId   String?   // Make nullable for gradual migration
-  property     Property? @relation(fields: [propertyId], references: [id])
-  validFrom    DateTime?
-  validUntil   DateTime?
-  isActive     Boolean   @default(true)
-  terms        String?   @db.Text
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  
+  id          String    @id @default(cuid())
+  partnerName String
+  category    String
+  description String    @db.Text
+  discount    String
+  imageUrl    String?
+  websiteUrl  String?
+  contactInfo String?
+  propertyId  String? // Make nullable for gradual migration
+  property    Property? @relation(fields: [propertyId], references: [id])
+  validFrom   DateTime?
+  validUntil  DateTime?
+  isActive    Boolean   @default(true)
+  terms       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   @@index([propertyId])
   @@index([isActive, category])
 }
 
 model Notification {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id])
-  propertyId   String?   // Make nullable for gradual migration
-  property     Property? @relation(fields: [propertyId], references: [id])
-  type         String
-  title        String
-  message      String    @db.Text
-  data         Json?
-  read         Boolean   @default(false)
-  readAt       DateTime?
-  createdAt    DateTime  @default(now())
-  
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  propertyId String? // Make nullable for gradual migration
+  property   Property? @relation(fields: [propertyId], references: [id])
+  type       String
+  title      String
+  message    String    @db.Text
+  data       Json?
+  read       Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
   @@index([propertyId])
   @@index([userId, read])
   @@index([createdAt])
 }
 
 model Invitation {
-  id           String           @id @default(cuid())
-  email        String
-  token        String           @unique
-  role         Role
-  propertyId   String?          // Make nullable for gradual migration
-  property     Property?        @relation(fields: [propertyId], references: [id])
-  departmentId String?
-  department   Department?      @relation(fields: [departmentId], references: [id])
-  invitedBy    String
-  invitedByUser User            @relation("InvitedBy", fields: [invitedBy], references: [id])
-  status       InvitationStatus @default(PENDING)
-  expiresAt    DateTime
-  acceptedAt   DateTime?
-  acceptedBy   String?          // User ID when accepted
-  acceptedUser User?            @relation("AcceptedBy", fields: [acceptedBy], references: [id])
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  
+  id            String           @id @default(cuid())
+  email         String
+  token         String           @unique
+  role          Role
+  propertyId    String? // Make nullable for gradual migration
+  property      Property?        @relation(fields: [propertyId], references: [id])
+  departmentId  String?
+  department    Department?      @relation(fields: [departmentId], references: [id])
+  invitedBy     String
+  invitedByUser User             @relation("InvitedBy", fields: [invitedBy], references: [id])
+  status        InvitationStatus @default(PENDING)
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  acceptedBy    String? // User ID when accepted
+  acceptedUser  User?            @relation("AcceptedBy", fields: [acceptedBy], references: [id])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
   // @@unique([propertyId, email, status]) // Temporarily disabled during migration
   @@unique([email, status]) // Keep original constraint for now
   @@index([propertyId])
@@ -425,20 +432,20 @@ enum InvitationStatus {
 }
 
 model AuditLog {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id])
-  propertyId   String?   // Make nullable for gradual migration
-  property     Property? @relation(fields: [propertyId], references: [id])
-  action       String
-  entity       String
-  entityId     String
-  oldData      Json?
-  newData      Json?
-  ipAddress    String?
-  userAgent    String?
-  createdAt    DateTime  @default(now())
-  
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  propertyId String? // Make nullable for gradual migration
+  property   Property? @relation(fields: [propertyId], references: [id])
+  action     String
+  entity     String
+  entityId   String
+  oldData    Json?
+  newData    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+
   @@index([propertyId])
   @@index([userId])
   @@index([entity, entityId])
@@ -448,30 +455,30 @@ model AuditLog {
 // Core Platform Models for Hotel Operations
 
 model Unit {
-  id           String        @id @default(cuid())
+  id           String     @id @default(cuid())
   propertyId   String
-  property     Property      @relation(fields: [propertyId], references: [id])
+  property     Property   @relation(fields: [propertyId], references: [id])
   unitNumber   String
-  unitType     UnitType      @default(STANDARD)
+  unitType     UnitType   @default(STANDARD)
   building     String?
   floor        Int?
-  bedrooms     Int           @default(1)
-  bathrooms    Int           @default(1)
-  maxOccupancy Int           @default(2)
-  size         Decimal?      @db.Decimal(8, 2) // Square feet/meters
-  amenities    String[]      // WiFi, AC, Balcony, etc.
-  status       UnitStatus    @default(AVAILABLE)
-  isActive     Boolean       @default(true)
+  bedrooms     Int        @default(1)
+  bathrooms    Int        @default(1)
+  maxOccupancy Int        @default(2)
+  size         Decimal?   @db.Decimal(8, 2) // Square feet/meters
+  amenities    String[] // WiFi, AC, Balcony, etc.
+  status       UnitStatus @default(AVAILABLE)
+  isActive     Boolean    @default(true)
   description  String?
   notes        String?
-  dailyRate    Decimal?      @db.Decimal(10, 2)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  dailyRate    Decimal?   @db.Decimal(10, 2)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   deletedAt    DateTime?
-  
+
   reservations Reservation[]
   tasks        Task[]        @relation("UnitTasks")
-  
+
   @@unique([propertyId, unitNumber])
   @@index([propertyId])
   @@index([status])
@@ -502,9 +509,9 @@ enum UnitStatus {
 }
 
 model Guest {
-  id              String        @id @default(cuid())
+  id              String    @id @default(cuid())
   propertyId      String
-  property        Property      @relation(fields: [propertyId], references: [id])
+  property        Property  @relation(fields: [propertyId], references: [id])
   firstName       String
   lastName        String
   email           String?
@@ -513,18 +520,18 @@ model Guest {
   dateOfBirth     DateTime?
   passportNumber  String?
   idNumber        String?
-  address         Json?         // Structured address object
-  preferences     Json?         // Dietary, room preferences, etc.
-  vipStatus       VipStatus     @default(STANDARD)
+  address         Json? // Structured address object
+  preferences     Json? // Dietary, room preferences, etc.
+  vipStatus       VipStatus @default(STANDARD)
   notes           String?
-  blacklisted     Boolean       @default(false)
+  blacklisted     Boolean   @default(false)
   blacklistReason String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
-  
-  reservations    Reservation[]
-  
+
+  reservations Reservation[]
+
   @@index([propertyId])
   @@index([email])
   @@index([phoneNumber])
@@ -542,40 +549,40 @@ enum VipStatus {
 }
 
 model Reservation {
-  id             String            @id @default(cuid())
-  propertyId     String
-  property       Property          @relation(fields: [propertyId], references: [id])
-  unitId         String
-  unit           Unit              @relation(fields: [unitId], references: [id])
-  guestId        String
-  guest          Guest             @relation(fields: [guestId], references: [id])
-  reservationNumber String         @unique
-  checkInDate    DateTime
-  checkOutDate   DateTime
-  adults         Int               @default(1)
-  children       Int               @default(0)
-  status         ReservationStatus @default(CONFIRMED)
-  totalAmount    Decimal           @db.Decimal(10, 2)
-  paidAmount     Decimal           @default(0) @db.Decimal(10, 2)
-  currency       String            @default("USD")
-  paymentStatus  PaymentStatus     @default(PENDING)
-  paymentMethod  String?
-  specialRequests String?
-  notes          String?
-  source         String?           // Booking.com, Direct, etc.
-  confirmationCode String?
-  checkedInAt    DateTime?
-  checkedOutAt   DateTime?
-  checkedInBy    String?           // User ID
-  checkedOutBy   String?           // User ID
-  cancelledAt    DateTime?
-  cancelledBy    String?           // User ID
+  id                 String            @id @default(cuid())
+  propertyId         String
+  property           Property          @relation(fields: [propertyId], references: [id])
+  unitId             String
+  unit               Unit              @relation(fields: [unitId], references: [id])
+  guestId            String
+  guest              Guest             @relation(fields: [guestId], references: [id])
+  reservationNumber  String            @unique
+  checkInDate        DateTime
+  checkOutDate       DateTime
+  adults             Int               @default(1)
+  children           Int               @default(0)
+  status             ReservationStatus @default(CONFIRMED)
+  totalAmount        Decimal           @db.Decimal(10, 2)
+  paidAmount         Decimal           @default(0) @db.Decimal(10, 2)
+  currency           String            @default("USD")
+  paymentStatus      PaymentStatus     @default(PENDING)
+  paymentMethod      String?
+  specialRequests    String?
+  notes              String?
+  source             String? // Booking.com, Direct, etc.
+  confirmationCode   String?
+  checkedInAt        DateTime?
+  checkedOutAt       DateTime?
+  checkedInBy        String? // User ID
+  checkedOutBy       String? // User ID
+  cancelledAt        DateTime?
+  cancelledBy        String? // User ID
   cancellationReason String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  
-  tasks          Task[]            @relation("ReservationTasks")
-  
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  tasks Task[] @relation("ReservationTasks")
+
   @@index([propertyId])
   @@index([unitId])
   @@index([guestId])
@@ -602,37 +609,37 @@ enum PaymentStatus {
 }
 
 model Task {
-  id               String       @id @default(cuid())
-  propertyId       String
-  property         Property     @relation(fields: [propertyId], references: [id])
-  title            String
-  description      String?
-  taskType         TaskType
-  priority         TaskPriority @default(MEDIUM)
-  status           TaskStatus   @default(PENDING)
-  assignedToId     String?
-  assignedTo       User?        @relation(fields: [assignedToId], references: [id])
-  departmentId     String?
-  department       Department?  @relation(fields: [departmentId], references: [id])
-  relatedEntity    String?      // unit, reservation, guest, etc.
-  relatedId        String?      // ID of related entity
-  unitId           String?      // Direct relation to unit
-  unit             Unit?        @relation("UnitTasks", fields: [unitId], references: [id])
-  reservationId    String?      // Direct relation to reservation
-  reservation      Reservation? @relation("ReservationTasks", fields: [reservationId], references: [id])
-  dueDate          DateTime?
-  completedAt      DateTime?
-  completedBy      String?      // User ID
-  completedByUser  User?        @relation("CompletedTasks", fields: [completedBy], references: [id])
-  estimatedTime    Int?         // Minutes
-  actualTime       Int?         // Minutes
-  attachments      String[]     // File URLs
-  notes            String?
-  createdBy        String
-  createdByUser    User         @relation("CreatedTasks", fields: [createdBy], references: [id])
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  
+  id              String       @id @default(cuid())
+  propertyId      String
+  property        Property     @relation(fields: [propertyId], references: [id])
+  title           String
+  description     String?
+  taskType        TaskType
+  priority        TaskPriority @default(MEDIUM)
+  status          TaskStatus   @default(PENDING)
+  assignedToId    String?
+  assignedTo      User?        @relation(fields: [assignedToId], references: [id])
+  departmentId    String?
+  department      Department?  @relation(fields: [departmentId], references: [id])
+  relatedEntity   String? // unit, reservation, guest, etc.
+  relatedId       String? // ID of related entity
+  unitId          String? // Direct relation to unit
+  unit            Unit?        @relation("UnitTasks", fields: [unitId], references: [id])
+  reservationId   String? // Direct relation to reservation
+  reservation     Reservation? @relation("ReservationTasks", fields: [reservationId], references: [id])
+  dueDate         DateTime?
+  completedAt     DateTime?
+  completedBy     String? // User ID
+  completedByUser User?        @relation("CompletedTasks", fields: [completedBy], references: [id])
+  estimatedTime   Int? // Minutes
+  actualTime      Int? // Minutes
+  attachments     String[] // File URLs
+  notes           String?
+  createdBy       String
+  createdByUser   User         @relation("CreatedTasks", fields: [createdBy], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
   @@index([propertyId])
   @@index([taskType])
   @@index([status])
@@ -672,4 +679,182 @@ enum TaskStatus {
   COMPLETED
   CANCELLED
   ON_HOLD
+}
+
+// ============================================================================
+// FLEXIBLE PERMISSION SYSTEM MODELS
+// ============================================================================
+// This system provides granular, multi-tenant permission management that
+// complements the existing Role enum for backwards compatibility while
+// enabling flexible, tenant-specific role customization.
+
+// Custom roles defined by tenants (organizations/properties)
+model CustomRole {
+  id             String        @id @default(cuid())
+  name           String // e.g., "Night Manager", "Guest Relations", "Senior Housekeeper"
+  description    String?
+  organizationId String? // Organization-level role (null for property-specific)
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  propertyId     String? // Property-specific role (null for organization-wide)
+  property       Property?     @relation(fields: [propertyId], references: [id])
+  isActive       Boolean       @default(true)
+  isSystemRole   Boolean       @default(false) // System-defined vs tenant-defined
+  priority       Int           @default(0) // Higher priority roles override lower ones
+  metadata       Json? // Additional role configuration
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  // Relations
+  permissions RolePermission[]
+  userRoles   UserCustomRole[]
+
+  // Ensure unique role names per tenant (handle nulls for system roles)
+  @@unique([organizationId, name], name: "unique_org_role")
+  @@unique([propertyId, name], name: "unique_property_role")
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([isActive])
+  @@index([priority])
+}
+
+// Individual permissions with resource.action.scope format
+model Permission {
+  id          String   @id @default(cuid())
+  resource    String // e.g., "user", "payslip", "training", "reservation", "unit"
+  action      String // e.g., "create", "read", "update", "delete", "approve", "assign"
+  scope       String // e.g., "own", "department", "property", "organization", "all"
+  name        String // Human-readable name: "Create Department Users"
+  description String? // Detailed description of what this permission allows
+  category    String? // e.g., "HR", "Operations", "Finance", "Admin"
+  isSystem    Boolean  @default(true) // System vs custom permissions
+  metadata    Json? // Additional permission configuration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+  conditions      PermissionCondition[]
+
+  // Ensure unique permission combinations
+  @@unique([resource, action, scope])
+  @@index([resource])
+  @@index([action])
+  @@index([scope])
+  @@index([category])
+  @@index([isSystem])
+}
+
+// Maps custom roles to their permissions
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  role         CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  granted      Boolean    @default(true) // Allow explicit deny permissions
+  conditions   Json? // Conditional permission rules (time-based, etc.)
+  metadata     Json? // Additional grant configuration
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@index([granted])
+}
+
+// Individual user permission overrides
+model UserPermission {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  granted      Boolean    @default(true)  // Allow explicit deny permissions
+  grantedBy    String?    // User ID who granted this permission
+  conditions   Json?      // User-specific permission conditions
+  expiresAt    DateTime?  // Optional permission expiration
+  isActive     Boolean    @default(true)
+  metadata     Json?      // Additional permission metadata
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+  @@index([granted])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+// Assigns custom roles to users
+model UserCustomRole {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId     String
+  role       CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assignedBy String? // User ID who assigned this role
+  assignedAt DateTime   @default(now())
+  expiresAt  DateTime? // Optional role expiration
+  isActive   Boolean    @default(true)
+  conditions Json? // User-specific conditions for this role
+  metadata   Json? // Additional assignment metadata
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+// Conditional permission rules for dynamic permission evaluation
+model PermissionCondition {
+  id            String     @id @default(cuid())
+  permissionId  String
+  permission    Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  conditionType String // "time", "location", "resource_owner", "department_member", etc.
+  operator      String // "equals", "contains", "greater_than", "in_list", etc.
+  value         Json // Condition value(s) - flexible JSON structure
+  isActive      Boolean    @default(true)
+  description   String? // Human-readable condition description
+  metadata      Json? // Additional condition configuration
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([permissionId])
+  @@index([conditionType])
+  @@index([isActive])
+}
+
+// Performance optimization: cached permission evaluations
+model PermissionCache {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String? // Scope of cached permissions
+  propertyId     String? // Property-specific cache
+  resource       String // Cached resource type
+  action         String // Cached action
+  scope          String // Cached scope
+  allowed        Boolean // Whether permission is granted
+  conditions     Json? // Evaluated conditions at cache time
+  cacheKey       String // Unique cache identifier
+  expiresAt      DateTime // Cache expiration
+  metadata       Json? // Additional cache metadata
+  createdAt      DateTime @default(now())
+
+  // Ensure unique cache entries
+  @@unique([cacheKey])
+  @@unique([userId, organizationId, propertyId, resource, action, scope])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([resource, action, scope])
+  @@index([expiresAt])
+  @@index([allowed])
 }

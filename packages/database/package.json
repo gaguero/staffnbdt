@@ -23,7 +23,12 @@
     "migrate:reset": "prisma migrate reset",
     "studio:dev": "dotenv -e .env.dev -- prisma studio",
     "studio:local": "dotenv -e .env.local -- prisma studio",
-    "studio:production": "dotenv -e .env.production -- prisma studio"
+    "studio:production": "dotenv -e .env.production -- prisma studio",
+    "permissions:seed": "tsx scripts/seed-permissions.ts",
+    "permissions:migrate": "tsx scripts/migrate-permissions.ts",
+    "permissions:rollback": "ROLLBACK=true tsx scripts/migrate-permissions.ts",
+    "permissions:validate": "tsx scripts/validate-permission-coverage.ts",
+    "permissions:setup": "npm run permissions:seed && npm run permissions:migrate && npm run permissions:validate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

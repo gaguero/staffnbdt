@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { PermissionGate } from '../components';
 
 interface Payslip {
   id: string;
@@ -266,23 +267,48 @@ const PayrollPage: React.FC = () => {
             <div>
               <h4 className="font-medium text-charcoal mb-3">Tax Documents</h4>
               <div className="space-y-2">
-                <button className="w-full btn btn-outline text-left">
-                  📄 W-2 Form 2023
-                </button>
-                <button className="w-full btn btn-outline text-left">
-                  📊 Tax Summary 2023
-                </button>
+                {/* Tax documents access controlled by permissions */}
+                <PermissionGate
+                  resource="document"
+                  action="read"
+                  scope="own"
+                  context={{ documentType: 'tax' }}
+                  unauthorized={<p className="text-sm text-gray-500">Tax documents will be available after year-end processing.</p>}
+                >
+                  <button className="w-full btn btn-outline text-left">
+                    📄 W-2 Form 2023
+                  </button>
+                  <button className="w-full btn btn-outline text-left">
+                    📊 Tax Summary 2023
+                  </button>
+                </PermissionGate>
               </div>
             </div>
             <div>
               <h4 className="font-medium text-charcoal mb-3">Quick Actions</h4>
               <div className="space-y-2">
-                <button className="w-full btn btn-outline text-left">
-                  ⚙️ Update Tax Withholdings
-                </button>
-                <button className="w-full btn btn-outline text-left">
-                  💳 Direct Deposit Settings
-                </button>
+                {/* Self-service actions - users can manage their own settings */}
+                <PermissionGate
+                  resource="user"
+                  action="update"
+                  scope="own"
+                  context={{ field: 'tax_settings' }}
+                >
+                  <button className="w-full btn btn-outline text-left">
+                    ⚙️ Update Tax Withholdings
+                  </button>
+                </PermissionGate>
+                
+                <PermissionGate
+                  resource="user"
+                  action="update"
+                  scope="own"
+                  context={{ field: 'banking_info' }}
+                >
+                  <button className="w-full btn btn-outline text-left">
+                    💳 Direct Deposit Settings
+                  </button>
+                </PermissionGate>
               </div>
             </div>
           </div>

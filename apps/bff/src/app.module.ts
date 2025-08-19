@@ -9,6 +9,7 @@ import { DatabaseModule } from './shared/database/database.module';
 import { LoggerModule } from './shared/logger/logger.module';
 import { AuditModule } from './shared/audit/audit.module';
 import { StorageModule } from './shared/storage/storage.module';
+import { SharedModule } from './shared/shared.module';
 
 // Guards, filters, and interceptors
 import { JwtAuthGuard } from './shared/guards/jwt-auth.guard';
@@ -29,6 +30,7 @@ import { BenefitsModule } from './modules/benefits/benefits.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
+import { PermissionModule } from './modules/permissions/permission.module';
 
 @Module({
   imports: [
@@ -62,6 +64,7 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
     LoggerModule,
     AuditModule,
     StorageModule,
+    SharedModule,
 
     // Feature modules
     AuthModule,
@@ -77,6 +80,7 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
     NotificationsModule,
     ProfileModule,
     InvitationsModule,
+    PermissionModule,
   ],
   controllers: [],
   providers: [
