@@ -6,6 +6,29 @@ Hotel Operations Hub is deployed on Railway platform with a multi-service archit
 
 ## Railway Platform Architecture
 
+### Current Deployment Structure
+
+We maintain **two Railway environments** for safe development and testing:
+
+#### 🚀 **Production Environment** (main branch)
+- **URL**: `https://backend-copy-production-328d.up.railway.app`
+- **Branch**: `main` 
+- **Auto-deploy**: On push to main branch
+- **Database**: Production PostgreSQL with live data
+- **Purpose**: Live system for actual hotel operations
+
+#### 🧪 **Development Environment** (dev branch)  
+- **URL**: `https://frontend-production-55d3.up.railway.app`
+- **Branch**: `dev`
+- **Auto-deploy**: On push to dev branch  
+- **Database**: Development PostgreSQL with test data
+- **Purpose**: Testing new features, permission system validation, safe experimentation
+
+### Development Workflow
+1. **Develop on dev branch** → Auto-deploys to dev Railway environment
+2. **Test on dev deployment** → Verify features work correctly
+3. **Merge dev to main** → Deploy to production when ready
+
 ### Service Configuration
 
 ```yaml

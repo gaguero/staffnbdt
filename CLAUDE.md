@@ -94,18 +94,22 @@ Example workflow:
 5. **Verify API responses**: Check network tab for successful API calls
 6. **Test responsive design**: Check mobile and desktop views
 
+#### Railway Deployment Structure:
+- **Dev Environment**: `https://frontend-production-55d3.up.railway.app` (dev branch)
+- **Production Environment**: `https://backend-copy-production-328d.up.railway.app` (main branch)
+
 #### Example Testing Commands:
 ```javascript
-// Using Playwright MCP on Railway
+// Test on Dev Environment (dev branch)
 playwright.navigate("https://frontend-production-55d3.up.railway.app")
-playwright.screenshot("homepage-loaded.png")
+playwright.screenshot("dev-homepage-loaded.png")
 playwright.checkConsole() // Should return no errors
 playwright.click("button[data-testid='login']")
 playwright.fill("input[name='email']", "test@example.com")
-playwright.screenshot("login-form-filled.png")
+playwright.screenshot("dev-login-form-filled.png")
 
-// Using Puppeteer MCP on Railway
-puppeteer.goto("https://frontend-production-55d3.up.railway.app")
+// Test on Production Environment (main branch)
+puppeteer.goto("https://backend-copy-production-328d.up.railway.app")
 puppeteer.evaluate(() => console.error) // Check for console errors
 puppeteer.screenshot({ path: "app-state.png", fullPage: true })
 ```
