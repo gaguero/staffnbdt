@@ -95,8 +95,8 @@ Example workflow:
 6. **Test responsive design**: Check mobile and desktop views
 
 #### Railway Deployment Structure:
-- **Dev Environment**: `https://frontend-production-55d3.up.railway.app` (dev branch)
-- **Production Environment**: `https://backend-copy-production-328d.up.railway.app` (main branch)
+- **Dev Environment**: `https://frontend-copy-production-f1da.up.railway.app` (dev branch)
+- **Production Environment**: `https://frontend-production-55d3.up.railway.app` (main branch)
 
 #### Example Testing Commands:
 ```javascript

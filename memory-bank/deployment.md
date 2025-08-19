@@ -18,7 +18,7 @@ We maintain **two Railway environments** for safe development and testing:
 - **Purpose**: Live system for actual hotel operations
 
 #### 🧪 **Development Environment** (dev branch)  
-- **URL**: `https://frontend-production-55d3.up.railway.app`
+- **URL**: `https://frontend-copy-production-f1da.up.railway.app`
 - **Branch**: `dev`
 - **Auto-deploy**: On push to dev branch  
 - **Database**: Development PostgreSQL with test data
