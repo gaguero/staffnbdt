@@ -40,7 +40,7 @@ import {
 
 interface AuthenticatedRequest {
   user: {
-    sub: string;
+    id: string;
     email: string;
     role: Role;
     departmentId?: string;
@@ -84,7 +84,7 @@ export class PermissionController {
     };
 
     return this.permissionService.evaluatePermission(
-      user.sub,
+      user.id,
       checkDto.resource,
       checkDto.action,
       checkDto.scope,
@@ -120,7 +120,7 @@ export class PermissionController {
     };
 
     return this.permissionService.checkBulkPermissions(
-      user.sub,
+      user.id,
       bulkCheckDto.permissions,
       globalContext,
     );
@@ -168,7 +168,7 @@ export class PermissionController {
       departmentId: user.departmentId,
     };
 
-    return this.permissionService.getUserPermissions(user.sub, context);
+    return this.permissionService.getUserPermissions(user.id, context);
   }
 
   @Get('my/summary')
@@ -177,7 +177,7 @@ export class PermissionController {
   async getMyPermissionSummary(
     @CurrentUser() user: AuthenticatedRequest['user'],
   ): Promise<UserPermissionSummary> {
-    return this.permissionService.getUserPermissionSummary(user.sub);
+    return this.permissionService.getUserPermissionSummary(user.id);
   }
 
   @Post('grant')
@@ -191,7 +191,7 @@ export class PermissionController {
     // TODO: Add permission check to ensure user can grant permissions
     await this.permissionService.grantPermission({
       ...grantDto,
-      grantedBy: user.sub,
+      grantedBy: user.id,
     });
 
     return { message: 'Permission granted successfully' };
@@ -208,7 +208,7 @@ export class PermissionController {
     // TODO: Add permission check to ensure user can revoke permissions
     await this.permissionService.revokePermission({
       ...revokeDto,
-      revokedBy: user.sub,
+      revokedBy: user.id,
     });
 
     return { message: 'Permission revoked successfully' };
@@ -225,7 +225,7 @@ export class PermissionController {
     // TODO: Add permission check to ensure user can assign roles
     await this.permissionService.assignRole({
       ...assignDto,
-      assignedBy: user.sub,
+      assignedBy: user.id,
     });
 
     return { message: 'Role assigned successfully' };
@@ -249,7 +249,7 @@ export class PermissionController {
   async clearMyCache(
     @CurrentUser() user: AuthenticatedRequest['user'],
   ): Promise<{ message: string }> {
-    await this.permissionService.clearUserPermissionCache(user.sub);
+    await this.permissionService.clearUserPermissionCache(user.id);
     return { message: 'Permission cache cleared successfully' };
   }
 
