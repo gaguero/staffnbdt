@@ -884,30 +884,36 @@ export class PermissionService implements OnModuleInit {
     if (!this.permissionTablesExist) {
       // Return a basic user object without custom roles/permissions when tables don't exist
       // In legacy mode, we simplify the query to avoid complex where clauses
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          role: true,
-          organizationId: true,
-          propertyId: true,
-          departmentId: true,
-        },
-      });
-      
-      if (!user) return null;
-      
-      return {
-        ...user,
-        customRoles: [],
-        userPermissions: [],
-      } as UserWithRoles;
+      try {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            role: true,
+            organizationId: true,
+            propertyId: true,
+            departmentId: true,
+          },
+        });
+        
+        if (!user) return null;
+        
+        return {
+          ...user,
+          customRoles: [],
+          userPermissions: [],
+        } as UserWithRoles;
+      } catch (error) {
+        this.logger.error(`Error fetching user in legacy mode: ${error.message}`);
+        return null;
+      }
     }
-    return this.prisma.user.findUnique({
-      where: { 
-        id: userId,
-        deletedAt: null 
-      },
+    try {
+      return await this.prisma.user.findUnique({
+        where: { 
+          id: userId,
+          deletedAt: null 
+        },
       select: {
         id: true,
         role: true,
@@ -945,7 +951,34 @@ export class PermissionService implements OnModuleInit {
           },
         },
       },
-    });
+      });
+    } catch (error) {
+      this.logger.error(`Error fetching user with roles: ${error.message}`);
+      // Fall back to basic user query if full query fails
+      try {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            role: true,
+            organizationId: true,
+            propertyId: true,
+            departmentId: true,
+          },
+        });
+        
+        if (!user) return null;
+        
+        return {
+          ...user,
+          customRoles: [],
+          userPermissions: [],
+        } as UserWithRoles;
+      } catch (fallbackError) {
+        this.logger.error(`Error in fallback user query: ${fallbackError.message}`);
+        return null;
+      }
+    }
   }
 
   private async findPermission(resource: string, action: string, scope: string): Promise<PermissionWithRelations | null> {
