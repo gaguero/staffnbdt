@@ -239,7 +239,7 @@ const App: React.FC = () => {
         <Route 
           path="/organizations" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN']}>
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'PROPERTY_MANAGER']}>
               <Layout>
                 <OrganizationsPage />
               </Layout>
