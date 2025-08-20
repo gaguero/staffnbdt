@@ -23,7 +23,7 @@ export class PropertyService {
    * Create a new property
    */
   async create(createPropertyDto: CreatePropertyDto, currentUser: User): Promise<Property> {
-    const { organizationId, slug, branding, settings, address, ...propertyData } = createPropertyDto;
+    const { organizationId, slug, branding, settings, address, contactPhone, contactEmail, ...propertyData } = createPropertyDto;
 
     // Validate organization access
     await this.validateOrganizationAccess(organizationId, currentUser);
@@ -68,6 +68,9 @@ export class PropertyService {
           ...propertyData,
           organizationId,
           slug: finalSlug,
+          // Map DTO fields to database fields
+          phoneNumber: contactPhone,
+          email: contactEmail,
           address: address ? address as any : {},
           settings: settings ? settings as any : {
             modules: ['HR', 'DOCUMENTS'],
@@ -102,7 +105,15 @@ export class PropertyService {
       return property;
     } catch (error) {
       this.logger.error(`Failed to create property: ${error.message}`, error.stack);
-      throw new BadRequestException('Failed to create property');
+      // Expose specific Prisma errors for better debugging
+      if (error.code === 'P2002') {
+        throw new BadRequestException('A property with this information already exists');
+      }
+      if (error.code === 'P2003') {
+        throw new BadRequestException('Invalid organization reference');
+      }
+      // Log the actual error but provide a generic message for security
+      throw new BadRequestException(`Failed to create property: ${error.message}`);
     }
   }
 
@@ -278,8 +289,8 @@ export class PropertyService {
       throw new ForbiddenException('Insufficient permissions to update this property');
     }
 
-    // Handle slug update
-    const { slug, ...updateData } = updatePropertyDto;
+    // Handle slug update and field mapping
+    const { slug, contactPhone, contactEmail, ...updateData } = updatePropertyDto;
     let finalSlug = property.slug;
 
     if (slug && slug !== property.slug) {
@@ -305,6 +316,9 @@ export class PropertyService {
         data: {
           ...updateData,
           slug: finalSlug,
+          // Map DTO fields to database fields
+          ...(contactPhone !== undefined && { phoneNumber: contactPhone }),
+          ...(contactEmail !== undefined && { email: contactEmail }),
           address: updateData.address ? updateData.address as any : undefined,
           settings: updateData.settings ? updateData.settings as any : undefined,
           branding: updateData.branding ? updateData.branding as any : undefined,
@@ -330,7 +344,15 @@ export class PropertyService {
       return updatedProperty;
     } catch (error) {
       this.logger.error(`Failed to update property: ${error.message}`, error.stack);
-      throw new BadRequestException('Failed to update property');
+      // Expose specific Prisma errors for better debugging
+      if (error.code === 'P2002') {
+        throw new BadRequestException('A property with this information already exists');
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Property not found');
+      }
+      // Log the actual error but provide a more specific message for debugging
+      throw new BadRequestException(`Failed to update property: ${error.message}`);
     }
   }
 
