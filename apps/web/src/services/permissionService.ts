@@ -17,6 +17,7 @@ class PermissionService {
   private cache: Map<string, PermissionCache> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
   private readonly CACHE_KEY_PREFIX = 'permission_cache_';
+  private userPermissionsCache: { data: UserPermissionSummary; expiresAt: number } | null = null;
 
   /**
    * Generate a unique cache key for permission checks
@@ -167,11 +168,23 @@ class PermissionService {
   }
 
   /**
-   * Get all permissions for the current user
+   * Get all permissions for the current user with caching
    */
   async getMyPermissions(): Promise<UserPermissionSummary> {
+    // Check cache first
+    if (this.userPermissionsCache && Date.now() < this.userPermissionsCache.expiresAt) {
+      return this.userPermissionsCache.data;
+    }
+
     try {
       const response = await api.get<UserPermissionSummary>('/permissions/my/summary');
+      
+      // Cache the result
+      this.userPermissionsCache = {
+        data: response.data,
+        expiresAt: Date.now() + this.CACHE_TTL
+      };
+      
       return response.data;
     } catch (error) {
       console.error('Failed to fetch user permissions:', error);
@@ -199,6 +212,7 @@ class PermissionService {
     try {
       await api.delete('/permissions/my/cache');
       this.cache.clear();
+      this.userPermissionsCache = null; // Clear user permissions cache
     } catch (error) {
       console.error('Failed to clear permission cache:', error);
       throw new Error('Failed to clear permission cache');
@@ -210,6 +224,7 @@ class PermissionService {
    */
   clearLocalCache(): void {
     this.cache.clear();
+    this.userPermissionsCache = null; // Clear user permissions cache
   }
 
   /**
