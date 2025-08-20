@@ -272,7 +272,7 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                   type="text"
                   id="address"
                   name="address"
-                  value={formData.address || ''}
+                  value={typeof formData.address === 'string' ? formData.address : ''}
                   onChange={handleInputChange}
                   placeholder="Street address"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
