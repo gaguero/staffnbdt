@@ -62,14 +62,14 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
         organizationService.getOrganizationUsers(organization.id),
       ]);
 
-      if (propertiesResponse.status === 'fulfilled' && propertiesResponse.value.success) {
+      if (propertiesResponse.status === 'fulfilled' && propertiesResponse.value.data) {
         setProperties(propertiesResponse.value.data || []);
       } else {
         console.error('Failed to load properties:', propertiesResponse);
         setProperties([]);
       }
 
-      if (usersResponse.status === 'fulfilled' && usersResponse.value.success) {
+      if (usersResponse.status === 'fulfilled' && usersResponse.value.data) {
         setUsers(usersResponse.value.data || []);
       } else {
         console.error('Failed to load users:', usersResponse);

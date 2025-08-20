@@ -9,7 +9,7 @@ import { COMMON_PERMISSIONS } from '../types/permission';
 import { organizationService, Organization, OrganizationFilter } from '../services/organizationService';
 
 const OrganizationsPage: React.FC = () => {
-  const { user: currentUser } = useAuth();
+  const { user: _currentUser } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
@@ -39,7 +39,7 @@ const OrganizationsPage: React.FC = () => {
       };
       
       const response = await organizationService.getOrganizations(filter);
-      if (response.success && response.data) {
+      if (response.data) {
         const orgs = Array.isArray(response.data) ? response.data : response.data.data || [];
         setOrganizations(orgs);
       } else {
@@ -59,7 +59,7 @@ const OrganizationsPage: React.FC = () => {
   const loadStats = useCallback(async () => {
     try {
       const response = await organizationService.getOrganizationStats();
-      if (response.success && response.data) {
+      if (response.data) {
         setStats(response.data);
       }
     } catch (error) {
@@ -112,8 +112,8 @@ const OrganizationsPage: React.FC = () => {
     let confirmMessage = `Are you sure you want to delete "${org.name}"?`;
     if (hasProperties || hasUsers) {
       confirmMessage += '\n\nThis organization contains:';
-      if (hasUsers) confirmMessage += `\n• ${org._count.users} user${org._count.users > 1 ? 's' : ''}`;
-      if (hasProperties) confirmMessage += `\n• ${org._count.properties} propert${org._count.properties > 1 ? 'ies' : 'y'}`;
+      if (hasUsers) confirmMessage += `\n• ${org._count?.users} user${org._count?.users && org._count.users > 1 ? 's' : ''}`;
+      if (hasProperties) confirmMessage += `\n• ${org._count?.properties} propert${org._count?.properties && org._count.properties > 1 ? 'ies' : 'y'}`;
       confirmMessage += '\n\nAll associated data will be removed. This action cannot be undone.';
     }
 

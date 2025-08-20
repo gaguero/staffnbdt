@@ -250,7 +250,7 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
                   <label className="form-label">Status</label>
                   <select
                     name="isActive"
-                    value={formData.isActive.toString()}
+                    value={formData.isActive?.toString() ?? 'true'}
                     onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
                     className="form-input"
                   >
