@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTenant, useTenantPermissions } from '../contexts/TenantContext';
-import { useLanguage } from '../contexts/LanguageContext';
 import { propertyService, Property } from '../services/propertyService';
 import { userService, User } from '../services/userService';
 
@@ -23,9 +22,8 @@ const UserPropertyAssignment: React.FC<UserPropertyAssignmentProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { availableProperties, organizationId } = useTenant();
+  const { organizationId } = useTenant();
   const { canManageProperty } = useTenantPermissions();
-  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,9 +120,10 @@ const UserPropertyAssignment: React.FC<UserPropertyAssignmentProps> = ({
 
       // Update user property assignments
       // This would typically call a specific endpoint for managing user-property assignments
+      // For now, we'll use a field that matches what the backend expects
       await userService.updateUser(user.id, {
-        propertyIds: finalAssignments
-      });
+        propertyAccess: finalAssignments
+      } as any);
 
       setPendingChanges(new Set());
       onSuccess?.();

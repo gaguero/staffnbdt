@@ -17,6 +17,18 @@ export interface User {
       level: number;
     };
   };
+  properties?: {
+    id: string;
+    name: string;
+    code: string;
+    address?: string | {
+      street?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      postalCode?: string;
+    };
+  }[];
   position?: string;
   phoneNumber?: string;
   hireDate?: string;

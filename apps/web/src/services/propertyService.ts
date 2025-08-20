@@ -3,6 +3,7 @@ import api from './api';
 export interface Property {
   id: string;
   name: string;
+  code: string;
   slug: string;
   description?: string;
   address?: string | {

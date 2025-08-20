@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../services/userService';
 import { Property } from '../services/propertyService';
-import { useTenant, useTenantPermissions } from '../contexts/TenantContext';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useTenantPermissions } from '../contexts/TenantContext';
 import UserPropertyAssignment from './UserPropertyAssignment';
 
 interface UserPropertyAccessProps {
@@ -18,9 +17,7 @@ const UserPropertyAccess: React.FC<UserPropertyAccessProps> = ({
   showManageButton = true,
   onUpdate
 }) => {
-  const { availableProperties } = useTenant();
   const { canManageProperty } = useTenantPermissions();
-  const { t } = useLanguage();
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
 
   const userProperties = user.properties || [];

@@ -25,6 +25,7 @@ const PropertySwitchFeedback: React.FC<PropertySwitchFeedbackProps> = ({
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [show, onHide, duration]);
 
   if (!show) return null;

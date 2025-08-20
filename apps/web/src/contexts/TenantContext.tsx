@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 
 interface Organization {
@@ -24,6 +24,15 @@ interface Property {
     postalCode?: string;
   };
   organizationId: string;
+  branding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+    backgroundColor?: string;
+    logoUrl?: string;
+    logoDarkUrl?: string;
+    fontHeading?: string;
+    fontBody?: string;
+  };
 }
 
 interface TenantContextType {
@@ -43,6 +52,11 @@ interface TenantContextType {
   hasOrganization: boolean;
   getCurrentPropertyName: () => string;
   getCurrentOrganizationName: () => string;
+  
+  // Additional properties for usePropertySelector
+  isLoading?: boolean;
+  error?: string | null;
+  getPropertyById?: (propertyId: string) => Property | undefined;
 }
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -87,6 +101,10 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
     return 'No Organization';
   };
 
+  const getPropertyById = (propertyId: string): Property | undefined => {
+    return tenantInfo.availableProperties?.find(p => p.id === propertyId);
+  };
+
   const value: TenantContextType = {
     organizationId: tenantInfo.organizationId,
     organization: tenantInfo.organization,
@@ -99,6 +117,9 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
     hasOrganization,
     getCurrentPropertyName,
     getCurrentOrganizationName,
+    isLoading: false,
+    error: null,
+    getPropertyById,
   };
 
   return (
@@ -171,6 +192,7 @@ export const usePropertySelector = () => {
       const timer = setTimeout(() => setLocalError(null), 10000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [localError]);
 
   return {

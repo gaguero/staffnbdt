@@ -37,6 +37,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
       }, delay);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [error, retryCount, clearError]);
 
   // Reset retry count on successful property switch
@@ -120,6 +121,51 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
 
   const currentSize = sizeClasses[size];
 
+  // Clear search when closing
+  const handleClose = () => {
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  const handlePropertySelect = async (propertyId: string) => {
+    if (propertyId === currentPropertyId) {
+      setIsOpen(false);
+      return;
+    }
+
+    // Prevent rapid switching
+    const now = Date.now();
+    if (lastSwitchTime && (now - lastSwitchTime) < 2000) {
+      return;
+    }
+
+    try {
+      setLastSwitchTime(now);
+      await selectProperty(propertyId);
+      setIsOpen(false);
+      setSearchTerm('');
+      clearError();
+      
+      // Notify parent component
+      onPropertyChange?.(propertyId);
+      
+      // Show success feedback
+      const property = availableProperties.find(p => p.id === propertyId);
+      if (property) {
+        // Could add toast notification here
+        console.log(`Switched to property: ${property.name}`);
+      }
+    } catch (err) {
+      console.error('Property switch failed:', err);
+      // Error is handled by the hook
+    }
+  };
+
+  // Handle search input
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
   // Don't render if user only has access to one property
   if (!isMultiProperty) {
     return showOrganization ? (
@@ -182,51 +228,6 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
       </div>
     );
   }
-
-  const handlePropertySelect = async (propertyId: string) => {
-    if (propertyId === currentPropertyId) {
-      setIsOpen(false);
-      return;
-    }
-
-    // Prevent rapid switching
-    const now = Date.now();
-    if (lastSwitchTime && (now - lastSwitchTime) < 2000) {
-      return;
-    }
-
-    try {
-      setLastSwitchTime(now);
-      await selectProperty(propertyId);
-      setIsOpen(false);
-      setSearchTerm('');
-      clearError();
-      
-      // Notify parent component
-      onPropertyChange?.(propertyId);
-      
-      // Show success feedback
-      const property = availableProperties.find(p => p.id === propertyId);
-      if (property) {
-        // Could add toast notification here
-        console.log(`Switched to property: ${property.name}`);
-      }
-    } catch (err) {
-      console.error('Property switch failed:', err);
-      // Error is handled by the hook
-    }
-  };
-
-  // Handle search input
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-  // Clear search when closing
-  const handleClose = () => {
-    setIsOpen(false);
-    setSearchTerm('');
-  };
 
   if (variant === 'modal') {
     return (

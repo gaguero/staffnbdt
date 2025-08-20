@@ -1,4 +1,4 @@
-import { apiClient } from './api';
+import api from './api';
 
 export interface BrandConfig {
   colors: {
@@ -63,28 +63,28 @@ export interface BrandingResponse {
 export const brandingApi = {
   // Organization branding
   async getOrganizationBranding(organizationId: string): Promise<BrandingResponse> {
-    const response = await apiClient.get(`/branding/organizations/${organizationId}`);
+    const response = await api.get(`/branding/organizations/${organizationId}`);
     return response.data;
   },
 
   async updateOrganizationBranding(organizationId: string, branding: BrandConfig): Promise<BrandingResponse> {
-    const response = await apiClient.put(`/branding/organizations/${organizationId}`, { branding });
+    const response = await api.put(`/branding/organizations/${organizationId}`, { branding });
     return response.data;
   },
 
   // Property branding
   async getPropertyBranding(propertyId: string): Promise<BrandingResponse> {
-    const response = await apiClient.get(`/branding/properties/${propertyId}`);
+    const response = await api.get(`/branding/properties/${propertyId}`);
     return response.data;
   },
 
   async updatePropertyBranding(propertyId: string, branding: BrandConfig): Promise<BrandingResponse> {
-    const response = await apiClient.put(`/branding/properties/${propertyId}`, { branding });
+    const response = await api.put(`/branding/properties/${propertyId}`, { branding });
     return response.data;
   },
 
   async removePropertyBranding(propertyId: string): Promise<BrandingResponse> {
-    const response = await apiClient.delete(`/branding/properties/${propertyId}`);
+    const response = await api.delete(`/branding/properties/${propertyId}`);
     return response.data;
   },
 
@@ -94,7 +94,7 @@ export const brandingApi = {
     formData.append('logo', file);
     formData.append('type', type);
 
-    const response = await apiClient.post('/branding/upload-logo', formData, {
+    const response = await api.post('/branding/upload-logo', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -104,7 +104,7 @@ export const brandingApi = {
 
   // Branding presets
   async getBrandingPresets(): Promise<Record<string, any>> {
-    const response = await apiClient.get('/branding/presets');
+    const response = await api.get('/branding/presets');
     return response.data;
   },
 };
