@@ -425,7 +425,11 @@ const PropertiesPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div>
-                        {property.city && property.state ? `${property.city}, ${property.state}` : property.city || property.address || 'Not specified'}
+                        {property.city && property.state ? `${property.city}, ${property.state}` : 
+                         property.city || 
+                         (property.address && typeof property.address === 'object' 
+                           ? `${property.address.city || ''} ${property.address.state || ''}`.trim() || property.address.street || 'Address provided'
+                           : property.address) || 'Not specified'}
                       </div>
                       {property.country && (
                         <div className="text-xs text-gray-500">{property.country}</div>
