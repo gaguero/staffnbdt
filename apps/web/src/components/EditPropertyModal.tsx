@@ -40,10 +40,10 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
         slug: property.slug,
         description: property.description || '',
         address: addressObj,
-        contactPhone: property.contactPhone || '',
-        contactEmail: property.contactEmail || '',
+        contactPhone: property.contactPhone || property.phone || '',
+        contactEmail: property.contactEmail || property.email || '',
         website: property.website || '',
-        propertyType: property.propertyType || undefined,
+        propertyType: property.propertyType || property.type as any || undefined,
         timezone: property.timezone || '',
         settings: {
           modules: property.settings?.modules || [],

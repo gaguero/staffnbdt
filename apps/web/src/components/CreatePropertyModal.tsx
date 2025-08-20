@@ -418,7 +418,7 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                     type="time"
                     id="settings.checkInTime"
                     name="settings.checkInTime"
-                    value={formData.settings?.checkInTime || '15:00'}
+                    value={formData.settings?.additional?.checkInTime || '15:00'}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
                   />
@@ -432,7 +432,7 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                     type="time"
                     id="settings.checkOutTime"
                     name="settings.checkOutTime"
-                    value={formData.settings?.checkOutTime || '11:00'}
+                    value={formData.settings?.additional?.checkOutTime || '11:00'}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
                   />
@@ -446,7 +446,7 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                     type="number"
                     id="settings.maxOccupancy"
                     name="settings.maxOccupancy"
-                    value={formData.settings?.maxOccupancy || 2}
+                    value={formData.settings?.additional?.maxOccupancy || 2}
                     onChange={handleInputChange}
                     min="1"
                     max="20"

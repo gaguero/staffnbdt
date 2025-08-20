@@ -6,23 +6,32 @@ export interface Property {
   slug: string;
   description?: string;
   address?: string | {
-    street?: string;
+    line1?: string;
+    line2?: string;
     city?: string;
     state?: string;
     country?: string;
     postalCode?: string;
   };
+  // Legacy fields for backward compatibility
   city?: string;
   state?: string;
   country?: string;
   postalCode?: string;
   phone?: string;
   email?: string;
-  website?: string;
   type?: string;
-  timezone?: string;
   currency?: string;
+  // New aligned fields
+  contactPhone?: string;
+  contactEmail?: string;
+  propertyType?: 'HOTEL' | 'RESORT' | 'HOSTEL' | 'APARTMENT' | 'VILLA' | 'OTHER';
+  website?: string;
+  timezone?: string;
   settings?: {
+    modules?: string[];
+    defaultDepartments?: string[];
+    // Legacy structure
     checkInTime?: string;
     checkOutTime?: string;
     maxOccupancy?: number;
@@ -31,6 +40,7 @@ export interface Property {
     additional?: Record<string, any>;
   };
   branding?: {
+    inherit?: boolean;
     primaryColor?: string;
     secondaryColor?: string;
     accentColor?: string;
