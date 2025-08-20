@@ -94,30 +94,59 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   const getCroppedCanvas = (): HTMLCanvasElement | null => {
     const canvas = canvasRef.current;
     const image = imageRef.current;
-    if (!canvas || !image || !completedCrop) return null;
+    if (!canvas || !image || !completedCrop) {
+      console.error('Missing required elements for cropping:', {
+        canvas: !!canvas,
+        image: !!image,
+        completedCrop: !!completedCrop
+      });
+      return null;
+    }
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
+    if (!ctx) {
+      console.error('Failed to get canvas 2D context');
+      return null;
+    }
 
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
+    try {
+      const scaleX = image.naturalWidth / image.width;
+      const scaleY = image.naturalHeight / image.height;
 
-    canvas.width = completedCrop.width;
-    canvas.height = completedCrop.height;
+      // Ensure minimum canvas size
+      const cropWidth = Math.max(completedCrop.width, 50);
+      const cropHeight = Math.max(completedCrop.height, 50);
 
-    ctx.drawImage(
-      image,
-      completedCrop.x * scaleX,
-      completedCrop.y * scaleY,
-      completedCrop.width * scaleX,
-      completedCrop.height * scaleY,
-      0,
-      0,
-      completedCrop.width,
-      completedCrop.height
-    );
+      canvas.width = cropWidth;
+      canvas.height = cropHeight;
 
-    return canvas;
+      // Clear canvas
+      ctx.clearRect(0, 0, cropWidth, cropHeight);
+      
+      // Draw the cropped image
+      ctx.drawImage(
+        image,
+        completedCrop.x * scaleX,
+        completedCrop.y * scaleY,
+        completedCrop.width * scaleX,
+        completedCrop.height * scaleY,
+        0,
+        0,
+        cropWidth,
+        cropHeight
+      );
+
+      console.log('Canvas cropping successful:', {
+        originalSize: { width: image.naturalWidth, height: image.naturalHeight },
+        cropArea: completedCrop,
+        outputSize: { width: cropWidth, height: cropHeight }
+      });
+
+      return canvas;
+    } catch (error) {
+      console.error('Canvas cropping error:', error);
+      return null;
+    }
   };
 
   const handleCropConfirm = async () => {
@@ -132,12 +161,20 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
         throw new Error('Failed to crop image');
       }
 
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
+      // Convert canvas to blob with error handling
+      const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to create blob from canvas'));
+          }
         }, 'image/jpeg', 0.9);
       });
+
+      if (!blob) {
+        throw new Error('Failed to create image blob');
+      }
 
       // Create file from blob
       const file = new File([blob], `profile-photo-${user?.id}.jpg`, { type: 'image/jpeg' });
