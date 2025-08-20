@@ -20,12 +20,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
+    // Proxy only in development when backend is running locally
+    ...(process.env.NODE_ENV === 'development' && {
+      proxy: {
+        '/api': {
+          target: process.env.VITE_API_URL || 'http://localhost:3000',
+          changeOrigin: true
+        }
       }
-    }
+    })
   },
   preview: {
     host: true,

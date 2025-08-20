@@ -2,8 +2,8 @@ import axios from 'axios';
 import { TOKEN_STORAGE_KEY, TENANT_STORAGE_KEY } from '../utils/constants';
 import { logApiRequest, logApiResponse, logApiError } from '../utils/logger';
 
-// Use VITE_API_URL if set, otherwise use relative paths (for Railway deployment)
-const API_URL = import.meta.env.VITE_API_URL || '';
+// Use VITE_API_URL if set, otherwise use Railway backend URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://backend-copy-production-328d.up.railway.app';
 
 const api = axios.create({
   baseURL: `${API_URL}/api`,
