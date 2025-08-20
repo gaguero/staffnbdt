@@ -100,14 +100,14 @@ class OrganizationService {
     const response = await api.get(url);
     
     // Backend returns: { success: true, data: { data: [orgs], meta: {...} }, message: "..." }
-    // We need to extract the organizations array from response.data.data
+    // Axios wraps this in another data property, so we need response.data.data.data
     console.log('Organizations API response:', response);
     
-    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+    if (response.data && response.data.data && Array.isArray(response.data.data.data)) {
       // Return in the format expected by the frontend
       return {
-        data: response.data.data,  // Extract the organizations array
-        meta: response.data.meta   // Include pagination metadata
+        data: response.data.data.data,  // Extract the organizations array
+        meta: response.data.data.meta   // Include pagination metadata
       };
     }
     
