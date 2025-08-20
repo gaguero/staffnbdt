@@ -20,6 +20,7 @@ const translations = {
     'nav.benefits': 'Benefits',
     'nav.users': 'Users',
     'nav.departments': 'Departments',
+    'nav.organizations': 'Organizations',
     'nav.notifications': 'Notifications',
     'nav.signOut': 'Sign Out',
     
@@ -160,6 +161,7 @@ const translations = {
     'nav.benefits': 'Beneficios',
     'nav.users': 'Usuarios',
     'nav.departments': 'Departamentos',
+    'nav.organizations': 'Organizaciones',
     'nav.notifications': 'Notificaciones',
     'nav.signOut': 'Cerrar Sesión',
     
