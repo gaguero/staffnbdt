@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { TenantProvider } from './contexts/TenantContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -20,6 +21,7 @@ import UsersPage from './pages/UsersPage';
 import DepartmentsPage from './pages/DepartmentsPage';
 import OrganizationsPage from './pages/OrganizationsPage';
 import PropertiesPage from './pages/PropertiesPage';
+import BrandStudioPage from './pages/BrandStudioPage';
 import ComponentsTestPage from './pages/ComponentsTestPage';
 
 // Login component
@@ -127,7 +129,8 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <TenantProvider>
-        <Routes>
+        <ThemeProvider>
+          <Routes>
         {/* Public routes */}
         <Route 
           path="/login" 
@@ -258,6 +261,16 @@ const App: React.FC = () => {
           } 
         />
         <Route 
+          path="/brand-studio" 
+          element={
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}>
+              <Layout>
+                <BrandStudioPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="/components-test" 
           element={
             <ProtectedRoute>
@@ -297,7 +310,8 @@ const App: React.FC = () => {
             </ProtectedRoute>
           } 
         />
-        </Routes>
+          </Routes>
+        </ThemeProvider>
       </TenantProvider>
     </ErrorBoundary>
   );

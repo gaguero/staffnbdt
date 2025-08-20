@@ -5,6 +5,60 @@
 /* Custom font imports */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* Branding CSS Variables - Dynamically overridden by ThemeProvider */
+:root {
+  /* Brand Colors */
+  --brand-primary: #AA8E67;
+  --brand-primary-50: #FCFAF8;
+  --brand-primary-100: #F5EBD7;
+  --brand-primary-200: #E8D5B7;
+  --brand-primary-300: #DBBF97;
+  --brand-primary-400: #CEA977;
+  --brand-primary-500: #AA8E67;
+  --brand-primary-600: #8B7555;
+  --brand-primary-700: #6C5C43;
+  --brand-primary-800: #4D4331;
+  --brand-primary-900: #2E2A1F;
+  
+  --brand-secondary: #7C8E67;
+  --brand-accent: #A4C4C8;
+  
+  /* Background Colors */
+  --brand-background: #F5EBD7;
+  --brand-surface: #ffffff;
+  --brand-surface-hover: #f8f9fa;
+  
+  /* Text Colors */
+  --brand-text-primary: #4A4A4A;
+  --brand-text-secondary: #606060;
+  --brand-text-muted: #808080;
+  
+  /* Typography */
+  --brand-font-heading: 'Gotham Black', 'Tahoma', 'Arial', sans-serif;
+  --brand-font-subheading: 'Georgia', serif;
+  --brand-font-body: 'Proxima Nova', 'Tahoma', 'Arial', sans-serif;
+  
+  /* Border Radius */
+  --brand-radius-sm: 0.5rem;
+  --brand-radius-md: 0.75rem;
+  --brand-radius-lg: 1rem;
+  --brand-radius-xl: 1.5rem;
+  
+  /* Shadows */
+  --brand-shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  --brand-shadow-medium: 0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --brand-shadow-strong: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Logo and Brand Assets */
+  --brand-logo-url: '/nayara-logo-white.png';
+  --brand-logo-dark-url: '/nayara-logo-dark.png';
+  
+  /* Animation Timing */
+  --brand-transition-fast: 0.15s;
+  --brand-transition-normal: 0.3s;
+  --brand-transition-slow: 0.6s;
+}
+
 /* Base styles */
 @layer base {
   * {
@@ -16,7 +70,10 @@
   }
   
   body {
-    @apply bg-sand text-charcoal font-body antialiased;
+    background-color: var(--brand-background);
+    color: var(--brand-text-primary);
+    font-family: var(--brand-font-body);
+    @apply antialiased;
     font-feature-settings: 'cv01', 'cv03', 'cv04', 'cv11';
   }
   
@@ -46,7 +103,18 @@
   }
   
   .btn-primary {
-    @apply btn bg-warm-gold text-white hover:bg-primary-600 focus:ring-warm-gold;
+    @apply btn text-white;
+    background-color: var(--brand-primary);
+    transition: all var(--brand-transition-normal) ease;
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--brand-primary-600);
+  }
+  
+  .btn-primary:focus {
+    @apply ring-2 ring-offset-2;
+    ring-color: var(--brand-primary);
   }
   
   .btn-secondary {
@@ -54,7 +122,20 @@
   }
   
   .btn-outline {
-    @apply btn border border-warm-gold text-warm-gold hover:bg-warm-gold hover:text-white focus:ring-warm-gold;
+    @apply btn border text-white;
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+    transition: all var(--brand-transition-normal) ease;
+  }
+  
+  .btn-outline:hover {
+    background-color: var(--brand-primary);
+    color: white;
+  }
+  
+  .btn-outline:focus {
+    @apply ring-2 ring-offset-2;
+    ring-color: var(--brand-primary);
   }
   
   .btn-success {
@@ -79,7 +160,15 @@
   
   /* Form inputs */
   .form-input {
-    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-warm-gold focus:border-warm-gold sm:text-sm transition-colors;
+    @apply block w-full px-3 py-2 border border-gray-300 shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm;
+    border-radius: var(--brand-radius-md);
+    transition: all var(--brand-transition-normal) ease;
+  }
+  
+  .form-input:focus {
+    border-color: var(--brand-primary);
+    @apply ring-1;
+    ring-color: var(--brand-primary);
   }
   
   .form-input-error {
@@ -96,7 +185,10 @@
   
   /* Card styles */
   .card {
-    @apply bg-white rounded-lg shadow-soft border border-gray-100;
+    background-color: var(--brand-surface);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: var(--brand-shadow-soft);
+    border-radius: var(--brand-radius-lg);
   }
   
   .card-header {
@@ -122,19 +214,27 @@
   
   /* Text styles */
   .heading-1 {
-    @apply text-3xl sm:text-4xl font-heading font-black text-charcoal uppercase tracking-tight;
+    @apply text-3xl sm:text-4xl font-black uppercase tracking-tight;
+    font-family: var(--brand-font-heading);
+    color: var(--brand-text-primary);
   }
   
   .heading-2 {
-    @apply text-2xl sm:text-3xl font-heading font-black text-charcoal uppercase tracking-tight;
+    @apply text-2xl sm:text-3xl font-black uppercase tracking-tight;
+    font-family: var(--brand-font-heading);
+    color: var(--brand-text-primary);
   }
   
   .heading-3 {
-    @apply text-xl sm:text-2xl font-heading font-black text-charcoal uppercase tracking-tight;
+    @apply text-xl sm:text-2xl font-black uppercase tracking-tight;
+    font-family: var(--brand-font-heading);
+    color: var(--brand-text-primary);
   }
   
   .subheading {
-    @apply text-lg sm:text-xl font-subheading italic text-gray-600;
+    @apply text-lg sm:text-xl italic;
+    font-family: var(--brand-font-subheading);
+    color: var(--brand-text-secondary);
   }
   
   /* Status badges */

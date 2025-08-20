@@ -35,6 +35,8 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
 import { PermissionModule } from './modules/permissions/permission.module';
 import { OrganizationModule } from './modules/organizations/organization.module';
 import { PropertyModule } from './modules/properties/property.module';
+import { BrandingModule } from './modules/branding/branding.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -88,6 +90,8 @@ import { PropertyModule } from './modules/properties/property.module';
     PermissionModule,
     OrganizationModule,
     PropertyModule,
+    BrandingModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [

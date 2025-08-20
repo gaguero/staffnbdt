@@ -5,6 +5,7 @@ import UserDetailsModal from '../components/UserDetailsModal';
 import EditUserModal from '../components/EditUserModal';
 import InvitationModal from '../components/InvitationModal';
 import PermissionGate from '../components/PermissionGate';
+import UserPropertyAccess from '../components/UserPropertyAccess';
 import { COMMON_PERMISSIONS } from '../types/permission';
 import { userService, User as UserType, UserFilter, BulkImportResult } from '../services/userService';
 import { departmentService, Department } from '../services/departmentService';
@@ -653,6 +654,9 @@ const UsersPage: React.FC = () => {
                       Department
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Properties
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -692,6 +696,14 @@ const UsersPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getDepartmentHierarchy(user)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <UserPropertyAccess 
+                          user={user} 
+                          compact={true}
+                          showManageButton={canManageUser(user)}
+                          onUpdate={loadUsers}
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(user)}

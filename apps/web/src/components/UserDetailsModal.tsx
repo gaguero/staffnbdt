@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { User } from '../services/userService';
 import UserActivityLog from './UserActivityLog';
+import UserPropertyAssignment from './UserPropertyAssignment';
+import { useTenantPermissions } from '../contexts/TenantContext';
 
 interface UserDetailsModalProps {
   isOpen: boolean;
@@ -15,7 +17,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
   user,
   onEdit,
 }) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'activity'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'activity' | 'properties'>('details');
+  const [showPropertyAssignment, setShowPropertyAssignment] = useState(false);
+  const { canManageProperty } = useTenantPermissions();
 
   if (!isOpen) return null;
 
@@ -93,6 +97,19 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                 <span>Activity Log</span>
               </span>
             </button>
+            <button
+              onClick={() => setActiveTab('properties')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'properties'
+                  ? 'border-warm-gold text-warm-gold'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <span className="flex items-center space-x-2">
+                <span>🏢</span>
+                <span>Properties</span>
+              </span>
+            </button>
           </nav>
         </div>
 
@@ -149,6 +166,43 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                         Department
                       </label>
                       <p className="text-gray-900">{user.department?.name || 'No Department'}</p>
+                    </div>
+
+                    {/* Property Access Summary */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Property Access
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <p className="text-gray-900">
+                          {user.properties ? `${user.properties.length} properties` : 'No property access'}
+                        </p>
+                        {canManageProperty() && (
+                          <button
+                            onClick={() => setShowPropertyAssignment(true)}
+                            className="text-xs text-warm-gold hover:text-opacity-80 underline"
+                          >
+                            Manage
+                          </button>
+                        )}
+                      </div>
+                      {user.properties && user.properties.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {user.properties.slice(0, 3).map((property) => (
+                            <span
+                              key={property.id}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-warm-gold bg-opacity-10 text-warm-gold"
+                            >
+                              {property.name}
+                            </span>
+                          ))}
+                          {user.properties.length > 3 && (
+                            <span className="text-xs text-gray-500">
+                              +{user.properties.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -233,6 +287,76 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               <UserActivityLog userId={user.id} maxEntries={25} />
             </div>
           )}
+
+          {/* Properties Tab */}
+          {activeTab === 'properties' && (
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-charcoal">
+                    Property Access
+                  </h3>
+                  {canManageProperty() && (
+                    <button
+                      onClick={() => setShowPropertyAssignment(true)}
+                      className="btn btn-sm btn-primary"
+                    >
+                      Manage Access
+                    </button>
+                  )}
+                </div>
+
+                {user.properties && user.properties.length > 0 ? (
+                  <div className="grid gap-3">
+                    {user.properties.map((property) => (
+                      <div
+                        key={property.id}
+                        className="border border-gray-200 rounded-lg p-3"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-warm-gold text-white rounded-full flex items-center justify-center font-medium text-sm">
+                            {property.name[0]?.toUpperCase() || 'P'}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-medium text-charcoal">
+                              {property.name}
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              {property.code}
+                            </p>
+                            {property.address && (
+                              <p className="text-xs text-gray-400">
+                                {typeof property.address === 'string' 
+                                  ? property.address
+                                  : `${property.address.city || ''}, ${property.address.country || ''}`
+                                }
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-green-600">
+                            <span className="text-sm">✓</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-2">🏢</div>
+                    <p className="text-gray-500">No property access assigned</p>
+                    {canManageProperty() && (
+                      <button
+                        onClick={() => setShowPropertyAssignment(true)}
+                        className="mt-3 text-sm text-warm-gold hover:text-opacity-80 underline"
+                      >
+                        Assign Properties
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -256,6 +380,17 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Property Assignment Modal */}
+        <UserPropertyAssignment
+          user={user}
+          isOpen={showPropertyAssignment}
+          onClose={() => setShowPropertyAssignment(false)}
+          onSuccess={() => {
+            // Refresh user data or trigger parent refresh
+            setShowPropertyAssignment(false);
+          }}
+        />
       </div>
     </div>
   );

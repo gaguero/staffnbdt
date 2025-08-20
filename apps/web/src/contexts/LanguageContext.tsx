@@ -21,6 +21,8 @@ const translations = {
     'nav.users': 'Users',
     'nav.departments': 'Departments',
     'nav.organizations': 'Organizations',
+    'nav.properties': 'Properties',
+    'nav.brandStudio': 'Brand Studio',
     'nav.notifications': 'Notifications',
     'nav.signOut': 'Sign Out',
     
@@ -130,6 +132,22 @@ const translations = {
     'propertySelector.noProperties': 'No Properties Available',
     'propertySelector.loading': 'Switching Property...',
     'propertySelector.error': 'Failed to switch property',
+    'propertySelector.switchSuccess': 'Property switched successfully',
+    'propertySelector.searchPlaceholder': 'Search properties...',
+    
+    // Property Management
+    'properties.title': 'Properties',
+    'properties.accessManagement': 'Property Access Management',
+    'properties.assignUsers': 'Assign Users',
+    'properties.noAccess': 'No property access',
+    'properties.multipleAccess': 'Multiple properties',
+    'properties.manageAccess': 'Manage Access',
+    'properties.assignProperties': 'Assign Properties',
+    'properties.assigned': 'Assigned',
+    'properties.available': 'Available',
+    'properties.pendingChanges': 'Pending Changes',
+    'properties.unsavedChanges': 'Unsaved Changes',
+    'properties.saveChanges': 'Save Changes',
     
     // Common
     'common.loading': 'Loading...',
@@ -161,7 +179,9 @@ const translations = {
     'nav.benefits': 'Beneficios',
     'nav.users': 'Usuarios',
     'nav.departments': 'Departamentos',
-    'nav.organizations': 'Organizaciones',
+    'nav.organizations': 'Organizaciones', 
+    'nav.properties': 'Propiedades',
+    'nav.brandStudio': 'Estudio de Marca',
     'nav.notifications': 'Notificaciones',
     'nav.signOut': 'Cerrar Sesión',
     
@@ -271,6 +291,22 @@ const translations = {
     'propertySelector.noProperties': 'No hay Propiedades Disponibles',
     'propertySelector.loading': 'Cambiando Propiedad...',
     'propertySelector.error': 'Error al cambiar propiedad',
+    'propertySelector.switchSuccess': 'Propiedad cambiada exitosamente',
+    'propertySelector.searchPlaceholder': 'Buscar propiedades...',
+    
+    // Property Management  
+    'properties.title': 'Propiedades',
+    'properties.accessManagement': 'Gestión de Acceso a Propiedades',
+    'properties.assignUsers': 'Asignar Usuarios',
+    'properties.noAccess': 'Sin acceso a propiedades',
+    'properties.multipleAccess': 'Múltiples propiedades',
+    'properties.manageAccess': 'Gestionar Acceso',
+    'properties.assignProperties': 'Asignar Propiedades',
+    'properties.assigned': 'Asignado',
+    'properties.available': 'Disponible',
+    'properties.pendingChanges': 'Cambios Pendientes',
+    'properties.unsavedChanges': 'Cambios No Guardados',
+    'properties.saveChanges': 'Guardar Cambios',
     
     // Common
     'common.loading': 'Cargando...',

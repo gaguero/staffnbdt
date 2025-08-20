@@ -108,35 +108,119 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
   );
 };
 
-// Custom hook for property selection UI
+// Enhanced custom hook for property selection UI
 export const usePropertySelector = () => {
-  const { availableProperties, propertyId, switchProperty } = useTenant();
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const { 
+    availableProperties, 
+    propertyId, 
+    switchProperty, 
+    isLoading: tenantLoading, 
+    error: tenantError,
+    canAccessProperty,
+    getPropertyById 
+  } = useTenant();
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Combine tenant and local errors
+  const error = tenantError || localError;
+  const isLoading = tenantLoading;
 
   const selectProperty = async (newPropertyId: string) => {
     if (newPropertyId === propertyId) return;
 
-    setIsLoading(true);
-    setError(null);
+    if (!canAccessProperty(newPropertyId)) {
+      setLocalError('You do not have access to this property');
+      return;
+    }
+
+    setLocalError(null);
+    setRetryCount(0);
 
     try {
       await switchProperty(newPropertyId);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to switch property';
-      setError(errorMessage);
+      setLocalError(errorMessage);
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  const retrySelection = async (propertyId: string) => {
+    if (retryCount >= 3) {
+      setLocalError('Maximum retry attempts reached. Please try again later.');
+      return;
+    }
+
+    setRetryCount(prev => prev + 1);
+    try {
+      await selectProperty(propertyId);
+    } catch (err) {
+      console.error(`Retry ${retryCount + 1} failed:`, err);
+    }
+  };
+
+  const clearError = () => {
+    setLocalError(null);
+    setRetryCount(0);
+  };
+
+  // Auto-clear local errors after 10 seconds
+  useEffect(() => {
+    if (localError) {
+      const timer = setTimeout(() => setLocalError(null), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [localError]);
 
   return {
     availableProperties,
     currentPropertyId: propertyId,
     selectProperty,
+    retrySelection,
+    getPropertyById,
+    canAccessProperty,
     isLoading,
     error,
-    clearError: () => setError(null),
+    retryCount,
+    clearError,
   };
+};
+
+// Additional utility hooks
+export const useTenantPermissions = () => {
+  const { organizationId, propertyId, availableProperties } = useTenant();
+  
+  const canManageProperty = (targetPropertyId?: string) => {
+    // Users can manage their current property or any property they have access to
+    const targetId = targetPropertyId || propertyId;
+    return availableProperties.some(p => p.id === targetId);
+  };
+
+  const canAccessAllProperties = () => {
+    // This would typically check user role and permissions
+    return availableProperties.length > 0;
+  };
+
+  return {
+    organizationId,
+    propertyId,
+    canManageProperty,
+    canAccessAllProperties,
+  };
+};
+
+export const useTenantStats = () => {
+  const { availableProperties, propertyId, organizationId } = useTenant();
+
+  const stats = useMemo(() => {
+    return {
+      totalProperties: availableProperties.length,
+      currentPropertyIndex: availableProperties.findIndex(p => p.id === propertyId),
+      hasMultipleProperties: availableProperties.length > 1,
+      organizationPropertyCount: availableProperties.filter(p => p.organizationId === organizationId).length,
+    };
+  }, [availableProperties, propertyId, organizationId]);
+
+  return stats;
 };

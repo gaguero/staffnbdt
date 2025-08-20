@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -6,11 +6,16 @@ import * as crypto from 'crypto';
 import { createReadStream, createWriteStream, ReadStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import { Transform, Readable } from 'stream';
+import { R2Service } from './r2.service';
+import { TenantContextService, RequestTenantContext } from '../tenant/tenant-context.service';
 
 export interface FileUploadOptions {
   fileName: string;
   mimeType?: string;
   maxSize?: number;
+  tenantContext?: RequestTenantContext;
+  module?: string;
+  type?: string;
 }
 
 export interface FileMetadata {
@@ -19,23 +24,55 @@ export interface FileMetadata {
   mimeType?: string;
   size: number;
   path: string;
+  publicUrl?: string;
+  lastModified?: Date;
+  tenantPath?: string;
 }
 
+/**
+ * Enhanced Storage Service with Cloudflare R2 integration
+ * Supports hybrid mode (R2 + local) and fallback capabilities
+ */
 @Injectable()
-export class StorageService {
+export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
   private readonly storagePath: string;
   private readonly maxFileSize: number;
   private readonly allowedFileTypes: string[];
+  private readonly useR2: boolean;
+  private readonly hybridMode: boolean;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly r2Service?: R2Service,
+    @Optional() private readonly tenantContextService?: TenantContextService,
+  ) {
     // Use Railway volume mount path or fallback to local storage
-    this.storagePath = this.configService.get('STORAGE_PATH') || '/a';
+    this.storagePath = this.configService.get('STORAGE_PATH') || '/app/storage';
     this.maxFileSize = parseInt(this.configService.get('MAX_FILE_SIZE') || '10485760'); // 10MB default
     this.allowedFileTypes = (this.configService.get('ALLOWED_FILE_TYPES') || 'pdf,jpg,jpeg,png,doc,docx,xls,xlsx,mp4,avi').split(',');
+    
+    // Storage strategy configuration
+    this.useR2 = this.configService.get('STORAGE_USE_R2') === 'true';
+    this.hybridMode = this.configService.get('STORAGE_HYBRID_MODE') === 'true';
 
-    this.logger.log(`Storage service initialized with path: ${this.storagePath}`);
-    this.initializeStorageDirectories();
+    this.logger.log(`Storage service initialized - Local path: ${this.storagePath}, R2: ${this.useR2}, Hybrid: ${this.hybridMode}`);
+    
+    // Initialize local directories if needed
+    if (!this.useR2 || this.hybridMode) {
+      this.initializeStorageDirectories();
+    }
+  }
+
+  async onModuleInit(): Promise<void> {
+    // Perform health checks on module initialization
+    if (this.useR2 && this.r2Service) {
+      const r2Healthy = await this.r2Service.healthCheck();
+      if (!r2Healthy) {
+        this.logger.warn('R2 service health check failed - falling back to local storage');
+        // Could implement fallback logic here
+      }
+    }
   }
 
   private async initializeStorageDirectories(): Promise<void> {
@@ -72,7 +109,49 @@ export class StorageService {
 
   async saveFile(
     fileBuffer: Buffer,
-    options: FileUploadOptions & { key: string }
+    options: FileUploadOptions & { key?: string }
+  ): Promise<FileMetadata> {
+    const { key, fileName, mimeType, tenantContext, module = 'documents', type = 'general' } = options;
+    
+    // Determine storage strategy
+    if (this.useR2 && this.r2Service && tenantContext) {
+      // Use R2 storage with tenant context
+      const r2Result = await this.r2Service.uploadFile(fileBuffer, {
+        fileName,
+        mimeType,
+        tenantContext,
+      });
+      
+      // Also save locally if in hybrid mode
+      if (this.hybridMode && key) {
+        try {
+          await this.saveFileLocal(fileBuffer, { key, fileName, mimeType });
+        } catch (error) {
+          this.logger.warn('Failed to save file locally in hybrid mode:', error);
+        }
+      }
+      
+      return {
+        key: r2Result.key,
+        fileName: r2Result.fileName,
+        mimeType: r2Result.mimeType,
+        size: r2Result.size,
+        path: r2Result.key, // R2 key serves as path
+        publicUrl: r2Result.publicUrl,
+        tenantPath: r2Result.tenantPath,
+      };
+    } else {
+      // Fall back to local storage
+      if (!key) {
+        throw new Error('Key is required for local storage');
+      }
+      return this.saveFileLocal(fileBuffer, { key, fileName, mimeType });
+    }
+  }
+
+  private async saveFileLocal(
+    fileBuffer: Buffer,
+    options: { key: string; fileName: string; mimeType?: string }
   ): Promise<FileMetadata> {
     const { key, fileName, mimeType } = options;
     const filePath = path.join(this.storagePath, key);
@@ -95,7 +174,7 @@ export class StorageService {
     // Save file
     await fs.writeFile(filePath, fileBuffer);
     
-    this.logger.log(`File saved: ${key}`);
+    this.logger.log(`File saved locally: ${key}`);
     
     return {
       key,
@@ -108,7 +187,41 @@ export class StorageService {
 
   async saveFileStream(
     fileStream: Readable,
-    options: FileUploadOptions & { key: string }
+    options: FileUploadOptions & { key?: string }
+  ): Promise<FileMetadata> {
+    const { key, fileName, mimeType, tenantContext, module = 'documents', type = 'general' } = options;
+    
+    // Determine storage strategy
+    if (this.useR2 && this.r2Service && tenantContext) {
+      // Use R2 storage with tenant context
+      const r2Result = await this.r2Service.uploadFileStream(fileStream, {
+        fileName,
+        mimeType,
+        tenantContext,
+      });
+      
+      return {
+        key: r2Result.key,
+        fileName: r2Result.fileName,
+        mimeType: r2Result.mimeType,
+        size: r2Result.size,
+        path: r2Result.key, // R2 key serves as path
+        publicUrl: r2Result.publicUrl,
+        lastModified: r2Result.lastModified,
+        tenantPath: r2Result.tenantPath,
+      };
+    } else {
+      // Fall back to local storage
+      if (!key) {
+        throw new Error('Key is required for local storage');
+      }
+      return this.saveFileStreamLocal(fileStream, { key, fileName, mimeType });
+    }
+  }
+
+  private async saveFileStreamLocal(
+    fileStream: Readable,
+    options: { key: string; fileName: string; mimeType?: string }
   ): Promise<FileMetadata> {
     const { key, fileName, mimeType } = options;
     const filePath = path.join(this.storagePath, key);
@@ -143,7 +256,7 @@ export class StorageService {
     // Save file using pipeline
     await pipeline(fileStream, transformStream, writeStream);
     
-    this.logger.log(`File stream saved: ${key}`);
+    this.logger.log(`File stream saved locally: ${key}`);
     
     return {
       key,
@@ -154,7 +267,22 @@ export class StorageService {
     };
   }
 
-  async getFile(key: string): Promise<Buffer> {
+  async getFile(key: string, request?: any): Promise<Buffer> {
+    // Try R2 first if configured
+    if (this.useR2 && this.r2Service) {
+      try {
+        return await this.r2Service.downloadFile(key, request);
+      } catch (error) {
+        // If R2 fails and we're in hybrid mode, try local storage
+        if (this.hybridMode) {
+          this.logger.warn('R2 download failed, trying local storage:', error);
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    // Fall back to or use local storage
     const filePath = path.join(this.storagePath, key);
     
     try {
@@ -168,28 +296,98 @@ export class StorageService {
     }
   }
 
-  createReadStream(key: string): ReadStream {
+  async createReadStream(key: string, request?: any): Promise<Readable> {
+    // Try R2 first if configured
+    if (this.useR2 && this.r2Service) {
+      try {
+        return await this.r2Service.getFileStream(key, request);
+      } catch (error) {
+        // If R2 fails and we're in hybrid mode, try local storage
+        if (this.hybridMode) {
+          this.logger.warn('R2 stream failed, trying local storage:', error);
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    // Fall back to or use local storage
     const filePath = path.join(this.storagePath, key);
     return createReadStream(filePath);
   }
 
-  async deleteFile(key: string): Promise<void> {
-    const filePath = path.join(this.storagePath, key);
+  async deleteFile(key: string, request?: any): Promise<void> {
+    let r2Success = false;
+    let localSuccess = false;
+    let lastError: Error | null = null;
     
-    try {
-      await fs.unlink(filePath);
-      this.logger.log(`File deleted: ${key}`);
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        this.logger.warn(`File not found for deletion: ${key}`);
-        return;
+    // Try R2 first if configured
+    if (this.useR2 && this.r2Service) {
+      try {
+        await this.r2Service.deleteFile(key, request);
+        r2Success = true;
+        this.logger.log(`File deleted from R2: ${key}`);
+      } catch (error) {
+        lastError = error as Error;
+        this.logger.warn('Failed to delete from R2:', error);
       }
-      this.logger.error(`Failed to delete file: ${key}`, error);
-      throw new Error('Failed to delete file');
+    }
+    
+    // Also try local storage if in hybrid mode or if R2 is not configured
+    if (!this.useR2 || this.hybridMode) {
+      const filePath = path.join(this.storagePath, key);
+      
+      try {
+        await fs.unlink(filePath);
+        localSuccess = true;
+        this.logger.log(`File deleted locally: ${key}`);
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          this.logger.debug(`Local file not found for deletion: ${key}`);
+        } else {
+          lastError = error as Error;
+          this.logger.warn(`Failed to delete local file: ${key}`, error);
+        }
+      }
+    }
+    
+    // Consider success if at least one storage deleted the file
+    if (!r2Success && !localSuccess && lastError) {
+      throw new Error(`Failed to delete file: ${lastError.message}`);
     }
   }
 
-  async copyFile(sourceKey: string, destinationKey: string): Promise<void> {
+  async copyFile(sourceKey: string, destinationKey: string, request?: any): Promise<void> {
+    // Try R2 first if configured
+    if (this.useR2 && this.r2Service) {
+      try {
+        await this.r2Service.copyFile(sourceKey, destinationKey, request);
+        this.logger.log(`File copied in R2 from ${sourceKey} to ${destinationKey}`);
+        
+        // If hybrid mode, also copy locally
+        if (this.hybridMode) {
+          try {
+            await this.copyFileLocal(sourceKey, destinationKey);
+          } catch (error) {
+            this.logger.warn('Failed to copy file locally in hybrid mode:', error);
+          }
+        }
+        return;
+      } catch (error) {
+        // If R2 fails and we're in hybrid mode, try local storage
+        if (this.hybridMode) {
+          this.logger.warn('R2 copy failed, trying local storage:', error);
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    // Fall back to local storage
+    await this.copyFileLocal(sourceKey, destinationKey);
+  }
+
+  private async copyFileLocal(sourceKey: string, destinationKey: string): Promise<void> {
     const sourcePath = path.join(this.storagePath, sourceKey);
     const destPath = path.join(this.storagePath, destinationKey);
     
@@ -199,14 +397,29 @@ export class StorageService {
     
     try {
       await fs.copyFile(sourcePath, destPath);
-      this.logger.log(`File copied from ${sourceKey} to ${destinationKey}`);
+      this.logger.log(`File copied locally from ${sourceKey} to ${destinationKey}`);
     } catch (error) {
-      this.logger.error(`Failed to copy file from ${sourceKey} to ${destinationKey}`, error);
+      this.logger.error(`Failed to copy file locally from ${sourceKey} to ${destinationKey}`, error);
       throw new Error('Failed to copy file');
     }
   }
 
-  async checkFileExists(key: string): Promise<boolean> {
+  async checkFileExists(key: string, request?: any): Promise<boolean> {
+    // Try R2 first if configured
+    if (this.useR2 && this.r2Service) {
+      try {
+        return await this.r2Service.fileExists(key, request);
+      } catch (error) {
+        // If R2 fails and we're in hybrid mode, try local storage
+        if (this.hybridMode) {
+          this.logger.debug('R2 exists check failed, trying local storage:', error);
+        } else {
+          return false;
+        }
+      }
+    }
+    
+    // Fall back to local storage
     const filePath = path.join(this.storagePath, key);
     
     try {
@@ -217,7 +430,32 @@ export class StorageService {
     }
   }
 
-  async getFileMetadata(key: string): Promise<FileMetadata> {
+  async getFileMetadata(key: string, request?: any): Promise<FileMetadata> {
+    // Try R2 first if configured
+    if (this.useR2 && this.r2Service) {
+      try {
+        const r2Metadata = await this.r2Service.getFileMetadata(key, request);
+        return {
+          key: r2Metadata.key,
+          fileName: r2Metadata.fileName,
+          mimeType: r2Metadata.mimeType,
+          size: r2Metadata.size,
+          path: r2Metadata.key, // R2 key serves as path
+          publicUrl: r2Metadata.publicUrl,
+          lastModified: r2Metadata.lastModified,
+          tenantPath: r2Metadata.tenantPath,
+        };
+      } catch (error) {
+        // If R2 fails and we're in hybrid mode, try local storage
+        if (this.hybridMode) {
+          this.logger.warn('R2 metadata failed, trying local storage:', error);
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    // Fall back to local storage
     const filePath = path.join(this.storagePath, key);
     
     try {
@@ -229,6 +467,7 @@ export class StorageService {
         fileName,
         size: stats.size,
         path: filePath,
+        lastModified: stats.mtime,
       };
     } catch (error) {
       if (error.code === 'ENOENT') {
@@ -238,7 +477,26 @@ export class StorageService {
     }
   }
 
-  async listFiles(prefix: string): Promise<string[]> {
+  async listFiles(prefix: string, tenantContext?: RequestTenantContext): Promise<string[]> {
+    // Try R2 first if configured and tenant context is available
+    if (this.useR2 && this.r2Service && tenantContext) {
+      try {
+        return await this.r2Service.listFiles(tenantContext);
+      } catch (error) {
+        // If R2 fails and we're in hybrid mode, try local storage
+        if (this.hybridMode) {
+          this.logger.warn('R2 list failed, trying local storage:', error);
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    // Fall back to local storage
+    return this.listFilesLocal(prefix);
+  }
+
+  private async listFilesLocal(prefix: string): Promise<string[]> {
     const dirPath = path.join(this.storagePath, prefix);
     const files: string[] = [];
     
@@ -269,21 +527,83 @@ export class StorageService {
     return files;
   }
 
-  // Backwards compatibility methods (will be removed after refactoring is complete)
-  async generatePresignedUploadUrl(options: any): Promise<any> {
-    // This method is no longer needed with direct file uploads
-    // Return a mock response for now to prevent crashes
-    this.logger.warn('generatePresignedUploadUrl called - this method is deprecated with local storage');
+  // Enhanced presigned URL methods with R2 support
+  async generatePresignedUploadUrl(
+    fileName: string,
+    mimeType: string,
+    tenantContext?: RequestTenantContext,
+    module: string = 'documents',
+    type: string = 'general',
+    expiresIn: number = 300,
+  ): Promise<{ uploadUrl: string; downloadUrl: string; key: string; expiresIn: number }> {
+    // Use R2 presigned URLs if available and tenant context provided
+    if (this.useR2 && this.r2Service && tenantContext) {
+      return await this.r2Service.generatePresignedUploadUrl(
+        fileName,
+        mimeType,
+        tenantContext,
+        module,
+        type,
+        expiresIn,
+      );
+    }
+    
+    // Fall back to legacy behavior for backward compatibility
+    const key = this.generateFileKey('documents', fileName);
+    this.logger.warn('generatePresignedUploadUrl called without R2 - using fallback endpoints');
     return {
       uploadUrl: '/api/documents/upload',
-      downloadUrl: `/api/files/serve/${options.key}`,
-      key: options.key,
+      downloadUrl: `/api/files/serve/${encodeURIComponent(key)}`,
+      key,
+      expiresIn,
     };
   }
 
-  async generatePresignedDownloadUrl(key: string, expiresIn = 300): Promise<string> {
-    // With local storage, we'll use JWT tokens for temporary access
-    // For now, return the serving endpoint
+  async generatePresignedDownloadUrl(key: string, request?: any, expiresIn: number = 300): Promise<string> {
+    // Use R2 presigned URLs if available
+    if (this.useR2 && this.r2Service) {
+      try {
+        return await this.r2Service.generatePresignedDownloadUrl(key, request, expiresIn);
+      } catch (error) {
+        this.logger.warn('R2 presigned URL failed, using fallback:', error);
+      }
+    }
+    
+    // Fall back to serving endpoint
     return `/api/files/serve/${encodeURIComponent(key)}`;
+  }
+
+  /**
+   * Get storage configuration status
+   */
+  getStorageConfig(): {
+    useR2: boolean;
+    hybridMode: boolean;
+    localPath: string;
+    r2Available: boolean;
+  } {
+    return {
+      useR2: this.useR2,
+      hybridMode: this.hybridMode,
+      localPath: this.storagePath,
+      r2Available: !!this.r2Service,
+    };
+  }
+
+  /**
+   * Create tenant-aware file key with proper organization
+   */
+  generateTenantFileKey(
+    module: string,
+    type: string,
+    fileName: string,
+    tenantContext: RequestTenantContext,
+  ): string {
+    if (this.useR2 && this.r2Service) {
+      return this.r2Service.generateFileKey(module, type, fileName, tenantContext);
+    } else {
+      // Legacy format for local storage
+      return this.generateFileKey(module, fileName, tenantContext.userId);
+    }
   }
 }

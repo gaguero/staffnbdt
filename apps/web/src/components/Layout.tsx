@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { BrandLogo } from '../contexts/ThemeContext';
 import { NavLink, useLocation } from 'react-router-dom';
 import PropertySelector from './PropertySelector';
 
@@ -88,6 +89,12 @@ const navigationItems: NavItem[] = [
     path: '/properties',
     icon: '🏠',
     roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
+  },
+  {
+    label: 'nav.brandStudio',
+    path: '/brand-studio',
+    icon: '🎨',
+    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
   }
 ];
 
@@ -128,9 +135,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {/* Logo/Brand */}
         <div className="flex items-center justify-between h-20 px-4 border-b border-gray-200 bg-charcoal">
-          <img 
-            src="/nayara-logo-white.png" 
-            alt="Nayara Bocas del Toro"
+          <BrandLogo 
+            variant="light"
+            alt={getCurrentOrganizationName()}
             className="h-12 w-auto object-contain"
           />
           <button
@@ -233,11 +240,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="flex items-center space-x-4">
               {/* Property Selector for desktop header */}
               <div className="hidden lg:block">
-                <PropertySelector 
-                  variant="dropdown" 
-                  showOrganization={true}
-                  className="min-w-48"
-                />
+                <div className="text-sm text-gray-600 text-right">
+                  <div className="font-medium">{getCurrentOrganizationName()}</div>
+                  <div className="text-xs opacity-75">{getCurrentPropertyName()}</div>
+                </div>
               </div>
               
               {/* Language Switcher */}
