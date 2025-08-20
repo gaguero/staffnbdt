@@ -3,12 +3,23 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { BadRequestException } from '@nestjs/common';
+import { mkdirSync, existsSync } from 'fs';
 
 export const profilePhotoConfig: MulterModuleOptions = {
   storage: diskStorage({
     destination: (req, file, cb) => {
       const uploadPath = join(process.cwd(), 'uploads', 'profiles');
-      cb(null, uploadPath);
+      
+      // Ensure directory exists
+      try {
+        if (!existsSync(uploadPath)) {
+          mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      } catch (error) {
+        console.error('Failed to create upload directory:', error);
+        cb(new BadRequestException('Failed to create upload directory'), null);
+      }
     },
     filename: (req, file, cb) => {
       const uniqueName = `profile_${uuidv4()}${extname(file.originalname)}`;
@@ -32,7 +43,17 @@ export const idDocumentConfig: MulterModuleOptions = {
   storage: diskStorage({
     destination: (req, file, cb) => {
       const uploadPath = join(process.cwd(), 'uploads', 'id-documents');
-      cb(null, uploadPath);
+      
+      // Ensure directory exists
+      try {
+        if (!existsSync(uploadPath)) {
+          mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      } catch (error) {
+        console.error('Failed to create upload directory:', error);
+        cb(new BadRequestException('Failed to create upload directory'), null);
+      }
     },
     filename: (req, file, cb) => {
       const uniqueName = `id_${uuidv4()}${extname(file.originalname)}`;

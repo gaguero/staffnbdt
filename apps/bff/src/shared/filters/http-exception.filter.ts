@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { MulterError } from 'multer';
 
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -75,6 +76,60 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // If it's already an HTTP exception, let the HTTP exception filter handle it
     if (exception instanceof HttpException) {
+      return;
+    }
+
+    // Handle Multer errors specifically
+    if (exception instanceof MulterError) {
+      let status = HttpStatus.BAD_REQUEST;
+      let message = 'File upload error';
+
+      switch (exception.code) {
+        case 'LIMIT_FILE_SIZE':
+          message = 'File too large';
+          break;
+        case 'LIMIT_FILE_COUNT':
+          message = 'Too many files';
+          break;
+        case 'LIMIT_UNEXPECTED_FILE':
+          message = 'Unexpected file field';
+          break;
+        case 'LIMIT_PART_COUNT':
+          message = 'Too many parts';
+          break;
+        case 'LIMIT_FIELD_KEY':
+          message = 'Field name too long';
+          break;
+        case 'LIMIT_FIELD_VALUE':
+          message = 'Field value too long';
+          break;
+        case 'LIMIT_FIELD_COUNT':
+          message = 'Too many fields';
+          break;
+        default:
+          message = exception.message || 'File upload error';
+      }
+
+      this.logger.warn(
+        `Multer error (${exception.code}): ${exception.message}`,
+        `${request.method} ${request.url}`,
+      );
+
+      const errorResponse = {
+        success: false,
+        statusCode: status,
+        timestamp: new Date().toISOString(),
+        path: request.url,
+        method: request.method,
+        message,
+        error: {
+          code: exception.code,
+          message: exception.message,
+        },
+      };
+
+      response.setHeader('Content-Type', 'application/json');
+      response.status(status).json(errorResponse);
       return;
     }
 

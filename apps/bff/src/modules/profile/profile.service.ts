@@ -152,36 +152,50 @@ export class ProfileService {
       throw new NotFoundException('User not found');
     }
 
-    // Delete old profile photo if exists
-    if (user.profilePhoto) {
-      try {
-        const oldPhotoPath = join(process.cwd(), 'uploads', 'profiles', user.profilePhoto);
-        await unlink(oldPhotoPath);
-      } catch (error) {
-        // File might not exist, continue
+    try {
+      // Delete old profile photo if exists
+      if (user.profilePhoto) {
+        try {
+          const oldPhotoPath = join(process.cwd(), 'uploads', 'profiles', user.profilePhoto);
+          await unlink(oldPhotoPath);
+        } catch (error) {
+          // File might not exist, continue
+        }
       }
+
+      const photoPath = `profiles/${file.filename}`;
+
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: { profilePhoto: photoPath },
+      });
+
+      await this.auditService.log({
+        userId: currentUser.id,
+        action: 'UPLOAD_PROFILE_PHOTO',
+        entity: 'User',
+        entityId: userId,
+        newData: { 
+          profilePhoto: photoPath,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+        },
+      });
+
+      return { profilePhoto: photoPath };
+    } catch (error) {
+      console.error('Profile photo upload error:', {
+        error: error.message,
+        stack: error.stack,
+        userId,
+        fileName: file?.filename,
+        fileSize: file?.size,
+      });
+      
+      throw new InternalServerErrorException(
+        `Failed to upload profile photo: ${error.message}`
+      );
     }
-
-    const photoPath = `profiles/${file.filename}`;
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: { profilePhoto: photoPath },
-    });
-
-    await this.auditService.log({
-      userId: currentUser.id,
-      action: 'UPLOAD_PROFILE_PHOTO',
-      entity: 'User',
-      entityId: userId,
-      newData: { 
-        profilePhoto: photoPath,
-        fileSize: file.size,
-        mimeType: file.mimetype,
-      },
-    });
-
-    return { profilePhoto: photoPath };
   }
 
   async deleteProfilePhoto(userId: string, currentUser: User) {

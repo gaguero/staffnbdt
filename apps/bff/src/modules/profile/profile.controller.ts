@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -97,16 +98,39 @@ export class ProfileController {
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() currentUser: User,
   ) {
+    console.log('📸 Profile photo upload request:', {
+      userId: currentUser.id,
+      file: file ? {
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        filename: file.filename,
+        path: file.path,
+      } : null,
+    });
+
     if (!file) {
-      throw new Error('No file uploaded');
+      console.error('❌ No file uploaded in profile photo endpoint');
+      throw new BadRequestException('No file uploaded');
     }
 
-    const result = await this.profileService.uploadProfilePhoto(
-      currentUser.id,
-      file,
-      currentUser,
-    );
-    return CustomApiResponse.success(result, 'Profile photo uploaded successfully');
+    try {
+      const result = await this.profileService.uploadProfilePhoto(
+        currentUser.id,
+        file,
+        currentUser,
+      );
+      console.log('✅ Profile photo uploaded successfully:', result);
+      return CustomApiResponse.success(result, 'Profile photo uploaded successfully');
+    } catch (error) {
+      console.error('❌ Profile photo upload failed:', {
+        error: error.message,
+        stack: error.stack,
+        userId: currentUser.id,
+        fileName: file?.filename,
+      });
+      throw error;
+    }
   }
 
   @Delete('photo')
