@@ -14,7 +14,7 @@ import { TenantModule } from './shared/tenant/tenant.module';
 
 // Guards, filters, and interceptors
 import { JwtAuthGuard } from './shared/guards/jwt-auth.guard';
-import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
+import { HttpExceptionFilter, GlobalExceptionFilter } from './shared/filters/http-exception.filter';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 import { TenantInterceptor } from './shared/tenant/tenant.interceptor';
 
@@ -100,7 +100,11 @@ import { AdminModule } from './modules/admin/admin.module';
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
-    // Global filters
+    // Global filters (order matters: GlobalExceptionFilter should be first to catch all, then HttpExceptionFilter for HTTP-specific)
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,

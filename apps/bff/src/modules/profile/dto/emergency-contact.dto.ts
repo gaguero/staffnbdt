@@ -1,28 +1,30 @@
 import { IsString, IsEmail, IsOptional, IsBoolean, ValidateNested, IsArray, ArrayMaxSize, ArrayMinSize } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class EmergencyContactDto {
   @ApiProperty({ example: 'John Doe', description: 'Full name of emergency contact' })
-  @IsString()
+  @IsString({ message: 'Name must be a valid string' })
   name: string;
 
   @ApiProperty({ example: 'Spouse', description: 'Relationship to the employee' })
-  @IsString()
+  @IsString({ message: 'Relationship must be a valid string' })
   relationship: string;
 
   @ApiProperty({ example: '+507 6000-0000', description: 'Phone number' })
-  @IsString()
+  @IsString({ message: 'Phone number must be a valid string' })
   phoneNumber: string;
 
   @ApiProperty({ example: 'john.doe@email.com', description: 'Email address', required: false })
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: 'Please provide a valid email address' })
+  @Transform(({ value }) => value === '' ? undefined : value)
   email?: string;
 
   @ApiProperty({ example: '123 Main St, Panama City', description: 'Address', required: false })
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value === '' ? undefined : value)
   address?: string;
 
   @ApiProperty({ example: true, description: 'Whether this is the primary emergency contact', required: false })

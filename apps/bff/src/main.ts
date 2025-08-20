@@ -80,10 +80,18 @@ async function bootstrap() {
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
-        forbidNonWhitelisted: true,
+        forbidNonWhitelisted: false, // Allow extra properties for flexibility
         transform: true,
         transformOptions: {
           enableImplicitConversion: true,
+        },
+        exceptionFactory: (errors) => {
+          const result = errors.map((error) => ({
+            property: error.property,
+            value: error.value,
+            constraints: error.constraints,
+          }));
+          return new Error(JSON.stringify(result));
         },
       }),
     );

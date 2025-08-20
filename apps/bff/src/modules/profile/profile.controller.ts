@@ -227,11 +227,20 @@ export class ProfileController {
     @Body() updateEmergencyContactsDto: UpdateEmergencyContactsDto,
     @CurrentUser() currentUser: User,
   ) {
-    const result = await this.profileService.updateEmergencyContacts(
-      currentUser.id,
-      updateEmergencyContactsDto,
-      currentUser,
-    );
-    return CustomApiResponse.success(result, 'Emergency contacts updated successfully');
+    console.log('🔍 Emergency contacts endpoint hit by user:', currentUser.id);
+    console.log('🔍 Raw request body:', JSON.stringify(updateEmergencyContactsDto, null, 2));
+    
+    try {
+      const result = await this.profileService.updateEmergencyContacts(
+        currentUser.id,
+        updateEmergencyContactsDto,
+        currentUser,
+      );
+      console.log('✅ Emergency contacts updated successfully');
+      return CustomApiResponse.success(result, 'Emergency contacts updated successfully');
+    } catch (error) {
+      console.error('❌ Emergency contacts update failed:', error.message);
+      throw error;
+    }
   }
 }

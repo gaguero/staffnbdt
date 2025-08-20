@@ -402,6 +402,9 @@ export class ProfileService {
     contactsData: UpdateEmergencyContactsDto, 
     currentUser: User
   ) {
+    // Add logging to debug data being received
+    console.log('🔍 Emergency Contacts Data Received:', JSON.stringify(contactsData, null, 2));
+    
     // Users can only update their own emergency contacts
     if (currentUser.id !== userId) {
       throw new ForbiddenException('Can only update your own emergency contacts');
@@ -413,6 +416,40 @@ export class ProfileService {
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    // Validate contacts array
+    if (!contactsData.contacts || !Array.isArray(contactsData.contacts)) {
+      throw new BadRequestException('Contacts must be provided as an array');
+    }
+    
+    if (contactsData.contacts.length === 0) {
+      throw new BadRequestException('At least one emergency contact is required');
+    }
+    
+    if (contactsData.contacts.length > 3) {
+      throw new BadRequestException('Maximum of 3 emergency contacts allowed');
+    }
+
+    // Validate each contact
+    for (let i = 0; i < contactsData.contacts.length; i++) {
+      const contact = contactsData.contacts[i];
+      if (!contact.name || typeof contact.name !== 'string' || contact.name.trim() === '') {
+        throw new BadRequestException(`Contact ${i + 1}: Name is required`);
+      }
+      if (!contact.relationship || typeof contact.relationship !== 'string' || contact.relationship.trim() === '') {
+        throw new BadRequestException(`Contact ${i + 1}: Relationship is required`);
+      }
+      if (!contact.phoneNumber || typeof contact.phoneNumber !== 'string' || contact.phoneNumber.trim() === '') {
+        throw new BadRequestException(`Contact ${i + 1}: Phone number is required`);
+      }
+      // Validate email if provided
+      if (contact.email && contact.email.trim() !== '') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(contact.email.trim())) {
+          throw new BadRequestException(`Contact ${i + 1}: Invalid email format`);
+        }
+      }
     }
 
     // Ensure only one primary contact
@@ -427,9 +464,18 @@ export class ProfileService {
     }
 
     const emergencyContactData: EmergencyContactsData = {
-      contacts: contactsData.contacts,
+      contacts: contactsData.contacts.map(contact => ({
+        name: contact.name.trim(),
+        relationship: contact.relationship.trim(),
+        phoneNumber: contact.phoneNumber.trim(),
+        email: contact.email && contact.email.trim() !== '' ? contact.email.trim() : undefined,
+        address: contact.address && contact.address.trim() !== '' ? contact.address.trim() : undefined,
+        isPrimary: contact.isPrimary || false,
+      })),
       updatedAt: new Date().toISOString(),
     };
+
+    console.log('💾 Emergency Contacts Data to Save:', JSON.stringify(emergencyContactData, null, 2));
 
     await this.prisma.user.update({
       where: { id: userId },

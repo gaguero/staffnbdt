@@ -251,10 +251,45 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Emergency Contact
                         </label>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <p className="font-medium text-gray-900">{user.emergencyContact.name}</p>
-                          <p className="text-sm text-gray-600">{user.emergencyContact.relationship}</p>
-                          <p className="text-sm text-gray-600">{user.emergencyContact.phoneNumber}</p>
+                        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                          {/* Handle both new format (contacts array) and legacy format (primaryContact/secondaryContact) */}
+                          {user.emergencyContact.contacts ? (
+                            // New format
+                            user.emergencyContact.contacts.map((contact: any, index: number) => (
+                              <div key={index} className={index > 0 ? 'border-t border-gray-200 pt-2' : ''}>
+                                <p className="font-medium text-gray-900">
+                                  {contact.name} {contact.isPrimary && <span className="text-xs bg-warm-gold text-white px-1 rounded">Primary</span>}
+                                </p>
+                                <p className="text-sm text-gray-600">{contact.relationship}</p>
+                                <p className="text-sm text-gray-600">{contact.phoneNumber}</p>
+                                {contact.email && <p className="text-sm text-gray-600">{contact.email}</p>}
+                              </div>
+                            ))
+                          ) : (
+                            // Legacy format
+                            <>
+                              {user.emergencyContact.primaryContact && (
+                                <div>
+                                  <p className="font-medium text-gray-900">
+                                    {user.emergencyContact.primaryContact.name} <span className="text-xs bg-warm-gold text-white px-1 rounded">Primary</span>
+                                  </p>
+                                  <p className="text-sm text-gray-600">{user.emergencyContact.primaryContact.relationship}</p>
+                                  <p className="text-sm text-gray-600">{user.emergencyContact.primaryContact.phoneNumber}</p>
+                                  {user.emergencyContact.primaryContact.email && <p className="text-sm text-gray-600">{user.emergencyContact.primaryContact.email}</p>}
+                                </div>
+                              )}
+                              {user.emergencyContact.secondaryContact && (
+                                <div className="border-t border-gray-200 pt-2">
+                                  <p className="font-medium text-gray-900">
+                                    {user.emergencyContact.secondaryContact.name} <span className="text-xs bg-gray-500 text-white px-1 rounded">Secondary</span>
+                                  </p>
+                                  <p className="text-sm text-gray-600">{user.emergencyContact.secondaryContact.relationship}</p>
+                                  <p className="text-sm text-gray-600">{user.emergencyContact.secondaryContact.phoneNumber}</p>
+                                  {user.emergencyContact.secondaryContact.email && <p className="text-sm text-gray-600">{user.emergencyContact.secondaryContact.email}</p>}
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
                     )}

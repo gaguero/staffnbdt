@@ -14,14 +14,29 @@ export interface Profile {
   position?: string;
   hireDate?: string;
   phoneNumber?: string;
-  emergencyContact?: EmergencyContactsData | null;
+  emergencyContact?: EmergencyContactsData | LegacyEmergencyContactsData | null;
   idDocument?: IdDocumentMetadata | null;
   profilePhoto?: string;
   createdAt: string;
   updatedAt: string;
 }
 
+export interface EmergencyContact {
+  name: string;
+  relationship: string;
+  phoneNumber: string;
+  email?: string;
+  address?: string;
+  isPrimary?: boolean;
+}
+
 export interface EmergencyContactsData {
+  contacts: EmergencyContact[];
+  updatedAt: string;
+}
+
+// Legacy interface for backward compatibility
+export interface LegacyEmergencyContactsData {
   primaryContact?: {
     name: string;
     relationship: string;
@@ -149,8 +164,29 @@ class ProfileService {
     return response.data;
   }
 
-  async updateEmergencyContacts(contacts: EmergencyContactsData): Promise<{ success: boolean }> {
-    const response = await api.post('/profile/emergency-contacts', contacts);
+  async updateEmergencyContacts(contacts: LegacyEmergencyContactsData): Promise<{ success: boolean }> {
+    // Transform legacy format to new format
+    const transformedContacts: EmergencyContact[] = [];
+    
+    if (contacts.primaryContact) {
+      transformedContacts.push({
+        ...contacts.primaryContact,
+        isPrimary: true
+      });
+    }
+    
+    if (contacts.secondaryContact) {
+      transformedContacts.push({
+        ...contacts.secondaryContact,
+        isPrimary: false
+      });
+    }
+    
+    const requestData = {
+      contacts: transformedContacts
+    };
+    
+    const response = await api.post('/profile/emergency-contacts', requestData);
     return response.data.data;
   }
 }

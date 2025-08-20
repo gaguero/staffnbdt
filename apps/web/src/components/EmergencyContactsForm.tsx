@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { profileService, EmergencyContactsData } from '../services/profileService';
+import { profileService, LegacyEmergencyContactsData } from '../services/profileService';
 import LoadingSpinner from './LoadingSpinner';
 import toast from 'react-hot-toast';
 
 interface EmergencyContactsFormProps {
-  initialData?: EmergencyContactsData;
-  onSuccess?: (data: EmergencyContactsData) => void;
+  initialData?: LegacyEmergencyContactsData;
+  onSuccess?: (data: LegacyEmergencyContactsData) => void;
   onCancel?: () => void;
   className?: string;
   standalone?: boolean; // Whether this is a standalone form or part of a larger form
@@ -153,7 +153,7 @@ const EmergencyContactsForm: React.FC<EmergencyContactsFormProps> = ({
     try {
       setLoading(true);
 
-      const emergencyContactsData: EmergencyContactsData = {
+      const emergencyContactsData: LegacyEmergencyContactsData = {
         primaryContact: {
           name: primaryContact.name.trim(),
           relationship: primaryContact.relationship.trim(),
@@ -183,7 +183,24 @@ const EmergencyContactsForm: React.FC<EmergencyContactsFormProps> = ({
       return true;
     } catch (error: any) {
       console.error('Failed to update emergency contacts:', error);
-      const errorMessage = error?.response?.data?.message || 'Failed to update emergency contacts';
+      console.error('Error response:', error?.response);
+      console.error('Error data:', error?.response?.data);
+      
+      let errorMessage = 'Failed to update emergency contacts';
+      
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        if (errorData.validationErrors && Array.isArray(errorData.validationErrors)) {
+          errorMessage = `Validation errors: ${errorData.validationErrors.join(', ')}`;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast.error(errorMessage);
       return false;
     } finally {
