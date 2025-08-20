@@ -428,7 +428,7 @@ const PropertiesPage: React.FC = () => {
                         {property.city && property.state ? `${property.city}, ${property.state}` : 
                          property.city || 
                          (property.address && typeof property.address === 'object' 
-                           ? `${property.address.city || ''} ${property.address.state || ''}`.trim() || property.address.street || 'Address provided'
+                           ? `${property.address.city || ''} ${property.address.state || ''}`.trim() || property.address.line1 || 'Address provided'
                            : property.address) || 'Not specified'}
                       </div>
                       {property.country && (

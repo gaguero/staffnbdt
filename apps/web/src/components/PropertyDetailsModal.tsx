@@ -113,7 +113,8 @@ const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({
         parts.push(property.address);
       } else if (typeof property.address === 'object') {
         const addressParts = [];
-        if (property.address.street) addressParts.push(property.address.street);
+        if (property.address.line1) addressParts.push(property.address.line1);
+        if (property.address.line2) addressParts.push(property.address.line2);
         if (property.address.city) addressParts.push(property.address.city);
         if (property.address.state) addressParts.push(property.address.state);
         if (property.address.country) addressParts.push(property.address.country);

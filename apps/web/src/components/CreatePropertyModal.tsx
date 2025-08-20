@@ -396,8 +396,8 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                   </label>
                   <select
                     id="currency"
-                    name="currency"
-                    value={formData.currency}
+                    name="settings.additional.currency"
+                    value={formData.settings?.additional?.currency || ''}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
                   >
