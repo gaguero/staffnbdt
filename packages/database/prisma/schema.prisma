@@ -28,6 +28,7 @@ model Organization {
   customRoles         CustomRole[]
   moduleSubscriptions ModuleSubscription[]
   properties          Property[]
+  profilePhotos       ProfilePhoto[]
   users               User[]
 
   @@index([slug])
@@ -67,6 +68,7 @@ model Property {
   trainingSessions   TrainingSession[]
   units              Unit[]
   users              User[]
+  profilePhotos      ProfilePhoto[]
   vacations          Vacation[]
 
   @@unique([organizationId, slug])
@@ -154,25 +156,31 @@ model User {
 }
 
 model ProfilePhoto {
-  id          String    @id @default(cuid())
-  userId      String
-  fileKey     String
-  fileName    String
-  mimeType    String
-  size        Int
-  photoType   PhotoType @default(FORMAL)
-  isActive    Boolean   @default(true)
-  isPrimary   Boolean   @default(false)
-  description String?
-  metadata    Json?
-  uploadedAt  DateTime  @default(now())
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  userId         String
+  organizationId String?
+  propertyId     String?
+  fileKey        String
+  fileName       String
+  mimeType       String
+  size           Int
+  photoType      PhotoType     @default(FORMAL)
+  isActive       Boolean       @default(true)
+  isPrimary      Boolean       @default(false)
+  description    String?
+  metadata       Json?
+  uploadedAt     DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  property       Property?     @relation(fields: [propertyId], references: [id])
 
   @@unique([userId, photoType, isActive, deletedAt])
   @@index([userId])
+  @@index([organizationId])
+  @@index([propertyId])
   @@index([photoType])
   @@index([isActive])
   @@index([isPrimary])

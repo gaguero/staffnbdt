@@ -89,11 +89,13 @@ export class ProfilePhotoService {
         type: options.photoType || PhotoType.FORMAL,
       });
 
-      // If this is a primary photo, unset any existing primary photos
+      // If this is a primary photo, unset any existing primary photos within tenant
       if (options.isPrimary !== false) {
         await this.prisma.profilePhoto.updateMany({
           where: {
             userId,
+            organizationId: tenantContext.organizationId,
+            propertyId: tenantContext.propertyId,
             isPrimary: true,
             isActive: true,
             deletedAt: null,
@@ -102,10 +104,12 @@ export class ProfilePhotoService {
         });
       }
 
-      // Check if user already has this photo type (limit 1 per type)
+      // Check if user already has this photo type within tenant (limit 1 per type)
       const existingPhoto = await this.prisma.profilePhoto.findFirst({
         where: {
           userId,
+          organizationId: tenantContext.organizationId,
+          propertyId: tenantContext.propertyId,
           photoType: options.photoType || PhotoType.FORMAL,
           isActive: true,
           deletedAt: null,
@@ -130,10 +134,12 @@ export class ProfilePhotoService {
         }
       }
 
-      // Create ProfilePhoto record
+      // Create ProfilePhoto record with tenant context
       const profilePhoto = await this.prisma.profilePhoto.create({
         data: {
           userId,
+          organizationId: tenantContext.organizationId,
+          propertyId: tenantContext.propertyId,
           fileKey: savedFile.key,
           fileName: file.originalname,
           mimeType: file.mimetype,
@@ -196,10 +202,16 @@ export class ProfilePhotoService {
       throw new ForbiddenException('Insufficient permissions to view photos for this user');
     }
 
+    // Get tenant context for filtering
+    const tenantContext = this.tenantContextService.getTenantContext(currentUser);
+    
     const whereClause: any = {
       userId,
       isActive: true,
       deletedAt: null,
+      // Add tenant filtering
+      organizationId: tenantContext.organizationId,
+      propertyId: tenantContext.propertyId,
     };
 
     if (photoType) {
@@ -240,11 +252,17 @@ export class ProfilePhotoService {
     photoId: string,
     currentUser: User,
   ): Promise<{ stream: any; metadata: PhotoMetadata }> {
+    // Get tenant context for security
+    const tenantContext = this.tenantContextService.getTenantContext(currentUser);
+    
     const photo = await this.prisma.profilePhoto.findUnique({
       where: {
         id: photoId,
         isActive: true,
         deletedAt: null,
+        // Add tenant filtering for security
+        organizationId: tenantContext.organizationId,
+        propertyId: tenantContext.propertyId,
       },
       include: {
         user: {
@@ -309,11 +327,17 @@ export class ProfilePhotoService {
    * Delete a photo
    */
   async deletePhoto(photoId: string, currentUser: User): Promise<void> {
+    // Get tenant context for security
+    const tenantContext = this.tenantContextService.getTenantContext(currentUser);
+    
     const photo = await this.prisma.profilePhoto.findUnique({
       where: {
         id: photoId,
         isActive: true,
         deletedAt: null,
+        // Add tenant filtering for security
+        organizationId: tenantContext.organizationId,
+        propertyId: tenantContext.propertyId,
       },
     });
 
@@ -350,6 +374,8 @@ export class ProfilePhotoService {
         const nextPhoto = await this.prisma.profilePhoto.findFirst({
           where: {
             userId: photo.userId,
+            organizationId: photo.organizationId,
+            propertyId: photo.propertyId,
             isActive: true,
             deletedAt: null,
             id: { not: photoId },
@@ -407,11 +433,17 @@ export class ProfilePhotoService {
    * Set a photo as primary
    */
   async setPrimaryPhoto(photoId: string, currentUser: User): Promise<ProfilePhoto> {
+    // Get tenant context for security
+    const tenantContext = this.tenantContextService.getTenantContext(currentUser);
+    
     const photo = await this.prisma.profilePhoto.findUnique({
       where: {
         id: photoId,
         isActive: true,
         deletedAt: null,
+        // Add tenant filtering for security
+        organizationId: tenantContext.organizationId,
+        propertyId: tenantContext.propertyId,
       },
     });
 
@@ -426,10 +458,12 @@ export class ProfilePhotoService {
 
     // Any photo type can be primary
 
-    // Unset any existing primary photos
+    // Unset any existing primary photos within the same tenant
     await this.prisma.profilePhoto.updateMany({
       where: {
         userId: photo.userId,
+        organizationId: photo.organizationId,
+        propertyId: photo.propertyId,
         isPrimary: true,
         isActive: true,
         deletedAt: null,

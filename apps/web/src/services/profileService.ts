@@ -97,6 +97,52 @@ export interface VerificationAction {
   notes?: string;
 }
 
+export enum PhotoType {
+  FORMAL = 'FORMAL',
+  CASUAL = 'CASUAL',
+  UNIFORM = 'UNIFORM',
+  FUNNY = 'FUNNY'
+}
+
+export interface ProfilePhoto {
+  id: string;
+  userId: string;
+  fileKey: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  photoType: PhotoType;
+  isActive: boolean;
+  isPrimary: boolean;
+  description?: string;
+  uploadedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserPhotosResponse {
+  photos: ProfilePhoto[];
+  photosByType: Record<PhotoType, number>;
+  primaryPhoto: ProfilePhoto | null;
+}
+
+export interface PhotoUploadOptions {
+  isPrimary?: boolean;
+  description?: string;
+}
+
+export interface PhotoTypeInfo {
+  type: PhotoType;
+  displayName: string;
+  description: string;
+  hasPhoto: boolean;
+  photoUrl: string | null;
+}
+
+export interface PhotoTypesResponse {
+  photoTypes: PhotoTypeInfo[];
+}
+
 class ProfileService {
   async getProfile(): Promise<Profile> {
     const response = await api.get('/profile');
@@ -189,7 +235,73 @@ class ProfileService {
     const response = await api.post('/profile/emergency-contacts', requestData);
     return response.data.data;
   }
+
+  // === NEW MULTI-PHOTO METHODS ===
+
+  async getUserPhotos(): Promise<UserPhotosResponse> {
+    const response = await api.get('/profile/photos');
+    return response.data.data;
+  }
+
+  async getUserPhotosById(userId: string): Promise<UserPhotosResponse> {
+    const response = await api.get(`/profile/photos/${userId}`);
+    return response.data.data;
+  }
+
+  async getPhotoTypes(): Promise<PhotoTypesResponse> {
+    const response = await api.get('/profile/photo-types');
+    return response.data.data;
+  }
+
+  async uploadPhotoByType(
+    photoType: PhotoType,
+    file: File,
+    options: PhotoUploadOptions = {}
+  ): Promise<ProfilePhoto> {
+    const formData = new FormData();
+    formData.append('photo', file);
+    
+    if (options.isPrimary !== undefined) {
+      formData.append('isPrimary', String(options.isPrimary));
+    }
+    
+    if (options.description) {
+      formData.append('description', options.description);
+    }
+
+    const response = await api.post(`/profile/photos/upload/${photoType}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.data;
+  }
+
+  async setPrimaryPhoto(photoId: string): Promise<ProfilePhoto> {
+    const response = await api.put(`/profile/photos/primary/${photoId}`);
+    return response.data.data;
+  }
+
+  async deleteSpecificPhoto(photoId: string): Promise<{ success: boolean }> {
+    const response = await api.delete(`/profile/photos/${photoId}`);
+    return response.data.data;
+  }
+
+  async getPhotoByType(userId: string, photoType: PhotoType): Promise<Blob> {
+    const response = await api.get(`/profile/photo/${userId}/${photoType}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  }
 }
 
 export const profileService = new ProfileService();
 export default profileService;
+
+// Helper function to get photo URL for display
+export const getPhotoUrl = (userId: string, photoType?: PhotoType): string => {
+  if (photoType) {
+    return `/api/profile/photo/${userId}/${photoType}`;
+  }
+  return `/api/profile/photo/${userId}`;
+};

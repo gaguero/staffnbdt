@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
+import PhotoGallery from '../components/PhotoGallery';
 import IDDocumentUpload from '../components/IDDocumentUpload';
 import EmergencyContactsForm from '../components/EmergencyContactsForm';
 import profileService, { Profile, EmergencyContactsData, LegacyEmergencyContactsData } from '../services/profileService';
@@ -311,7 +312,8 @@ const ProfilePage: React.FC = () => {
           {[
             { id: 'personal', label: 'Personal', icon: '👤' },
             { id: 'emergency', label: 'Emergency Contacts', icon: '🚨' },
-            { id: 'photo', label: 'Foto', icon: '📸' },
+            { id: 'photo', label: 'Profile Photo', icon: '📸' },
+          { id: 'gallery', label: 'Photo Gallery', icon: '🖼️' },
             { id: 'documents', label: 'Documentos', icon: '📄' },
             { id: 'security', label: 'Seguridad', icon: '🔒' }
           ].map((tab) => (
@@ -525,17 +527,17 @@ const ProfilePage: React.FC = () => {
           </div>
         )}
         
-        {/* Photo Tab */}
+        {/* Photo Tab (Legacy Single Photo) */}
         {activeTab === 'photo' && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                   <span className="mr-2">📸</span>
-                  Foto de Perfil
+                  Primary Profile Photo
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Personaliza tu perfil con una foto profesional
+                  Upload a single profile photo (legacy mode)
                 </p>
               </div>
               <div className="p-6">
@@ -562,6 +564,50 @@ const ProfilePage: React.FC = () => {
                     }
                     
                     toast.success('Profile photo removed successfully!');
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Photo Gallery Tab (New Multi-Photo System) */}
+        {activeTab === 'gallery' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <span className="mr-2">🖼️</span>
+                  Multi-Photo Gallery
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Upload up to 4 different types of photos for various professional contexts
+                </p>
+              </div>
+              <div className="p-6">
+                <PhotoGallery
+                  onPhotoUpdate={async (photoUrl) => {
+                    // Update local state
+                    setProfile(prev => prev ? { ...prev, profilePhoto: photoUrl } : null);
+                    
+                    // Update auth context
+                    if (user) {
+                      updateUser({ ...user, profilePhoto: photoUrl });
+                    }
+                    
+                    toast.success('Primary photo updated successfully!');
+                  }}
+                  onPhotoDelete={async () => {
+                    // Check if there are other photos to set as primary
+                    const updatedProfile = await profileService.getProfile();
+                    setProfile(updatedProfile);
+                    
+                    // Update auth context
+                    if (user) {
+                      updateUser({ ...user, profilePhoto: updatedProfile.profilePhoto });
+                    }
+                    
+                    toast.success('Photo deleted successfully!');
                   }}
                 />
               </div>
