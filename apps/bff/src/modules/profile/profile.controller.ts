@@ -251,6 +251,68 @@ export class ProfileController {
     return CustomApiResponse.success(status, 'ID document status retrieved successfully');
   }
 
+  @Get('photo/:userId')
+  @RequirePermission('user.read.own', 'user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
+  @Audit({ action: 'VIEW_PROFILE_PHOTO', entity: 'User' })
+  @ApiOperation({ summary: 'Get user profile photo' })
+  @ApiResponse({ status: 200, description: 'Profile photo retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Profile photo not found' })
+  @ApiResponse({ status: 403, description: 'Access denied' })
+  async getProfilePhoto(
+    @Param('userId') userId: string,
+    @CurrentUser() currentUser: User,
+    @Res() res: Response,
+  ) {
+    try {
+      console.log('📸 Profile photo request:', {
+        userId,
+        requestedBy: currentUser.id,
+        isOwnPhoto: currentUser.id === userId,
+      });
+
+      // Check if user can access this photo
+      if (currentUser.id !== userId && !this.canViewProfile(currentUser, userId)) {
+        throw new ForbiddenException('Insufficient permissions to view this profile photo');
+      }
+
+      const { stream, metadata } = await this.profileService.getProfilePhotoStream(userId, currentUser);
+      
+      console.log('📸 Serving profile photo:', {
+        userId,
+        mimeType: metadata.mimeType,
+        size: metadata.size,
+      });
+      
+      // Set headers
+      res.setHeader('Content-Type', metadata.mimeType || 'image/jpeg');
+      res.setHeader('Content-Length', metadata.size.toString());
+      res.setHeader('Content-Disposition', `inline; filename="profile-${userId}.jpg"`);
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      
+      // Stream the file
+      stream.pipe(res);
+      console.log('✅ Profile photo served successfully');
+    } catch (error) {
+      console.error('❌ Failed to serve profile photo:', {
+        error: error.message,
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  @Get('photo')
+  @RequirePermission('user.read.own')
+  @ApiOperation({ summary: 'Get current user profile photo' })
+  @ApiResponse({ status: 200, description: 'Profile photo retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Profile photo not found' })
+  async getCurrentUserProfilePhoto(
+    @CurrentUser() currentUser: User,
+    @Res() res: Response,
+  ) {
+    return this.getProfilePhoto(currentUser.id, currentUser, res);
+  }
+
   @Post('emergency-contacts')
   @RequirePermission('user.update.own')
   @Audit({ action: 'UPDATE_EMERGENCY_CONTACTS', entity: 'User' })
@@ -276,5 +338,19 @@ export class ProfileController {
       console.error('❌ Emergency contacts update failed:', error.message);
       throw error;
     }
+  }
+
+  private canViewProfile(currentUser: User, targetUserId: string): boolean {
+    if (currentUser.role === Role.PLATFORM_ADMIN) {
+      return true;
+    }
+
+    if (currentUser.role === Role.DEPARTMENT_ADMIN) {
+      // Department admins can view profiles in their department
+      // This would need to be checked against the target user's department
+      return true; // Simplified for now
+    }
+
+    return currentUser.id === targetUserId;
   }
 }

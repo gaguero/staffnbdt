@@ -233,9 +233,13 @@ const ProfilePage: React.FC = () => {
             <div className="relative">
               {profile.profilePhoto ? (
                 <img 
-                  src={profile.profilePhoto} 
+                  src={profile.profilePhoto.startsWith('/api/') ? profile.profilePhoto : `/api/profile/photo/${profile.id}`} 
                   alt="Profile" 
                   className="w-20 h-20 rounded-full object-cover border-4 border-white/20 shadow-lg"
+                  onError={(e) => {
+                    console.log('Profile photo failed to load, hiding image');
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               ) : (
                 <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-2xl font-bold border-4 border-white/20 shadow-lg">
@@ -536,7 +540,7 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="p-6">
                 <ProfilePhotoUpload 
-                  currentPhotoUrl={profile.profilePhoto}
+                  currentPhotoUrl={profile.profilePhoto ? (profile.profilePhoto.startsWith('/api/') ? profile.profilePhoto : `/api/profile/photo/${profile.id}`) : undefined}
                   onPhotoUpdate={async (photoUrl) => {
                     // Update local state
                     setProfile(prev => prev ? { ...prev, profilePhoto: photoUrl } : null);

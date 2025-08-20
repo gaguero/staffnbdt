@@ -97,6 +97,9 @@ export class FilesService {
       case 'training':
         return await this.checkTrainingPathAccess(pathParts, currentUser);
       
+      case 'profiles':
+        return await this.checkProfilePhotoAccess(pathParts, currentUser);
+      
       default:
         // Unknown file category, deny access
         this.logger.warn(`Unknown file category: ${category} in path: ${fileKey}`);
@@ -235,5 +238,34 @@ export class FilesService {
       this.logger.error(`Error checking user department access for ${userId}:`, error);
       return false;
     }
+  }
+
+  private async checkProfilePhotoAccess(pathParts: string[], currentUser: User): Promise<boolean> {
+    // Profile photo path format: profiles/{userId}/{timestamp}-{random}-{filename}
+    if (pathParts.length < 3) {
+      return false;
+    }
+
+    const userId = pathParts[1];
+
+    // Users can access their own profile photos
+    if (currentUser.id === userId) {
+      return true;
+    }
+
+    // Platform admins can access any profile photo
+    if (currentUser.role === Role.PLATFORM_ADMIN) {
+      return true;
+    }
+
+    // Department admins can access photos of users in their department
+    if (currentUser.role === Role.DEPARTMENT_ADMIN) {
+      return await this.checkUserDepartmentAccess(userId, currentUser);
+    }
+
+    // Organization and property admins can also access photos based on their scope
+    // This would need additional organization/property context checking
+    // For now, we'll allow department-level access
+    return false;
   }
 }

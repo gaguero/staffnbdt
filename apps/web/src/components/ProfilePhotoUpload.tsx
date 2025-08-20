@@ -217,6 +217,10 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
               src={currentPhotoUrl}
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover border-4 border-sand"
+              onError={(e) => {
+                console.log('Profile photo failed to load in upload component');
+                e.currentTarget.style.display = 'none';
+              }}
             />
           ) : (
             <div className="w-24 h-24 rounded-full bg-warm-gold flex items-center justify-center text-white text-2xl font-bold border-4 border-sand">

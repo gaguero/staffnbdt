@@ -209,7 +209,8 @@ export class ProfileService {
 
       console.log('✅ Profile photo upload completed successfully');
       return { 
-        profilePhoto: savedFile.key,
+        profilePhoto: `/api/profile/photo/${userId}`,
+        profilePhotoKey: savedFile.key,
         publicUrl: savedFile.publicUrl,
         size: savedFile.size,
       };
@@ -615,6 +616,79 @@ export class ProfileService {
       stream: await this.storageService.createReadStream(decryptedPath),
       metadata: result.metadata,
     };
+  }
+
+  async getProfilePhotoStream(userId: string, currentUser: User) {
+    // Users can view their own photo, admins can view any photo in their scope
+    if (currentUser.id !== userId && !this.canViewProfile(currentUser, userId)) {
+      throw new ForbiddenException('Insufficient permissions to view this profile photo');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { 
+        id: userId,
+        deletedAt: null,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!user.profilePhoto) {
+      throw new NotFoundException('Profile photo not found');
+    }
+
+    try {
+      console.log('📸 Retrieving profile photo:', {
+        userId,
+        photoKey: user.profilePhoto,
+      });
+
+      // Check if file exists in storage
+      const fileExists = await this.storageService.checkFileExists(user.profilePhoto);
+      if (!fileExists) {
+        throw new NotFoundException('Profile photo file not found in storage');
+      }
+
+      // Get file metadata from storage
+      const fileMetadata = await this.storageService.getFileMetadata(user.profilePhoto);
+      
+      // Create read stream
+      const stream = await this.storageService.createReadStream(user.profilePhoto);
+
+      await this.auditService.log({
+        userId: currentUser.id,
+        action: 'VIEW_PROFILE_PHOTO',
+        entity: 'User',
+        entityId: userId,
+        newData: { viewedProfilePhoto: userId },
+      });
+
+      console.log('✅ Profile photo stream created successfully');
+      return {
+        stream,
+        metadata: {
+          mimeType: fileMetadata.mimeType || 'image/jpeg',
+          size: fileMetadata.size,
+          fileName: fileMetadata.fileName || `profile-${userId}.jpg`,
+        },
+      };
+    } catch (error) {
+      console.error('❌ Profile photo stream error:', {
+        error: error.message,
+        userId,
+        photoKey: user.profilePhoto,
+      });
+      
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new InternalServerErrorException(
+        `Failed to retrieve profile photo: ${error.message}`
+      );
+    }
   }
 
   private canViewProfile(currentUser: User, targetUserId: string): boolean {

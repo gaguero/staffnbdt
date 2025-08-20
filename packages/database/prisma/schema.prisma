@@ -143,13 +143,37 @@ model User {
   department          Department?       @relation(fields: [departmentId], references: [id])
   organization        Organization?     @relation(fields: [organizationId], references: [id])
   property            Property?         @relation(fields: [propertyId], references: [id])
-  customRoles         UserCustomRole[]
   userPermissions     UserPermission[]
+  userCustomRoles     UserCustomRole[]
+  profilePhotos       ProfilePhoto[]
   vacations           Vacation[]
 
   @@index([organizationId])
   @@index([propertyId])
   @@index([departmentId])
+}
+
+model ProfilePhoto {
+  id         String    @id @default(cuid())
+  userId     String
+  fileKey    String
+  fileName   String
+  mimeType   String
+  size       Int
+  photoType  PhotoType @default(PROFILE)
+  isActive   Boolean   @default(true)
+  isPrimary  Boolean   @default(false)
+  metadata   Json?
+  uploadedAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([isPrimary])
+  @@index([deletedAt])
 }
 
 model Department {
@@ -697,6 +721,13 @@ enum PropertyType {
   APARTMENT
   VILLA
   OTHER
+}
+
+enum PhotoType {
+  PROFILE
+  COVER
+  THUMBNAIL
+  GALLERY
 }
 
 enum Role {
