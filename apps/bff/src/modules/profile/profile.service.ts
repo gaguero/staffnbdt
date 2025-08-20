@@ -16,8 +16,6 @@ import {
   IdVerificationResult 
 } from './interfaces';
 import { User, Role } from '@prisma/client';
-import { unlink, access } from 'fs/promises';
-import { join } from 'path';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -153,21 +151,48 @@ export class ProfileService {
     }
 
     try {
+      console.log('📸 Starting profile photo upload process:', {
+        userId,
+        fileName: file.originalname,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+      });
+
       // Delete old profile photo if exists
       if (user.profilePhoto) {
         try {
-          const oldPhotoPath = join(process.cwd(), 'uploads', 'profiles', user.profilePhoto);
-          await unlink(oldPhotoPath);
+          console.log('🗑️ Deleting old profile photo:', user.profilePhoto);
+          await this.storageService.deleteFile(user.profilePhoto);
         } catch (error) {
+          console.warn('⚠️ Failed to delete old profile photo:', error.message);
           // File might not exist, continue
         }
       }
 
-      const photoPath = `profiles/${file.filename}`;
+      // Generate a unique key for the profile photo
+      const photoKey = this.storageService.generateFileKey('profiles', file.originalname, userId);
+      console.log('🔑 Generated photo key:', photoKey);
 
+      // Save the file using StorageService
+      const fileBuffer = file.buffer || (file.path ? await require('fs/promises').readFile(file.path) : null);
+      if (!fileBuffer) {
+        throw new Error('Could not read file data');
+      }
+
+      const savedFile = await this.storageService.saveFile(fileBuffer, {
+        key: photoKey,
+        fileName: file.originalname,
+        mimeType: file.mimetype,
+        module: 'profiles',
+        type: 'avatar',
+      });
+
+      console.log('💾 File saved successfully:', savedFile);
+
+      // Update user profile with new photo path
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
-        data: { profilePhoto: photoPath },
+        data: { profilePhoto: savedFile.key },
       });
 
       await this.auditService.log({
@@ -176,19 +201,24 @@ export class ProfileService {
         entity: 'User',
         entityId: userId,
         newData: { 
-          profilePhoto: photoPath,
-          fileSize: file.size,
-          mimeType: file.mimetype,
+          profilePhoto: savedFile.key,
+          fileSize: savedFile.size,
+          mimeType: savedFile.mimeType,
         },
       });
 
-      return { profilePhoto: photoPath };
+      console.log('✅ Profile photo upload completed successfully');
+      return { 
+        profilePhoto: savedFile.key,
+        publicUrl: savedFile.publicUrl,
+        size: savedFile.size,
+      };
     } catch (error) {
-      console.error('Profile photo upload error:', {
+      console.error('❌ Profile photo upload error:', {
         error: error.message,
         stack: error.stack,
         userId,
-        fileName: file?.filename,
+        fileName: file?.originalname,
         fileSize: file?.size,
       });
       
@@ -216,11 +246,13 @@ export class ProfileService {
       throw new BadRequestException('No profile photo to delete');
     }
 
-    // Delete file from storage
+    // Delete file from storage using StorageService
     try {
-      const photoPath = join(process.cwd(), 'uploads', user.profilePhoto);
-      await unlink(photoPath);
+      console.log('🗑️ Deleting profile photo from storage:', user.profilePhoto);
+      await this.storageService.deleteFile(user.profilePhoto);
+      console.log('✅ Profile photo deleted from storage successfully');
     } catch (error) {
+      console.warn('⚠️ Failed to delete profile photo from storage:', error.message);
       // File might not exist, continue with database update
     }
 
@@ -254,41 +286,83 @@ export class ProfileService {
       throw new NotFoundException('User not found');
     }
 
-    // Encrypt the file path
-    const encryptedPath = this.encryptFilePath(`id-documents/${file.filename}`);
-
-    const idDocumentMetadata: IdDocumentMetadata = {
-      filename: file.filename,
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      uploadedAt: new Date().toISOString(),
-      encryptedPath,
-      verificationStatus: IdVerificationStatus.PENDING,
-    };
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { idDocument: JSON.stringify(idDocumentMetadata) },
-    });
-
-    await this.auditService.log({
-      userId: currentUser.id,
-      action: 'UPLOAD_ID_DOCUMENT',
-      entity: 'User',
-      entityId: userId,
-      newData: {
-        filename: file.filename,
-        originalName: file.originalname,
-        size: file.size,
+    try {
+      console.log('🎫 Starting ID document upload process:', {
+        userId,
+        fileName: file.originalname,
+        fileSize: file.size,
         mimeType: file.mimetype,
-      },
-    });
+      });
 
-    return { 
-      status: IdVerificationStatus.PENDING,
-      uploadedAt: idDocumentMetadata.uploadedAt,
-    };
+      // Generate a unique key for the ID document
+      const documentKey = this.storageService.generateFileKey('id-documents', file.originalname, userId);
+      console.log('🔑 Generated document key:', documentKey);
+
+      // Save the file using StorageService
+      const fileBuffer = file.buffer || (file.path ? await require('fs/promises').readFile(file.path) : null);
+      if (!fileBuffer) {
+        throw new Error('Could not read file data');
+      }
+
+      const savedFile = await this.storageService.saveFile(fileBuffer, {
+        key: documentKey,
+        fileName: file.originalname,
+        mimeType: file.mimetype,
+        module: 'id-documents',
+        type: 'verification',
+      });
+
+      console.log('💾 ID document saved successfully:', savedFile);
+
+      // Encrypt the file key for additional security
+      const encryptedPath = this.encryptFilePath(savedFile.key);
+
+      const idDocumentMetadata: IdDocumentMetadata = {
+        filename: savedFile.key, // Use the storage key instead of original filename
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: savedFile.size,
+        uploadedAt: new Date().toISOString(),
+        encryptedPath,
+        verificationStatus: IdVerificationStatus.PENDING,
+      };
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { idDocument: JSON.stringify(idDocumentMetadata) },
+      });
+
+      await this.auditService.log({
+        userId: currentUser.id,
+        action: 'UPLOAD_ID_DOCUMENT',
+        entity: 'User',
+        entityId: userId,
+        newData: {
+          filename: savedFile.key,
+          originalName: file.originalname,
+          size: savedFile.size,
+          mimeType: file.mimetype,
+        },
+      });
+
+      console.log('✅ ID document upload completed successfully');
+      return { 
+        status: IdVerificationStatus.PENDING,
+        uploadedAt: idDocumentMetadata.uploadedAt,
+      };
+    } catch (error) {
+      console.error('❌ ID document upload error:', {
+        error: error.message,
+        stack: error.stack,
+        userId,
+        fileName: file?.originalname,
+        fileSize: file?.size,
+      });
+      
+      throw new InternalServerErrorException(
+        `Failed to upload ID document: ${error.message}`
+      );
+    }
   }
 
   async getIdDocument(userId: string, currentUser: User) {
@@ -305,29 +379,54 @@ export class ProfileService {
       throw new NotFoundException('ID document not found');
     }
 
-    const idDocumentMetadata: IdDocumentMetadata = JSON.parse(user.idDocument);
-    const decryptedPath = this.decryptFilePath(idDocumentMetadata.encryptedPath);
-    const filePath = join(process.cwd(), 'uploads', decryptedPath);
-
-    // Check if file exists
     try {
-      await access(filePath);
+      const idDocumentMetadata: IdDocumentMetadata = JSON.parse(user.idDocument);
+      const decryptedPath = this.decryptFilePath(idDocumentMetadata.encryptedPath);
+      
+      console.log('📄 Retrieving ID document:', {
+        userId,
+        decryptedPath,
+        originalName: idDocumentMetadata.originalName,
+      });
+
+      // Check if file exists in storage
+      const fileExists = await this.storageService.checkFileExists(decryptedPath);
+      if (!fileExists) {
+        throw new NotFoundException('ID document file not found in storage');
+      }
+
+      // Get file metadata from storage
+      const fileMetadata = await this.storageService.getFileMetadata(decryptedPath);
+      
+      await this.auditService.log({
+        userId: currentUser.id,
+        action: 'VIEW_ID_DOCUMENT',
+        entity: 'User',
+        entityId: userId,
+        newData: { viewedIdDocument: userId },
+      });
+
+      console.log('✅ ID document retrieved successfully');
+      return {
+        filePath: fileMetadata.path,
+        metadata: idDocumentMetadata,
+        fileMetadata,
+        decryptedPath,
+      };
     } catch (error) {
-      throw new NotFoundException('ID document file not found');
+      console.error('❌ ID document retrieval error:', {
+        error: error.message,
+        userId,
+      });
+      
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new InternalServerErrorException(
+        `Failed to retrieve ID document: ${error.message}`
+      );
     }
-
-    await this.auditService.log({
-      userId: currentUser.id,
-      action: 'VIEW_ID_DOCUMENT',
-      entity: 'User',
-      entityId: userId,
-      newData: { viewedIdDocument: userId },
-    });
-
-    return {
-      filePath,
-      metadata: idDocumentMetadata,
-    };
   }
 
   async verifyIdDocument(
@@ -506,6 +605,16 @@ export class ProfileService {
     });
 
     return emergencyContactData;
+  }
+
+  async getIdDocumentStream(userId: string, currentUser: User) {
+    const result = await this.getIdDocument(userId, currentUser);
+    const { decryptedPath } = result;
+    
+    return {
+      stream: await this.storageService.createReadStream(decryptedPath),
+      metadata: result.metadata,
+    };
   }
 
   private canViewProfile(currentUser: User, targetUserId: string): boolean {

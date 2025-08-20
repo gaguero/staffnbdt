@@ -33,8 +33,6 @@ import {
 } from './dto';
 import { profilePhotoConfig, idDocumentConfig } from './config/multer.config';
 import { User, Role } from '@prisma/client';
-import { createReadStream } from 'fs';
-import { stat } from 'fs/promises';
 
 @ApiTags('Profile')
 @Controller('profile')
@@ -181,19 +179,31 @@ export class ProfileController {
     @CurrentUser() currentUser: User,
     @Res() res: Response,
   ) {
-    const { filePath, metadata } = await this.profileService.getIdDocument(userId, currentUser);
-    
-    // Get file stats
-    const stats = await stat(filePath);
-    
-    // Set headers
-    res.setHeader('Content-Type', metadata.mimeType);
-    res.setHeader('Content-Length', stats.size);
-    res.setHeader('Content-Disposition', `inline; filename="${metadata.originalName}"`);
-    
-    // Stream the file
-    const fileStream = createReadStream(filePath);
-    fileStream.pipe(res);
+    try {
+      const { stream, metadata } = await this.profileService.getIdDocumentStream(userId, currentUser);
+      
+      console.log('📄 Serving ID document:', {
+        userId,
+        originalName: metadata.originalName,
+        mimeType: metadata.mimeType,
+        size: metadata.size,
+      });
+      
+      // Set headers
+      res.setHeader('Content-Type', metadata.mimeType);
+      res.setHeader('Content-Length', metadata.size);
+      res.setHeader('Content-Disposition', `inline; filename="${metadata.originalName}"`);
+      
+      // Stream the file
+      stream.pipe(res);
+      console.log('✅ ID document served successfully');
+    } catch (error) {
+      console.error('❌ Failed to serve ID document:', {
+        error: error.message,
+        userId,
+      });
+      throw error;
+    }
   }
 
   @Post('id/:userId/verify')
