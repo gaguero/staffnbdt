@@ -63,18 +63,14 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
       ]);
 
       if (propertiesResponse.status === 'fulfilled' && propertiesResponse.value.data) {
-        console.log('PROPERTIES DEBUG - Full response:', propertiesResponse.value);
-        console.log('PROPERTIES DEBUG - Response data:', propertiesResponse.value.data);
-        console.log('PROPERTIES DEBUG - Type of data:', typeof propertiesResponse.value.data);
-        console.log('PROPERTIES DEBUG - Is array:', Array.isArray(propertiesResponse.value.data));
-        setProperties(propertiesResponse.value.data || []);
+        setProperties(propertiesResponse.value.data.data || []);
       } else {
         console.error('Failed to load properties:', propertiesResponse);
         setProperties([]);
       }
 
       if (usersResponse.status === 'fulfilled' && usersResponse.value.data) {
-        setUsers(usersResponse.value.data || []);
+        setUsers(usersResponse.value.data.data || []);
       } else {
         console.error('Failed to load users:', usersResponse);
         setUsers([]);

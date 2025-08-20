@@ -64,14 +64,14 @@ const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({
       ]);
 
       if (departmentsResponse.status === 'fulfilled' && departmentsResponse.value.data) {
-        setDepartments(departmentsResponse.value.data || []);
+        setDepartments(departmentsResponse.value.data.data || []);
       } else {
         console.error('Failed to load departments:', departmentsResponse);
         setDepartments([]);
       }
 
       if (usersResponse.status === 'fulfilled' && usersResponse.value.data) {
-        setUsers(usersResponse.value.data || []);
+        setUsers(usersResponse.value.data.data || []);
       } else {
         console.error('Failed to load users:', usersResponse);
         setUsers([]);
