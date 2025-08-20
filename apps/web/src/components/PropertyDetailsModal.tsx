@@ -106,11 +106,29 @@ const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({
 
   const formatLocation = () => {
     const parts = [];
-    if (property.address) parts.push(property.address);
-    if (property.city) parts.push(property.city);
-    if (property.state) parts.push(property.state);
-    if (property.country) parts.push(property.country);
-    if (property.postalCode) parts.push(property.postalCode);
+    
+    // Handle address as string or object
+    if (property.address) {
+      if (typeof property.address === 'string') {
+        parts.push(property.address);
+      } else if (typeof property.address === 'object') {
+        const addressParts = [];
+        if (property.address.street) addressParts.push(property.address.street);
+        if (property.address.city) addressParts.push(property.address.city);
+        if (property.address.state) addressParts.push(property.address.state);
+        if (property.address.country) addressParts.push(property.address.country);
+        if (property.address.postalCode) addressParts.push(property.address.postalCode);
+        if (addressParts.length > 0) parts.push(addressParts.join(', '));
+      }
+    }
+    
+    // Add individual address fields if they exist and address wasn't an object
+    if (typeof property.address !== 'object') {
+      if (property.city) parts.push(property.city);
+      if (property.state) parts.push(property.state);
+      if (property.country) parts.push(property.country);
+      if (property.postalCode) parts.push(property.postalCode);
+    }
     
     return parts.length > 0 ? parts.join(', ') : 'Not specified';
   };

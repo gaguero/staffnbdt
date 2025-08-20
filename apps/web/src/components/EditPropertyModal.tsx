@@ -23,11 +23,16 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
   // Initialize form data when property changes
   useEffect(() => {
     if (property) {
+      // Convert address object to string if needed
+      const addressString = property.address && typeof property.address === 'object' 
+        ? `${property.address.street || ''} ${property.address.city || ''} ${property.address.state || ''}`.trim() || ''
+        : property.address || '';
+        
       setFormData({
         name: property.name,
         slug: property.slug,
         description: property.description || '',
-        address: property.address || '',
+        address: addressString,
         city: property.city || '',
         state: property.state || '',
         country: property.country || '',
