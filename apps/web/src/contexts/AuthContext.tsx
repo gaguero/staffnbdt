@@ -101,15 +101,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (storedTenant) {
           const parsedTenant = JSON.parse(storedTenant);
           setTenantInfo(parsedTenant);
+          
+          // Check if stored tenant is missing organization/property details and fetch them
+          if ((parsedTenant.organizationId && !parsedTenant.organization) || 
+              (parsedTenant.propertyId && !parsedTenant.property)) {
+            fetchMissingTenantDetails(parsedTenant);
+          }
         } else {
-          // Initialize tenant context from user data
+          // Initialize tenant context from user data and fetch missing organization/property details
           const tenantFromUser: TenantInfo = {
             organizationId: parsedUser.organizationId,
             propertyId: parsedUser.propertyId,
             availableProperties: parsedUser.properties || []
           };
           setTenantInfo(tenantFromUser);
-          localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(tenantFromUser));
+          
+          // Fetch organization and property details if missing
+          fetchMissingTenantDetails(tenantFromUser);
         }
         
         // Load permissions for stored user
@@ -296,6 +304,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Failed to clear permission cache:', error);
       throw error;
+    }
+  };
+
+  // Fetch missing tenant details (organization and property objects)
+  const fetchMissingTenantDetails = async (tenantInfo: TenantInfo) => {
+    try {
+      let organization: Organization | undefined;
+      let property: Property | undefined;
+
+      // Fetch organization details if we have organizationId but no organization object
+      if (tenantInfo.organizationId && !tenantInfo.organization) {
+        try {
+          const orgResponse = await api.get(`/organizations/${tenantInfo.organizationId}`);
+          organization = orgResponse.data.data;
+        } catch (error) {
+          console.warn('Failed to fetch organization details:', error);
+        }
+      }
+
+      // Fetch property details if we have propertyId but no property object
+      if (tenantInfo.propertyId && !tenantInfo.property) {
+        try {
+          const propResponse = await api.get(`/properties/${tenantInfo.propertyId}`);
+          property = propResponse.data.data;
+        } catch (error) {
+          console.warn('Failed to fetch property details:', error);
+        }
+      }
+
+      // Update tenant info with fetched details
+      if (organization || property) {
+        const updatedTenantInfo = {
+          ...tenantInfo,
+          ...(organization && { organization }),
+          ...(property && { property })
+        };
+        setTenantInfo(updatedTenantInfo);
+        localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(updatedTenantInfo));
+      }
+    } catch (error) {
+      console.error('Failed to fetch tenant details:', error);
     }
   };
 
