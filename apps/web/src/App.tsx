@@ -18,6 +18,7 @@ import BenefitsPage from './pages/BenefitsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import UsersPage from './pages/UsersPage';
 import DepartmentsPage from './pages/DepartmentsPage';
+import OrganizationsPage from './pages/OrganizationsPage';
 import ComponentsTestPage from './pages/ComponentsTestPage';
 
 // Login component
@@ -231,6 +232,16 @@ const App: React.FC = () => {
             <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}>
               <Layout>
                 <DepartmentsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/organizations" 
+          element={
+            <ProtectedRoute roles={['PLATFORM_ADMIN']}>
+              <Layout>
+                <OrganizationsPage />
               </Layout>
             </ProtectedRoute>
           } 

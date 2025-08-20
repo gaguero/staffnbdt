@@ -76,6 +76,12 @@ const navigationItems: NavItem[] = [
     path: '/departments',
     icon: '🏢',
     roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
+  },
+  {
+    label: 'nav.organizations',
+    path: '/organizations',
+    icon: '🏨',
+    roles: ['PLATFORM_ADMIN']
   }
 ];
 
