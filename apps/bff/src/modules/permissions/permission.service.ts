@@ -45,7 +45,7 @@ interface UserWithRoles {
   organizationId: string | null;
   propertyId: string | null;
   departmentId: string | null;
-  customRoles: (UserCustomRole & {
+  userCustomRoles: (UserCustomRole & {
     role: CustomRole & {
       permissions: (RolePermission & {
         permission: PermissionWithRelations;
@@ -172,7 +172,7 @@ export class PermissionService implements OnModuleInit {
       });
 
       // Get permissions from custom roles
-      for (const userRole of user.customRoles) {
+      for (const userRole of user.userCustomRoles) {
         if (!userRole.isActive || (userRole.expiresAt && userRole.expiresAt < new Date())) {
           continue;
         }
@@ -268,7 +268,7 @@ export class PermissionService implements OnModuleInit {
       }
 
       // Check custom role permissions
-      for (const userRole of user.customRoles) {
+      for (const userRole of user.userCustomRoles) {
         if (!userRole.isActive || (userRole.expiresAt && userRole.expiresAt < new Date())) {
           continue;
         }
@@ -635,7 +635,7 @@ export class PermissionService implements OnModuleInit {
     }
 
     const allPermissions = await this.getUserPermissions(userId);
-    const roles = user.customRoles.map(ur => ur.role);
+    const roles = user.userCustomRoles.map(ur => ur.role);
     
     // Categorize permissions
     const inheritedPermissions: Permission[] = [];
@@ -914,7 +914,7 @@ export class PermissionService implements OnModuleInit {
         
         return {
           ...user,
-          customRoles: [],
+          userCustomRoles: [],
           userPermissions: [],
         } as UserWithRoles;
       } catch (error) {
@@ -934,7 +934,7 @@ export class PermissionService implements OnModuleInit {
         organizationId: true,
         propertyId: true,
         departmentId: true,
-        customRoles: {
+        userCustomRoles: {
           where: { isActive: true },
           include: {
             role: {
@@ -985,7 +985,7 @@ export class PermissionService implements OnModuleInit {
         
         return {
           ...user,
-          customRoles: [],
+          userCustomRoles: [],
           userPermissions: [],
         } as UserWithRoles;
       } catch (fallbackError) {
@@ -1279,7 +1279,7 @@ export class PermissionService implements OnModuleInit {
       try {
         const tableStats = {
           permissions: await this.prisma.permission.count(),
-          customRoles: await this.prisma.customRole.count(),
+          userCustomRoles: await this.prisma.customRole.count(),
           rolePermissions: await this.prisma.rolePermission.count(),
           userPermissions: await this.prisma.userPermission.count(),
           permissionCache: await this.prisma.permissionCache.count(),

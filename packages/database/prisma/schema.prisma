@@ -154,23 +154,26 @@ model User {
 }
 
 model ProfilePhoto {
-  id         String    @id @default(cuid())
-  userId     String
-  fileKey    String
-  fileName   String
-  mimeType   String
-  size       Int
-  photoType  PhotoType @default(PROFILE)
-  isActive   Boolean   @default(true)
-  isPrimary  Boolean   @default(false)
-  metadata   Json?
-  uploadedAt DateTime  @default(now())
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  deletedAt  DateTime?
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  fileKey     String
+  fileName    String
+  mimeType    String
+  size        Int
+  photoType   PhotoType @default(FORMAL)
+  isActive    Boolean   @default(true)
+  isPrimary   Boolean   @default(false)
+  description String?
+  metadata    Json?
+  uploadedAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, photoType, isActive, deletedAt])
   @@index([userId])
+  @@index([photoType])
   @@index([isActive])
   @@index([isPrimary])
   @@index([deletedAt])
@@ -724,10 +727,10 @@ enum PropertyType {
 }
 
 enum PhotoType {
-  PROFILE
-  COVER
-  THUMBNAIL
-  GALLERY
+  FORMAL
+  CASUAL
+  UNIFORM
+  FUNNY
 }
 
 enum Role {

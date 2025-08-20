@@ -108,13 +108,17 @@ export class R2Service implements OnModuleInit {
     const randomString = crypto.randomBytes(8).toString('hex');
     const sanitizedFileName = fileName ? fileName.replace(/[^a-zA-Z0-9.-]/g, '_') : '';
     
-    const basePath = `org/${tenantContext.organizationId}/property/${tenantContext.propertyId}/${module}/${type}`;
+    let basePath = `org/${tenantContext.organizationId}/property/${tenantContext.propertyId}/${module}`;
     
-    if (tenantContext.departmentId) {
-      const departmentPath = `${basePath}/dept/${tenantContext.departmentId}`;
-      return fileName 
-        ? `${departmentPath}/${timestamp}-${randomString}-${sanitizedFileName}`
-        : departmentPath;
+    // For profiles module, add user-specific path
+    if (module === 'profiles') {
+      basePath = `${basePath}/users/${tenantContext.userId}/${type}`;
+    } else {
+      basePath = `${basePath}/${type}`;
+      
+      if (tenantContext.departmentId) {
+        basePath = `${basePath}/dept/${tenantContext.departmentId}`;
+      }
     }
     
     return fileName 
