@@ -1,9 +1,92 @@
 # Hotel Operations Hub - Active Context
 
 ## Current Work Focus
-**Date**: August 19, 2025  
-**Phase**: Management Interfaces & Advanced Features  
-**Priority**: Multi-tenant infrastructure 100% complete - building admin interfaces
+**Date**: August 20, 2025  
+**Phase**: Critical Bug Fixes & API Issues  
+**Priority**: Fixing Property API 400 errors, Tenant Context issues, UI integration problems
+
+## 🚨 ACTIVE DEBUGGING SESSION - August 20, 2025
+**Context Window Handoff**: Detailed session state for next agent to continue
+
+### SESSION SUMMARY
+User reported multiple critical issues that documentation incorrectly marked as "complete":
+1. Property Creation/Update APIs returning 400 Bad Request errors
+2. Headers showing "No Organization/Unknown Property" despite user having tenant context
+3. Property Selector component not visible in UI
+4. No property indicators in user profiles
+5. Excessive duplicate permission API calls (performance issue)
+
+### COMPLETED IN THIS SESSION ✅
+**1. Property API 400 Error - FIXED**
+- **Root Cause**: Frontend/Backend interface mismatch
+- **Problem**: CreatePropertyData interface didn't match CreatePropertyDto validation
+- **Solution Applied**: 
+  - Updated frontend interface in `apps/web/src/services/propertyService.ts` (lines 65-97)
+  - Changed `type` → `propertyType` with enum values
+  - Changed `phone/email` → `contactPhone/contactEmail` 
+  - Fixed address structure: flat fields → nested object with `line1/line2/city/state`
+  - Updated form fields in `CreatePropertyModal.tsx` to use correct names
+- **Status**: Committed (1af49d5), deployed to dev branch
+- **Next**: Need browser testing to confirm 400 errors resolved
+
+### IN PROGRESS WHEN SESSION ENDED 🔄
+**2. Tenant Context Display Issue - ANALYZING**
+- **Problem**: Headers show "No Organization/Unknown Property" 
+- **Investigation Status**: Found the issue is in AuthContext tenant loading
+- **Files Being Examined**:
+  - `apps/web/src/contexts/TenantContext.tsx` (lines 87, 78) - where display text comes from
+  - `apps/web/src/contexts/AuthContext.tsx` (lines 88-126) - tenant loading logic
+- **Findings So Far**:
+  - TenantProvider gets tenantInfo from useAuth() hook
+  - AuthContext loads tenant from localStorage OR user properties  
+  - Issue likely in lines 105-112 where tenantFromUser is built
+  - User has organizationId/propertyId but organization/property objects are missing
+- **Next Steps for Next Agent**:
+  1. Debug why `tenantInfo.organization` is null/undefined 
+  2. Check if user.organization object is populated during login
+  3. Verify organization/property objects are loaded and stored correctly
+  4. May need to fetch full org/property data after login
+
+### PENDING TASKS 📋
+**3. Property Selector Integration**
+- **Status**: Component exists but not visible in UI
+- **Location**: `apps/web/src/components/PropertySelector.tsx` 
+- **Issue**: Needs to be added to main layout/header
+- **Next**: Find where header components are rendered and integrate PropertySelector
+
+**4. Permission API Performance Issue**
+- **Status**: Not investigated yet
+- **Problem**: Excessive `/permissions/my/summary` calls (10+ per action)
+- **Log Evidence**: User provided console logs showing duplicate permission requests
+- **Next**: Find permission hook/service and implement proper caching/memoization
+
+**5. Documentation Updates**
+- **Status**: Not started
+- **Need**: Update progress.md and activeContext.md to reflect actual vs claimed completion status
+- **Critical**: Many features marked "100% Complete" are actually broken
+
+### CRITICAL USER FEEDBACK
+User's console logs revealed:
+```
+- Multiple 400 errors on POST /properties (FIXED)
+- Multiple 400 errors on PATCH /properties/{id} (LIKELY FIXED)
+- Network error: Failed to resolve backend-copy-production-328d.up.railway.app
+- Excessive permission checks causing performance issues
+```
+
+### ENVIRONMENT NOTES
+- **Dev Environment**: https://frontend-copy-production-f1da.up.railway.app (dev branch)
+- **Production Environment**: https://frontend-production-55d3.up.railway.app (main branch)
+- **Always test on dev environment first** (user corrected me on this previously)
+
+### TODO LIST STATUS
+Current todos when session ended:
+1. ✅ Property API 400 errors - COMPLETED
+2. 🔄 Tenant context display - IN PROGRESS  
+3. ⏳ Property Selector integration - PENDING
+4. ⏳ Permission API optimization - PENDING  
+5. ⏳ Documentation updates - PENDING
+6. ⏳ Browser testing of all fixes - PENDING
 
 ## Recent Changes & Decisions
 
