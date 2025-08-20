@@ -4,11 +4,69 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
 import IDDocumentUpload from '../components/IDDocumentUpload';
 import EmergencyContactsForm from '../components/EmergencyContactsForm';
-import profileService, { Profile } from '../services/profileService';
+import profileService, { Profile, EmergencyContactsData, LegacyEmergencyContactsData } from '../services/profileService';
 import toast from 'react-hot-toast';
 
 const ProfilePage: React.FC = () => {
   const { user, updateUser } = useAuth();
+
+  // Helper function to extract emergency contact data from either format
+  const getEmergencyContactData = (emergencyContact: EmergencyContactsData | LegacyEmergencyContactsData | null | undefined) => {
+    if (!emergencyContact) return null;
+    
+    // Check if it's the new format (EmergencyContactsData)
+    if ('contacts' in emergencyContact) {
+      const primaryContact = emergencyContact.contacts.find(contact => contact.isPrimary);
+      return primaryContact || emergencyContact.contacts[0] || null;
+    }
+    
+    // Check if it's the legacy format (LegacyEmergencyContactsData)
+    if ('primaryContact' in emergencyContact) {
+      return emergencyContact.primaryContact || null;
+    }
+    
+    return null;
+  };
+
+  // Helper function to convert emergency contact data to legacy format for EmergencyContactsForm
+  const getLegacyEmergencyContactData = (emergencyContact: EmergencyContactsData | LegacyEmergencyContactsData | null | undefined): LegacyEmergencyContactsData | undefined => {
+    if (!emergencyContact) return undefined;
+    
+    // If it's already in legacy format, return as is
+    if ('primaryContact' in emergencyContact) {
+      return emergencyContact;
+    }
+    
+    // If it's new format, convert to legacy
+    if ('contacts' in emergencyContact) {
+      const primaryContact = emergencyContact.contacts.find(contact => contact.isPrimary);
+      const secondaryContact = emergencyContact.contacts.find(contact => !contact.isPrimary);
+      
+      const legacyData: LegacyEmergencyContactsData = {};
+      
+      if (primaryContact) {
+        legacyData.primaryContact = {
+          name: primaryContact.name,
+          relationship: primaryContact.relationship,
+          phoneNumber: primaryContact.phoneNumber,
+          email: primaryContact.email
+        };
+      }
+      
+      if (secondaryContact) {
+        legacyData.secondaryContact = {
+          name: secondaryContact.name,
+          relationship: secondaryContact.relationship,
+          phoneNumber: secondaryContact.phoneNumber,
+          email: secondaryContact.email
+        };
+      }
+      
+      return legacyData;
+    }
+    
+    return undefined;
+  };
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -34,14 +92,15 @@ const ProfilePage: React.FC = () => {
         setProfile(profileData);
         
         // Initialize form data with profile data
+        const emergencyContactData = getEmergencyContactData(profileData.emergencyContact);
         setFormData({
           firstName: profileData.firstName || '',
           lastName: profileData.lastName || '',
           phoneNumber: profileData.phoneNumber || '',
           position: profileData.position || '',
           emergencyContact: {
-            name: profileData.emergencyContact?.primaryContact?.name || '',
-            phoneNumber: profileData.emergencyContact?.primaryContact?.phoneNumber || ''
+            name: emergencyContactData?.name || '',
+            phoneNumber: emergencyContactData?.phoneNumber || ''
           }
         });
       } catch (error) {
@@ -126,14 +185,15 @@ const ProfilePage: React.FC = () => {
 
   const handleCancel = () => {
     if (profile) {
+      const emergencyContactData = getEmergencyContactData(profile.emergencyContact);
       setFormData({
         firstName: profile.firstName || '',
         lastName: profile.lastName || '',
         phoneNumber: profile.phoneNumber || '',
         position: profile.position || '',
         emergencyContact: {
-          name: profile.emergencyContact?.primaryContact?.name || '',
-          phoneNumber: profile.emergencyContact?.primaryContact?.phoneNumber || ''
+          name: emergencyContactData?.name || '',
+          phoneNumber: emergencyContactData?.phoneNumber || ''
         }
       });
     }
@@ -438,7 +498,7 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="p-6">
                 <EmergencyContactsForm
-                  initialData={profile?.emergencyContact || undefined}
+                  initialData={getLegacyEmergencyContactData(profile?.emergencyContact)}
                   onSuccess={() => {
                     // Reload profile to get updated data
                     const loadProfile = async () => {
