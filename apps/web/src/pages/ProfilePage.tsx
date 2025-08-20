@@ -16,13 +16,15 @@ const ProfilePage: React.FC = () => {
     
     // Check if it's the new format (EmergencyContactsData)
     if ('contacts' in emergencyContact) {
-      const primaryContact = emergencyContact.contacts.find(contact => contact.isPrimary);
-      return primaryContact || emergencyContact.contacts[0] || null;
+      const typedContact = emergencyContact as EmergencyContactsData;
+      const primaryContact = typedContact.contacts.find(contact => contact.isPrimary);
+      return primaryContact || typedContact.contacts[0] || null;
     }
     
     // Check if it's the legacy format (LegacyEmergencyContactsData)
     if ('primaryContact' in emergencyContact) {
-      return emergencyContact.primaryContact || null;
+      const typedContact = emergencyContact as LegacyEmergencyContactsData;
+      return typedContact.primaryContact || null;
     }
     
     return null;
@@ -34,13 +36,14 @@ const ProfilePage: React.FC = () => {
     
     // If it's already in legacy format, return as is
     if ('primaryContact' in emergencyContact) {
-      return emergencyContact;
+      return emergencyContact as LegacyEmergencyContactsData;
     }
     
     // If it's new format, convert to legacy
     if ('contacts' in emergencyContact) {
-      const primaryContact = emergencyContact.contacts.find(contact => contact.isPrimary);
-      const secondaryContact = emergencyContact.contacts.find(contact => !contact.isPrimary);
+      const typedContact = emergencyContact as EmergencyContactsData;
+      const primaryContact = typedContact.contacts.find(contact => contact.isPrimary);
+      const secondaryContact = typedContact.contacts.find(contact => !contact.isPrimary);
       
       const legacyData: LegacyEmergencyContactsData = {};
       
