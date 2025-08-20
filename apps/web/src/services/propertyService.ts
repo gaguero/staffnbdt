@@ -5,7 +5,13 @@ export interface Property {
   name: string;
   slug: string;
   description?: string;
-  address?: string;
+  address?: string | {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  };
   city?: string;
   state?: string;
   country?: string;
