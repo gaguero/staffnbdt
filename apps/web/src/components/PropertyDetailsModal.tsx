@@ -124,7 +124,7 @@ const PropertyDetailsModal: React.FC<PropertyDetailsModalProps> = ({
             <p className="text-sm text-gray-500 mt-1">{property.organization?.name}</p>
           </div>
           <div className="flex items-center space-x-3">
-            <PermissionGate permission={COMMON_PERMISSIONS.EDIT_PROPERTY}>
+            <PermissionGate commonPermission={COMMON_PERMISSIONS.EDIT_PROPERTY}>
               <button
                 onClick={onEdit}
                 className="px-3 py-2 text-sm font-medium text-white bg-warm-gold hover:bg-opacity-90 rounded-md transition-colors"

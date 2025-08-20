@@ -7,7 +7,6 @@ interface EditPropertyModalProps {
   onClose: () => void;
   property: Property;
   onSuccess: () => void;
-  organizations: Array<{id: string; name: string}>;
 }
 
 const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
@@ -15,7 +14,6 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
   onClose,
   property,
   onSuccess,
-  organizations,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

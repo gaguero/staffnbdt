@@ -95,7 +95,7 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
       }
 
       // Validate slug
-      if (!propertyService.validateSlug(formData.slug)) {
+      if (formData.slug && !propertyService.validateSlug(formData.slug)) {
         throw new Error('Slug must be 2-100 characters long and contain only lowercase letters, numbers, and hyphens');
       }
 

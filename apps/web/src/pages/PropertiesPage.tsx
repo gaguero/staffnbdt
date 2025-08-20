@@ -82,7 +82,7 @@ const PropertiesPage: React.FC = () => {
         } else if (response.data.organizations && Array.isArray(response.data.organizations)) {
           orgs = response.data.organizations;
         }
-        setOrganizations(orgs.map(org => ({ id: org.id, name: org.name })));
+        setOrganizations(orgs.map((org: any) => ({ id: org.id, name: org.name })));
       }
     } catch (error) {
       console.error('Failed to load organizations:', error);
@@ -203,7 +203,7 @@ const PropertiesPage: React.FC = () => {
           <h1 className="text-3xl font-heading text-charcoal">Property Management</h1>
           <p className="text-gray-600 mt-1">Manage hotel properties and their settings</p>
         </div>
-        <PermissionGate permission={COMMON_PERMISSIONS.CREATE_PROPERTY}>
+        <PermissionGate commonPermission={COMMON_PERMISSIONS.CREATE_PROPERTY}>
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-warm-gold text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors flex items-center gap-2"
@@ -448,7 +448,7 @@ const PropertiesPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
-                        <PermissionGate permission={COMMON_PERMISSIONS.VIEW_PROPERTIES}>
+                        <PermissionGate commonPermission={COMMON_PERMISSIONS.VIEW_PROPERTIES}>
                           <button
                             onClick={() => handleView(property)}
                             className="text-warm-gold hover:text-opacity-80 transition-colors"
@@ -457,7 +457,7 @@ const PropertiesPage: React.FC = () => {
                             👁️
                           </button>
                         </PermissionGate>
-                        <PermissionGate permission={COMMON_PERMISSIONS.EDIT_PROPERTY}>
+                        <PermissionGate commonPermission={COMMON_PERMISSIONS.EDIT_PROPERTY}>
                           <button
                             onClick={() => handleEdit(property)}
                             className="text-blue-600 hover:text-blue-800 transition-colors"
@@ -466,7 +466,7 @@ const PropertiesPage: React.FC = () => {
                             ✏️
                           </button>
                         </PermissionGate>
-                        <PermissionGate permission={COMMON_PERMISSIONS.DELETE_PROPERTY}>
+                        <PermissionGate commonPermission={COMMON_PERMISSIONS.DELETE_PROPERTY}>
                           <button
                             onClick={() => handleDelete(property)}
                             className="text-red-600 hover:text-red-800 transition-colors"
@@ -509,7 +509,6 @@ const PropertiesPage: React.FC = () => {
           }}
           onSuccess={handleEditSuccess}
           property={selectedProperty}
-          organizations={organizations}
         />
       )}
 
