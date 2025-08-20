@@ -14,7 +14,13 @@ interface OrganizationDetailsModalProps {
 interface OrganizationProperty {
   id: string;
   name: string;
-  address?: string;
+  address?: string | {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  };
   type?: string;
   isActive: boolean;
   _count?: {
@@ -43,6 +49,27 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
   const [properties, setProperties] = useState<OrganizationProperty[]>([]);
   const [users, setUsers] = useState<OrganizationUser[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'properties' | 'users'>('overview');
+
+  // Helper function to format address safely
+  const formatAddress = (address: string | { street?: string; city?: string; state?: string; country?: string; postalCode?: string; } | undefined): string => {
+    if (!address) return '';
+    
+    if (typeof address === 'string') {
+      return address;
+    }
+    
+    if (typeof address === 'object') {
+      const addressParts = [];
+      if (address.street) addressParts.push(address.street);
+      if (address.city) addressParts.push(address.city);
+      if (address.state) addressParts.push(address.state);
+      if (address.country) addressParts.push(address.country);
+      if (address.postalCode) addressParts.push(address.postalCode);
+      return addressParts.join(', ');
+    }
+    
+    return '';
+  };
 
   // Load organization details
   useEffect(() => {
@@ -377,7 +404,7 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
                               {getStatusBadge(property.isActive)}
                             </div>
                             {property.address && (
-                              <p className="text-sm text-gray-600 mb-2">📍 {property.address}</p>
+                              <p className="text-sm text-gray-600 mb-2">📍 {formatAddress(property.address)}</p>
                             )}
                             {property.type && (
                               <p className="text-sm text-gray-600 mb-2">🏢 {property.type}</p>

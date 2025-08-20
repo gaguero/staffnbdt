@@ -16,7 +16,13 @@ interface Property {
   id: string;
   name: string;
   code: string;
-  address?: string;
+  address?: string | {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  };
   organizationId: string;
 }
 

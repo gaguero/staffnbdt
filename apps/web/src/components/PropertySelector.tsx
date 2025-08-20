@@ -18,6 +18,27 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
+  // Helper function to format address safely
+  const formatAddress = (address: string | { street?: string; city?: string; state?: string; country?: string; postalCode?: string; } | undefined): string => {
+    if (!address) return '';
+    
+    if (typeof address === 'string') {
+      return address;
+    }
+    
+    if (typeof address === 'object') {
+      const addressParts = [];
+      if (address.street) addressParts.push(address.street);
+      if (address.city) addressParts.push(address.city);
+      if (address.state) addressParts.push(address.state);
+      if (address.country) addressParts.push(address.country);
+      if (address.postalCode) addressParts.push(address.postalCode);
+      return addressParts.join(', ');
+    }
+    
+    return '';
+  };
+
   // Don't render if user only has access to one property
   if (!isMultiProperty) {
     return showOrganization ? (
@@ -105,7 +126,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
                     <div className="font-medium text-charcoal">{property.name}</div>
                     <div className="text-sm text-gray-500">{property.code}</div>
                     {property.address && (
-                      <div className="text-xs text-gray-400 mt-1">{property.address}</div>
+                      <div className="text-xs text-gray-400 mt-1">{formatAddress(property.address)}</div>
                     )}
                   </button>
                 ))}
@@ -174,7 +195,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
               <div className="font-medium text-charcoal">{property.name}</div>
               <div className="text-sm text-gray-500">{property.code}</div>
               {property.address && (
-                <div className="text-xs text-gray-400 mt-1 truncate">{property.address}</div>
+                <div className="text-xs text-gray-400 mt-1 truncate">{formatAddress(property.address)}</div>
               )}
             </button>
           ))}
