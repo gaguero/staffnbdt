@@ -23,35 +23,43 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
   // Initialize form data when property changes
   useEffect(() => {
     if (property) {
-      // Convert address object to string if needed
-      const addressString = property.address && typeof property.address === 'object' 
-        ? `${property.address.street || ''} ${property.address.city || ''} ${property.address.state || ''}`.trim() || ''
-        : property.address || '';
+      // Convert address to nested structure for aligned interface
+      const addressObj = property.address && typeof property.address === 'object'
+        ? property.address
+        : {
+            line1: typeof property.address === 'string' ? property.address : '',
+            line2: '',
+            city: '',
+            state: '',
+            postalCode: '',
+            country: ''
+          };
         
       setFormData({
         name: property.name,
         slug: property.slug,
         description: property.description || '',
-        address: addressString,
-        city: property.city || '',
-        state: property.state || '',
-        country: property.country || '',
-        postalCode: property.postalCode || '',
-        phone: property.phone || '',
-        email: property.email || '',
+        address: addressObj,
+        contactPhone: property.contactPhone || '',
+        contactEmail: property.contactEmail || '',
         website: property.website || '',
-        type: property.type || '',
+        propertyType: property.propertyType || undefined,
         timezone: property.timezone || '',
-        currency: property.currency || '',
         settings: {
-          checkInTime: property.settings?.checkInTime || '15:00',
-          checkOutTime: property.settings?.checkOutTime || '11:00',
-          maxOccupancy: property.settings?.maxOccupancy || 2,
-          amenities: property.settings?.amenities || [],
-          policies: property.settings?.policies || {},
-          additional: property.settings?.additional || {},
+          modules: property.settings?.modules || [],
+          defaultDepartments: property.settings?.defaultDepartments || [],
+          additional: {
+            checkInTime: property.settings?.additional?.checkInTime || property.settings?.checkInTime || '15:00',
+            checkOutTime: property.settings?.additional?.checkOutTime || property.settings?.checkOutTime || '11:00',
+            maxOccupancy: property.settings?.additional?.maxOccupancy || property.settings?.maxOccupancy || 2,
+            currency: property.settings?.additional?.currency || property.currency || '',
+            amenities: property.settings?.additional?.amenities || property.settings?.amenities || [],
+            policies: property.settings?.additional?.policies || property.settings?.policies || {},
+            ...(property.settings?.additional || {})
+          },
         },
         branding: {
+          inherit: property.branding?.inherit !== false,
           primaryColor: property.branding?.primaryColor || '#AA8E67',
           secondaryColor: property.branding?.secondaryColor || '#F5EBD7',
           accentColor: property.branding?.accentColor || '#4A4A4A',
@@ -70,16 +78,29 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
     setHasChanges(true);
 
     if (name.includes('.')) {
-      // Handle nested properties (settings.checkInTime, branding.primaryColor, etc.)
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent as keyof UpdatePropertyData] as any),
-          [child]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
-                  type === 'number' ? parseInt(value) || 0 : value,
-        },
-      }));
+      // Handle nested properties (address.city, settings.additional.checkInTime, branding.primaryColor, etc.)
+      const nameParts = name.split('.');
+      
+      setFormData(prev => {
+        const newData = { ...prev };
+        let current = newData as any;
+        
+        // Navigate to the parent object, creating nested objects as needed
+        for (let i = 0; i < nameParts.length - 1; i++) {
+          const part = nameParts[i];
+          if (!current[part] || typeof current[part] !== 'object') {
+            current[part] = {};
+          }
+          current = current[part];
+        }
+        
+        // Set the final value
+        const finalKey = nameParts[nameParts.length - 1];
+        current[finalKey] = type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
+                           type === 'number' ? parseInt(value) || 0 : value;
+        
+        return newData;
+      });
     } else {
       setFormData(prev => ({
         ...prev,
@@ -189,13 +210,13 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="propertyType" className="block text-sm font-medium text-gray-700 mb-1">
                     Property Type
                   </label>
                   <select
-                    id="type"
-                    name="type"
-                    value={formData.type || ''}
+                    id="propertyType"
+                    name="propertyType"
+                    value={formData.propertyType || ''}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
                   >
@@ -265,30 +286,45 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
               <h3 className="text-lg font-medium text-gray-900">Location</h3>
               
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                  Address
+                <label htmlFor="address.line1" className="block text-sm font-medium text-gray-700 mb-1">
+                  Address Line 1
                 </label>
                 <input
                   type="text"
-                  id="address"
-                  name="address"
-                  value={typeof formData.address === 'string' ? formData.address : ''}
+                  id="address.line1"
+                  name="address.line1"
+                  value={formData.address?.line1 || ''}
                   onChange={handleInputChange}
                   placeholder="Street address"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
                 />
               </div>
 
+              <div>
+                <label htmlFor="address.line2" className="block text-sm font-medium text-gray-700 mb-1">
+                  Address Line 2
+                </label>
+                <input
+                  type="text"
+                  id="address.line2"
+                  name="address.line2"
+                  value={formData.address?.line2 || ''}
+                  onChange={handleInputChange}
+                  placeholder="Apartment, suite, etc. (optional)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="address.city" className="block text-sm font-medium text-gray-700 mb-1">
                     City
                   </label>
                   <input
                     type="text"
-                    id="city"
-                    name="city"
-                    value={formData.city || ''}
+                    id="address.city"
+                    name="address.city"
+                    value={formData.address?.city || ''}
                     onChange={handleInputChange}
                     placeholder="City"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
@@ -296,14 +332,14 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="address.state" className="block text-sm font-medium text-gray-700 mb-1">
                     State/Province
                   </label>
                   <input
                     type="text"
-                    id="state"
-                    name="state"
-                    value={formData.state || ''}
+                    id="address.state"
+                    name="address.state"
+                    value={formData.address?.state || ''}
                     onChange={handleInputChange}
                     placeholder="State or Province"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
@@ -311,14 +347,14 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="address.country" className="block text-sm font-medium text-gray-700 mb-1">
                     Country
                   </label>
                   <input
                     type="text"
-                    id="country"
-                    name="country"
-                    value={formData.country || ''}
+                    id="address.country"
+                    name="address.country"
+                    value={formData.address?.country || ''}
                     onChange={handleInputChange}
                     placeholder="Country"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
@@ -327,14 +363,14 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
               </div>
 
               <div>
-                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="address.postalCode" className="block text-sm font-medium text-gray-700 mb-1">
                   Postal Code
                 </label>
                 <input
                   type="text"
-                  id="postalCode"
-                  name="postalCode"
-                  value={formData.postalCode || ''}
+                  id="address.postalCode"
+                  name="address.postalCode"
+                  value={formData.address?.postalCode || ''}
                   onChange={handleInputChange}
                   placeholder="Postal/ZIP code"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent md:w-1/3"
@@ -348,14 +384,14 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="contactPhone" className="block text-sm font-medium text-gray-700 mb-1">
                     Phone Number
                   </label>
                   <input
                     type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone || ''}
+                    id="contactPhone"
+                    name="contactPhone"
+                    value={formData.contactPhone || ''}
                     onChange={handleInputChange}
                     placeholder="+1 (555) 123-4567"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
@@ -363,14 +399,14 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-1">
                     Email Address
                   </label>
                   <input
                     type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email || ''}
+                    id="contactEmail"
+                    name="contactEmail"
+                    value={formData.contactEmail || ''}
                     onChange={handleInputChange}
                     placeholder="contact@property.com"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
@@ -418,13 +454,13 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="settings.additional.currency" className="block text-sm font-medium text-gray-700 mb-1">
                     Currency
                   </label>
                   <select
-                    id="currency"
-                    name="currency"
-                    value={formData.currency || ''}
+                    id="settings.additional.currency"
+                    name="settings.additional.currency"
+                    value={formData.settings?.additional?.currency || ''}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
                   >
@@ -438,42 +474,42 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="settings.checkInTime" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="settings.additional.checkInTime" className="block text-sm font-medium text-gray-700 mb-1">
                     Check-in Time
                   </label>
                   <input
                     type="time"
-                    id="settings.checkInTime"
-                    name="settings.checkInTime"
-                    value={formData.settings?.checkInTime || '15:00'}
+                    id="settings.additional.checkInTime"
+                    name="settings.additional.checkInTime"
+                    value={formData.settings?.additional?.checkInTime || '15:00'}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="settings.checkOutTime" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="settings.additional.checkOutTime" className="block text-sm font-medium text-gray-700 mb-1">
                     Check-out Time
                   </label>
                   <input
                     type="time"
-                    id="settings.checkOutTime"
-                    name="settings.checkOutTime"
-                    value={formData.settings?.checkOutTime || '11:00'}
+                    id="settings.additional.checkOutTime"
+                    name="settings.additional.checkOutTime"
+                    value={formData.settings?.additional?.checkOutTime || '11:00'}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="settings.maxOccupancy" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="settings.additional.maxOccupancy" className="block text-sm font-medium text-gray-700 mb-1">
                     Max Room Occupancy
                   </label>
                   <input
                     type="number"
-                    id="settings.maxOccupancy"
-                    name="settings.maxOccupancy"
-                    value={formData.settings?.maxOccupancy || 2}
+                    id="settings.additional.maxOccupancy"
+                    name="settings.additional.maxOccupancy"
+                    value={formData.settings?.additional?.maxOccupancy || 2}
                     onChange={handleInputChange}
                     min="1"
                     max="20"
