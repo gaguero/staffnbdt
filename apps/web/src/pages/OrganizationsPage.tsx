@@ -40,7 +40,15 @@ const OrganizationsPage: React.FC = () => {
       
       const response = await organizationService.getOrganizations(filter);
       if (response.data) {
-        const orgs = Array.isArray(response.data) ? response.data : response.data.data || [];
+        // Ensure we always have an array for organizations
+        let orgs = [];
+        if (Array.isArray(response.data)) {
+          orgs = response.data;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          orgs = response.data.data;
+        } else if (response.data.organizations && Array.isArray(response.data.organizations)) {
+          orgs = response.data.organizations;
+        }
         setOrganizations(orgs);
       } else {
         setError('Failed to load organizations');
@@ -65,11 +73,12 @@ const OrganizationsPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to load stats:', error);
       // Calculate stats from loaded organizations as fallback
-      const total = organizations.length;
-      const active = organizations.filter(org => org.isActive).length;
+      const orgsArray = Array.isArray(organizations) ? organizations : [];
+      const total = orgsArray.length;
+      const active = orgsArray.filter(org => org.isActive).length;
       const inactive = total - active;
-      const totalProperties = organizations.reduce((sum, org) => sum + (org._count?.properties || 0), 0);
-      const totalUsers = organizations.reduce((sum, org) => sum + (org._count?.users || 0), 0);
+      const totalProperties = orgsArray.reduce((sum, org) => sum + (org._count?.properties || 0), 0);
+      const totalUsers = orgsArray.reduce((sum, org) => sum + (org._count?.users || 0), 0);
       
       setStats({
         total,
@@ -162,8 +171,8 @@ const OrganizationsPage: React.FC = () => {
       : <span className="badge badge-error">Inactive</span>;
   };
 
-  // Filter organizations for display
-  const filteredOrganizations = organizations.filter(org => {
+  // Filter organizations for display - ensure organizations is always an array
+  const filteredOrganizations = (Array.isArray(organizations) ? organizations : []).filter(org => {
     const matchesSearch = !searchTerm || 
       org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       org.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||

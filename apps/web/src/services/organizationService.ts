@@ -133,22 +133,18 @@ class OrganizationService {
   }
 
   async getOrganizationStats() {
-    try {
-      return api.get(`${this.baseUrl}/stats`);
-    } catch (error) {
-      // Return mock stats if stats endpoint doesn't exist yet
-      return {
-        success: true,
-        data: {
-          total: 0,
-          active: 0,
-          inactive: 0,
-          totalProperties: 0,
-          totalUsers: 0,
-          byTimezone: {}
-        }
-      };
-    }
+    // Stats endpoint doesn't exist on backend yet, return mock stats
+    // This prevents 404 errors while still providing a working UI
+    return Promise.resolve({
+      data: {
+        total: 0,
+        active: 0,
+        inactive: 0,
+        totalProperties: 0,
+        totalUsers: 0,
+        byTimezone: {}
+      }
+    });
   }
 
   // Utility methods for organization slug handling
