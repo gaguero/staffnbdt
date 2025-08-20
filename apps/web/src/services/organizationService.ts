@@ -97,7 +97,22 @@ class OrganizationService {
     const queryString = params.toString();
     const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
     
-    return api.get(url);
+    const response = await api.get(url);
+    
+    // Backend returns: { success: true, data: { data: [orgs], meta: {...} }, message: "..." }
+    // We need to extract the organizations array from response.data.data
+    console.log('Organizations API response:', response);
+    
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      // Return in the format expected by the frontend
+      return {
+        data: response.data.data,  // Extract the organizations array
+        meta: response.data.meta   // Include pagination metadata
+      };
+    }
+    
+    // Fallback to original response
+    return response;
   }
 
   async getOrganization(id: string) {

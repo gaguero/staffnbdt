@@ -128,7 +128,22 @@ class PropertyService {
     const queryString = params.toString();
     const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
     
-    return api.get(url);
+    const response = await api.get(url);
+    
+    // Backend returns: { success: true, data: { data: [properties], meta: {...} }, message: "..." }
+    // We need to extract the properties array from response.data.data
+    console.log('Properties API response:', response);
+    
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      // Return in the format expected by the frontend
+      return {
+        data: response.data.data,  // Extract the properties array
+        meta: response.data.meta   // Include pagination metadata
+      };
+    }
+    
+    // Fallback to original response
+    return response;
   }
 
   async getProperty(id: string) {
