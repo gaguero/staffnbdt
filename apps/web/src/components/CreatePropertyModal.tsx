@@ -22,26 +22,26 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
     slug: '',
     description: '',
     organizationId: '',
-    address: '',
-    city: '',
-    state: '',
-    country: '',
-    postalCode: '',
-    phone: '',
-    email: '',
+    propertyType: 'HOTEL',
+    timezone: 'America/Costa_Rica',
     website: '',
-    type: '',
-    timezone: '',
-    currency: '',
+    contactEmail: '',
+    contactPhone: '',
+    address: {
+      line1: '',
+      line2: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: '',
+    },
     settings: {
-      checkInTime: '15:00',
-      checkOutTime: '11:00',
-      maxOccupancy: 2,
-      amenities: [],
-      policies: {},
+      modules: ['HR'],
+      defaultDepartments: ['Front Desk', 'Housekeeping'],
       additional: {},
     },
     branding: {
+      inherit: true,
       primaryColor: '#AA8E67',
       secondaryColor: '#F5EBD7',
       accentColor: '#4A4A4A',
@@ -166,9 +166,9 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                     Property Type
                   </label>
                   <select
-                    id="type"
-                    name="type"
-                    value={formData.type}
+                    id="propertyType"
+                    name="propertyType"
+                    value={formData.propertyType}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
                   >
@@ -244,8 +244,8 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                 <input
                   type="text"
                   id="address"
-                  name="address"
-                  value={typeof formData.address === 'string' ? formData.address : ''}
+                  name="address.line1"
+                  value={formData.address?.line1 || ''}
                   onChange={handleInputChange}
                   placeholder="Street address"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
@@ -260,8 +260,8 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                   <input
                     type="text"
                     id="city"
-                    name="city"
-                    value={formData.city}
+                    name="address.city"
+                    value={formData.address?.city || ''}
                     onChange={handleInputChange}
                     placeholder="City"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
@@ -275,8 +275,8 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                   <input
                     type="text"
                     id="state"
-                    name="state"
-                    value={formData.state}
+                    name="address.state"
+                    value={formData.address?.state || ''}
                     onChange={handleInputChange}
                     placeholder="State or Province"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
@@ -290,8 +290,8 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                   <input
                     type="text"
                     id="country"
-                    name="country"
-                    value={formData.country}
+                    name="address.country"
+                    value={formData.address?.country || ''}
                     onChange={handleInputChange}
                     placeholder="Country"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
@@ -306,8 +306,8 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                 <input
                   type="text"
                   id="postalCode"
-                  name="postalCode"
-                  value={formData.postalCode}
+                  name="address.postalCode"
+                  value={formData.address?.postalCode || ''}
                   onChange={handleInputChange}
                   placeholder="Postal/ZIP code"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent md:w-1/3"
@@ -326,9 +326,9 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                   </label>
                   <input
                     type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
+                    id="contactPhone"
+                    name="contactPhone"
+                    value={formData.contactPhone}
                     onChange={handleInputChange}
                     placeholder="+1 (555) 123-4567"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
@@ -341,9 +341,9 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
                   </label>
                   <input
                     type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
+                    id="contactEmail"
+                    name="contactEmail"
+                    value={formData.contactEmail}
                     onChange={handleInputChange}
                     placeholder="contact@property.com"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"

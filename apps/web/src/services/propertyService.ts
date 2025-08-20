@@ -66,33 +66,27 @@ export interface CreatePropertyData {
   name: string;
   slug?: string;
   description?: string;
-  address?: string | {
-    street?: string;
+  organizationId: string;
+  propertyType?: 'HOTEL' | 'RESORT' | 'HOSTEL' | 'APARTMENT' | 'VILLA' | 'OTHER';
+  timezone?: string;
+  website?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: {
+    line1?: string;
+    line2?: string;
     city?: string;
     state?: string;
-    country?: string;
     postalCode?: string;
+    country?: string;
   };
-  city?: string;
-  state?: string;
-  country?: string;
-  postalCode?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  type?: string;
-  timezone?: string;
-  currency?: string;
-  organizationId: string;
   settings?: {
-    checkInTime?: string;
-    checkOutTime?: string;
-    maxOccupancy?: number;
-    amenities?: string[];
-    policies?: Record<string, any>;
+    modules?: string[];
+    defaultDepartments?: string[];
     additional?: Record<string, any>;
   };
   branding?: {
+    inherit?: boolean;
     primaryColor?: string;
     secondaryColor?: string;
     accentColor?: string;
