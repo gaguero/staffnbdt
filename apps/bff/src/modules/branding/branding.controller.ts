@@ -13,7 +13,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { PermissionGuard } from '../permissions/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 import { BrandingService } from './branding.service';
@@ -80,7 +80,7 @@ export class BrandingController {
   }
 
   @Post('upload-logo')
-  @RequirePermission(['branding.update.organization', 'branding.update.property'])
+  @RequirePermission('branding.update.organization', 'branding.update.property')
   @UseInterceptors(FileInterceptor('logo', {
     limits: {
       fileSize: 2 * 1024 * 1024, // 2MB limit

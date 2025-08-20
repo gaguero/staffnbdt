@@ -65,7 +65,7 @@ export class FilesController {
       const fileMetadata = await this.storageService.getFileMetadata(decodedFileKey);
       
       // Create read stream
-      const fileStream = this.storageService.createReadStream(decodedFileKey) as NodeJS.ReadableStream;
+      const fileStream = await this.storageService.createReadStream(decodedFileKey, req);
       
       // Set appropriate headers
       res.set({
@@ -82,7 +82,7 @@ export class FilesController {
         return this.handleRangeRequest(decodedFileKey, range, res, fileMetadata);
       }
 
-      return new StreamableFile(fileStream as any);
+      return new StreamableFile(fileStream);
     } catch (error) {
       if (error.code === 'ENOENT') {
         throw new NotFoundException('File not found');

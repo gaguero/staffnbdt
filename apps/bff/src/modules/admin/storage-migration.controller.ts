@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Body, Query, UseGuards, Request, Logger, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../modules/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { PermissionGuard } from '../permissions/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 import { StorageMigrationService, MigrationOptions, MigrationStats } from '../../shared/storage/storage-migration.service';

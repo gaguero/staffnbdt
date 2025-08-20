@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../shared/database/prisma.service';
 import { BrandConfigDto } from './dto/brand-config.dto';
 
 @Injectable()

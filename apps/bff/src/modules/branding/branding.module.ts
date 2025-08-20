@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { BrandingController } from './branding.controller';
 import { BrandingService } from './branding.service';
-import { PrismaModule } from '../prisma/prisma.module';
-import { PermissionsModule } from '../permissions/permissions.module';
+import { DatabaseModule } from '../../shared/database/database.module';
+import { PermissionModule } from '../permissions/permission.module';
 
 @Module({
-  imports: [PrismaModule, PermissionsModule],
+  imports: [DatabaseModule, PermissionModule],
   controllers: [BrandingController],
   providers: [BrandingService],
   exports: [BrandingService],
