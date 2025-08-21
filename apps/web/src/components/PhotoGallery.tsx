@@ -384,7 +384,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {photoTypeConfigs.map((config) => {
           const existingPhoto = getPhotoForType(config.type);
-          const isUploading = isUploading === config.type;
+          const isCurrentlyUploading = isUploading === config.type;
           const isDragTarget = isDragging === config.type;
 
           return (
@@ -431,7 +431,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                         e.currentTarget.style.display = 'none';
                       }}
                     />
-                    {isUploading && (
+                    {isCurrentlyUploading && (
                       <div className="absolute inset-0 rounded-lg bg-black bg-opacity-50 flex items-center justify-center">
                         <LoadingSpinner size="sm" />
                       </div>
@@ -449,7 +449,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
+                      disabled={isCurrentlyUploading}
                       className="flex-1 btn btn-secondary text-sm"
                     >
                       Replace
@@ -457,7 +457,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                     {!existingPhoto.isPrimary && (
                       <button
                         onClick={() => handleSetPrimary(existingPhoto.id, config.type)}
-                        disabled={isUploading}
+                        disabled={isCurrentlyUploading}
                         className="flex-1 btn btn-primary text-sm"
                       >
                         Set Primary
@@ -465,7 +465,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                     )}
                     <button
                       onClick={() => handleDeletePhoto(existingPhoto.id, config.type)}
-                      disabled={isUploading}
+                      disabled={isCurrentlyUploading}
                       className="btn btn-danger text-sm px-3"
                     >
                       🗑️
@@ -492,10 +492,10 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
+                      disabled={isCurrentlyUploading}
                       className="btn btn-primary"
                     >
-                      {isUploading ? 'Uploading...' : 'Choose Photo'}
+                      {isCurrentlyUploading ? 'Uploading...' : 'Choose Photo'}
                     </button>
                     <p className="text-xs text-gray-400 mt-2">
                       or drag & drop here
@@ -505,7 +505,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
               )}
 
               {/* Upload Progress */}
-              {isUploading && uploadProgress > 0 && (
+              {isCurrentlyUploading && uploadProgress > 0 && (
                 <div className="mt-4">
                   <div className="flex justify-between text-sm mb-1">
                     <span>Uploading...</span>
@@ -551,7 +551,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                 <button
                   onClick={handleCropCancel}
                   className="text-gray-400 hover:text-gray-600"
-                  disabled={isUploading}
+                  disabled={isUploading !== null}
                 >
                   ✕
                 </button>
@@ -599,7 +599,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                   <div className="flex space-x-4 pt-4">
                     <button
                       onClick={handleCropConfirm}
-                      disabled={isUploading}
+                      disabled={isUploading !== null}
                       className="btn btn-primary flex-1"
                     >
                       {isUploading ? (
@@ -613,7 +613,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                     </button>
                     <button
                       onClick={handleCropCancel}
-                      disabled={isUploading}
+                      disabled={isUploading !== null}
                       className="btn btn-secondary flex-1"
                     >
                       Cancel
