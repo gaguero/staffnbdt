@@ -47,12 +47,23 @@ export class ProfilePhotoService {
       throw new ForbiddenException('Insufficient permissions to upload photos for this user');
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId, deletedAt: null },
+    // Verify user exists and current user has access
+    const user = await this.prisma.user.findFirst({
+      where: { 
+        id: userId, 
+        deletedAt: null,
+        // Add tenant filtering for security
+        organizationId: this.tenantContextService.getTenantContext(currentUser).organizationId,
+      },
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      console.error('❌ User not found for photo upload:', {
+        userId,
+        requestedBy: currentUser.id,
+        tenantContext: this.tenantContextService.getTenantContext(currentUser),
+      });
+      throw new NotFoundException('User not found or access denied');
     }
 
     try {
@@ -64,7 +75,14 @@ export class ProfilePhotoService {
       });
 
       // Get tenant context for R2 upload
-      const tenantContext = this.tenantContextService.getTenantContext(currentUser);
+      let tenantContext;
+      try {
+        tenantContext = this.tenantContextService.getTenantContext(currentUser);
+        console.log('📸 Tenant context for photo upload:', tenantContext);
+      } catch (error) {
+        console.error('❌ Failed to get tenant context:', error);
+        throw new BadRequestException('Invalid tenant context for photo upload');
+      }
 
       // Generate file key for photo
       const photoKey = this.storageService.generateTenantFileKey(
@@ -183,6 +201,14 @@ export class ProfilePhotoService {
         fileName: file?.originalname,
       });
 
+      // Check if it's an R2 configuration issue
+      if (error.message?.includes('credentials') || error.message?.includes('R2')) {
+        console.error('❌ R2 configuration error detected:', error.message);
+        throw new InternalServerErrorException(
+          'Storage service configuration error. Please check R2 credentials.'
+        );
+      }
+      
       throw new InternalServerErrorException(
         `Failed to upload profile photo: ${error.message}`
       );

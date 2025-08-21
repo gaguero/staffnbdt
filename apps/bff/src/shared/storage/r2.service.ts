@@ -51,19 +51,31 @@ export class R2Service implements OnModuleInit {
     private readonly tenantContextService: TenantContextService,
   ) {
     // Cloudflare R2 configuration
-    this.bucketName = this.configService.get('R2_BUCKET_NAME') || 'staffnbdt-storage';
+    this.bucketName = this.configService.get('R2_BUCKET_NAME') || 'hoh-storage';
     this.publicUrl = this.configService.get('R2_PUBLIC_URL') || '';
     this.maxFileSize = parseInt(this.configService.get('MAX_FILE_SIZE') || '10485760'); // 10MB default
     this.allowedFileTypes = (this.configService.get('ALLOWED_FILE_TYPES') || 'pdf,jpg,jpeg,png,doc,docx,xls,xlsx,mp4,avi').split(',');
     this.region = 'auto'; // Cloudflare R2 uses 'auto' region
 
+    // Get required R2 credentials
+    const accountId = this.configService.get('R2_ACCOUNT_ID');
+    const accessKeyId = this.configService.get('R2_ACCESS_KEY_ID');
+    const secretAccessKey = this.configService.get('R2_SECRET_ACCESS_KEY');
+    
+    if (!accountId || !accessKeyId || !secretAccessKey) {
+      this.logger.error('R2 credentials missing - R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY are required');
+      this.logger.warn('R2 service will be unavailable - falling back to local storage');
+      // Don't initialize S3Client if credentials are missing
+      return;
+    }
+
     // Initialize S3-compatible client for Cloudflare R2
     this.s3Client = new S3Client({
       region: this.region,
-      endpoint: `https://${this.configService.get('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com`,
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
       credentials: {
-        accessKeyId: this.configService.get('R2_ACCESS_KEY_ID') || '',
-        secretAccessKey: this.configService.get('R2_SECRET_ACCESS_KEY') || '',
+        accessKeyId,
+        secretAccessKey,
       },
       forcePathStyle: false, // R2 supports virtual-hosted-style requests
     });
@@ -80,6 +92,11 @@ export class R2Service implements OnModuleInit {
    * Health check to verify R2 connectivity
    */
   async healthCheck(): Promise<boolean> {
+    if (!this.s3Client) {
+      this.logger.warn('R2 client not initialized - health check failed');
+      return false;
+    }
+    
     try {
       await this.s3Client.send(new ListObjectsV2Command({
         Bucket: this.bucketName,
@@ -89,7 +106,7 @@ export class R2Service implements OnModuleInit {
       this.logger.log('R2 health check passed');
       return true;
     } catch (error) {
-      this.logger.error('R2 health check failed:', error);
+      this.logger.error('R2 health check failed:', error.message);
       return false;
     }
   }
@@ -161,6 +178,10 @@ export class R2Service implements OnModuleInit {
     fileBuffer: Buffer,
     options: R2FileUploadOptions,
   ): Promise<R2FileMetadata> {
+    if (!this.s3Client) {
+      throw new Error('R2 service is not properly configured - missing credentials');
+    }
+    
     const { fileName, mimeType, tenantContext } = options;
     
     if (!tenantContext) {
@@ -271,6 +292,10 @@ export class R2Service implements OnModuleInit {
    * Download file from R2 with tenant validation
    */
   async downloadFile(key: string, request?: any): Promise<Buffer> {
+    if (!this.s3Client) {
+      throw new Error('R2 service is not properly configured - missing credentials');
+    }
+    
     try {
       // Validate tenant access if request context is available
       if (request) {
@@ -308,6 +333,10 @@ export class R2Service implements OnModuleInit {
    * Get readable stream for file
    */
   async getFileStream(key: string, request?: any): Promise<Readable> {
+    if (!this.s3Client) {
+      throw new Error('R2 service is not properly configured - missing credentials');
+    }
+    
     try {
       // Validate tenant access if request context is available
       if (request) {

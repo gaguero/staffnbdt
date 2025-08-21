@@ -417,28 +417,39 @@ export class ProfileController {
   @ApiOperation({ summary: 'Get all photos for current user' })
   @ApiResponse({ status: 200, description: 'User photos retrieved successfully', type: UserPhotosResponseDto })
   async getCurrentUserPhotos(@CurrentUser() currentUser: User) {
-    const photos = await this.profilePhotoService.getUserPhotos(currentUser.id, currentUser);
+    console.log('📸 GET /api/profile/photos endpoint hit by user:', currentUser.id);
     
-    const photosByType = {
-      [PhotoType.FORMAL]: 0,
-      [PhotoType.CASUAL]: 0,
-      [PhotoType.UNIFORM]: 0,
-      [PhotoType.FUNNY]: 0,
-    };
+    try {
+      const photos = await this.profilePhotoService.getUserPhotos(currentUser.id, currentUser);
+      
+      const photosByType = {
+        [PhotoType.FORMAL]: 0,
+        [PhotoType.CASUAL]: 0,
+        [PhotoType.UNIFORM]: 0,
+        [PhotoType.FUNNY]: 0,
+      };
 
-    photos.forEach(photo => {
-      photosByType[photo.photoType]++;
-    });
+      photos.forEach(photo => {
+        photosByType[photo.photoType]++;
+      });
 
-    const primaryPhoto = photos.find(photo => photo.isPrimary) || null;
+      const primaryPhoto = photos.find(photo => photo.isPrimary) || null;
 
-    const result = {
-      photos,
-      photosByType,
-      primaryPhoto,
-    };
+      const result = {
+        photos,
+        photosByType,
+        primaryPhoto,
+      };
 
-    return CustomApiResponse.success(result, 'User photos retrieved successfully');
+      return CustomApiResponse.success(result, 'User photos retrieved successfully');
+    } catch (error) {
+      console.error('❌ Failed to get user photos:', {
+        error: error.message,
+        stack: error.stack,
+        userId: currentUser.id,
+      });
+      throw error;
+    }
   }
 
   @Get('photos/:userId')
