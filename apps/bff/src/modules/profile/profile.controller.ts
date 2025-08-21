@@ -340,9 +340,10 @@ export class ProfileController {
   @ApiResponse({ status: 404, description: 'Profile photo not found' })
   async getCurrentUserProfilePhoto(
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
     @Res() res: Response,
   ) {
-    return this.getProfilePhoto(currentUser.id, currentUser, res);
+    return this.getProfilePhoto(currentUser.id, currentUser, request, res);
   }
 
   @Post('emergency-contacts')
