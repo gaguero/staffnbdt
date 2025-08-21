@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import LoadingSpinner from './LoadingSpinner';
+import { FormField } from './forms';
+import { toastService } from '../utils/toast';
+import { organizationValidationSchema, OrganizationFormData } from '../utils/formValidation';
 import { organizationService, CreateOrganizationData } from '../services/organizationService';
 
 interface CreateOrganizationModalProps {
@@ -14,112 +19,92 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
   onSuccess,
 }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<CreateOrganizationData>({
-    name: '',
-    slug: '',
-    description: '',
-    timezone: '',
-    website: '',
-    contactEmail: '',
-    contactPhone: '',
-    settings: {
-      defaultLanguage: 'en',
-      supportedLanguages: ['en'],
-      theme: 'default',
+  
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    setValue,
+    reset,
+    formState: { errors, isValid, isValidating },
+  } = useForm<OrganizationFormData>({
+    resolver: zodResolver(organizationValidationSchema),
+    mode: 'onChange', // Enable real-time validation
+    defaultValues: {
+      name: '',
+      slug: '',
+      description: '',
+      timezone: '',
+      website: '',
+      contactEmail: '',
+      contactPhone: '',
+      settings: {
+        defaultLanguage: 'en',
+        supportedLanguages: ['en'],
+        theme: 'default',
+      },
+      branding: {
+        primaryColor: '#AA8E67',
+        secondaryColor: '#F5EBD7',
+        accentColor: '#4A4A4A',
+      },
+      isActive: true,
     },
-    branding: {
-      primaryColor: '#AA8E67',
-      secondaryColor: '#F5EBD7',
-      accentColor: '#4A4A4A',
-    },
-    isActive: true,
   });
+  
+  // Watch form values for auto-generation
+  const watchedName = watch('name');
+  const watchedSlug = watch('slug');
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (name.includes('.')) {
-      // Handle nested properties (settings.defaultLanguage, branding.primaryColor, etc.)
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent as keyof CreateOrganizationData] as any),
-          [child]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-        },
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-      }));
+  // Auto-generate slug when name changes
+  React.useEffect(() => {
+    if (watchedName && !watchedSlug) {
+      const generatedSlug = organizationService.generateSlug(watchedName);
+      setValue('slug', generatedSlug);
     }
-
-    // Auto-generate slug from name if slug is empty
-    if (name === 'name' && !formData.slug) {
-      const generatedSlug = organizationService.generateSlug(value);
-      setFormData(prev => ({
-        ...prev,
-        slug: generatedSlug,
-      }));
-    }
-  };
+  }, [watchedName, watchedSlug, setValue]);
 
   const handleLanguageChange = (languages: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      settings: {
-        ...prev.settings,
-        supportedLanguages: languages,
-      },
-    }));
+    setValue('settings.supportedLanguages', languages as ('en' | 'es')[]);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: OrganizationFormData) => {
     setLoading(true);
-    setError(null);
+
+    const loadingToast = toastService.loading('Creating organization...');
 
     try {
-      // Validate required fields
-      if (!formData.name.trim()) {
-        throw new Error('Organization name is required');
-      }
-
-      if (formData.slug && !organizationService.validateSlug(formData.slug)) {
-        throw new Error('Invalid slug format. Use only lowercase letters, numbers, and hyphens.');
-      }
-
-      // Clean up form data
+      // Clean up form data - only include fields with values
       const submitData: CreateOrganizationData = {
-        name: formData.name.trim(),
-        isActive: formData.isActive ?? true,
+        name: data.name.trim(),
+        isActive: data.isActive,
       };
 
       // Only include optional fields if they have values
-      if (formData.slug?.trim()) submitData.slug = formData.slug.trim();
-      if (formData.description?.trim()) submitData.description = formData.description.trim();
-      if (formData.timezone?.trim()) submitData.timezone = formData.timezone.trim();
-      if (formData.website?.trim()) submitData.website = formData.website.trim();
-      if (formData.contactEmail?.trim()) submitData.contactEmail = formData.contactEmail.trim();
-      if (formData.contactPhone?.trim()) submitData.contactPhone = formData.contactPhone.trim();
+      if (data.slug?.trim()) submitData.slug = data.slug.trim();
+      if (data.description?.trim()) submitData.description = data.description.trim();
+      if (data.timezone?.trim()) submitData.timezone = data.timezone.trim();
+      if (data.website?.trim()) submitData.website = data.website.trim();
+      if (data.contactEmail?.trim()) submitData.contactEmail = data.contactEmail.trim();
+      if (data.contactPhone?.trim()) submitData.contactPhone = data.contactPhone.trim();
 
-      // Include settings if any are set
-      if (formData.settings) {
-        submitData.settings = formData.settings;
-      }
-
-      // Include branding if any colors are set
-      if (formData.branding) {
-        submitData.branding = formData.branding;
-      }
+      // Include settings and branding
+      if (data.settings) submitData.settings = data.settings;
+      if (data.branding) submitData.branding = data.branding;
 
       await organizationService.createOrganization(submitData);
+      
+      toastService.dismiss(loadingToast);
+      toastService.actions.created('Organization', data.name);
       onSuccess();
     } catch (error: any) {
       console.error('Failed to create organization:', error);
-      setError(error.response?.data?.message || error.message || 'Failed to create organization');
+      toastService.dismiss(loadingToast);
+      toastService.actions.operationFailed(
+        'create organization',
+        error.response?.data?.message || error.message
+      );
     } finally {
       setLoading(false);
     }
@@ -127,27 +112,7 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
 
   const handleClose = () => {
     if (!loading) {
-      setFormData({
-        name: '',
-        slug: '',
-        description: '',
-        timezone: '',
-        website: '',
-        contactEmail: '',
-        contactPhone: '',
-        settings: {
-          defaultLanguage: 'en',
-          supportedLanguages: ['en'],
-          theme: 'default',
-        },
-        branding: {
-          primaryColor: '#AA8E67',
-          secondaryColor: '#F5EBD7',
-          accentColor: '#4A4A4A',
-        },
-        isActive: true,
-      });
-      setError(null);
+      reset();
       onClose();
     }
   };
@@ -171,93 +136,78 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
             </button>
           </div>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Basic Information */}
             <div className="space-y-4">
               <h4 className="text-md font-medium text-charcoal border-b pb-2">Basic Information</h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Organization Name *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="e.g., Paradise Hotel Group"
-                    required
-                  />
-                </div>
+                <FormField
+                  label="Organization Name"
+                  placeholder="e.g., Paradise Hotel Group"
+                  required
+                  register={register('name')}
+                  error={errors.name}
+                  success={!!watchedName && !errors.name}
+                  validating={isValidating}
+                />
                 
-                <div>
-                  <label className="form-label">URL Slug</label>
-                  <input
-                    type="text"
-                    name="slug"
-                    value={formData.slug}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="e.g., paradise-hotel-group"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Auto-generated from name. Use lowercase letters, numbers, and hyphens only.
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label">Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className="form-input"
-                  rows={3}
-                  placeholder="Brief description of the organization"
+                <FormField
+                  label="URL Slug"
+                  placeholder="e.g., paradise-hotel-group"
+                  register={register('slug')}
+                  error={errors.slug}
+                  helperText="Auto-generated from name. Use lowercase letters, numbers, and hyphens only."
+                  success={!!watchedSlug && !errors.slug}
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Timezone</label>
-                  <select
-                    name="timezone"
-                    value={formData.timezone}
-                    onChange={handleInputChange}
-                    className="form-input"
-                  >
-                    <option value="">Select timezone</option>
-                    <option value="America/New_York">Eastern Time (ET)</option>
-                    <option value="America/Chicago">Central Time (CT)</option>
-                    <option value="America/Denver">Mountain Time (MT)</option>
-                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                    <option value="America/Costa_Rica">Costa Rica Time</option>
-                    <option value="Europe/London">London Time (GMT)</option>
-                    <option value="Europe/Paris">Central European Time</option>
-                    <option value="Asia/Tokyo">Japan Time</option>
-                    <option value="Australia/Sydney">Sydney Time</option>
-                  </select>
-                </div>
+              <FormField
+                label="Description"
+                type="textarea"
+                placeholder="Brief description of the organization"
+                register={register('description')}
+                error={errors.description}
+                rows={3}
+              />
 
-                <div>
-                  <label className="form-label">Status</label>
-                  <select
-                    name="isActive"
-                    value={formData.isActive?.toString() ?? 'true'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
-                    className="form-input"
-                  >
-                    <option value="true">Active</option>
-                    <option value="false">Inactive</option>
-                  </select>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  label="Timezone"
+                  type="select"
+                  register={register('timezone')}
+                  error={errors.timezone}
+                >
+                  <option value="">Select timezone</option>
+                  <option value="America/New_York">Eastern Time (ET)</option>
+                  <option value="America/Chicago">Central Time (CT)</option>
+                  <option value="America/Denver">Mountain Time (MT)</option>
+                  <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                  <option value="America/Costa_Rica">Costa Rica Time</option>
+                  <option value="Europe/London">London Time (GMT)</option>
+                  <option value="Europe/Paris">Central European Time</option>
+                  <option value="Asia/Tokyo">Japan Time</option>
+                  <option value="Australia/Sydney">Sydney Time</option>
+                </FormField>
+
+                <Controller
+                  name="isActive"
+                  control={control}
+                  render={({ field }) => (
+                    <FormField
+                      label="Status"
+                      type="select"
+                      {...field}
+                      value={field.value?.toString() ?? 'true'}
+                      onChange={(e) => field.onChange(e.target.value === 'true')}
+                      error={errors.isActive}
+                    >
+                      <option value="true">Active</option>
+                      <option value="false">Inactive</option>
+                    </FormField>
+                  )}
+                />
               </div>
             </div>
 
@@ -266,42 +216,33 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
               <h4 className="text-md font-medium text-charcoal border-b pb-2">Contact Information</h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Contact Email</label>
-                  <input
-                    type="email"
-                    name="contactEmail"
-                    value={formData.contactEmail}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="contact@organization.com"
-                  />
-                </div>
+                <FormField
+                  label="Contact Email"
+                  type="email"
+                  placeholder="contact@organization.com"
+                  register={register('contactEmail')}
+                  error={errors.contactEmail}
+                  success={!!watch('contactEmail') && !errors.contactEmail}
+                />
 
-                <div>
-                  <label className="form-label">Contact Phone</label>
-                  <input
-                    type="tel"
-                    name="contactPhone"
-                    value={formData.contactPhone}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label">Website</label>
-                <input
-                  type="url"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleInputChange}
-                  className="form-input"
-                  placeholder="https://www.organization.com"
+                <FormField
+                  label="Contact Phone"
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  register={register('contactPhone')}
+                  error={errors.contactPhone}
+                  success={!!watch('contactPhone') && !errors.contactPhone}
                 />
               </div>
+
+              <FormField
+                label="Website"
+                type="url"
+                placeholder="https://www.organization.com"
+                register={register('website')}
+                error={errors.website}
+                success={!!watch('website') && !errors.website}
+              />
             </div>
 
             {/* Branding */}
@@ -312,20 +253,24 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
                 <div>
                   <label className="form-label">Primary Color</label>
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="color"
+                    <Controller
                       name="branding.primaryColor"
-                      value={formData.branding?.primaryColor || '#AA8E67'}
-                      onChange={handleInputChange}
-                      className="w-12 h-10 rounded border border-gray-300"
+                      control={control}
+                      render={({ field }) => (
+                        <input
+                          type="color"
+                          value={field.value || '#AA8E67'}
+                          onChange={field.onChange}
+                          className="w-12 h-10 rounded border border-gray-300"
+                        />
+                      )}
                     />
-                    <input
-                      type="text"
-                      name="branding.primaryColor"
-                      value={formData.branding?.primaryColor || '#AA8E67'}
-                      onChange={handleInputChange}
-                      className="form-input flex-1"
+                    <FormField
+                      label=""
                       placeholder="#AA8E67"
+                      register={register('branding.primaryColor')}
+                      error={errors.branding?.primaryColor}
+                      className="flex-1"
                     />
                   </div>
                 </div>
@@ -333,20 +278,24 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
                 <div>
                   <label className="form-label">Secondary Color</label>
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="color"
+                    <Controller
                       name="branding.secondaryColor"
-                      value={formData.branding?.secondaryColor || '#F5EBD7'}
-                      onChange={handleInputChange}
-                      className="w-12 h-10 rounded border border-gray-300"
+                      control={control}
+                      render={({ field }) => (
+                        <input
+                          type="color"
+                          value={field.value || '#F5EBD7'}
+                          onChange={field.onChange}
+                          className="w-12 h-10 rounded border border-gray-300"
+                        />
+                      )}
                     />
-                    <input
-                      type="text"
-                      name="branding.secondaryColor"
-                      value={formData.branding?.secondaryColor || '#F5EBD7'}
-                      onChange={handleInputChange}
-                      className="form-input flex-1"
+                    <FormField
+                      label=""
                       placeholder="#F5EBD7"
+                      register={register('branding.secondaryColor')}
+                      error={errors.branding?.secondaryColor}
+                      className="flex-1"
                     />
                   </div>
                 </div>
@@ -354,20 +303,24 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
                 <div>
                   <label className="form-label">Accent Color</label>
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="color"
+                    <Controller
                       name="branding.accentColor"
-                      value={formData.branding?.accentColor || '#4A4A4A'}
-                      onChange={handleInputChange}
-                      className="w-12 h-10 rounded border border-gray-300"
+                      control={control}
+                      render={({ field }) => (
+                        <input
+                          type="color"
+                          value={field.value || '#4A4A4A'}
+                          onChange={field.onChange}
+                          className="w-12 h-10 rounded border border-gray-300"
+                        />
+                      )}
                     />
-                    <input
-                      type="text"
-                      name="branding.accentColor"
-                      value={formData.branding?.accentColor || '#4A4A4A'}
-                      onChange={handleInputChange}
-                      className="form-input flex-1"
+                    <FormField
+                      label=""
                       placeholder="#4A4A4A"
+                      register={register('branding.accentColor')}
+                      error={errors.branding?.accentColor}
+                      className="flex-1"
                     />
                   </div>
                 </div>
@@ -379,33 +332,27 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
               <h4 className="text-md font-medium text-charcoal border-b pb-2">Settings</h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Default Language</label>
-                  <select
-                    name="settings.defaultLanguage"
-                    value={formData.settings?.defaultLanguage || 'en'}
-                    onChange={handleInputChange}
-                    className="form-input"
-                  >
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                  </select>
-                </div>
+                <FormField
+                  label="Default Language"
+                  type="select"
+                  register={register('settings.defaultLanguage')}
+                  error={errors.settings?.defaultLanguage}
+                >
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                </FormField>
 
-                <div>
-                  <label className="form-label">Theme</label>
-                  <select
-                    name="settings.theme"
-                    value={formData.settings?.theme || 'default'}
-                    onChange={handleInputChange}
-                    className="form-input"
-                  >
-                    <option value="default">Default</option>
-                    <option value="luxury">Luxury</option>
-                    <option value="minimal">Minimal</option>
-                    <option value="corporate">Corporate</option>
-                  </select>
-                </div>
+                <FormField
+                  label="Theme"
+                  type="select"
+                  register={register('settings.theme')}
+                  error={errors.settings?.theme}
+                >
+                  <option value="default">Default</option>
+                  <option value="luxury">Luxury</option>
+                  <option value="minimal">Minimal</option>
+                  <option value="corporate">Corporate</option>
+                </FormField>
               </div>
 
               <div>
@@ -413,18 +360,24 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
                 <div className="space-y-2">
                   {['en', 'es'].map(lang => (
                     <label key={lang} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.settings?.supportedLanguages?.includes(lang) || false}
-                        onChange={(e) => {
-                          const current = formData.settings?.supportedLanguages || [];
-                          if (e.target.checked) {
-                            handleLanguageChange([...current, lang]);
-                          } else {
-                            handleLanguageChange(current.filter(l => l !== lang));
-                          }
-                        }}
-                        className="mr-2"
+                      <Controller
+                        name="settings.supportedLanguages"
+                        control={control}
+                        render={({ field }) => (
+                          <input
+                            type="checkbox"
+                            checked={field.value?.includes(lang as 'en' | 'es') || false}
+                            onChange={(e) => {
+                              const current = field.value || [];
+                              if (e.target.checked) {
+                                field.onChange([...current, lang]);
+                              } else {
+                                field.onChange(current.filter(l => l !== lang));
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                        )}
                       />
                       <span className="text-sm">
                         {lang === 'en' ? 'English' : 'Spanish'}
@@ -439,8 +392,10 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
             <div className="flex space-x-4 pt-4 border-t">
               <button
                 type="submit"
-                className="btn btn-primary flex-1"
-                disabled={loading}
+                className={`btn btn-primary flex-1 ${
+                  !isValid || loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                disabled={!isValid || loading}
               >
                 {loading ? (
                   <LoadingSpinner size="sm" />

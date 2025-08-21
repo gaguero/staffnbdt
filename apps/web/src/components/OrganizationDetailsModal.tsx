@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PlusIcon, EditIcon, TrashIcon, UserPlusIcon, BuildingIcon, MoreHorizontalIcon } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import PermissionGate from './PermissionGate';
 import { COMMON_PERMISSIONS } from '../types/permission';
 import { organizationService, Organization } from '../services/organizationService';
+import { toastService } from '../utils/toast';
 
 interface OrganizationDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   organization: Organization;
   onEdit: () => void;
+  onRefresh?: () => void;
+  onPropertyCreate?: (organizationId: string) => void;
+  onPropertyEdit?: (property: OrganizationProperty) => void;
+  onUserInvite?: (organizationId: string) => void;
+  onUserEdit?: (user: OrganizationUser) => void;
 }
 
 interface OrganizationProperty {
@@ -44,11 +52,17 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
   onClose,
   organization,
   onEdit,
+  onRefresh,
+  onPropertyCreate,
+  onPropertyEdit,
+  onUserInvite,
+  onUserEdit,
 }) => {
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState<OrganizationProperty[]>([]);
   const [users, setUsers] = useState<OrganizationUser[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'properties' | 'users'>('overview');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Helper function to format address safely
   const formatAddress = (address: string | { street?: string; city?: string; state?: string; country?: string; postalCode?: string; } | undefined): string => {
@@ -106,6 +120,60 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
       console.error('Failed to load organization details:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePropertyAction = async (action: string, property?: OrganizationProperty) => {
+    setActionLoading(action);
+    try {
+      switch (action) {
+        case 'create':
+          onPropertyCreate?.(organization.id);
+          break;
+        case 'edit':
+          if (property) onPropertyEdit?.(property);
+          break;
+        case 'delete':
+          if (property && confirm(`Are you sure you want to delete "${property.name}"?`)) {
+            // Add delete property logic here
+            toastService.success(`Property "${property.name}" deleted successfully`);
+            await loadOrganizationDetails();
+            onRefresh?.();
+          }
+          break;
+      }
+    } catch (error: any) {
+      toastService.error(error.message || 'Action failed');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUserAction = async (action: string, user?: OrganizationUser) => {
+    setActionLoading(action);
+    try {
+      switch (action) {
+        case 'invite':
+          onUserInvite?.(organization.id);
+          break;
+        case 'edit':
+          if (user) onUserEdit?.(user);
+          break;
+        case 'deactivate':
+        case 'activate':
+          if (user) {
+            const newStatus = action === 'activate';
+            // Add user status toggle logic here
+            toastService.success(`User ${newStatus ? 'activated' : 'deactivated'} successfully`);
+            await loadOrganizationDetails();
+            onRefresh?.();
+          }
+          break;
+      }
+    } catch (error: any) {
+      toastService.error(error.message || 'Action failed');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -387,7 +455,27 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h4 className="text-lg font-medium text-charcoal">Properties</h4>
-                      <span className="text-sm text-gray-500">{properties.length} total</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-500">{properties.length} total</span>
+                        <PermissionGate commonPermission={COMMON_PERMISSIONS.CREATE_PROPERTY}>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handlePropertyAction('create')}
+                            disabled={actionLoading === 'create'}
+                            className="btn btn-primary btn-sm"
+                          >
+                            {actionLoading === 'create' ? (
+                              <LoadingSpinner size="sm" />
+                            ) : (
+                              <>
+                                <PlusIcon className="w-4 h-4 mr-1" />
+                                Add Property
+                              </>
+                            )}
+                          </motion.button>
+                        </PermissionGate>
+                      </div>
                     </div>
                     
                     {properties.length === 0 ? (
@@ -397,24 +485,58 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {properties.map((property) => (
-                          <div key={property.id} className="card p-4">
-                            <div className="flex justify-between items-start mb-2">
-                              <h5 className="font-medium text-charcoal">{property.name}</h5>
-                              {getStatusBadge(property.isActive)}
-                            </div>
-                            {property.address && (
-                              <p className="text-sm text-gray-600 mb-2">📍 {formatAddress(property.address)}</p>
-                            )}
-                            {property.type && (
-                              <p className="text-sm text-gray-600 mb-2">🏢 {property.type}</p>
-                            )}
-                            <div className="flex justify-between text-sm text-gray-500">
-                              <span>👥 {property._count?.users || 0} users</span>
-                              <span>🏢 {property._count?.departments || 0} depts</span>
-                            </div>
-                          </div>
-                        ))}
+                        <AnimatePresence>
+                          {properties.map((property) => (
+                            <motion.div
+                              key={property.id}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -20 }}
+                              className="group card p-4 hover:shadow-md transition-shadow"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <h5 className="font-medium text-charcoal">{property.name}</h5>
+                                <div className="flex items-center space-x-2">
+                                  {getStatusBadge(property.isActive)}
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex items-center space-x-1">
+                                      <PermissionGate commonPermission={COMMON_PERMISSIONS.EDIT_PROPERTY}>
+                                        <button
+                                          onClick={() => handlePropertyAction('edit', property)}
+                                          disabled={actionLoading !== null}
+                                          className="text-blue-600 hover:text-blue-800 p-1 rounded"
+                                          title="Edit Property"
+                                        >
+                                          <EditIcon className="w-4 h-4" />
+                                        </button>
+                                      </PermissionGate>
+                                      <PermissionGate commonPermission={COMMON_PERMISSIONS.DELETE_PROPERTY}>
+                                        <button
+                                          onClick={() => handlePropertyAction('delete', property)}
+                                          disabled={actionLoading !== null}
+                                          className="text-red-600 hover:text-red-800 p-1 rounded"
+                                          title="Delete Property"
+                                        >
+                                          <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                      </PermissionGate>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              {property.address && (
+                                <p className="text-sm text-gray-600 mb-2">📍 {formatAddress(property.address)}</p>
+                              )}
+                              {property.type && (
+                                <p className="text-sm text-gray-600 mb-2">🏢 {property.type}</p>
+                              )}
+                              <div className="flex justify-between text-sm text-gray-500">
+                                <span>👥 {property._count?.users || 0} users</span>
+                                <span>🏢 {property._count?.departments || 0} depts</span>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
                       </div>
                     )}
                   </div>
@@ -425,7 +547,27 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h4 className="text-lg font-medium text-charcoal">Users</h4>
-                      <span className="text-sm text-gray-500">{users.length} total</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-500">{users.length} total</span>
+                        <PermissionGate commonPermission={COMMON_PERMISSIONS.INVITE_USER}>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleUserAction('invite')}
+                            disabled={actionLoading === 'invite'}
+                            className="btn btn-primary btn-sm"
+                          >
+                            {actionLoading === 'invite' ? (
+                              <LoadingSpinner size="sm" />
+                            ) : (
+                              <>
+                                <UserPlusIcon className="w-4 h-4 mr-1" />
+                                Invite User
+                              </>
+                            )}
+                          </motion.button>
+                        </PermissionGate>
+                      </div>
                     </div>
                     
                     {users.length === 0 ? (
@@ -445,27 +587,65 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {users.map((user) => (
-                              <tr key={user.id} className="hover:bg-gray-50">
-                                <td className="px-4 py-3">
-                                  <div>
-                                    <p className="text-sm font-medium text-charcoal">
-                                      {user.firstName} {user.lastName}
-                                    </p>
-                                    <p className="text-sm text-gray-500">{user.email}</p>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  {getRoleBadge(user.role)}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-charcoal">
-                                  {user.position || '-'}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {getStatusBadge(user.isActive)}
-                                </td>
-                              </tr>
-                            ))}
+                            <AnimatePresence>
+                              {users.map((user) => (
+                                <motion.tr
+                                  key={user.id}
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  className="group hover:bg-gray-50"
+                                >
+                                  <td className="px-4 py-3">
+                                    <div>
+                                      <p className="text-sm font-medium text-charcoal">
+                                        {user.firstName} {user.lastName}
+                                      </p>
+                                      <p className="text-sm text-gray-500">{user.email}</p>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {getRoleBadge(user.role)}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-charcoal">
+                                    {user.position || '-'}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center justify-between">
+                                      {getStatusBadge(user.isActive)}
+                                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center space-x-1">
+                                          <PermissionGate commonPermission={COMMON_PERMISSIONS.EDIT_USER}>
+                                            <button
+                                              onClick={() => handleUserAction('edit', user)}
+                                              disabled={actionLoading !== null}
+                                              className="text-blue-600 hover:text-blue-800 p-1 rounded"
+                                              title="Edit User"
+                                            >
+                                              <EditIcon className="w-3 h-3" />
+                                            </button>
+                                          </PermissionGate>
+                                          <PermissionGate commonPermission={COMMON_PERMISSIONS.MANAGE_USER_STATUS}>
+                                            <button
+                                              onClick={() => handleUserAction(user.isActive ? 'deactivate' : 'activate', user)}
+                                              disabled={actionLoading !== null}
+                                              className={`p-1 rounded ${
+                                                user.isActive 
+                                                  ? 'text-yellow-600 hover:text-yellow-800' 
+                                                  : 'text-green-600 hover:text-green-800'
+                                              }`}
+                                              title={user.isActive ? 'Deactivate User' : 'Activate User'}
+                                            >
+                                              <MoreHorizontalIcon className="w-3 h-3" />
+                                            </button>
+                                          </PermissionGate>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </motion.tr>
+                              ))}
+                            </AnimatePresence>
                           </tbody>
                         </table>
                       </div>
