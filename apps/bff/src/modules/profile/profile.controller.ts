@@ -10,13 +10,14 @@ import {
   UseInterceptors,
   UploadedFile,
   Res,
+  Req,
   BadRequestException,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { ProfileService } from './profile.service';
 import { ProfilePhotoService } from './profile-photo.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
@@ -106,6 +107,7 @@ export class ProfileController {
   async uploadProfilePhoto(
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
   ) {
     console.log('📸 Profile photo upload request:', {
       userId: currentUser.id,
@@ -129,6 +131,7 @@ export class ProfileController {
         currentUser.id,
         file,
         currentUser,
+        request,
         { photoType: PhotoType.FORMAL, isPrimary: true }, // Legacy endpoint defaults to FORMAL
       );
       
@@ -383,6 +386,7 @@ export class ProfileController {
     @UploadedFile() file: Express.Multer.File,
     @Body() uploadDto: UploadProfilePhotoDto,
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -398,6 +402,7 @@ export class ProfileController {
         currentUser.id,
         file,
         currentUser,
+        request,
         {
           photoType: photoType as PhotoType,
           isPrimary: uploadDto.isPrimary || false,

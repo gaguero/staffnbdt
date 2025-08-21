@@ -40,6 +40,7 @@ export class ProfilePhotoService {
     userId: string,
     file: Express.Multer.File,
     currentUser: User,
+    request: any,
     options: PhotoUploadOptions = {},
   ): Promise<ProfilePhoto> {
     // Users can only upload their own photos unless they're admins
@@ -53,7 +54,7 @@ export class ProfilePhotoService {
         id: userId, 
         deletedAt: null,
         // Add tenant filtering for security
-        organizationId: this.tenantContextService.getTenantContext(currentUser).organizationId,
+        organizationId: this.tenantContextService.getTenantContext(request).organizationId,
       },
     });
 
@@ -61,7 +62,7 @@ export class ProfilePhotoService {
       console.error('❌ User not found for photo upload:', {
         userId,
         requestedBy: currentUser.id,
-        tenantContext: this.tenantContextService.getTenantContext(currentUser),
+        tenantContext: this.tenantContextService.getTenantContextSafe(request),
       });
       throw new NotFoundException('User not found or access denied');
     }
@@ -77,7 +78,7 @@ export class ProfilePhotoService {
       // Get tenant context for R2 upload
       let tenantContext;
       try {
-        tenantContext = this.tenantContextService.getTenantContext(currentUser);
+        tenantContext = this.tenantContextService.getTenantContext(request);
         console.log('📸 Tenant context for photo upload:', tenantContext);
       } catch (error) {
         console.error('❌ Failed to get tenant context:', error);
