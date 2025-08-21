@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Photo API Endpoints</title>
+    <script>
+        async function testPhotoAPI() {
+            const baseUrl = 'https://frontend-production-55d3.up.railway.app';
+            const apiUrl = 'https://backend-production-b6e4.up.railway.app';
+            
+            console.log('Testing photo API endpoints...');
+            
+            // Test login first to get token
+            const loginResponse = await fetch(`${apiUrl}/api/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: 'admin@hotel.com',
+                    password: 'admin123'
+                })
+            });
+            
+            if (!loginResponse.ok) {
+                console.error('Login failed:', await loginResponse.text());
+                return;
+            }
+            
+            const loginData = await loginResponse.json();
+            const token = loginData.data.access_token;
+            console.log('Login successful, token:', token.substring(0, 20) + '...');
+            
+            // Test GET /api/profile/photos
+            console.log('\n--- Testing GET /api/profile/photos ---');
+            const photosResponse = await fetch(`${apiUrl}/api/profile/photos`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            console.log('Photos endpoint status:', photosResponse.status);
+            
+            if (photosResponse.ok) {
+                const photosData = await photosResponse.json();
+                console.log('Photos response:', photosData);
+            } else {
+                console.error('Photos endpoint failed:', photosResponse.status, await photosResponse.text());
+            }
+            
+            // Test R2 service health via a simple photo type request
+            console.log('\n--- Testing GET /api/profile/photo-types ---');
+            const photoTypesResponse = await fetch(`${apiUrl}/api/profile/photo-types`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            console.log('Photo types endpoint status:', photoTypesResponse.status);
+            
+            if (photoTypesResponse.ok) {
+                const photoTypesData = await photoTypesResponse.json();
+                console.log('Photo types response:', photoTypesData);
+            } else {
+                console.error('Photo types endpoint failed:', photoTypesResponse.status, await photoTypesResponse.text());
+            }
+            
+            console.log('\n--- API Tests Complete ---');
+        }
+        
+        // Run tests when page loads
+        window.onload = testPhotoAPI;
+    </script>
+</head>
+<body>
+    <h1>Testing Photo API Endpoints</h1>
+    <p>Check the browser console for test results.</p>
+    <p>Open DevTools (F12) and look at the Console tab.</p>
+</body>
+</html>
