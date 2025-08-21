@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Test Images</title>
+</head>
+<body>
+    <h1>Test Image Generator</h1>
+    <div id="images"></div>
+    
+    <script>
+        // Image configurations for each photo type
+        const imageConfigs = [
+            { name: 'formal', emoji: '👔', color: '#1e3a8a', text: 'FORMAL' },
+            { name: 'casual', emoji: '😊', color: '#16a34a', text: 'CASUAL' },
+            { name: 'uniform', emoji: '👕', color: '#ca8a04', text: 'UNIFORM' },
+            { name: 'fun', emoji: '🎉', color: '#7c3aed', text: 'FUN' }
+        ];
+
+        imageConfigs.forEach(config => {
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 400;
+            const ctx = canvas.getContext('2d');
+
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 400, 400);
+            gradient.addColorStop(0, config.color);
+            gradient.addColorStop(1, config.color + '80');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 400, 400);
+
+            // Text styling
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Emoji
+            ctx.font = '72px Arial';
+            ctx.fillText(config.emoji, 200, 150);
+
+            // Text
+            ctx.font = 'bold 36px Arial';
+            ctx.fillText(config.text, 200, 250);
+
+            ctx.font = '18px Arial';
+            ctx.fillText('Test Photo for Upload', 200, 320);
+
+            // Convert to blob and create download link
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `test-${config.name}-photo.png`;
+                link.textContent = `Download ${config.text} Photo`;
+                link.style.display = 'block';
+                link.style.margin = '10px';
+                link.style.padding = '10px';
+                link.style.background = config.color;
+                link.style.color = 'white';
+                link.style.textDecoration = 'none';
+                link.style.borderRadius = '5px';
+                document.getElementById('images').appendChild(link);
+            }, 'image/png');
+
+            // Also add canvas to page for preview
+            canvas.style.width = '200px';
+            canvas.style.height = '200px';
+            canvas.style.margin = '10px';
+            canvas.style.border = '2px solid ' + config.color;
+            canvas.style.borderRadius = '10px';
+            document.getElementById('images').appendChild(canvas);
+        });
+    </script>
+</body>
+</html>
