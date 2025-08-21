@@ -285,6 +285,7 @@ export class ProfileController {
   async getProfilePhoto(
     @Param('userId') userId: string,
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
     @Res() res: Response,
   ) {
     try {
@@ -300,7 +301,7 @@ export class ProfileController {
       }
 
       // Get primary photo for the user
-      const primaryPhoto = await this.profilePhotoService.getPrimaryPhoto(userId, currentUser);
+      const primaryPhoto = await this.profilePhotoService.getPrimaryPhoto(userId, currentUser, request);
       
       if (!primaryPhoto) {
         throw new NotFoundException('No profile photo found for this user');
@@ -500,8 +501,11 @@ export class ProfileController {
   @RequirePermission('user.read.own')
   @ApiOperation({ summary: 'Get photo types and their status for current user' })
   @ApiResponse({ status: 200, description: 'Photo types retrieved successfully', type: PhotoTypesResponseDto })
-  async getPhotoTypes(@CurrentUser() currentUser: User) {
-    const photos = await this.profilePhotoService.getUserPhotos(currentUser.id, currentUser);
+  async getPhotoTypes(
+    @CurrentUser() currentUser: User,
+    @Req() request: Request,
+  ) {
+    const photos = await this.profilePhotoService.getUserPhotos(currentUser.id, currentUser, request);
     
     const photoTypeDescriptions = {
       [PhotoType.FORMAL]: {
