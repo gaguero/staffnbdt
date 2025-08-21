@@ -196,12 +196,21 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   const getCroppedCanvas = (): HTMLCanvasElement | null => {
     const canvas = canvasRef.current;
     const image = imageRef.current;
+    
+    console.log('getCroppedCanvas - canvas:', !!canvas, 'image:', !!image, 'completedCrop:', completedCrop);
+    
     if (!canvas || !image || !completedCrop) {
+      console.error('getCroppedCanvas - Missing required elements:', {
+        canvas: !!canvas,
+        image: !!image,
+        completedCrop: !!completedCrop
+      });
       return null;
     }
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {
+      console.error('getCroppedCanvas - Could not get canvas context');
       return null;
     }
 
@@ -211,6 +220,17 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
 
       const cropWidth = Math.max(completedCrop.width, 50);
       const cropHeight = Math.max(completedCrop.height, 50);
+
+      console.log('getCroppedCanvas - Image dimensions:', {
+        naturalWidth: image.naturalWidth,
+        naturalHeight: image.naturalHeight,
+        width: image.width,
+        height: image.height,
+        scaleX,
+        scaleY,
+        cropWidth,
+        cropHeight
+      });
 
       canvas.width = cropWidth;
       canvas.height = cropHeight;
@@ -229,6 +249,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
         cropHeight
       );
 
+      console.log('getCroppedCanvas - Success');
       return canvas;
     } catch (error) {
       console.error('Canvas cropping error:', error);
@@ -580,6 +601,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                           setImageLoaded(true);
                           const img = imageRef.current;
                           if (img) {
+                            console.log('Image dimensions:', img.width, img.height, img.naturalWidth, img.naturalHeight);
                             const centerCrop: Crop = {
                               unit: '%',
                               width: 50,
@@ -597,6 +619,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                                 width: (img.width * centerCrop.width) / 100,
                                 height: (img.height * centerCrop.height) / 100
                               };
+                              console.log('Setting initial completedCrop:', pixelCrop);
                               setCompletedCrop(pixelCrop);
                             }, 100);
                           }

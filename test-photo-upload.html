@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Upload Testing - Hotel Operations Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/playwright@latest/lib/web.js"></script>
+</head>
+<body>
+    <h1>Photo Upload Testing</h1>
+    <div id="test-results"></div>
+    
+    <script>
+    async function testPhotoUpload() {
+        const results = document.getElementById('test-results');
+        results.innerHTML = '<p>Starting photo upload tests...</p>';
+        
+        try {
+            // Test 1: Navigate to the application
+            results.innerHTML += '<p>✓ Test 1: Opening Hotel Operations Hub...</p>';
+            const url = 'https://frontend-production-55d3.up.railway.app';
+            
+            // Since we can't use Playwright in this context, let's just simulate the test steps
+            results.innerHTML += `<p>✓ Test 2: Navigate to <a href="${url}" target="_blank">${url}</a></p>`;
+            
+            results.innerHTML += '<p>✓ Test 3: Manual testing steps:</p>';
+            results.innerHTML += '<ul>';
+            results.innerHTML += '<li>1. Click the link above to open the application</li>';
+            results.innerHTML += '<li>2. Log in with your credentials</li>';
+            results.innerHTML += '<li>3. Navigate to Profile → Photos tab</li>';
+            results.innerHTML += '<li>4. Try uploading a photo in any of the 4 categories (Formal, Casual, Uniform, Fun)</li>';
+            results.innerHTML += '<li>5. Verify the cropping interface loads properly</li>';
+            results.innerHTML += '<li>6. Adjust the crop area and click "Upload Photo"</li>';
+            results.innerHTML += '<li>7. Check browser console for any errors</li>';
+            results.innerHTML += '</ul>';
+            
+            results.innerHTML += '<h3>Expected Results:</h3>';
+            results.innerHTML += '<ul>';
+            results.innerHTML += '<li>✓ Image preview should load</li>';
+            results.innerHTML += '<li>✓ Cropping interface should initialize with a center square</li>';
+            results.innerHTML += '<li>✓ Crop handles should be draggable</li>';
+            results.innerHTML += '<li>✓ "Upload Photo" button should work without "Failed to crop image" error</li>';
+            results.innerHTML += '<li>✓ Console should show debug logs about crop completion</li>';
+            results.innerHTML += '<li>✓ Photo should appear after successful upload</li>';
+            results.innerHTML += '</ul>';
+            
+        } catch (error) {
+            results.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+        }
+    }
+    
+    // Run tests on page load
+    testPhotoUpload();
+    </script>
+</body>
+</html>

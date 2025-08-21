@@ -222,6 +222,7 @@ export class ProfilePhotoService {
   async getUserPhotos(
     userId: string,
     currentUser: User,
+    request: any,
     photoType?: PhotoType,
   ): Promise<ProfilePhoto[]> {
     // Users can view their own photos, admins can view photos in their scope
@@ -230,7 +231,7 @@ export class ProfilePhotoService {
     }
 
     // Get tenant context for filtering
-    const tenantContext = this.tenantContextService.getTenantContext(currentUser);
+    const tenantContext = this.tenantContextService.getTenantContext(request);
     
     const whereClause: any = {
       userId,
@@ -267,8 +268,8 @@ export class ProfilePhotoService {
   /**
    * Get primary photo for a user
    */
-  async getPrimaryPhoto(userId: string, currentUser: User): Promise<ProfilePhoto | null> {
-    const photos = await this.getUserPhotos(userId, currentUser);
+  async getPrimaryPhoto(userId: string, currentUser: User, request: any): Promise<ProfilePhoto | null> {
+    const photos = await this.getUserPhotos(userId, currentUser, request);
     return photos.find(photo => photo.isPrimary) || photos[0] || null;
   }
 

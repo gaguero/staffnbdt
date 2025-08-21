@@ -96,7 +96,7 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
     const canvas = canvasRef.current;
     const image = imageRef.current;
     
-    console.log('getCroppedCanvas called with:', {
+    console.log('ProfilePhotoUpload getCroppedCanvas called with:', {
       canvas: !!canvas,
       image: !!image,
       imageLoaded,
@@ -104,8 +104,8 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
       cropData: completedCrop
     });
     
-    if (!canvas || !image || !completedCrop || !imageLoaded) {
-      console.error('Missing required elements for cropping:', {
+    if (!canvas || !image || !completedCrop) {
+      console.error('ProfilePhotoUpload Missing required elements for cropping:', {
         canvas: !!canvas,
         image: !!image,
         imageLoaded,

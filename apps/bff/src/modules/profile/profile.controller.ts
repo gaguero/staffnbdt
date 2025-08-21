@@ -421,11 +421,14 @@ export class ProfileController {
   @RequirePermission('user.read.own')
   @ApiOperation({ summary: 'Get all photos for current user' })
   @ApiResponse({ status: 200, description: 'User photos retrieved successfully', type: UserPhotosResponseDto })
-  async getCurrentUserPhotos(@CurrentUser() currentUser: User) {
+  async getCurrentUserPhotos(
+    @CurrentUser() currentUser: User,
+    @Req() request: Request,
+  ) {
     console.log('📸 GET /api/profile/photos endpoint hit by user:', currentUser.id);
     
     try {
-      const photos = await this.profilePhotoService.getUserPhotos(currentUser.id, currentUser);
+      const photos = await this.profilePhotoService.getUserPhotos(currentUser.id, currentUser, request);
       
       const photosByType = {
         [PhotoType.FORMAL]: 0,
@@ -467,8 +470,9 @@ export class ProfileController {
   async getUserPhotos(
     @Param('userId') userId: string,
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
   ) {
-    const photos = await this.profilePhotoService.getUserPhotos(userId, currentUser);
+    const photos = await this.profilePhotoService.getUserPhotos(userId, currentUser, request);
     
     const photosByType = {
       [PhotoType.FORMAL]: 0,
