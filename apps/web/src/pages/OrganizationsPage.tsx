@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { SkeletonTable, SkeletonStats } from '../components/skeletons';
+import { toastService } from '../utils/toast';
 import CreateOrganizationModal from '../components/CreateOrganizationModal';
 import EditOrganizationModal from '../components/EditOrganizationModal';
 import OrganizationDetailsModal from '../components/OrganizationDetailsModal';
@@ -19,6 +21,7 @@ const OrganizationsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [error, setError] = useState<string | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -53,13 +56,17 @@ const OrganizationsPage: React.FC = () => {
       } else {
         setError('Failed to load organizations');
         setOrganizations([]);
+        toastService.error('Failed to load organizations');
       }
     } catch (error: any) {
       console.error('Failed to load organizations:', error);
-      setError(error.response?.data?.message || 'Failed to load organizations');
+      const errorMessage = error.response?.data?.message || 'Failed to load organizations';
+      setError(errorMessage);
       setOrganizations([]);
+      toastService.error(errorMessage);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [searchTerm, statusFilter]);
 
@@ -126,16 +133,28 @@ const OrganizationsPage: React.FC = () => {
       confirmMessage += '\n\nAll associated data will be removed. This action cannot be undone.';
     }
 
-    if (!confirm(confirmMessage)) return;
+    if (!confirm(confirmMessage)) {
+      toastService.actions.confirmationRequired('proceed with deletion');
+      return;
+    }
+
+    const loadingToast = toastService.loading(`Deleting "${org.name}"...`);
 
     try {
       setLoading(true);
       await organizationService.deleteOrganization(organizationId);
       await loadOrganizations();
       await loadStats();
+      
+      toastService.dismiss(loadingToast);
+      toastService.actions.deleted('Organization', org.name);
     } catch (error: any) {
       console.error('Failed to delete organization:', error);
-      alert(error.response?.data?.message || 'Failed to delete organization');
+      toastService.dismiss(loadingToast);
+      toastService.actions.operationFailed(
+        'delete organization',
+        error.response?.data?.message
+      );
     } finally {
       setLoading(false);
     }
@@ -145,6 +164,9 @@ const OrganizationsPage: React.FC = () => {
     const org = organizations.find(o => o.id === organizationId);
     if (!org) return;
 
+    const action = currentStatus ? 'deactivate' : 'activate';
+    const loadingToast = toastService.loading(`${action === 'activate' ? 'Activating' : 'Deactivating'} "${org.name}"...`);
+
     try {
       setLoading(true);
       await organizationService.updateOrganization(organizationId, {
@@ -152,9 +174,20 @@ const OrganizationsPage: React.FC = () => {
       });
       await loadOrganizations();
       await loadStats();
+      
+      toastService.dismiss(loadingToast);
+      if (currentStatus) {
+        toastService.actions.deactivated('Organization', org.name);
+      } else {
+        toastService.actions.activated('Organization', org.name);
+      }
     } catch (error: any) {
       console.error('Failed to update organization status:', error);
-      alert(error.response?.data?.message || 'Failed to update organization status');
+      toastService.dismiss(loadingToast);
+      toastService.actions.operationFailed(
+        `${action} organization`,
+        error.response?.data?.message
+      );
     } finally {
       setLoading(false);
     }
@@ -210,33 +243,37 @@ const OrganizationsPage: React.FC = () => {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="card p-4 text-center">
-          <div className="text-2xl mb-2">🏢</div>
-          <p className="text-sm text-gray-600 mb-1">Total Organizations</p>
-          <p className="text-xl font-bold text-charcoal">{stats.total}</p>
+      {initialLoading ? (
+        <SkeletonStats cards={5} />
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="card p-4 text-center hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="text-2xl mb-2">🏢</div>
+            <p className="text-sm text-gray-600 mb-1">Total Organizations</p>
+            <p className="text-xl font-bold text-charcoal">{stats.total}</p>
+          </div>
+          <div className="card p-4 text-center hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="text-2xl mb-2">✅</div>
+            <p className="text-sm text-gray-600 mb-1">Active</p>
+            <p className="text-xl font-bold text-green-600">{stats.active}</p>
+          </div>
+          <div className="card p-4 text-center hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="text-2xl mb-2">❌</div>
+            <p className="text-sm text-gray-600 mb-1">Inactive</p>
+            <p className="text-xl font-bold text-red-600">{stats.inactive}</p>
+          </div>
+          <div className="card p-4 text-center hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="text-2xl mb-2">🏨</div>
+            <p className="text-sm text-gray-600 mb-1">Total Properties</p>
+            <p className="text-xl font-bold text-blue-600">{stats.totalProperties}</p>
+          </div>
+          <div className="card p-4 text-center hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="text-2xl mb-2">👥</div>
+            <p className="text-sm text-gray-600 mb-1">Total Users</p>
+            <p className="text-xl font-bold text-purple-600">{stats.totalUsers}</p>
+          </div>
         </div>
-        <div className="card p-4 text-center">
-          <div className="text-2xl mb-2">✅</div>
-          <p className="text-sm text-gray-600 mb-1">Active</p>
-          <p className="text-xl font-bold text-green-600">{stats.active}</p>
-        </div>
-        <div className="card p-4 text-center">
-          <div className="text-2xl mb-2">❌</div>
-          <p className="text-sm text-gray-600 mb-1">Inactive</p>
-          <p className="text-xl font-bold text-red-600">{stats.inactive}</p>
-        </div>
-        <div className="card p-4 text-center">
-          <div className="text-2xl mb-2">🏨</div>
-          <p className="text-sm text-gray-600 mb-1">Total Properties</p>
-          <p className="text-xl font-bold text-blue-600">{stats.totalProperties}</p>
-        </div>
-        <div className="card p-4 text-center">
-          <div className="text-2xl mb-2">👥</div>
-          <p className="text-sm text-gray-600 mb-1">Total Users</p>
-          <p className="text-xl font-bold text-purple-600">{stats.totalUsers}</p>
-        </div>
-      </div>
+      )}
 
       {/* Filters */}
       <div className="card p-4">
@@ -277,7 +314,9 @@ const OrganizationsPage: React.FC = () => {
       {/* Organizations Table */}
       <div className="card">
         <div className="card-body p-0">
-          {loading ? (
+          {initialLoading ? (
+            <SkeletonTable columns={7} rows={5} />
+          ) : loading ? (
             <div className="p-12 text-center">
               <LoadingSpinner size="lg" />
             </div>
