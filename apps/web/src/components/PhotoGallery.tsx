@@ -441,14 +441,14 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                   {/* Photo Actions */}
                   <div className="flex space-x-2">
                     <input
-                      ref={fileInputRef}
+                      ref={(el) => { fileInputRefs.current[config.type] = el; }}
                       type="file"
                       accept={ALLOWED_TYPES.join(',')}
                       onChange={(e) => handleFileInputChange(e, config.type)}
                       className="hidden"
                     />
                     <button
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => fileInputRefs.current[config.type]?.click()}
                       disabled={isCurrentlyUploading}
                       className="flex-1 btn btn-secondary text-sm"
                     >
@@ -484,14 +484,14 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                       {config.guidance}
                     </p>
                     <input
-                      ref={fileInputRef}
+                      ref={(el) => { fileInputRefs.current[config.type] = el; }}
                       type="file"
                       accept={ALLOWED_TYPES.join(',')}
                       onChange={(e) => handleFileInputChange(e, config.type)}
                       className="hidden"
                     />
                     <button
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => fileInputRefs.current[config.type]?.click()}
                       disabled={isCurrentlyUploading}
                       className="btn btn-primary"
                     >
@@ -575,6 +575,8 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                         alt="Preview"
                         className="max-w-full h-auto rounded border"
                         onLoad={() => {
+                          console.log('PhotoGallery image loaded for cropping');
+                          setImageLoaded(true);
                           const img = imageRef.current;
                           if (img) {
                             const centerCrop: Crop = {
@@ -585,6 +587,17 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                               y: 25,
                             };
                             setCrop(centerCrop);
+                            // Force onComplete to trigger to set completedCrop
+                            setTimeout(() => {
+                              const pixelCrop: PixelCrop = {
+                                unit: 'px',
+                                x: (img.width * centerCrop.x) / 100,
+                                y: (img.height * centerCrop.y) / 100,
+                                width: (img.width * centerCrop.width) / 100,
+                                height: (img.height * centerCrop.height) / 100
+                              };
+                              setCompletedCrop(pixelCrop);
+                            }, 100);
                           }
                         }}
                       />

@@ -30,6 +30,7 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
     y: 25,
   });
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
@@ -94,10 +95,20 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   const getCroppedCanvas = (): HTMLCanvasElement | null => {
     const canvas = canvasRef.current;
     const image = imageRef.current;
-    if (!canvas || !image || !completedCrop) {
+    
+    console.log('getCroppedCanvas called with:', {
+      canvas: !!canvas,
+      image: !!image,
+      imageLoaded,
+      completedCrop: !!completedCrop,
+      cropData: completedCrop
+    });
+    
+    if (!canvas || !image || !completedCrop || !imageLoaded) {
       console.error('Missing required elements for cropping:', {
         canvas: !!canvas,
         image: !!image,
+        imageLoaded,
         completedCrop: !!completedCrop
       });
       return null;
@@ -112,6 +123,12 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
     try {
       const scaleX = image.naturalWidth / image.width;
       const scaleY = image.naturalHeight / image.height;
+      
+      console.log('Image dimensions:', {
+        natural: { width: image.naturalWidth, height: image.naturalHeight },
+        displayed: { width: image.width, height: image.height },
+        scale: { x: scaleX, y: scaleY }
+      });
 
       // Ensure minimum canvas size
       const cropWidth = Math.max(completedCrop.width, 50);
@@ -158,7 +175,15 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
 
       const canvas = getCroppedCanvas();
       if (!canvas) {
-        throw new Error('Failed to crop image');
+        const debugInfo = {
+          canvas: !!canvasRef.current,
+          image: !!imageRef.current,
+          imageLoaded,
+          completedCrop: !!completedCrop,
+          cropData: completedCrop
+        };
+        console.error('Crop failed with debug info:', debugInfo);
+        throw new Error(`Failed to crop image. Debug: ${JSON.stringify(debugInfo)}`);
       }
 
       // Convert canvas to blob with error handling
@@ -236,6 +261,8 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   const handleCropCancel = () => {
     setShowCropModal(false);
     setSelectedFile(null);
+    setImageLoaded(false);
+    setCompletedCrop(null);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl('');
@@ -377,12 +404,19 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
                   <div className="relative max-w-md mx-auto">
                     <ReactCrop
                       crop={crop}
-                      onChange={(newCrop) => setCrop(newCrop)}
-                      onComplete={(c) => setCompletedCrop(c)}
+                      onChange={(newCrop) => {
+                        console.log('Crop changing:', newCrop);
+                        setCrop(newCrop);
+                      }}
+                      onComplete={(c) => {
+                        console.log('Crop completed:', c);
+                        setCompletedCrop(c);
+                      }}
                       aspect={1}
                       minWidth={50}
                       minHeight={50}
                       keepSelection
+                      ruleOfThirds
                     >
                       <img
                         ref={imageRef}
@@ -390,6 +424,8 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
                         alt="Preview"
                         className="max-w-full h-auto rounded border"
                         onLoad={() => {
+                          console.log('Image loaded for cropping');
+                          setImageLoaded(true);
                           // Initialize crop to center square
                           const img = imageRef.current;
                           if (img) {
@@ -401,6 +437,17 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
                               y: 25,
                             };
                             setCrop(centerCrop);
+                            // Force onComplete to trigger to set completedCrop
+                            setTimeout(() => {
+                              const pixelCrop: PixelCrop = {
+                                unit: 'px',
+                                x: (img.width * centerCrop.x) / 100,
+                                y: (img.height * centerCrop.y) / 100,
+                                width: (img.width * centerCrop.width) / 100,
+                                height: (img.height * centerCrop.height) / 100
+                              };
+                              setCompletedCrop(pixelCrop);
+                            }, 100);
                           }
                         }}
                       />

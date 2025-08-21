@@ -26,7 +26,7 @@ const BenefitsPage: React.FC = () => {
       title: 'Health Insurance Premium',
       description: 'Comprehensive health coverage with low deductibles and wide network coverage',
       category: 'health',
-      provider: 'Nayara Health Plan',
+      provider: 'Company Health Plan',
       discount: '100% covered by company',
       featured: true
     },

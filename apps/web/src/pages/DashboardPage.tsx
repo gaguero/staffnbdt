@@ -110,7 +110,7 @@ const DashboardPage: React.FC = () => {
               Welcome back, {user?.firstName}!
             </h2>
             <p className="text-gray-600">
-              Here's what's happening at Nayara today
+              Here's what's happening at your organization today
             </p>
           </div>
           <div className="hidden md:block text-6xl">👋</div>

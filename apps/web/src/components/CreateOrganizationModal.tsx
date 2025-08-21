@@ -191,7 +191,7 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
                     value={formData.name}
                     onChange={handleInputChange}
                     className="form-input"
-                    placeholder="e.g., Nayara Hotel Group"
+                    placeholder="e.g., Paradise Hotel Group"
                     required
                   />
                 </div>
@@ -204,7 +204,7 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
                     value={formData.slug}
                     onChange={handleInputChange}
                     className="form-input"
-                    placeholder="e.g., nayara-hotel-group"
+                    placeholder="e.g., paradise-hotel-group"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Auto-generated from name. Use lowercase letters, numbers, and hyphens only.
