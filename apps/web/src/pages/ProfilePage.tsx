@@ -312,8 +312,7 @@ const ProfilePage: React.FC = () => {
           {[
             { id: 'personal', label: 'Personal', icon: '👤' },
             { id: 'emergency', label: 'Emergency Contacts', icon: '🚨' },
-            { id: 'photo', label: 'Profile Photo', icon: '📸' },
-          { id: 'gallery', label: 'Photo Gallery', icon: '🖼️' },
+            { id: 'photos', label: 'Photos', icon: '📸' },
             { id: 'documents', label: 'Documentos', icon: '📄' },
             { id: 'security', label: 'Seguridad', icon: '🔒' }
           ].map((tab) => (
@@ -527,61 +526,76 @@ const ProfilePage: React.FC = () => {
           </div>
         )}
         
-        {/* Photo Tab (Legacy Single Photo) */}
-        {activeTab === 'photo' && (
+        {/* Unified Photos Tab */}
+        {activeTab === 'photos' && (
           <div className="space-y-6">
+            {/* Current Primary Photo Overview */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <span className="mr-2">📸</span>
-                  Primary Profile Photo
+                  <span className="mr-2">👤</span>
+                  Current Primary Photo
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Upload a single profile photo (legacy mode)
+                  This photo appears across the platform and represents your professional identity
                 </p>
               </div>
               <div className="p-6">
-                <ProfilePhotoUpload 
-                  currentPhotoUrl={profile.profilePhoto ? (profile.profilePhoto.startsWith('/api/') ? profile.profilePhoto : `/api/profile/photo/${profile.id}`) : undefined}
-                  onPhotoUpdate={async (photoUrl) => {
-                    // Update local state
-                    setProfile(prev => prev ? { ...prev, profilePhoto: photoUrl } : null);
-                    
-                    // Update auth context
-                    if (user) {
-                      updateUser({ ...user, profilePhoto: photoUrl });
-                    }
-                    
-                    toast.success('Profile photo updated successfully!');
-                  }}
-                  onPhotoDelete={async () => {
-                    // Update local state
-                    setProfile(prev => prev ? { ...prev, profilePhoto: undefined } : null);
-                    
-                    // Update auth context  
-                    if (user) {
-                      updateUser({ ...user, profilePhoto: undefined });
-                    }
-                    
-                    toast.success('Profile photo removed successfully!');
-                  }}
-                />
+                <div className="flex items-center space-x-6">
+                  <div className="relative">
+                    {profile.profilePhoto ? (
+                      <img 
+                        src={profile.profilePhoto.startsWith('/api/') ? profile.profilePhoto : `/api/profile/photo/${profile.id}`} 
+                        alt="Primary Profile" 
+                        className="w-24 h-24 rounded-full object-cover border-4 border-warm-gold/20 shadow-lg"
+                        onError={(e) => {
+                          console.log('Primary photo failed to load');
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-24 h-24 bg-warm-gold/20 rounded-full flex items-center justify-center text-warm-gold text-2xl font-bold border-4 border-warm-gold/20 shadow-lg">
+                        {profile.firstName?.[0]?.toUpperCase()}{profile.lastName?.[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      {profile.profilePhoto ? 'Primary photo active' : 'No primary photo set'}
+                    </h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      {profile.profilePhoto 
+                        ? 'Upload photos below to change your primary photo or add variety to your profile' 
+                        : 'Upload a photo below to set your primary profile photo'
+                      }
+                    </p>
+                    <div className="flex space-x-4 text-sm text-gray-500">
+                      <span className="flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        Professional ready
+                      </span>
+                      <span className="flex items-center">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        Multi-format support
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        
-        {/* Photo Gallery Tab (New Multi-Photo System) */}
-        {activeTab === 'gallery' && (
-          <div className="space-y-6">
+
+            {/* Multi-Photo Gallery */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                   <span className="mr-2">🖼️</span>
-                  Multi-Photo Gallery
+                  Professional Photo Gallery
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Upload up to 4 different types of photos for various professional contexts
+                  Upload up to 4 different types of photos for various professional contexts. The first photo you upload will become your primary photo.
                 </p>
               </div>
               <div className="p-6">
@@ -608,6 +622,46 @@ const ProfilePage: React.FC = () => {
                     }
                     
                     toast.success('Photo deleted successfully!');
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Legacy Single Photo Upload */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <span className="mr-2">📤</span>
+                  Quick Photo Upload
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Simple upload for a single profile photo (legacy mode)
+                </p>
+              </div>
+              <div className="p-6">
+                <ProfilePhotoUpload 
+                  currentPhotoUrl={profile.profilePhoto ? (profile.profilePhoto.startsWith('/api/') ? profile.profilePhoto : `/api/profile/photo/${profile.id}`) : undefined}
+                  onPhotoUpdate={async (photoUrl) => {
+                    // Update local state
+                    setProfile(prev => prev ? { ...prev, profilePhoto: photoUrl } : null);
+                    
+                    // Update auth context
+                    if (user) {
+                      updateUser({ ...user, profilePhoto: photoUrl });
+                    }
+                    
+                    toast.success('Profile photo updated successfully!');
+                  }}
+                  onPhotoDelete={async () => {
+                    // Update local state
+                    setProfile(prev => prev ? { ...prev, profilePhoto: undefined } : null);
+                    
+                    // Update auth context  
+                    if (user) {
+                      updateUser({ ...user, profilePhoto: undefined });
+                    }
+                    
+                    toast.success('Profile photo removed successfully!');
                   }}
                 />
               </div>
