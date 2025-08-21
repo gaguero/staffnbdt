@@ -72,8 +72,9 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
   const [isDragging, setIsDragging] = useState<PhotoType | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [_imageLoaded, setImageLoaded] = useState(false);
   
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefs = useRef<Record<PhotoType, HTMLInputElement | null>>({} as Record<PhotoType, HTMLInputElement | null>);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
 
