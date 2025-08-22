@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/database/prisma.service';
 import { AuditService } from '../../shared/audit/audit.service';
@@ -26,6 +27,8 @@ export interface PhotoMetadata {
 
 @Injectable()
 export class ProfilePhotoService {
+  private readonly logger = new Logger(ProfilePhotoService.name);
+  
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
@@ -236,24 +239,95 @@ export class ProfilePhotoService {
       photoType,
     });
 
-    // Get tenant context for filtering - with fallback for legacy photos
-    let tenantContext;
+    // Enhanced user lookup with multiple fallback strategies
+    let targetUser: User | null = null;
+    let tenantContext: any = null;
+    
     try {
       tenantContext = this.tenantContextService.getTenantContext(request);
-      console.log('📸 Tenant context found:', tenantContext);
+      console.log('📸 Tenant context found from request:', tenantContext);
+      
+      // First, try to find user within the current tenant context
+      targetUser = await this.prisma.user.findFirst({
+        where: {
+          id: userId,
+          deletedAt: null,
+          organizationId: tenantContext.organizationId,
+          ...(tenantContext.propertyId && { propertyId: tenantContext.propertyId }),
+        },
+      });
+      
+      console.log('📸 User found in current tenant context:', !!targetUser);
     } catch (error) {
-      console.warn('⚠️ No tenant context in request, falling back to user context for profile photos:', error.message);
-      // Fallback: use user's tenant context from the database
-      tenantContext = {
-        organizationId: currentUser.organizationId,
-        propertyId: currentUser.propertyId,
-      };
-      console.log('📸 Using fallback tenant context:', tenantContext);
+      console.warn('⚠️ No tenant context in request, will use fallback strategies:', error.message);
     }
     
-    // Double fallback: if user also has no tenant context, query without tenant filtering
-    if (!tenantContext.organizationId && !tenantContext.propertyId) {
-      console.log('📸 No tenant context available, querying all photos for user (legacy mode)');
+    // Fallback 1: If no user found in tenant context or no tenant context, try with current user's context
+    if (!targetUser) {
+      console.log('📸 Trying fallback 1: Current user\'s organization context');
+      targetUser = await this.prisma.user.findFirst({
+        where: {
+          id: userId,
+          deletedAt: null,
+          organizationId: currentUser.organizationId,
+        },
+      });
+      
+      if (targetUser) {
+        tenantContext = {
+          organizationId: currentUser.organizationId,
+          propertyId: currentUser.propertyId,
+        };
+        console.log('📸 User found using current user\'s context:', tenantContext);
+      }
+    }
+    
+    // Fallback 2: If still no user found, try without any tenant filtering (legacy mode)
+    if (!targetUser) {
+      console.log('📸 Trying fallback 2: Legacy mode without tenant filtering');
+      targetUser = await this.prisma.user.findFirst({
+        where: {
+          id: userId,
+          deletedAt: null,
+        },
+      });
+      
+      if (targetUser) {
+        tenantContext = {
+          organizationId: targetUser.organizationId,
+          propertyId: targetUser.propertyId,
+        };
+        console.log('📸 User found in legacy mode, using user\'s tenant context:', tenantContext);
+      }
+    }
+    
+    // If user still not found, throw error with detailed context
+    if (!targetUser) {
+      const errorContext = {
+        userId,
+        requestedBy: currentUser.id,
+        requestTenantContext: this.tenantContextService.getTenantContextSafe(request),
+        currentUserTenantContext: {
+          organizationId: currentUser.organizationId,
+          propertyId: currentUser.propertyId,
+        },
+        timestamp: new Date().toISOString(),
+      };
+      
+      console.error('❌ User not found after all fallback strategies:', errorContext);
+      
+      this.logger.error('Profile photo user lookup failed', {
+        context: 'ProfilePhotoService',
+        method: 'getUserPhotos',
+        ...errorContext,
+      });
+      
+      throw new NotFoundException(`User not found. The user may not exist, may be deleted, or you may not have access to view their profile photos.`);
+    }
+    
+    // Ensure tenant context is properly set
+    if (!tenantContext || (!tenantContext.organizationId && !tenantContext.propertyId)) {
+      console.log('📸 No tenant context available, using legacy mode for photos query');
       tenantContext = { organizationId: null, propertyId: null };
     }
     
@@ -263,38 +337,63 @@ export class ProfilePhotoService {
       deletedAt: null,
     };
 
-    // Improved tenant filtering logic that handles legacy photos better
-    if (tenantContext.organizationId || tenantContext.propertyId) {
-      // Use OR logic to include both tenant-scoped and legacy photos
+    // Enhanced tenant filtering logic that handles legacy photos and edge cases
+    if (tenantContext && (tenantContext.organizationId || tenantContext.propertyId)) {
+      // Use comprehensive OR logic to include all possible photo scenarios
       const orConditions = [];
       
-      // Include legacy photos without tenant context (for backward compatibility)
+      // 1. Include legacy photos without any tenant context (for backward compatibility)
       orConditions.push({
-        organizationId: null,
-        propertyId: null,
+        AND: [
+          { organizationId: null },
+          { propertyId: null },
+        ],
       });
       
-      // If we have tenant context, also include photos matching tenant context
+      // 2. If we have full tenant context, include exact matches
       if (tenantContext.organizationId && tenantContext.propertyId) {
         orConditions.push({
-          organizationId: tenantContext.organizationId,
-          propertyId: tenantContext.propertyId,
+          AND: [
+            { organizationId: tenantContext.organizationId },
+            { propertyId: tenantContext.propertyId },
+          ],
         });
       }
       
-      // Also include photos that partially match tenant context (for data migration scenarios)
+      // 3. Include photos that partially match organization (for migration scenarios)
       if (tenantContext.organizationId) {
         orConditions.push({
-          organizationId: tenantContext.organizationId,
-          propertyId: null,
+          AND: [
+            { organizationId: tenantContext.organizationId },
+            { propertyId: null },
+          ],
+        });
+        
+        // 4. Also include any photos in the same organization but different property
+        // (for users who moved between properties)
+        orConditions.push({
+          AND: [
+            { organizationId: tenantContext.organizationId },
+            { propertyId: { not: null } },
+          ],
+        });
+      }
+      
+      // 5. Include photos that match only the property (edge case for property transfers)
+      if (tenantContext.propertyId) {
+        orConditions.push({
+          AND: [
+            { organizationId: null },
+            { propertyId: tenantContext.propertyId },
+          ],
         });
       }
       
       whereClause.OR = orConditions;
-      console.log('📸 Using OR conditions for tenant filtering:', orConditions.length, 'conditions');
+      console.log(`📸 Using ${orConditions.length} OR conditions for comprehensive tenant filtering`);
     } else {
-      console.log('📸 No tenant context available, searching all photos for user (legacy mode)');
-      // In legacy mode, we don't add any tenant filtering
+      console.log('📸 No tenant context available, searching all photos for user (full legacy mode)');
+      // In full legacy mode, we don't add any tenant filtering
     }
 
     if (photoType) {
@@ -303,25 +402,52 @@ export class ProfilePhotoService {
 
     console.log('📸 Final query where clause:', JSON.stringify(whereClause, null, 2));
 
-    const photos = await this.prisma.profilePhoto.findMany({
-      where: whereClause,
-      orderBy: [
-        { isPrimary: 'desc' },
-        { createdAt: 'desc' },
-      ],
-    });
+    try {
+      const photos = await this.prisma.profilePhoto.findMany({
+        where: whereClause,
+        orderBy: [
+          { isPrimary: 'desc' },
+          { createdAt: 'desc' },
+        ],
+      });
 
-    console.log(`📸 Found ${photos.length} photos for user ${userId}`);
+      console.log(`📸 Found ${photos.length} photos for user ${userId}`);
 
-    await this.auditService.log({
-      userId: currentUser.id,
-      action: 'VIEW_PROFILE_PHOTOS',
-      entity: 'ProfilePhoto',
-      entityId: userId,
-      newData: { viewedPhotosCount: photos.length, photoType },
-    });
+      // Log successful photo retrieval with context
+      await this.auditService.log({
+        userId: currentUser.id,
+        action: 'VIEW_PROFILE_PHOTOS',
+        entity: 'ProfilePhoto',
+        entityId: userId,
+        newData: { 
+          viewedPhotosCount: photos.length, 
+          photoType,
+          tenantContext: tenantContext,
+          targetUserFound: true,
+        },
+      });
 
-    return photos;
+      return photos;
+    } catch (error) {
+      console.error('❌ Error retrieving profile photos:', {
+        userId,
+        requestedBy: currentUser.id,
+        error: error.message,
+        whereClause,
+        tenantContext,
+      });
+      
+      this.logger.error('Profile photo retrieval failed', {
+        context: 'ProfilePhotoService',
+        method: 'getUserPhotos',
+        userId,
+        requestedBy: currentUser.id,
+        error: error.message,
+        stack: error.stack,
+      });
+      
+      throw new InternalServerErrorException(`Failed to retrieve profile photos: ${error.message}`);
+    }
   }
 
   /**
