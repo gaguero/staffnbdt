@@ -438,6 +438,15 @@ export class ProfileController {
         throw new UnauthorizedException('Invalid user session');
       }
 
+      // Additional debug info for troubleshooting
+      console.log('👤 User context in getCurrentUserPhotos:', {
+        userId: currentUser.id,
+        email: currentUser.email,
+        organizationId: currentUser.organizationId,
+        propertyId: currentUser.propertyId,
+        role: currentUser.role,
+      });
+
       const photos = await this.profilePhotoService.getUserPhotos(currentUser.id, currentUser, request);
       
       const photosByType = {

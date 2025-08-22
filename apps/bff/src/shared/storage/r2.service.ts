@@ -52,6 +52,13 @@ export class R2Service implements OnModuleInit {
   ) {
     // Cloudflare R2 configuration
     this.bucketName = this.configService.get('R2_BUCKET_NAME') || 'hoh-storage';
+    
+    // Debug bucket name configuration
+    console.log('🗂️ R2 Bucket Configuration:', {
+      envBucketName: this.configService.get('R2_BUCKET_NAME'),
+      finalBucketName: this.bucketName,
+      accountId: this.configService.get('R2_ACCOUNT_ID') ? 'present' : 'missing',
+    });
     this.publicUrl = this.configService.get('R2_PUBLIC_URL') || '';
     this.maxFileSize = parseInt(this.configService.get('MAX_FILE_SIZE') || '10485760'); // 10MB default
     this.allowedFileTypes = (this.configService.get('ALLOWED_FILE_TYPES') || 'pdf,jpg,jpeg,png,doc,docx,xls,xlsx,mp4,avi').split(',');
@@ -73,8 +80,15 @@ export class R2Service implements OnModuleInit {
     }
 
     // Initialize S3-compatible client for Cloudflare R2
-    // Use R2_PUBLIC_URL as primary endpoint, fallback to account-based endpoint
-    const endpoint = this.publicUrl ? this.publicUrl.replace(/\/$/, '') : `https://${accountId}.r2.cloudflarestorage.com`;
+    // For R2 API operations, always use the standard R2 endpoint, not custom domains
+    const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
+    
+    console.log('🔧 R2 Endpoint Configuration:', {
+      accountId,
+      endpoint,
+      publicUrl: this.publicUrl,
+      isCustomDomain: this.isCustomDomain,
+    });
     
     this.s3Client = new S3Client({
       region: this.region,
@@ -83,7 +97,7 @@ export class R2Service implements OnModuleInit {
         accessKeyId,
         secretAccessKey,
       },
-      forcePathStyle: this.isCustomDomain, // Use path-style for custom domains, virtual-hosted for R2 endpoints
+      forcePathStyle: false, // R2 uses virtual-hosted-style requests
       // AWS SDK v3 R2 compatibility configurations
       requestChecksumCalculation: 'WHEN_REQUIRED',
       responseChecksumValidation: 'WHEN_REQUIRED',

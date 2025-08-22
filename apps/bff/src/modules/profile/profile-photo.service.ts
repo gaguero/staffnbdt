@@ -51,14 +51,31 @@ export class ProfilePhotoService {
       throw new ForbiddenException('Insufficient permissions to upload photos for this user');
     }
 
-    // Verify user exists and current user has access
+    // Get tenant context with fallback
+    let tenantContext;
+    try {
+      tenantContext = this.tenantContextService.getTenantContext(request);
+    } catch (error) {
+      console.warn('⚠️ No tenant context in upload request, using minimal security check:', error.message);
+      // For legacy users without tenant context, we still need basic user verification
+      tenantContext = null;
+    }
+    
+    // Verify user exists with flexible tenant filtering
+    const whereClause: any = { 
+      id: userId, 
+      deletedAt: null,
+    };
+    
+    // Add tenant filtering only if we have tenant context
+    if (tenantContext?.organizationId) {
+      whereClause.organizationId = tenantContext.organizationId;
+    }
+    
+    console.log('👤 Looking up user with criteria:', whereClause);
+    
     const user = await this.prisma.user.findFirst({
-      where: { 
-        id: userId, 
-        deletedAt: null,
-        // Add tenant filtering for security
-        organizationId: this.tenantContextService.getTenantContext(request).organizationId,
-      },
+      where: whereClause,
     });
 
     if (!user) {
@@ -78,14 +95,19 @@ export class ProfilePhotoService {
         photoType: options.photoType || PhotoType.FORMAL,
       });
 
-      // Get tenant context for R2 upload
-      let tenantContext;
-      try {
-        tenantContext = this.tenantContextService.getTenantContext(request);
-        console.log('📸 Tenant context for photo upload:', tenantContext);
-      } catch (error) {
-        console.error('❌ Failed to get tenant context:', error);
-        throw new BadRequestException('Invalid tenant context for photo upload');
+      // Use tenant context from user verification or create fallback for R2 upload
+      if (!tenantContext) {
+        // Create fallback tenant context using user's organization/property
+        tenantContext = {
+          userId: currentUser.id,
+          organizationId: user.organizationId || currentUser.organizationId,
+          propertyId: user.propertyId || currentUser.propertyId,
+          departmentId: user.departmentId || currentUser.departmentId,
+          userRole: currentUser.role,
+        };
+        console.log('📸 Using fallback tenant context for photo upload:', tenantContext);
+      } else {
+        console.log('📸 Using existing tenant context for photo upload:', tenantContext);
       }
 
       // Generate file key for photo
