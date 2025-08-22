@@ -59,6 +59,15 @@ export class R2Service implements OnModuleInit {
       finalBucketName: this.bucketName,
       accountId: this.configService.get('R2_ACCOUNT_ID') ? 'present' : 'missing',
     });
+    
+    // Validate bucket name configuration
+    if (this.bucketName && this.bucketName.length < 5) {
+      console.warn('⚠️ Bucket name seems too short:', {
+        currentName: this.bucketName,
+        expectedFormat: 'hoh-storage',
+        suggestion: 'Check R2_BUCKET_NAME environment variable'
+      });
+    }
     this.publicUrl = this.configService.get('R2_PUBLIC_URL') || '';
     this.maxFileSize = parseInt(this.configService.get('MAX_FILE_SIZE') || '10485760'); // 10MB default
     this.allowedFileTypes = (this.configService.get('ALLOWED_FILE_TYPES') || 'pdf,jpg,jpeg,png,doc,docx,xls,xlsx,mp4,avi').split(',');
@@ -109,7 +118,17 @@ export class R2Service implements OnModuleInit {
     this.logger.log(`R2 endpoint configured: ${endpoint}`);
     this.logger.log(`Custom domain detected: ${this.isCustomDomain}`);
     this.logger.log(`Using bucket name: ${this.bucketName}`);
-    this.logger.log(`Force path style: ${this.isCustomDomain}`);
+    
+    // Log actual S3Client configuration for debugging
+    console.log('🔧 S3Client Configuration:', {
+      endpoint,
+      region: this.region,
+      forcePathStyle: false,
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
+      maxAttempts: 3,
+      retryMode: 'adaptive',
+    });
 
     this.logger.log(`R2 Service initialized - Bucket: ${this.bucketName}, Region: ${this.region}`);
   }
@@ -190,9 +209,17 @@ export class R2Service implements OnModuleInit {
             },
             config: {
               region: this.region,
-              forcePathStyle: this.isCustomDomain,
+              forcePathStyle: false, // R2 uses virtual-hosted-style requests
               maxAttempts: this.s3Client.config.maxAttempts,
               retryMode: this.s3Client.config.retryMode,
+            },
+            // Additional diagnostic info for authentication issues
+            diagnostics: {
+              bucketNameFromEnv: this.configService.get('R2_BUCKET_NAME'),
+              finalBucketName: this.bucketName,
+              endpointUsed: this.s3Client.config.endpoint,
+              isUsingCustomDomain: this.isCustomDomain,
+              publicUrlProvided: !!this.publicUrl,
             }
           });
         } else {
@@ -231,6 +258,19 @@ export class R2Service implements OnModuleInit {
     }
     
     if (errorCode === 'SignatureDoesNotMatch' || errorCode === 'InvalidAccessKeyId' || errorCode === 'AccessDenied') {
+      // Log specific guidance for authentication errors
+      if (errorCode === 'SignatureDoesNotMatch') {
+        console.error('🔑 R2 Authentication Error - SignatureDoesNotMatch:', {
+          possibleCauses: [
+            'Incorrect R2_SECRET_ACCESS_KEY',
+            'Incorrect R2_ACCESS_KEY_ID',
+            'Credentials from wrong R2 account',
+            'Clock drift on server',
+            'Invalid characters in credentials'
+          ],
+          troubleshooting: 'Check Cloudflare R2 dashboard > Manage R2 API tokens'
+        });
+      }
       return 'AUTHENTICATION_ERROR';
     }
     
