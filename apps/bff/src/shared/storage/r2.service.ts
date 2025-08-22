@@ -46,8 +46,6 @@ export class R2Service implements OnModuleInit {
   private readonly allowedFileTypes: string[];
   private readonly region: string;
   private readonly isCustomDomain: boolean;
-  private readonly effectiveBucketName: string;
-
   constructor(
     private readonly configService: ConfigService,
     private readonly tenantContextService: TenantContextService,
@@ -61,10 +59,6 @@ export class R2Service implements OnModuleInit {
     
     // Detect if using custom domain (bucket-specific endpoint)
     this.isCustomDomain = this.publicUrl && !this.publicUrl.includes('r2.cloudflarestorage.com');
-    
-    // For custom domains, the domain is already bucket-specific, so we use empty bucket name
-    // For standard R2 endpoints, we use the actual bucket name
-    this.effectiveBucketName = this.isCustomDomain ? '' : this.bucketName;
 
     // Get required R2 credentials
     const accountId = this.configService.get('R2_ACCOUNT_ID');
@@ -94,7 +88,8 @@ export class R2Service implements OnModuleInit {
 
     this.logger.log(`R2 endpoint configured: ${endpoint}`);
     this.logger.log(`Custom domain detected: ${this.isCustomDomain}`);
-    this.logger.log(`Effective bucket name: ${this.effectiveBucketName || '(empty for custom domain)'}`);
+    this.logger.log(`Using bucket name: ${this.bucketName}`);
+    this.logger.log(`Force path style: ${this.isCustomDomain}`);
 
     this.logger.log(`R2 Service initialized - Bucket: ${this.bucketName}, Region: ${this.region}`);
   }
@@ -114,15 +109,10 @@ export class R2Service implements OnModuleInit {
     }
     
     try {
-      const command = this.isCustomDomain
-        ? new ListObjectsV2Command({
-            Bucket: this.effectiveBucketName,
-            MaxKeys: 1,
-          })
-        : new ListObjectsV2Command({
-            Bucket: this.bucketName,
-            MaxKeys: 1,
-          });
+      const command = new ListObjectsV2Command({
+        Bucket: this.bucketName,
+        MaxKeys: 1,
+      });
       
       await this.s3Client.send(command);
       
@@ -219,7 +209,7 @@ export class R2Service implements OnModuleInit {
     
     try {
       const command = new PutObjectCommand({
-        Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+        Bucket: this.bucketName,
         Key: key,
         Body: fileBuffer,
         ContentType: mimeType || 'application/octet-stream',
@@ -271,7 +261,7 @@ export class R2Service implements OnModuleInit {
       const upload = new Upload({
         client: this.s3Client,
         params: {
-          Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+          Bucket: this.bucketName,
           Key: key,
           Body: fileStream,
           ContentType: mimeType || 'application/octet-stream',
@@ -290,7 +280,7 @@ export class R2Service implements OnModuleInit {
       
       // Get file size from the upload result
       const headResult = await this.s3Client.send(new HeadObjectCommand({
-        Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+        Bucket: this.bucketName,
         Key: key,
       }));
 
@@ -326,7 +316,7 @@ export class R2Service implements OnModuleInit {
       }
 
       const command = new GetObjectCommand({
-        Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+        Bucket: this.bucketName,
         Key: key,
       });
 
@@ -367,7 +357,7 @@ export class R2Service implements OnModuleInit {
       }
 
       const command = new GetObjectCommand({
-        Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+        Bucket: this.bucketName,
         Key: key,
       });
 
@@ -396,7 +386,7 @@ export class R2Service implements OnModuleInit {
       }
 
       const command = new DeleteObjectCommand({
-        Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+        Bucket: this.bucketName,
         Key: key,
       });
 
@@ -420,12 +410,9 @@ export class R2Service implements OnModuleInit {
         this.validateTenantAccess(destinationKey, request);
       }
 
-      const bucketName = this.isCustomDomain ? this.effectiveBucketName : this.bucketName;
-      const sourceBucket = this.isCustomDomain ? this.effectiveBucketName : this.bucketName;
-      
       const command = new CopyObjectCommand({
-        Bucket: bucketName,
-        CopySource: `${sourceBucket}/${sourceKey}`,
+        Bucket: this.bucketName,
+        CopySource: `${this.bucketName}/${sourceKey}`,
         Key: destinationKey,
       });
 
@@ -449,7 +436,7 @@ export class R2Service implements OnModuleInit {
       }
 
       await this.s3Client.send(new HeadObjectCommand({
-        Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+        Bucket: this.bucketName,
         Key: key,
       }));
 
@@ -474,7 +461,7 @@ export class R2Service implements OnModuleInit {
       }
 
       const command = new HeadObjectCommand({
-        Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+        Bucket: this.bucketName,
         Key: key,
       });
 
@@ -507,7 +494,7 @@ export class R2Service implements OnModuleInit {
         : `org/${tenantContext.organizationId}/property/${tenantContext.propertyId}/`;
 
       const command = new ListObjectsV2Command({
-        Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+        Bucket: this.bucketName,
         Prefix: prefix,
         MaxKeys: 1000,
       });
@@ -538,10 +525,8 @@ export class R2Service implements OnModuleInit {
     try {
       const key = this.generateFileKey(module, type, fileName, tenantContext);
       
-      const bucketName = this.isCustomDomain ? this.effectiveBucketName : this.bucketName;
-      
       const uploadCommand = new PutObjectCommand({
-        Bucket: bucketName,
+        Bucket: this.bucketName,
         Key: key,
         ContentType: mimeType,
         Metadata: {
@@ -554,7 +539,7 @@ export class R2Service implements OnModuleInit {
       });
 
       const downloadCommand = new GetObjectCommand({
-        Bucket: bucketName,
+        Bucket: this.bucketName,
         Key: key,
       });
 
@@ -590,7 +575,7 @@ export class R2Service implements OnModuleInit {
       }
 
       const command = new GetObjectCommand({
-        Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+        Bucket: this.bucketName,
         Key: key,
       });
 
@@ -655,7 +640,7 @@ export class R2Service implements OnModuleInit {
       const prefix = `org/${tenantContext.organizationId}/property/${tenantContext.propertyId}/`;
       
       const command = new ListObjectsV2Command({
-        Bucket: this.isCustomDomain ? this.effectiveBucketName : this.bucketName,
+        Bucket: this.bucketName,
         Prefix: prefix,
       });
 
