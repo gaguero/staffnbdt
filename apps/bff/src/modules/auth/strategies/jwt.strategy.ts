@@ -33,12 +33,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         // Enhanced error logging for diagnostics
         this.logger.error(`❌ JWT validation failed - User not found: ${payload.sub}`);
         this.logger.error(`📍 Possible causes:`);
-        this.logger.error(`   1. User deleted but JWT still valid (token issued: ${new Date(payload.iat * 1000).toISOString()})`);
+        this.logger.error(`   1. User deleted but JWT still valid (token issued: ${payload.iat ? new Date(payload.iat * 1000).toISOString() : 'unknown'})`);
         this.logger.error(`   2. Invalid user ID in JWT token`);
         this.logger.error(`   3. Database connectivity issue`);
         
         // Log additional context for debugging (without exposing sensitive data)
-        this.logger.error(`🔍 Token details: issued=${new Date(payload.iat * 1000).toISOString()}, expires=${new Date(payload.exp * 1000).toISOString()}`);
+        this.logger.error(`🔍 Token details: issued=${payload.iat ? new Date(payload.iat * 1000).toISOString() : 'unknown'}, expires=${payload.exp ? new Date(payload.exp * 1000).toISOString() : 'unknown'}`);
         
         throw new UnauthorizedException({
           message: 'Authentication failed',

@@ -16,6 +16,13 @@ export interface JwtPayload {
   departmentId?: string;
   organizationId?: string;
   propertyId?: string;
+  // Standard JWT claims
+  iat?: number;
+  exp?: number;
+  nbf?: number;
+  aud?: string | string[];
+  iss?: string;
+  jti?: string;
 }
 
 export interface AuthResponse {
