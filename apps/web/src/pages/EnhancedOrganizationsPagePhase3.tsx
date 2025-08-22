@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SearchIcon, FilterIcon, SettingsIcon } from 'lucide-react';
+import { SearchIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { SkeletonTable, SkeletonStats } from '../components/skeletons';
@@ -193,11 +193,11 @@ const EnhancedOrganizationsPagePhase3: React.FC = () => {
   });
 
   // Search and filter handlers
-  async function handleAdvancedSearch(rules: SearchRule[]) {
+  async function handleAdvancedSearch(_rules: SearchRule[]) {
     await loadOrganizations();
   }
 
-  async function handleFiltersChange(newFilters: Record<string, any>) {
+  async function handleFiltersChange(_newFilters: Record<string, any>) {
     await loadOrganizations();
   }
 
@@ -359,13 +359,13 @@ const EnhancedOrganizationsPagePhase3: React.FC = () => {
         
         // Apply client-side filters for complex filtering
         if (filters.hasProperties !== undefined) {
-          orgs = orgs.filter(org => 
+          orgs = orgs.filter((org: Organization) => 
             filters.hasProperties ? (org._count?.properties || 0) > 0 : (org._count?.properties || 0) === 0
           );
         }
         
         if (filters.hasUsers !== undefined) {
-          orgs = orgs.filter(org => 
+          orgs = orgs.filter((org: Organization) => 
             filters.hasUsers ? (org._count?.users || 0) > 0 : (org._count?.users || 0) === 0
           );
         }

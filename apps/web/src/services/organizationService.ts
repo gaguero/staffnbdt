@@ -23,6 +23,7 @@ export interface Organization {
     faviconUrl?: string;
   };
   isActive: boolean;
+  managerId?: string;
   createdAt: string;
   updatedAt: string;
   _count?: {

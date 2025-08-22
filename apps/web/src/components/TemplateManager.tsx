@@ -3,19 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   PlusIcon, 
   SearchIcon, 
-  FilterIcon, 
   DownloadIcon, 
   UploadIcon,
   StarIcon,
   CopyIcon,
-  EditIcon,
   TrashIcon,
   EyeIcon,
   TagIcon,
   CalendarIcon,
   UsersIcon,
 } from 'lucide-react';
-import { Template, TemplateCategory, TemplateFilter, CreateTemplateData } from '../types/template';
+import { Template, TemplateCategory, TemplateFilter } from '../types/template';
 import { templateService } from '../services/templateService';
 import { toastService } from '../utils/toast';
 import { usePermissions } from '../hooks/usePermissions';
@@ -39,17 +37,17 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
   selectable = false,
   maxHeight = '600px',
 }) => {
-  const { hasPermission } = usePermissions();
+  const { } = usePermissions();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [categories, setCategories] = useState<TemplateCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [, setShowCreateModal] = useState(false);
+  const [, setShowPreviewModal] = useState(false);
   
   // Filter state
-  const [filter, setFilter] = useState<TemplateFilter>({
+  const [filter] = useState<TemplateFilter>({
     categoryId: categoryId,
   });
   const [searchQuery, setSearchQuery] = useState('');

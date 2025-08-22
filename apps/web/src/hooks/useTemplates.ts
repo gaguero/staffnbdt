@@ -4,8 +4,7 @@ import {
   TemplateCategory, 
   CreateTemplateData, 
   UpdateTemplateData,
-  TemplateFilter,
-  SavedQuery
+  TemplateFilter
 } from '../types/template';
 import { templateService } from '../services/templateService';
 import { toastService } from '../utils/toast';
@@ -57,7 +56,6 @@ export const useTemplates = (options: UseTemplatesOptions = {}): UseTemplatesRet
     categoryId,
     autoLoad = true,
     enableSearch = true,
-    enableLocalStorage = true,
   } = options;
 
   const [templates, setTemplates] = useState<Template[]>([]);

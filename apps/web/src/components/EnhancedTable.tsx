@@ -70,9 +70,6 @@ const EnhancedTable = <T extends Record<string, any>>({
   inlineEditFields = [],
   onInlineEdit,
   
-  exportConfig,
-  onExport,
-  
   loading = false,
   emptyMessage = 'No data available',
   className = '',

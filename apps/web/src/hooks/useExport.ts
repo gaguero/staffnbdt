@@ -120,7 +120,6 @@ export const useExport = (): UseExportReturn => {
     const {
       filename,
       format = 'csv',
-      includeHeaders = true,
     } = config;
 
     const {

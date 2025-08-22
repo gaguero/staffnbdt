@@ -2,10 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   SearchIcon, 
-  FilterIcon, 
-  SettingsIcon, 
   ZapIcon, 
-  TemplateIcon,
+  BookTemplateIcon,
   DatabaseIcon,
   KeyboardIcon,
 } from 'lucide-react';
@@ -49,7 +47,7 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
   const [showTemplateManager, setShowTemplateManager] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
@@ -250,14 +248,11 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
   // Quick Assign Hook
   const {
     performAssignment,
-    createManagerOptions,
     createStatusOptions,
   } = useQuickAssign(handleQuickAssignment);
 
   // Templates Hook
   const {
-    templates,
-    loadTemplates,
     applyTemplate,
   } = useTemplates({
     categoryId: 'organization-setup',
@@ -282,7 +277,7 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
     loadOptions: loadManagerOptions,
     currentValue: organization.managerId,
     placeholder: 'Assign manager...',
-    permissions: ['organization.update'],
+    permissions: [{ resource: 'organization', action: 'update' }],
     formatCurrentValue: (value) => {
       // In real app, resolve manager name from ID
       return value ? `Manager ${value}` : 'No manager assigned';
@@ -297,7 +292,7 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
     loadOptions: async () => createStatusOptions(),
     currentValue: organization.isActive?.toString(),
     placeholder: 'Set status...',
-    permissions: ['organization.update'],
+    permissions: [{ resource: 'organization', action: 'update' }],
     formatCurrentValue: (value) => value === 'true' ? 'Active' : 'Inactive',
     searchable: false,
     clearable: false,
@@ -344,15 +339,15 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
   }
 
   // Search and filter handlers
-  async function handleAdvancedSearch(rules: SearchRule[]) {
+  async function handleAdvancedSearch(_rules: SearchRule[]) {
     await loadOrganizations();
   }
 
-  async function handleFiltersChange(newFilters: Record<string, any>) {
+  async function handleFiltersChange(_newFilters: Record<string, any>) {
     await loadOrganizations();
   }
 
-  async function handleQueryBuilderExecute(query: QueryConfig) {
+  async function handleQueryBuilderExecute(_query: QueryConfig) {
     // Convert query builder query to API filter and execute
     await loadOrganizations();
   }
@@ -389,6 +384,24 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
         return [];
     }
   }
+
+  // Wrapper function to adapt performAssignment signature to QuickAssign onAssign
+  const handleQuickAssign = useCallback(async (itemId: string, field: string, value: any) => {
+    // Find the config based on field
+    const org = organizations.find(o => o.id === itemId);
+    if (!org) return;
+    
+    let config;
+    if (field === 'managerId') {
+      config = getManagerAssignConfig(org);
+    } else if (field === 'isActive') {
+      config = getStatusAssignConfig(org);
+    } else {
+      return;
+    }
+    
+    await performAssignment(itemId, config, value);
+  }, [organizations, performAssignment, getManagerAssignConfig, getStatusAssignConfig]);
 
   // Template handlers
   const handleTemplateApply = useCallback(async (template: Template, data: Record<string, any>) => {
@@ -495,13 +508,13 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
         
         // Apply client-side filters
         if (filters.hasProperties !== undefined) {
-          orgs = orgs.filter(org => 
+          orgs = orgs.filter((org: Organization) => 
             filters.hasProperties ? (org._count?.properties || 0) > 0 : (org._count?.properties || 0) === 0
           );
         }
         
         if (filters.hasUsers !== undefined) {
-          orgs = orgs.filter(org => 
+          orgs = orgs.filter((org: Organization) => 
             filters.hasUsers ? (org._count?.users || 0) > 0 : (org._count?.users || 0) === 0
           );
         }
@@ -565,12 +578,6 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const getStatusBadge = (isActive: boolean) => {
-    return isActive 
-      ? <span className="badge badge-success">Active</span>
-      : <span className="badge badge-error">Inactive</span>;
-  };
-
   return (
     <div className="space-y-6">
       {/* Header with Enhanced Actions */}
@@ -588,7 +595,7 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
             className="btn btn-outline"
             title="Use Template (Ctrl+Shift+T)"
           >
-            <TemplateIcon className="w-4 h-4 mr-1" />
+            <BookTemplateIcon className="w-4 h-4 mr-1" />
             Templates
           </button>
           
@@ -814,7 +821,7 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
                           <QuickAssign
                             itemId={organization.id}
                             config={getManagerAssignConfig(organization)}
-                            onAssign={performAssignment}
+                            onAssign={handleQuickAssign}
                             size="sm"
                             variant="inline"
                           />
@@ -833,7 +840,7 @@ const EnhancedOrganizationsPagePhase4: React.FC = () => {
                           <QuickAssign
                             itemId={organization.id}
                             config={getStatusAssignConfig(organization)}
-                            onAssign={performAssignment}
+                            onAssign={handleQuickAssign}
                             size="sm"
                             variant="minimal"
                           />

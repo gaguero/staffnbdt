@@ -54,27 +54,27 @@ interface Department {
 const EnhancedDepartmentsPagePhase3: React.FC = () => {
   const { user: currentUser } = useAuth();
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [hierarchyDepartments, setHierarchyDepartments] = useState<Department[]>([]);
-  const [availableManagers, setAvailableManagers] = useState<any[]>([]);
-  const [availableParents, setAvailableParents] = useState<any[]>([]);
+  const [, setHierarchyDepartments] = useState<Department[]>([]);
+  const [, setAvailableManagers] = useState<any[]>([]);
+  const [, ] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAddDepartment, setShowAddDepartment] = useState(false);
-  const [showEditDepartment, setShowEditDepartment] = useState(false);
+  const [, setShowAddDepartment] = useState(false);
+  const [, setShowEditDepartment] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [, setSelectedDepartment] = useState<Department | null>(null);
   const [selectedDepartmentForStaff, setSelectedDepartmentForStaff] = useState<Department | null>(null);
-  const [expandedUserLists, setExpandedUserLists] = useState<Set<string>>(new Set());
+  const [, ] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'cards' | 'hierarchy' | 'analytics'>('cards');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
-  const [deleteOptions, setDeleteOptions] = useState({
+  const [, ] = useState(false);
+  const [, ] = useState<Department | null>(null);
+  const [, ] = useState({
     reassignUsersTo: '',
     reassignChildrenTo: '',
     action: 'reassign'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [, ] = useState({
     name: '',
     description: '',
     managerId: '',
@@ -160,7 +160,7 @@ const EnhancedDepartmentsPagePhase3: React.FC = () => {
   }, []);
 
   // Filter change handler
-  async function handleFiltersChange(newFilters: Record<string, any>) {
+  async function handleFiltersChange(_newFilters: Record<string, any>) {
     // Reload departments with new filters
     loadDepartments();
   }
@@ -230,33 +230,33 @@ const EnhancedDepartmentsPagePhase3: React.FC = () => {
         
         // Apply client-side filters
         if (filters.hasManager !== undefined) {
-          filteredDepts = filteredDepts.filter(dept => 
+          filteredDepts = filteredDepts.filter((dept: Department) => 
             filters.hasManager ? !!dept.managerId : !dept.managerId
           );
         }
         
         if (filters.hasStaff !== undefined) {
-          filteredDepts = filteredDepts.filter(dept => 
+          filteredDepts = filteredDepts.filter((dept: Department) => 
             filters.hasStaff ? (dept._count?.users || 0) > 0 : (dept._count?.users || 0) === 0
           );
         }
         
         if (filters.hasBudget !== undefined) {
-          filteredDepts = filteredDepts.filter(dept => 
+          filteredDepts = filteredDepts.filter((dept: Department) => 
             filters.hasBudget ? (dept.budget && Number(dept.budget) > 0) : (!dept.budget || Number(dept.budget) === 0)
           );
         }
         
         if (filters.level !== undefined) {
           const levelFilter = Number(filters.level);
-          filteredDepts = filteredDepts.filter(dept => 
+          filteredDepts = filteredDepts.filter((dept: Department) => 
             levelFilter === 3 ? dept.level >= 3 : dept.level === levelFilter
           );
         }
         
         if (filters.budgetRange && typeof filters.budgetRange === 'object') {
           const { min, max } = filters.budgetRange;
-          filteredDepts = filteredDepts.filter(dept => {
+          filteredDepts = filteredDepts.filter((dept: Department) => {
             const budget = Number(dept.budget || 0);
             return (!min || budget >= min) && (!max || budget <= max);
           });
@@ -302,19 +302,6 @@ const EnhancedDepartmentsPagePhase3: React.FC = () => {
     }
   };
 
-  const loadAvailableParents = async (excludeId?: string) => {
-    try {
-      const response = excludeId 
-        ? await departmentService.getDepartmentsForDropdownWithExclusion(excludeId)
-        : await departmentService.getDepartmentsForDropdown();
-      if (response.success && response.data) {
-        setAvailableParents(response.data);
-      }
-    } catch (error) {
-      console.error('Error loading parent departments:', error);
-    }
-  };
-
   // Calculate department statistics
   const stats = {
     total: departments.length,
@@ -324,6 +311,15 @@ const EnhancedDepartmentsPagePhase3: React.FC = () => {
       const budget = typeof d.budget === 'string' ? parseFloat(d.budget) : (d.budget || 0);
       return sum + budget;
     }, 0)
+  };
+
+  // Helper function for currency formatting
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0
+    }).format(amount);
   };
 
   // Statistics configuration
@@ -378,14 +374,6 @@ const EnhancedDepartmentsPagePhase3: React.FC = () => {
     
     return matchesSearch;
   });
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
 
   const getEmployeeCount = (department: Department) => {
     return department._count?.users || 0;

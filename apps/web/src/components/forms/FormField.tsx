@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { UseFormRegisterReturn, FieldError } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -45,7 +45,7 @@ const FormField: React.FC<FormFieldProps> = ({
   onChange,
   value,
 }) => {
-  const [isFocused, setIsFocused] = useState(false);
+  const [, setIsFocused] = useState(false);
   const fieldRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(null);
 
   const errorMessage = typeof error === 'string' ? error : error?.message;

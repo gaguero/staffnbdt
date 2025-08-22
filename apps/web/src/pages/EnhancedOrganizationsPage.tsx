@@ -12,14 +12,11 @@ import { organizationService, Organization, OrganizationFilter } from '../servic
 // Phase 2 UX Improvements
 import { 
   EnhancedTable, 
-  BulkActionBar, 
   type TableColumn 
 } from '../components';
 import { 
   usePagination, 
-  useBulkSelection, 
   useExport, 
-  useInlineEdit,
   type InlineEditField
 } from '../hooks';
 
@@ -56,7 +53,7 @@ const EnhancedOrganizationsPage: React.FC = () => {
     persistInUrl: true,
   });
 
-  const { exportData, exportFromService, isExporting } = useExport();
+  const { exportData, isExporting } = useExport();
 
   // Load organizations with pagination
   const loadOrganizations = useCallback(async () => {
@@ -139,7 +136,7 @@ const EnhancedOrganizationsPage: React.FC = () => {
       key: 'name',
       label: 'Organization',
       editable: true,
-      render: (value, org) => (
+      render: (_, org) => (
         <div className="flex items-center">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium mr-4 ${
             org.isActive ? 'bg-warm-gold' : 'bg-gray-400'
@@ -166,7 +163,7 @@ const EnhancedOrganizationsPage: React.FC = () => {
       key: 'contactEmail',
       label: 'Contact',
       editable: true,
-      render: (value, org) => (
+      render: (_, org) => (
         <div className="text-sm">
           {org.contactEmail && (
             <p className="text-charcoal">{org.contactEmail}</p>
@@ -191,7 +188,7 @@ const EnhancedOrganizationsPage: React.FC = () => {
       key: 'properties',
       label: 'Properties',
       align: 'center',
-      render: (value, org) => (
+      render: (_, org) => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           {org._count?.properties || 0}
         </span>
@@ -201,7 +198,7 @@ const EnhancedOrganizationsPage: React.FC = () => {
       key: 'users',
       label: 'Users',
       align: 'center',
-      render: (value, org) => (
+      render: (_, org) => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
           {org._count?.users || 0}
         </span>
@@ -211,7 +208,7 @@ const EnhancedOrganizationsPage: React.FC = () => {
       key: 'isActive',
       label: 'Status',
       editable: true,
-      render: (value, org) => (
+      render: (_, org) => (
         <span className={`badge ${org.isActive ? 'badge-success' : 'badge-error'}`}>
           {org.isActive ? 'Active' : 'Inactive'}
         </span>
@@ -229,7 +226,7 @@ const EnhancedOrganizationsPage: React.FC = () => {
       key: 'actions',
       label: 'Actions',
       align: 'right',
-      render: (value, org) => (
+      render: (_, org) => (
         <div className="flex space-x-2">
           <button 
             className="text-blue-600 hover:text-blue-800"
@@ -469,7 +466,10 @@ const EnhancedOrganizationsPage: React.FC = () => {
       
       await exportData(
         response.data || [],
-        `organizations-export-${new Date().toISOString().split('T')[0]}.csv`
+        {
+          filename: `organizations-export-${new Date().toISOString().split('T')[0]}.csv`,
+          format: 'csv'
+        }
       );
     } catch (error) {
       console.error('Export failed:', error);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlusIcon, EditIcon, TrashIcon, UserPlusIcon, BuildingIcon, MoreHorizontalIcon } from 'lucide-react';
+import { PlusIcon, EditIcon, TrashIcon, UserPlusIcon, MoreHorizontalIcon } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import PermissionGate from './PermissionGate';
 import { COMMON_PERMISSIONS } from '../types/permission';

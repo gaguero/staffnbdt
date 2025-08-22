@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlusIcon,
@@ -12,7 +12,7 @@ import {
   FilterIcon,
   CodeIcon,
 } from 'lucide-react';
-import { SearchField, SearchRule } from './AdvancedSearch';
+import { SearchField } from './AdvancedSearch';
 import { useHotkeys } from 'react-hotkeys-hook';
 
 export interface QueryRule {
@@ -69,14 +69,12 @@ const QueryBuilder: React.FC<QueryBuilderProps> = ({
   onExecute,
   savedQueries = [],
   onSaveQuery,
-  onLoadQuery,
-  onDeleteQuery,
   isExecuting = false,
   showSQL = false,
   enableKeyboardShortcuts = true,
 }) => {
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showLoadModal, setShowLoadModal] = useState(false);
+  const [, setShowSaveModal] = useState(false);
+  const [, setShowLoadModal] = useState(false);
   const [showSQLView, setShowSQLView] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
@@ -244,7 +242,7 @@ const QueryBuilder: React.FC<QueryBuilderProps> = ({
   }, [onExecute, value]);
 
   // Generate SQL-like representation
-  const generateSQL = useCallback((query: QueryConfig): string => {
+  const generateSQL = useCallback((): string => {
     const rootGroup = getRootGroup();
     if (!rootGroup) return '';
 
@@ -607,7 +605,7 @@ const QueryBuilder: React.FC<QueryBuilderProps> = ({
       {/* SQL View */}
       {showSQL && showSQLView && (
         <div className="p-4 bg-gray-900 text-green-400 rounded-lg font-mono text-sm overflow-x-auto">
-          <pre>{generateSQL(value)}</pre>
+          <pre>{generateSQL()}</pre>
         </div>
       )}
 

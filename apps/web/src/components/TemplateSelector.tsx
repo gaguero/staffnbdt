@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookTemplateIcon, SearchIcon, StarIcon, CheckIcon } from 'lucide-react';
-import { Template, TemplateCategory } from '../types/template';
+import { Template } from '../types/template';
 import { templateService } from '../services/templateService';
 import LoadingSpinner from './LoadingSpinner';
 
