@@ -58,6 +58,15 @@ export interface TemplatePreset {
   sortOrder: 'asc' | 'desc';
 }
 
+export interface SavedQuery {
+  id: string;
+  name: string;
+  description?: string;
+  query: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Predefined template categories
 export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
   {

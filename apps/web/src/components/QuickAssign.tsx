@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDownIcon, CheckIcon, LoaderIcon, AlertCircleIcon } from 'lucide-react';
 import { toastService } from '../utils/toast';
 import { usePermissions } from '../hooks/usePermissions';
+import type { PermissionSpec } from '../types/permission';
 
 export interface QuickAssignOption {
   value: string;
@@ -18,7 +19,7 @@ export interface QuickAssignConfig {
   loadOptions: (inputValue: string) => Promise<QuickAssignOption[]>;
   currentValue?: any;
   placeholder: string;
-  permissions: string[];
+  permissions: PermissionSpec[];
   formatCurrentValue?: (value: any) => string;
   searchable?: boolean;
   clearable?: boolean;
@@ -212,6 +213,8 @@ const QuickAssign: React.FC<QuickAssignProps> = ({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    
+    return undefined;
   }, [isOpen]);
 
   // Get current value display

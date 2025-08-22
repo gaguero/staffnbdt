@@ -226,7 +226,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
             </label>
             
             {/* Create Template */}
-            <PermissionGate permission="template.create">
+            <PermissionGate permissions={[{ resource: 'template', action: 'create' }]}>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="btn btn-primary btn-sm"
@@ -432,7 +432,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                         </button>
                         
                         {!template.isDefault && (
-                          <PermissionGate permission="template.delete">
+                          <PermissionGate permissions={[{ resource: 'template', action: 'delete' }]}>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();

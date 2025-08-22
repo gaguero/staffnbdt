@@ -67,7 +67,7 @@ const EnhancedOrganizationsPage: React.FC = () => {
       const filter: OrganizationFilter = {
         search: searchTerm || undefined,
         isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
-        page: pagination.page,
+        offset: (pagination.page - 1) * pagination.limit,
         limit: pagination.limit,
       };
       
@@ -462,11 +462,13 @@ const EnhancedOrganizationsPage: React.FC = () => {
   // Enhanced export handler
   const handleExport = async () => {
     try {
-      await exportFromService(
-        () => organizationService.exportOrganizations({ 
-          search: searchTerm || undefined,
-          isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
-        }),
+      const response = await organizationService.getOrganizations({ 
+        search: searchTerm || undefined,
+        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+      });
+      
+      await exportData(
+        response.data || [],
         `organizations-export-${new Date().toISOString().split('T')[0]}.csv`
       );
     } catch (error) {

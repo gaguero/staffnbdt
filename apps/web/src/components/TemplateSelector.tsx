@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TemplateIcon, SearchIcon, StarIcon, CheckIcon } from 'lucide-react';
+import { BookTemplateIcon, SearchIcon, StarIcon, CheckIcon } from 'lucide-react';
 import { Template, TemplateCategory } from '../types/template';
 import { templateService } from '../services/templateService';
 import LoadingSpinner from './LoadingSpinner';
@@ -328,7 +328,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
             {templates.length === 0 && !loading && (
               <div className="col-span-2 p-8 text-center">
-                <TemplateIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <BookTemplateIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h5 className="text-lg font-medium text-gray-900 mb-2">No templates found</h5>
                 <p className="text-gray-500">
                   {searchQuery 

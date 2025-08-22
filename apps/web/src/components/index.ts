@@ -11,4 +11,4 @@ export { default as PropertySelector } from './PropertySelector';
 export { default as EnhancedPagination } from './EnhancedPagination';
 export { default as BulkActionBar } from './BulkActionBar';
 export { default as EditableCell } from './EditableCell';
-export { default as EnhancedTable } from './EnhancedTable';
+export { default as EnhancedTable, type TableColumn } from './EnhancedTable';

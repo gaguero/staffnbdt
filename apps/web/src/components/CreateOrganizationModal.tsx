@@ -65,9 +65,6 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
     }
   }, [watchedName, watchedSlug, setValue]);
 
-  const handleLanguageChange = (languages: string[]) => {
-    setValue('settings.supportedLanguages', languages as ('en' | 'es')[]);
-  };
 
   const onSubmit = async (data: OrganizationFormData) => {
     setLoading(true);
@@ -195,17 +192,21 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
                   name="isActive"
                   control={control}
                   render={({ field }) => (
-                    <FormField
-                      label="Status"
-                      type="select"
-                      {...field}
-                      value={field.value?.toString() ?? 'true'}
-                      onChange={(e) => field.onChange(e.target.value === 'true')}
-                      error={errors.isActive}
-                    >
-                      <option value="true">Active</option>
-                      <option value="false">Inactive</option>
-                    </FormField>
+                    <div>
+                      <label className="form-label">Status</label>
+                      <select
+                        {...field}
+                        value={field.value?.toString() ?? 'true'}
+                        onChange={(e) => field.onChange(e.target.value === 'true')}
+                        className="form-select"
+                      >
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                      </select>
+                      {errors.isActive && (
+                        <p className="text-red-500 text-sm mt-1">{errors.isActive.message}</p>
+                      )}
+                    </div>
                   )}
                 />
               </div>

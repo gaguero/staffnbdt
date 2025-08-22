@@ -1,0 +1,51 @@
+{
+  "colors": {
+    "primary": "#AA8E67",
+    "primaryShades": {
+      "50": "#eee9e1",
+      "100": "#dcd1c0",
+      "200": "#c7b59b",
+      "300": "#b69e7d",
+      "400": "#ac916b",
+      "500": "#AA8E67",
+      "600": "#8f7550",
+      "700": "#705b3e",
+      "800": "#50412d",
+      "900": "#30271b"
+    },
+    "secondary": "#F5EBD7",
+    "accent": "#A4C4C8",
+    "background": "#F5EBD7",
+    "surface": "#ffffff",
+    "surfaceHover": "#f8f9fa",
+    "textPrimary": "#4A4A4A",
+    "textSecondary": "#606060",
+    "textMuted": "#808080"
+  },
+  "typography": {
+    "heading": "'Gotham Black', 'Tahoma', 'Arial', sans-serif",
+    "subheading": "'Georgia', serif",
+    "body": "'Proxima Nova', 'Tahoma', 'Arial', sans-serif"
+  },
+  "assets": {
+    "logoUrl": "/logos/nayara-logo.png",
+    "logoDarkUrl": "/nayara-logo-dark.png",
+    "faviconUrl": "/favicon.ico"
+  },
+  "borderRadius": {
+    "sm": "0.5rem",
+    "md": "0.75rem",
+    "lg": "1rem",
+    "xl": "1.5rem"
+  },
+  "shadows": {
+    "soft": "0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)",
+    "medium": "0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+    "strong": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+  },
+  "transitions": {
+    "fast": "0.15s",
+    "normal": "0.3s",
+    "slow": "0.6s"
+  }
+}

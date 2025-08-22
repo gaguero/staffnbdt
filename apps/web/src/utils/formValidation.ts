@@ -130,8 +130,7 @@ export const validateField = (
 ): string | null => {
   try {
     // Create a partial object with just the field we're validating
-    const fieldSchema = schema.pick({ [fieldName]: true } as any);
-    fieldSchema.parse({ [fieldName]: value });
+    schema.parse({ [fieldName]: value });
     return null;
   } catch (error) {
     if (error instanceof z.ZodError) {

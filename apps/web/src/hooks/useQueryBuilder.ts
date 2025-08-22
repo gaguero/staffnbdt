@@ -145,6 +145,8 @@ export const useQueryBuilder = (options: UseQueryBuilderOptions = {}): UseQueryB
       }, debounceMs);
       return () => clearTimeout(timeoutId);
     }
+    
+    return undefined;
   }, [onQueryChange, autoExecute, hasActiveQuery, debounceMs]);
 
   // Reset query to empty state

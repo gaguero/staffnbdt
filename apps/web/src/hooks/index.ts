@@ -4,7 +4,7 @@ export { usePermissions, default as usePermissionsDefault } from './usePermissio
 export { usePagination } from './usePagination';
 export { useBulkSelection } from './useBulkSelection';
 export { useExport } from './useExport';
-export { useInlineEdit } from './useInlineEdit';
+export { useInlineEdit, type InlineEditField } from './useInlineEdit';
 
 // Phase 3 UX Improvements - Advanced Features Hooks
 export { useAdvancedSearch } from './useAdvancedSearch';

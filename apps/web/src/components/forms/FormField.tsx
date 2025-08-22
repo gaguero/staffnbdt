@@ -19,6 +19,7 @@ interface FormFieldProps {
   icon?: React.ReactNode;
   onBlur?: () => void;
   onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  value?: string; // For controlled components
 }
 
 /**
@@ -42,6 +43,7 @@ const FormField: React.FC<FormFieldProps> = ({
   icon,
   onBlur,
   onChange,
+  value,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const fieldRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(null);
@@ -85,6 +87,7 @@ const FormField: React.FC<FormFieldProps> = ({
       ref: fieldRef,
       'aria-invalid': hasError,
       'aria-describedby': `${fieldId}-help`,
+      ...(value !== undefined && { value }),
       ...register,
     };
 

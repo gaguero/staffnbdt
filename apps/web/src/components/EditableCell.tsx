@@ -32,7 +32,9 @@ const EditableCell: React.FC<EditableCellProps> = ({
   maxLength,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value);
+  const [editValue, setEditValue] = useState<string | number>(
+    typeof value === 'boolean' ? String(value) : value
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -53,13 +55,13 @@ const EditableCell: React.FC<EditableCellProps> = ({
   const handleStartEdit = useCallback(() => {
     if (disabled) return;
     setIsEditing(true);
-    setEditValue(value);
+    setEditValue(typeof value === 'boolean' ? String(value) : value);
     setError(null);
   }, [disabled, value]);
 
   const handleCancel = useCallback(() => {
     setIsEditing(false);
-    setEditValue(value);
+    setEditValue(typeof value === 'boolean' ? String(value) : value);
     setError(null);
   }, [value]);
 
@@ -131,8 +133,8 @@ const EditableCell: React.FC<EditableCellProps> = ({
         return (
           <select
             ref={inputRef as React.RefObject<HTMLSelectElement>}
-            value={editValue ? 'true' : 'false'}
-            onChange={(e) => setEditValue(e.target.value === 'true')}
+            value={String(editValue)}
+            onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
             className={baseInputClass}
             disabled={isSaving}
