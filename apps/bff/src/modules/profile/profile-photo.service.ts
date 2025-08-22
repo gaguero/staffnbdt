@@ -230,17 +230,31 @@ export class ProfilePhotoService {
       throw new ForbiddenException('Insufficient permissions to view photos for this user');
     }
 
+    console.log('📸 Getting user photos:', {
+      userId,
+      requestedBy: currentUser.id,
+      photoType,
+    });
+
     // Get tenant context for filtering - with fallback for legacy photos
     let tenantContext;
     try {
       tenantContext = this.tenantContextService.getTenantContext(request);
+      console.log('📸 Tenant context found:', tenantContext);
     } catch (error) {
       console.warn('⚠️ No tenant context in request, falling back to user context for profile photos:', error.message);
-      // Fallback: use user's tenant context
+      // Fallback: use user's tenant context from the database
       tenantContext = {
         organizationId: currentUser.organizationId,
         propertyId: currentUser.propertyId,
       };
+      console.log('📸 Using fallback tenant context:', tenantContext);
+    }
+    
+    // Double fallback: if user also has no tenant context, query without tenant filtering
+    if (!tenantContext.organizationId && !tenantContext.propertyId) {
+      console.log('📸 No tenant context available, querying all photos for user (legacy mode)');
+      tenantContext = { organizationId: null, propertyId: null };
     }
     
     const whereClause: any = {
@@ -249,25 +263,45 @@ export class ProfilePhotoService {
       deletedAt: null,
     };
 
-    // Add tenant filtering with fallback for legacy photos without tenant context
-    if (tenantContext.organizationId && tenantContext.propertyId) {
-      whereClause.OR = [
-        {
-          // Photos with proper tenant context
+    // Improved tenant filtering logic that handles legacy photos better
+    if (tenantContext.organizationId || tenantContext.propertyId) {
+      // Use OR logic to include both tenant-scoped and legacy photos
+      const orConditions = [];
+      
+      // Include legacy photos without tenant context (for backward compatibility)
+      orConditions.push({
+        organizationId: null,
+        propertyId: null,
+      });
+      
+      // If we have tenant context, also include photos matching tenant context
+      if (tenantContext.organizationId && tenantContext.propertyId) {
+        orConditions.push({
           organizationId: tenantContext.organizationId,
           propertyId: tenantContext.propertyId,
-        },
-        {
-          // Legacy photos without tenant context (for backward compatibility)
-          organizationId: null,
+        });
+      }
+      
+      // Also include photos that partially match tenant context (for data migration scenarios)
+      if (tenantContext.organizationId) {
+        orConditions.push({
+          organizationId: tenantContext.organizationId,
           propertyId: null,
-        },
-      ];
+        });
+      }
+      
+      whereClause.OR = orConditions;
+      console.log('📸 Using OR conditions for tenant filtering:', orConditions.length, 'conditions');
+    } else {
+      console.log('📸 No tenant context available, searching all photos for user (legacy mode)');
+      // In legacy mode, we don't add any tenant filtering
     }
 
     if (photoType) {
       whereClause.photoType = photoType;
     }
+
+    console.log('📸 Final query where clause:', JSON.stringify(whereClause, null, 2));
 
     const photos = await this.prisma.profilePhoto.findMany({
       where: whereClause,
@@ -276,6 +310,8 @@ export class ProfilePhotoService {
         { createdAt: 'desc' },
       ],
     });
+
+    console.log(`📸 Found ${photos.length} photos for user ${userId}`);
 
     await this.auditService.log({
       userId: currentUser.id,
@@ -307,7 +343,18 @@ export class ProfilePhotoService {
     // Get tenant context for security - if no request provided, use user's org/property from DB
     let tenantContext;
     if (request) {
-      tenantContext = this.tenantContextService.getTenantContext(request);
+      try {
+        tenantContext = this.tenantContextService.getTenantContext(request);
+      } catch (error) {
+        console.warn('⚠️ No tenant context in request for photo stream, using user context:', error.message);
+        tenantContext = {
+          userId: currentUser.id,
+          organizationId: currentUser.organizationId,
+          propertyId: currentUser.propertyId,
+          departmentId: currentUser.departmentId,
+          userRole: currentUser.role,
+        };
+      }
     } else {
       // Fallback: create minimal tenant context from user data
       tenantContext = {
@@ -319,14 +366,29 @@ export class ProfilePhotoService {
       };
     }
     
-    const photo = await this.prisma.profilePhoto.findUnique({
+    // Try to find photo with flexible tenant filtering
+    let photo = await this.prisma.profilePhoto.findFirst({
       where: {
         id: photoId,
         isActive: true,
         deletedAt: null,
-        // Add tenant filtering for security
-        organizationId: tenantContext.organizationId,
-        propertyId: tenantContext.propertyId,
+        OR: [
+          {
+            // Legacy photos without tenant context
+            organizationId: null,
+            propertyId: null,
+          },
+          {
+            // Photos with matching tenant context
+            organizationId: tenantContext.organizationId,
+            propertyId: tenantContext.propertyId,
+          },
+          {
+            // Photos with partial tenant context (for migration scenarios)
+            organizationId: tenantContext.organizationId,
+            propertyId: null,
+          },
+        ],
       },
       include: {
         user: {
@@ -336,13 +398,30 @@ export class ProfilePhotoService {
     });
 
     if (!photo) {
+      console.error('❌ Photo not found with flexible filtering:', {
+        photoId,
+        tenantContext,
+        currentUserId: currentUser.id,
+      });
       throw new NotFoundException('Photo not found');
     }
 
-    // Check permissions
+    // Check permissions - users can only view their own photos or photos they have admin access to
     if (currentUser.id !== photo.userId && !this.canViewUserPhotos(currentUser, photo.userId)) {
+      console.error('❌ Insufficient permissions to view photo:', {
+        photoId,
+        photoUserId: photo.userId,
+        currentUserId: currentUser.id,
+      });
       throw new ForbiddenException('Insufficient permissions to view this photo');
     }
+
+    console.log('📸 Photo access granted:', {
+      photoId,
+      photoUserId: photo.userId,
+      currentUserId: currentUser.id,
+      fileKey: photo.fileKey,
+    });
 
     try {
       // Check if file exists in storage
@@ -394,7 +473,18 @@ export class ProfilePhotoService {
     // Get tenant context for security - if no request provided, use user's org/property from DB
     let tenantContext;
     if (request) {
-      tenantContext = this.tenantContextService.getTenantContext(request);
+      try {
+        tenantContext = this.tenantContextService.getTenantContext(request);
+      } catch (error) {
+        console.warn('⚠️ No tenant context in request for photo deletion, using user context:', error.message);
+        tenantContext = {
+          userId: currentUser.id,
+          organizationId: currentUser.organizationId,
+          propertyId: currentUser.propertyId,
+          departmentId: currentUser.departmentId,
+          userRole: currentUser.role,
+        };
+      }
     } else {
       // Fallback: create minimal tenant context from user data
       tenantContext = {
@@ -406,14 +496,28 @@ export class ProfilePhotoService {
       };
     }
     
-    const photo = await this.prisma.profilePhoto.findUnique({
+    const photo = await this.prisma.profilePhoto.findFirst({
       where: {
         id: photoId,
         isActive: true,
         deletedAt: null,
-        // Add tenant filtering for security
-        organizationId: tenantContext.organizationId,
-        propertyId: tenantContext.propertyId,
+        OR: [
+          {
+            // Legacy photos without tenant context
+            organizationId: null,
+            propertyId: null,
+          },
+          {
+            // Photos with matching tenant context
+            organizationId: tenantContext.organizationId,
+            propertyId: tenantContext.propertyId,
+          },
+          {
+            // Photos with partial tenant context
+            organizationId: tenantContext.organizationId,
+            propertyId: null,
+          },
+        ],
       },
     });
 
@@ -512,7 +616,18 @@ export class ProfilePhotoService {
     // Get tenant context for security - if no request provided, use user's org/property from DB
     let tenantContext;
     if (request) {
-      tenantContext = this.tenantContextService.getTenantContext(request);
+      try {
+        tenantContext = this.tenantContextService.getTenantContext(request);
+      } catch (error) {
+        console.warn('⚠️ No tenant context in request for setting primary photo, using user context:', error.message);
+        tenantContext = {
+          userId: currentUser.id,
+          organizationId: currentUser.organizationId,
+          propertyId: currentUser.propertyId,
+          departmentId: currentUser.departmentId,
+          userRole: currentUser.role,
+        };
+      }
     } else {
       // Fallback: create minimal tenant context from user data
       tenantContext = {
@@ -524,14 +639,28 @@ export class ProfilePhotoService {
       };
     }
     
-    const photo = await this.prisma.profilePhoto.findUnique({
+    const photo = await this.prisma.profilePhoto.findFirst({
       where: {
         id: photoId,
         isActive: true,
         deletedAt: null,
-        // Add tenant filtering for security
-        organizationId: tenantContext.organizationId,
-        propertyId: tenantContext.propertyId,
+        OR: [
+          {
+            // Legacy photos without tenant context
+            organizationId: null,
+            propertyId: null,
+          },
+          {
+            // Photos with matching tenant context
+            organizationId: tenantContext.organizationId,
+            propertyId: tenantContext.propertyId,
+          },
+          {
+            // Photos with partial tenant context
+            organizationId: tenantContext.organizationId,
+            propertyId: null,
+          },
+        ],
       },
     });
 
@@ -546,12 +675,10 @@ export class ProfilePhotoService {
 
     // Any photo type can be primary
 
-    // Unset any existing primary photos within the same tenant
+    // Unset any existing primary photos for this user (handle both legacy and tenant-scoped photos)
     await this.prisma.profilePhoto.updateMany({
       where: {
         userId: photo.userId,
-        organizationId: photo.organizationId,
-        propertyId: photo.propertyId,
         isPrimary: true,
         isActive: true,
         deletedAt: null,

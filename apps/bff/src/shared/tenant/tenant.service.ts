@@ -108,7 +108,10 @@ export class TenantService {
    */
   async getTenantFromUser(userId: string): Promise<TenantContext | null> {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { 
+        id: userId,
+        deletedAt: null  // Important: only fetch active users
+      },
       include: {
         organization: true,
         property: true
