@@ -240,6 +240,7 @@ export class UsersService {
       where: { id },
       data: {
         ...updateUserDto,
+        hireDate: updateUserDto.hireDate ? new Date(updateUserDto.hireDate) : undefined,
         emergencyContact: updateUserDto.emergencyContact || existingUser.emergencyContact,
       },
       include: {
