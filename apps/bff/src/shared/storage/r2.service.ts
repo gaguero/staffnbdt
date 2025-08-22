@@ -70,15 +70,20 @@ export class R2Service implements OnModuleInit {
     }
 
     // Initialize S3-compatible client for Cloudflare R2
+    // Use R2_PUBLIC_URL as primary endpoint, fallback to account-based endpoint
+    const endpoint = this.publicUrl.replace(/\/[^/]*$/, '') || `https://${accountId}.r2.cloudflarestorage.com`;
+    
     this.s3Client = new S3Client({
       region: this.region,
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      endpoint,
       credentials: {
         accessKeyId,
         secretAccessKey,
       },
       forcePathStyle: false, // R2 supports virtual-hosted-style requests
     });
+
+    this.logger.log(`R2 endpoint configured: ${endpoint}`);
 
     this.logger.log(`R2 Service initialized - Bucket: ${this.bucketName}, Region: ${this.region}`);
   }
