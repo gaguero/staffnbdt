@@ -14,6 +14,8 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -427,9 +429,15 @@ export class ProfileController {
     @CurrentUser() currentUser: User,
     @Req() request: Request,
   ) {
-    console.log('📸 GET /api/profile/photos endpoint hit by user:', currentUser.id);
+    console.log('📸 GET /api/profile/photos - User:', currentUser.id, `(${currentUser.email})`);
     
     try {
+      // Validate user context
+      if (!currentUser || !currentUser.id) {
+        console.error('❌ Invalid user context in getCurrentUserPhotos');
+        throw new UnauthorizedException('Invalid user session');
+      }
+
       const photos = await this.profilePhotoService.getUserPhotos(currentUser.id, currentUser, request);
       
       const photosByType = {
@@ -451,14 +459,26 @@ export class ProfileController {
         primaryPhoto,
       };
 
+      console.log(`✅ Profile photos retrieved successfully for ${currentUser.email}: ${photos.length} photos`);
       return CustomApiResponse.success(result, 'User photos retrieved successfully');
+      
     } catch (error) {
       console.error('❌ Failed to get user photos:', {
         error: error.message,
-        stack: error.stack,
-        userId: currentUser.id,
+        userId: currentUser?.id || 'unknown',
+        userEmail: currentUser?.email || 'unknown',
+        errorType: error.constructor.name,
       });
-      throw error;
+      
+      // Re-throw with proper error handling
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      
+      throw new InternalServerErrorException({
+        message: 'Failed to retrieve profile photos',
+        details: 'Please try again or contact support if the issue persists.'
+      });
     }
   }
 
