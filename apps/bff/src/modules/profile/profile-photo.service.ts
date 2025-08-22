@@ -230,17 +230,40 @@ export class ProfilePhotoService {
       throw new ForbiddenException('Insufficient permissions to view photos for this user');
     }
 
-    // Get tenant context for filtering
-    const tenantContext = this.tenantContextService.getTenantContext(request);
+    // Get tenant context for filtering - with fallback for legacy photos
+    let tenantContext;
+    try {
+      tenantContext = this.tenantContextService.getTenantContext(request);
+    } catch (error) {
+      console.warn('⚠️ No tenant context in request, falling back to user context for profile photos:', error.message);
+      // Fallback: use user's tenant context
+      tenantContext = {
+        organizationId: currentUser.organizationId,
+        propertyId: currentUser.propertyId,
+      };
+    }
     
     const whereClause: any = {
       userId,
       isActive: true,
       deletedAt: null,
-      // Add tenant filtering
-      organizationId: tenantContext.organizationId,
-      propertyId: tenantContext.propertyId,
     };
+
+    // Add tenant filtering with fallback for legacy photos without tenant context
+    if (tenantContext.organizationId && tenantContext.propertyId) {
+      whereClause.OR = [
+        {
+          // Photos with proper tenant context
+          organizationId: tenantContext.organizationId,
+          propertyId: tenantContext.propertyId,
+        },
+        {
+          // Legacy photos without tenant context (for backward compatibility)
+          organizationId: null,
+          propertyId: null,
+        },
+      ];
+    }
 
     if (photoType) {
       whereClause.photoType = photoType;
@@ -279,9 +302,22 @@ export class ProfilePhotoService {
   async getPhotoStream(
     photoId: string,
     currentUser: User,
+    request?: any,
   ): Promise<{ stream: any; metadata: PhotoMetadata }> {
-    // Get tenant context for security
-    const tenantContext = this.tenantContextService.getTenantContext(currentUser);
+    // Get tenant context for security - if no request provided, use user's org/property from DB
+    let tenantContext;
+    if (request) {
+      tenantContext = this.tenantContextService.getTenantContext(request);
+    } else {
+      // Fallback: create minimal tenant context from user data
+      tenantContext = {
+        userId: currentUser.id,
+        organizationId: currentUser.organizationId,
+        propertyId: currentUser.propertyId,
+        departmentId: currentUser.departmentId,
+        userRole: currentUser.role,
+      };
+    }
     
     const photo = await this.prisma.profilePhoto.findUnique({
       where: {
@@ -354,9 +390,21 @@ export class ProfilePhotoService {
   /**
    * Delete a photo
    */
-  async deletePhoto(photoId: string, currentUser: User): Promise<void> {
-    // Get tenant context for security
-    const tenantContext = this.tenantContextService.getTenantContext(currentUser);
+  async deletePhoto(photoId: string, currentUser: User, request?: any): Promise<void> {
+    // Get tenant context for security - if no request provided, use user's org/property from DB
+    let tenantContext;
+    if (request) {
+      tenantContext = this.tenantContextService.getTenantContext(request);
+    } else {
+      // Fallback: create minimal tenant context from user data
+      tenantContext = {
+        userId: currentUser.id,
+        organizationId: currentUser.organizationId,
+        propertyId: currentUser.propertyId,
+        departmentId: currentUser.departmentId,
+        userRole: currentUser.role,
+      };
+    }
     
     const photo = await this.prisma.profilePhoto.findUnique({
       where: {
@@ -460,9 +508,21 @@ export class ProfilePhotoService {
   /**
    * Set a photo as primary
    */
-  async setPrimaryPhoto(photoId: string, currentUser: User): Promise<ProfilePhoto> {
-    // Get tenant context for security
-    const tenantContext = this.tenantContextService.getTenantContext(currentUser);
+  async setPrimaryPhoto(photoId: string, currentUser: User, request?: any): Promise<ProfilePhoto> {
+    // Get tenant context for security - if no request provided, use user's org/property from DB
+    let tenantContext;
+    if (request) {
+      tenantContext = this.tenantContextService.getTenantContext(request);
+    } else {
+      // Fallback: create minimal tenant context from user data
+      tenantContext = {
+        userId: currentUser.id,
+        organizationId: currentUser.organizationId,
+        propertyId: currentUser.propertyId,
+        departmentId: currentUser.departmentId,
+        userRole: currentUser.role,
+      };
+    }
     
     const photo = await this.prisma.profilePhoto.findUnique({
       where: {

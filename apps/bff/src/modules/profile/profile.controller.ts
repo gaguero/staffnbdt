@@ -307,7 +307,7 @@ export class ProfileController {
         throw new NotFoundException('No profile photo found for this user');
       }
       
-      const { stream, metadata } = await this.profilePhotoService.getPhotoStream(primaryPhoto.id, currentUser);
+      const { stream, metadata } = await this.profilePhotoService.getPhotoStream(primaryPhoto.id, currentUser, request);
       
       console.log('📸 Serving profile photo:', {
         userId,
@@ -550,6 +550,7 @@ export class ProfileController {
     @Param('userId') userId: string,
     @Param('photoType') photoType: string,
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
     @Res() res: Response,
   ) {
     // Validate photo type
@@ -563,14 +564,14 @@ export class ProfileController {
     }
 
     try {
-      const photos = await this.profilePhotoService.getUserPhotos(userId, currentUser, photoType as PhotoType);
+      const photos = await this.profilePhotoService.getUserPhotos(userId, currentUser, request, photoType as PhotoType);
       
       if (!photos.length) {
         throw new NotFoundException(`No ${photoType} photo found for this user`);
       }
 
       const photo = photos[0]; // Get the photo of this type
-      const { stream, metadata } = await this.profilePhotoService.getPhotoStream(photo.id, currentUser);
+      const { stream, metadata } = await this.profilePhotoService.getPhotoStream(photo.id, currentUser, request);
       
       // Set headers
       res.setHeader('Content-Type', metadata.mimeType || 'image/jpeg');
@@ -595,8 +596,9 @@ export class ProfileController {
   async setPrimaryPhoto(
     @Param('photoId') photoId: string,
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
   ) {
-    const updatedPhoto = await this.profilePhotoService.setPrimaryPhoto(photoId, currentUser);
+    const updatedPhoto = await this.profilePhotoService.setPrimaryPhoto(photoId, currentUser, request);
     return CustomApiResponse.success(updatedPhoto, 'Primary photo updated successfully');
   }
 
@@ -609,8 +611,9 @@ export class ProfileController {
   async deleteSpecificPhoto(
     @Param('photoId') photoId: string,
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
   ) {
-    await this.profilePhotoService.deletePhoto(photoId, currentUser);
+    await this.profilePhotoService.deletePhoto(photoId, currentUser, request);
     return CustomApiResponse.success(null, 'Photo deleted successfully');
   }
 
