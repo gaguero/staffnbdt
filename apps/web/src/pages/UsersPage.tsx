@@ -491,7 +491,7 @@ const UsersPage: React.FC = () => {
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">👥</div>
           <p className="text-sm text-gray-600 mb-1">Total Users</p>
-          <p className="text-xl font-bold text-charcoal">{users.length}</p>
+          <p className="text-xl font-bold" style={{ color: 'var(--brand-text-primary)' }}>{users.length}</p>
         </div>
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">✅</div>
@@ -518,15 +518,18 @@ const UsersPage: React.FC = () => {
 
       {/* Bulk Actions Bar */}
       {selectedUsers.size > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--brand-primary-50)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--brand-primary-200)' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium text-blue-900">
+              <span className="text-sm font-medium" style={{ color: 'var(--brand-text-primary)' }}>
                 {selectedUsers.size} user{selectedUsers.size > 1 ? 's' : ''} selected
               </span>
               <button
                 onClick={() => setSelectedUsers(new Set())}
-                className="text-xs text-blue-600 hover:text-blue-800 underline"
+                className="text-xs underline transition-colors"
+                style={{ color: 'var(--brand-primary)' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--brand-primary-600)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--brand-primary)'}
               >
                 Clear selection
               </button>
@@ -621,7 +624,7 @@ const UsersPage: React.FC = () => {
           ) : filteredUsers.length === 0 ? (
             <div className="p-12 text-center">
               <div className="text-6xl mb-4">👥</div>
-              <h3 className="text-lg font-semibold text-charcoal mb-2">
+              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--brand-text-primary)' }}>
                 No users found
               </h3>
               <p className="text-gray-600">
@@ -641,7 +644,16 @@ const UsersPage: React.FC = () => {
                         type="checkbox"
                         checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
                         onChange={handleSelectAll}
-                        className="rounded border-gray-300 text-warm-gold focus:ring-warm-gold"
+                        className="rounded border-gray-300"
+                        style={{
+                          accentColor: 'var(--brand-primary)'
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.boxShadow = `0 0 0 3px rgba(170, 142, 103, 0.1)`;
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.boxShadow = '';
+                        }}
                       />
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -675,16 +687,35 @@ const UsersPage: React.FC = () => {
                           type="checkbox"
                           checked={selectedUsers.has(user.id)}
                           onChange={() => handleSelectUser(user.id)}
-                          className="rounded border-gray-300 text-warm-gold focus:ring-warm-gold"
+                          className="rounded border-gray-300"
+                        style={{
+                          accentColor: 'var(--brand-primary)'
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.boxShadow = `0 0 0 3px rgba(170, 142, 103, 0.1)`;
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.boxShadow = '';
+                        }}
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium mr-4 ${user.deletedAt ? 'bg-gray-400' : 'bg-warm-gold'}`}>
+                          <div 
+                            className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium mr-4 ${user.deletedAt ? 'bg-gray-400' : ''}`}
+                            style={{
+                              backgroundColor: user.deletedAt ? '#9ca3af' : 'var(--brand-primary)'
+                            }}
+                          >
                             {user.firstName[0]}{user.lastName[0]}
                           </div>
                           <div>
-                            <p className={`text-sm font-medium ${user.deletedAt ? 'text-gray-500 line-through' : 'text-charcoal'}`}>
+                            <p 
+                              className={`text-sm font-medium ${user.deletedAt ? 'text-gray-500 line-through' : ''}`}
+                              style={{
+                                color: user.deletedAt ? '#6b7280' : 'var(--brand-text-primary)'
+                              }}
+                            >
                               {user.firstName} {user.lastName}
                             </p>
                             <p className={`text-sm ${user.deletedAt ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
@@ -786,7 +817,7 @@ const UsersPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-screen overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-charcoal">
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--brand-text-primary)' }}>
                   Add New User
                 </h3>
                 <button
@@ -1088,7 +1119,7 @@ const UsersPage: React.FC = () => {
                   <span className="text-2xl">⚠️</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-charcoal">
+                  <h3 className="text-lg font-semibold" style={{ color: 'var(--brand-text-primary)' }}>
                     Permanently Delete User
                   </h3>
                   <p className="text-sm text-gray-600">
@@ -1162,7 +1193,7 @@ const UsersPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-charcoal mb-4">
+              <h3 className="text-lg font-semibold  mb-4">
                 Confirm Bulk Action
               </h3>
               <p className="text-gray-600 mb-6">

@@ -122,15 +122,15 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden mx-4">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 bg-sand">
+        <div className="px-6 py-4 border-b border-gray-200" style={{ backgroundColor: 'var(--brand-background)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Avatar */}
-              <div className="w-12 h-12 bg-warm-gold text-white rounded-full flex items-center justify-center font-medium text-lg">
+              <div className="w-12 h-12 text-white rounded-full flex items-center justify-center font-medium text-lg" style={{ backgroundColor: 'var(--brand-primary)' }}>
                 {formData.firstName[0] || '?'}{formData.lastName[0] || '?'}
               </div>
               <div>
-                <h2 className="text-xl font-heading font-bold text-charcoal">
+                <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--brand-text-primary)' }}>
                   Edit User Details
                 </h2>
                 <p className="text-sm text-gray-600">{user.email}</p>

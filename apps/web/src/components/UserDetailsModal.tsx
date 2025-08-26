@@ -40,15 +40,15 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 bg-sand">
+        <div className="px-6 py-4 border-b border-gray-200" style={{ backgroundColor: 'var(--brand-background)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Avatar */}
-              <div className="w-12 h-12 bg-warm-gold text-white rounded-full flex items-center justify-center font-medium text-lg">
+              <div className="w-12 h-12 text-white rounded-full flex items-center justify-center font-medium text-lg" style={{ backgroundColor: 'var(--brand-primary)' }}>
                 {user.firstName[0]}{user.lastName[0]}
               </div>
               <div>
-                <h2 className="text-xl font-heading font-bold text-charcoal">
+                <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--brand-text-primary)' }}>
                   {user.firstName} {user.lastName}
                   {user.deletedAt && (
                     <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
@@ -75,9 +75,13 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               onClick={() => setActiveTab('details')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'details'
-                  ? 'border-warm-gold text-warm-gold'
+                  ? 'border-transparent'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
+              style={{
+                borderBottomColor: activeTab === 'details' ? 'var(--brand-primary)' : 'transparent',
+                color: activeTab === 'details' ? 'var(--brand-primary)' : '#6b7280'
+              }}
             >
               <span className="flex items-center space-x-2">
                 <span>👤</span>
@@ -88,9 +92,13 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               onClick={() => setActiveTab('activity')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'activity'
-                  ? 'border-warm-gold text-warm-gold'
+                  ? 'border-transparent'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
+              style={{
+                borderBottomColor: activeTab === 'activity' ? 'var(--brand-primary)' : 'transparent',
+                color: activeTab === 'activity' ? 'var(--brand-primary)' : '#6b7280'
+              }}
             >
               <span className="flex items-center space-x-2">
                 <span>📋</span>
@@ -101,9 +109,13 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               onClick={() => setActiveTab('properties')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'properties'
-                  ? 'border-warm-gold text-warm-gold'
+                  ? 'border-transparent'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
+              style={{
+                borderBottomColor: activeTab === 'properties' ? 'var(--brand-primary)' : 'transparent',
+                color: activeTab === 'properties' ? 'var(--brand-primary)' : '#6b7280'
+              }}
             >
               <span className="flex items-center space-x-2">
                 <span>🏢</span>
