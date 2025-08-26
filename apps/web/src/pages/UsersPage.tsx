@@ -336,9 +336,9 @@ const UsersPage: React.FC = () => {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'PROPERTY_MANAGER':
-        return <span className="badge bg-purple-100 text-purple-800">Super Admin</span>;
+        return <span className="badge" style={{ backgroundColor: 'var(--brand-primary-200)', color: 'var(--brand-primary-800)' }}>Super Admin</span>;
       case 'DEPARTMENT_ADMIN':
-        return <span className="badge bg-blue-100 text-blue-800">Dept Admin</span>;
+        return <span className="badge" style={{ backgroundColor: 'var(--brand-primary-100)', color: 'var(--brand-primary-700)' }}>Dept Admin</span>;
       case 'STAFF':
         return <span className="badge badge-neutral">Staff</span>;
       default:
@@ -440,10 +440,10 @@ const UsersPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="heading-2">User Management</h1>
-          <p className="text-gray-600">
+          <p style={{ color: 'var(--brand-text-secondary)' }}>
             Manage user accounts and permissions
             {currentUser?.role === 'DEPARTMENT_ADMIN' && (
-              <span className="ml-2 text-sm text-orange-600">
+              <span className="ml-2 text-sm" style={{ color: 'var(--brand-primary-600)' }}>
                 (Department scope only)
               </span>
             )}
@@ -490,27 +490,27 @@ const UsersPage: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">👥</div>
-          <p className="text-sm text-gray-600 mb-1">Total Users</p>
+          <p className="text-sm mb-1" style={{ color: 'var(--brand-text-secondary)' }}>Total Users</p>
           <p className="text-xl font-bold" style={{ color: 'var(--brand-text-primary)' }}>{users.length}</p>
         </div>
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">✅</div>
-          <p className="text-sm text-gray-600 mb-1">Active</p>
-          <p className="text-xl font-bold text-green-600">
+          <p className="text-sm mb-1" style={{ color: 'var(--brand-text-secondary)' }}>Active</p>
+          <p className="text-xl font-bold" style={{ color: 'var(--brand-primary-700)' }}>
             {users.filter(u => !u.deletedAt).length}
           </p>
         </div>
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">❌</div>
-          <p className="text-sm text-gray-600 mb-1">Inactive</p>
-          <p className="text-xl font-bold text-red-600">
+          <p className="text-sm mb-1" style={{ color: 'var(--brand-text-secondary)' }}>Inactive</p>
+          <p className="text-xl font-bold" style={{ color: 'var(--brand-primary-800)' }}>
             {users.filter(u => u.deletedAt).length}
           </p>
         </div>
         <div className="card p-4 text-center">
           <div className="text-2xl mb-2">👔</div>
-          <p className="text-sm text-gray-600 mb-1">Admins</p>
-          <p className="text-xl font-bold text-blue-600">
+          <p className="text-sm mb-1" style={{ color: 'var(--brand-text-secondary)' }}>Admins</p>
+          <p className="text-xl font-bold" style={{ color: 'var(--brand-primary-600)' }}>
             {users.filter(u => u.role !== 'STAFF').length}
           </p>
         </div>
@@ -539,25 +539,37 @@ const UsersPage: React.FC = () => {
                 <>
                   <button
                     onClick={() => handleBulkAction('activate')}
-                    className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                    className="px-3 py-1.5 text-white text-sm rounded transition-colors"
+                    style={{ backgroundColor: 'var(--brand-primary)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--brand-primary-600)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--brand-primary)'}
                   >
                     ✅ Activate
                   </button>
                   <button
                     onClick={() => handleBulkAction('deactivate')}
-                    className="px-3 py-1.5 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700 transition-colors"
+                    className="px-3 py-1.5 text-white text-sm rounded transition-colors"
+                    style={{ backgroundColor: 'var(--brand-primary-400)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--brand-primary-500)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--brand-primary-400)'}
                   >
                     ⏸️ Deactivate
                   </button>
                   <button
                     onClick={() => handleBulkAction('delete')}
-                    className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                    className="px-3 py-1.5 text-white text-sm rounded transition-colors"
+                    style={{ backgroundColor: 'var(--brand-primary-700)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--brand-primary-800)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--brand-primary-700)'}
                   >
                     🗑️ Delete
                   </button>
                   <button
                     onClick={() => handleBulkAction('invite')}
-                    className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                    className="px-3 py-1.5 text-white text-sm rounded transition-colors"
+                    style={{ backgroundColor: 'var(--brand-primary-500)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--brand-primary-600)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--brand-primary-500)'}
                   >
                     📧 Send Invites
                   </button>
@@ -627,7 +639,7 @@ const UsersPage: React.FC = () => {
               <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--brand-text-primary)' }}>
                 No users found
               </h3>
-              <p className="text-gray-600">
+              <p style={{ color: 'var(--brand-text-secondary)' }}>
                 {searchTerm 
                   ? `No users match "${searchTerm}"`
                   : 'No users available'
@@ -718,7 +730,7 @@ const UsersPage: React.FC = () => {
                             >
                               {user.firstName} {user.lastName}
                             </p>
-                            <p className={`text-sm ${user.deletedAt ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
+                            <p className="text-sm" style={{ color: user.deletedAt ? 'var(--brand-text-muted)' : 'var(--brand-text-secondary)' }}>{user.email}</p>
                           </div>
                         </div>
                       </td>
@@ -739,7 +751,7 @@ const UsersPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(user)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--brand-text-secondary)' }}>
                         {formatDate(user.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">

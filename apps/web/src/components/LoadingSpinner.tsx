@@ -26,7 +26,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         aria-label="Loading"
       />
       {text && (
-        <p className="mt-2 text-sm text-gray-600 animate-pulse">
+        <p className="mt-2 text-sm animate-pulse" style={{ color: 'var(--brand-text-secondary)' }}>
           {text}
         </p>
       )}

@@ -125,7 +125,7 @@ const DashboardPage: React.FC = () => {
             <h2 className="heading-2 mb-2">
               Welcome back, {user?.firstName}!
             </h2>
-            <p className="text-gray-600">
+            <p style={{ color: 'var(--brand-text-secondary)' }}>
               Here's what's happening at your organization today
             </p>
           </div>
@@ -139,7 +139,7 @@ const DashboardPage: React.FC = () => {
           <div key={index} className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">
+                <p className="text-sm font-medium mb-1" style={{ color: 'var(--brand-text-secondary)' }}>
                   {stat.title}
                 </p>
                 <p className="text-2xl font-bold" style={{ color: stat.color }}>
@@ -181,7 +181,7 @@ const DashboardPage: React.FC = () => {
               <h4 className="text-lg font-semibold mb-2" style={{ color: 'var(--brand-text-primary)' }}>
                 {action.title}
               </h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>
                 {action.description}
               </p>
             </Link>
@@ -217,7 +217,7 @@ const DashboardPage: React.FC = () => {
                 <h4 className="text-lg font-semibold mb-2" style={{ color: 'var(--brand-text-primary)' }}>
                   {action.title}
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>
                   {action.description}
                 </p>
               </Link>
@@ -233,31 +233,31 @@ const DashboardPage: React.FC = () => {
         </div>
         <div className="card-body">
           <div className="space-y-4">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--brand-surface-hover)' }}>
               <div className="text-2xl">📄</div>
               <div className="flex-1">
                 <p className="text-sm font-medium" style={{ color: 'var(--brand-text-primary)' }}>
                   New policy document uploaded
                 </p>
-                <p className="text-xs text-gray-500">2 hours ago</p>
+                <p className="text-xs" style={{ color: 'var(--brand-text-muted)' }}>2 hours ago</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--brand-surface-hover)' }}>
               <div className="text-2xl">💰</div>
               <div className="flex-1">
                 <p className="text-sm font-medium" style={{ color: 'var(--brand-text-primary)' }}>
                   Payslip for January available
                 </p>
-                <p className="text-xs text-gray-500">1 day ago</p>
+                <p className="text-xs" style={{ color: 'var(--brand-text-muted)' }}>1 day ago</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--brand-surface-hover)' }}>
               <div className="text-2xl">🎓</div>
               <div className="flex-1">
                 <p className="text-sm font-medium" style={{ color: 'var(--brand-text-primary)' }}>
                   Training session completed
                 </p>
-                <p className="text-xs text-gray-500">3 days ago</p>
+                <p className="text-xs" style={{ color: 'var(--brand-text-muted)' }}>3 days ago</p>
               </div>
             </div>
           </div>

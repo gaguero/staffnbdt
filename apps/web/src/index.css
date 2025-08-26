@@ -319,8 +319,52 @@
   .focus-brand:focus {
     outline: none;
     border-color: var(--brand-primary);
-    box-shadow: 0 0 0 3px rgba(var(--brand-primary-rgb), 0.1);
+    box-shadow: 0 0 0 3px rgba(170, 142, 103, 0.1);
   }
+
+  /* Enhanced brand color utilities */
+  .bg-brand-primary-700 { background-color: var(--brand-primary-700); }
+  .bg-brand-primary-800 { background-color: var(--brand-primary-800); }
+  .bg-brand-primary-900 { background-color: var(--brand-primary-900); }
+  
+  .text-brand-primary-50 { color: var(--brand-primary-50); }
+  .text-brand-primary-100 { color: var(--brand-primary-100); }
+  .text-brand-primary-200 { color: var(--brand-primary-200); }
+  .text-brand-primary-300 { color: var(--brand-primary-300); }
+  .text-brand-primary-400 { color: var(--brand-primary-400); }
+  .text-brand-primary-500 { color: var(--brand-primary-500); }
+  .text-brand-primary-600 { color: var(--brand-primary-600); }
+  .text-brand-primary-700 { color: var(--brand-primary-700); }
+  .text-brand-primary-800 { color: var(--brand-primary-800); }
+  .text-brand-primary-900 { color: var(--brand-primary-900); }
+
+  .border-brand-primary-100 { border-color: var(--brand-primary-100); }
+  .border-brand-primary-200 { border-color: var(--brand-primary-200); }
+  .border-brand-primary-300 { border-color: var(--brand-primary-300); }
+  .border-brand-primary-400 { border-color: var(--brand-primary-400); }
+  .border-brand-primary-500 { border-color: var(--brand-primary-500); }
+  .border-brand-primary-600 { border-color: var(--brand-primary-600); }
+
+  /* Status color variants using brand colors */
+  .bg-brand-status-success { background-color: var(--brand-primary-100); color: var(--brand-primary-800); }
+  .bg-brand-status-warning { background-color: var(--brand-primary-200); color: var(--brand-primary-800); }
+  .bg-brand-status-error { background-color: var(--brand-primary-100); color: var(--brand-primary-900); }
+  .bg-brand-status-info { background-color: var(--brand-primary-50); color: var(--brand-primary-700); }
+  
+  .text-brand-status-success { color: var(--brand-primary-700); }
+  .text-brand-status-warning { color: var(--brand-primary-800); }
+  .text-brand-status-error { color: var(--brand-primary-900); }
+  .text-brand-status-info { color: var(--brand-primary-600); }
+
+  /* Interactive states */
+  .hover-bg-brand-primary:hover { background-color: var(--brand-primary); }
+  .hover-bg-brand-primary-100:hover { background-color: var(--brand-primary-100); }
+  .hover-bg-brand-primary-200:hover { background-color: var(--brand-primary-200); }
+  .hover-bg-brand-primary-600:hover { background-color: var(--brand-primary-600); }
+
+  .hover-text-brand-primary:hover { color: var(--brand-primary); }
+  .hover-text-brand-primary-600:hover { color: var(--brand-primary-600); }
+  .hover-text-brand-primary-700:hover { color: var(--brand-primary-700); }
   
   /* Brand status badges */
   .badge-brand-success {
