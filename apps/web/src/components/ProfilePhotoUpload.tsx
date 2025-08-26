@@ -3,7 +3,11 @@ import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
+import ErrorDisplay from './ErrorDisplay';
+import ImageFallback from './ImageFallback';
+import useErrorHandler from '../hooks/useErrorHandler';
 import profileService from '../services/profileService';
+import toast from 'react-hot-toast';
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl?: string;
@@ -19,6 +23,24 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   const { user } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [uploadError, setUploadError] = useState<Error | null>(null);
+  const [deleteError, setDeleteError] = useState<Error | null>(null);
+  const [imageLoadError, setImageLoadError] = useState<Error | null>(null);
+  
+  // Error handlers for different operations
+  const uploadErrorHandler = useErrorHandler({
+    maxRetries: 3,
+    retryDelay: 2000,
+    exponentialBackoff: true,
+    showToast: false, // We'll handle toasts manually for better UX
+  });
+  
+  const deleteErrorHandler = useErrorHandler({
+    maxRetries: 2,
+    retryDelay: 1000,
+    exponentialBackoff: false,
+    showToast: false,
+  });
   const [showCropModal, setShowCropModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -169,66 +191,76 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   const handleCropConfirm = async () => {
     if (!selectedFile) return;
 
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadError(null);
+
     try {
-      setIsUploading(true);
-      setUploadProgress(0);
+      await uploadErrorHandler.executeWithRetry(async () => {
+        const canvas = getCroppedCanvas();
+        if (!canvas) {
+          const debugInfo = {
+            canvas: !!canvasRef.current,
+            image: !!imageRef.current,
+            imageLoaded,
+            completedCrop: !!completedCrop,
+            cropData: completedCrop
+          };
+          console.error('Crop failed with debug info:', debugInfo);
+          throw new Error('Failed to process image. Please try selecting the image again.');
+        }
 
-      const canvas = getCroppedCanvas();
-      if (!canvas) {
-        const debugInfo = {
-          canvas: !!canvasRef.current,
-          image: !!imageRef.current,
-          imageLoaded,
-          completedCrop: !!completedCrop,
-          cropData: completedCrop
-        };
-        console.error('Crop failed with debug info:', debugInfo);
-        throw new Error(`Failed to crop image. Debug: ${JSON.stringify(debugInfo)}`);
-      }
+        // Convert canvas to blob with error handling
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to process image. The image might be corrupted.'));
+            }
+          }, 'image/jpeg', 0.9);
+        });
 
-      // Convert canvas to blob with error handling
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error('Failed to create blob from canvas'));
+        if (!blob) {
+          throw new Error('Failed to create image file');
+        }
+
+        // Create file from blob
+        const file = new File([blob], `profile-photo-${user?.id}.jpg`, { type: 'image/jpeg' });
+
+        // Simulate upload progress
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => Math.min(prev + 10, 90));
+        }, 100);
+
+        try {
+          // Make API call to upload using profileService
+          const result = await profileService.uploadProfilePhoto(file);
+          
+          clearInterval(progressInterval);
+          setUploadProgress(100);
+          
+          // Update parent component
+          if (onPhotoUpdate && result.profilePhoto) {
+            onPhotoUpdate(result.profilePhoto);
           }
-        }, 'image/jpeg', 0.9);
+
+          // Clean up
+          setShowCropModal(false);
+          setSelectedFile(null);
+          URL.revokeObjectURL(previewUrl);
+          setPreviewUrl('');
+          
+          toast.success('Profile photo uploaded successfully!');
+          return result;
+        } finally {
+          clearInterval(progressInterval);
+        }
       });
-
-      if (!blob) {
-        throw new Error('Failed to create image blob');
-      }
-
-      // Create file from blob
-      const file = new File([blob], `profile-photo-${user?.id}.jpg`, { type: 'image/jpeg' });
-
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 100);
-
-      // Make API call to upload using profileService
-      const result = await profileService.uploadProfilePhoto(file);
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-      
-      // Update parent component
-      if (onPhotoUpdate && result.profilePhoto) {
-        onPhotoUpdate(result.profilePhoto);
-      }
-
-      // Clean up
-      setShowCropModal(false);
-      setSelectedFile(null);
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl('');
-      
     } catch (error) {
-      console.error('Upload failed:', error);
-      alert(error instanceof Error ? error.message : 'Failed to upload photo');
+      const uploadError = error instanceof Error ? error : new Error('Upload failed');
+      setUploadError(uploadError);
+      console.error('Upload failed after retries:', uploadError);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -240,19 +272,24 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
       return;
     }
 
+    setIsDeleting(true);
+    setDeleteError(null);
+
     try {
-      setIsDeleting(true);
-
-      await profileService.deleteProfilePhoto();
-
-      // Update parent component
-      if (onPhotoDelete) {
-        onPhotoDelete();
-      }
-
+      await deleteErrorHandler.executeWithRetry(async () => {
+        await profileService.deleteProfilePhoto();
+        
+        // Update parent component
+        if (onPhotoDelete) {
+          onPhotoDelete();
+        }
+        
+        toast.success('Profile photo removed successfully!');
+      });
     } catch (error) {
-      console.error('Delete failed:', error);
-      alert(error instanceof Error ? error.message : 'Failed to delete photo');
+      const deleteError = error instanceof Error ? error : new Error('Delete failed');
+      setDeleteError(deleteError);
+      console.error('Delete failed after retries:', deleteError);
     } finally {
       setIsDeleting(false);
     }
@@ -277,14 +314,24 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
       <div className="flex items-center space-x-6">
         <div className="relative">
           {currentPhotoUrl ? (
-            <img
+            <ImageFallback
               src={currentPhotoUrl}
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover border-4 border-sand"
-              onError={(e) => {
-                console.log('Profile photo failed to load in upload component');
-                e.currentTarget.style.display = 'none';
+              retryEnabled={true}
+              maxRetries={2}
+              onError={(error) => {
+                console.log('Profile photo failed to load in upload component:', error);
+                setImageLoadError(error);
               }}
+              fallbackComponent={
+                <div className="w-24 h-24 rounded-full bg-warm-gold flex items-center justify-center text-white text-2xl font-bold border-4 border-sand relative">
+                  {initials}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
+                    <span className="text-white text-xs">!</span>
+                  </div>
+                </div>
+              }
             />
           ) : (
             <div className="w-24 h-24 rounded-full bg-warm-gold flex items-center justify-center text-white text-2xl font-bold border-4 border-sand">
@@ -328,16 +375,66 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
       {isUploading && uploadProgress > 0 && (
         <div className="w-full">
           <div className="flex justify-between text-sm mb-1">
-            <span>Uploading...</span>
+            <span>
+              {uploadErrorHandler.isRetrying
+                ? `Retrying... (${uploadErrorHandler.retryCount}/${3})`
+                : 'Uploading...'
+              }
+            </span>
             <span>{uploadProgress}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
-              className="bg-warm-gold h-2 rounded-full transition-all duration-300"
+              className={`h-2 rounded-full transition-all duration-300 ${
+                uploadErrorHandler.isRetrying ? 'bg-orange-500' : 'bg-warm-gold'
+              }`}
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
+          {uploadErrorHandler.isRetrying && (
+            <p className="text-xs text-orange-600 mt-1">
+              Connection issue detected, retrying upload...
+            </p>
+          )}
         </div>
+      )}
+      
+      {/* Upload Error Display */}
+      {uploadError && !isUploading && (
+        <ErrorDisplay
+          error={uploadError}
+          title="Upload Failed"
+          variant="inline"
+          onRetry={() => {
+            setUploadError(null);
+            handleCropConfirm();
+          }}
+          onDismiss={() => setUploadError(null)}
+        />
+      )}
+      
+      {/* Delete Error Display */}
+      {deleteError && !isDeleting && (
+        <ErrorDisplay
+          error={deleteError}
+          title="Delete Failed"
+          variant="inline"
+          onRetry={() => {
+            setDeleteError(null);
+            handleDeletePhoto();
+          }}
+          onDismiss={() => setDeleteError(null)}
+        />
+      )}
+      
+      {/* Image Load Error Display */}
+      {imageLoadError && (
+        <ErrorDisplay
+          error={imageLoadError}
+          title="Image Load Failed"
+          variant="inline"
+          onDismiss={() => setImageLoadError(null)}
+        />
       )}
 
       {/* Drag & Drop Area */}
