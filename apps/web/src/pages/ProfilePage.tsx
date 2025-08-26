@@ -266,6 +266,14 @@ const ProfilePage: React.FC = () => {
       </div>
     );
   }
+  
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading profile..." />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

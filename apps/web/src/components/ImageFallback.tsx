@@ -40,7 +40,7 @@ const ImageFallback: React.FC<ImageFallbackProps> = ({
     showToast: false,
   });
 
-  const handleImageError = useCallback((event: React.SyntheticEvent<HTMLImageElement>) => {
+  const handleImageError = useCallback((_event: React.SyntheticEvent<HTMLImageElement>) => {
     const error = new Error(`Failed to load image: ${currentSrc}`);
     
     // If we haven't tried the fallback yet and one is provided
