@@ -9,7 +9,7 @@
     "globalTimeout": 0,
     "grep": {},
     "grepInvert": null,
-    "maxFailures": 1,
+    "maxFailures": 0,
     "metadata": {
       "environment": "development",
       "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
@@ -60,7 +60,7 @@
         "testMatch": [
           "/.*\\.setup\\.ts/"
         ],
-        "timeout": 0
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
@@ -83,7 +83,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 0
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
@@ -106,7 +106,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 0
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
@@ -129,7 +129,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 0
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
@@ -152,7 +152,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 0
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
@@ -175,7 +175,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 0
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
@@ -195,7 +195,7 @@
         "testMatch": [
           "**/api/**/*.test.ts"
         ],
-        "timeout": 0
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
@@ -215,7 +215,7 @@
         "testMatch": [
           "**/logging/**/*.test.ts"
         ],
-        "timeout": 0
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
@@ -235,14 +235,14 @@
         "testMatch": [
           "**/performance/**/*.test.ts"
         ],
-        "timeout": 0
+        "timeout": 30000
       }
     ],
     "shard": null,
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.54.2",
-    "workers": 1,
+    "workers": 4,
     "webServer": {
       "command": "echo \"Using Railway deployment for testing\"",
       "url": "https://frontend-copy-production-f1da.up.railway.app",
@@ -264,8 +264,8 @@
     }
   ],
   "stats": {
-    "startTime": "2025-08-22T14:26:51.158Z",
-    "duration": 18411.259,
+    "startTime": "2025-08-26T22:21:18.057Z",
+    "duration": 26126.607,
     "expected": 0,
     "skipped": 0,
     "unexpected": 0,
