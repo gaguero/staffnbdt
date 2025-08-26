@@ -280,7 +280,7 @@ const BrandStudio: React.FC = () => {
 
       const endpoint = property 
         ? `/api/branding/properties/${property.id}`
-        : `/api/branding/organizations/${organization.id}`;
+        : `/api/branding/organizations/${organization?.id}`;
 
       const payload = property 
         ? { branding: localConfig }
@@ -305,7 +305,7 @@ const BrandStudio: React.FC = () => {
       alert('Branding saved successfully!');
     } catch (error) {
       console.error('❌ Save failed:', error);
-      alert(`Failed to save branding: ${error.message}`);
+      alert(`Failed to save branding: ${(error as Error).message}`);
     } finally {
       setSaving(false);
     }

@@ -99,7 +99,6 @@ export class AuthService {
         select: {
           id: true,
           name: true,
-          code: true,
           branding: true,
         },
       });
@@ -111,7 +110,6 @@ export class AuthService {
         select: {
           id: true,
           name: true,
-          code: true,
           address: true,
           organizationId: true,
           branding: true,
@@ -126,7 +124,6 @@ export class AuthService {
         select: {
           id: true,
           name: true,
-          code: true,
           address: true,
           organizationId: true,
           branding: true,
@@ -237,7 +234,6 @@ export class AuthService {
           select: {
             id: true,
             name: true,
-            code: true,
             branding: true,
           },
         });
@@ -249,7 +245,6 @@ export class AuthService {
           select: {
             id: true,
             name: true,
-            code: true,
             address: true,
             organizationId: true,
             branding: true,
@@ -264,7 +259,6 @@ export class AuthService {
           select: {
             id: true,
             name: true,
-            code: true,
             address: true,
             organizationId: true,
             branding: true,
