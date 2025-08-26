@@ -422,7 +422,7 @@ export class ProfileController {
   }
 
   @Get('photos')
-  @RequirePermission('user.read.own')
+  @Roles(Role.STAFF, Role.DEPARTMENT_ADMIN, Role.PROPERTY_MANAGER, Role.ORGANIZATION_ADMIN, Role.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Get all photos for current user' })
   @ApiResponse({ status: 200, description: 'User photos retrieved successfully', type: UserPhotosResponseDto })
   async getCurrentUserPhotos(
