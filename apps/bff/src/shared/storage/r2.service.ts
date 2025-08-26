@@ -60,12 +60,23 @@ export class R2Service implements OnModuleInit {
       accountId: this.configService.get('R2_ACCOUNT_ID') ? 'present' : 'missing',
     });
     
-    // Validate bucket name configuration
-    if (this.bucketName && this.bucketName.length < 5) {
-      console.warn('⚠️ Bucket name seems too short:', {
+    // Validate bucket name configuration (R2 allows 3-63 characters)
+    if (this.bucketName && this.bucketName.length < 3) {
+      console.error('❌ Bucket name too short (minimum 3 characters):', {
         currentName: this.bucketName,
-        expectedFormat: 'hoh-storage',
+        length: this.bucketName.length,
         suggestion: 'Check R2_BUCKET_NAME environment variable'
+      });
+    } else if (this.bucketName && this.bucketName.length > 63) {
+      console.error('❌ Bucket name too long (maximum 63 characters):', {
+        currentName: this.bucketName,
+        length: this.bucketName.length,
+        suggestion: 'Check R2_BUCKET_NAME environment variable'
+      });
+    } else if (this.bucketName) {
+      console.log('✅ Bucket name is valid:', {
+        name: this.bucketName,
+        length: this.bucketName.length
       });
     }
     this.publicUrl = this.configService.get('R2_PUBLIC_URL') || '';
@@ -97,6 +108,9 @@ export class R2Service implements OnModuleInit {
       endpoint,
       publicUrl: this.publicUrl,
       isCustomDomain: this.isCustomDomain,
+      accessKeyId: accessKeyId ? `${accessKeyId.substring(0, 8)}...` : 'missing',
+      secretKeyLength: secretAccessKey ? secretAccessKey.length : 0,
+      secretKeyPreview: secretAccessKey ? `${secretAccessKey.substring(0, 8)}...` : 'missing'
     });
     
     this.s3Client = new S3Client({
