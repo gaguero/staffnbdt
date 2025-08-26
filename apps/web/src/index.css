@@ -118,7 +118,13 @@
   }
   
   .btn-secondary {
-    @apply btn bg-gray-100 text-charcoal hover:bg-gray-200 focus:ring-gray-400;
+    @apply btn text-white;
+    background-color: var(--brand-text-secondary);
+    transition: all var(--brand-transition-normal) ease;
+  }
+  
+  .btn-secondary:hover {
+    background-color: var(--brand-text-primary);
   }
   
   .btn-outline {
@@ -176,7 +182,8 @@
   }
   
   .form-label {
-    @apply block text-sm font-medium text-charcoal mb-1;
+    @apply block text-sm font-medium mb-1;
+    color: var(--brand-text-primary);
   }
   
   .form-error {
@@ -284,9 +291,69 @@
     @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
   }
   
+  /* Brand-aware utility classes */
+  .bg-brand-primary { background-color: var(--brand-primary); }
+  .bg-brand-primary-50 { background-color: var(--brand-primary-50); }
+  .bg-brand-primary-100 { background-color: var(--brand-primary-100); }
+  .bg-brand-primary-200 { background-color: var(--brand-primary-200); }
+  .bg-brand-primary-300 { background-color: var(--brand-primary-300); }
+  .bg-brand-primary-400 { background-color: var(--brand-primary-400); }
+  .bg-brand-primary-500 { background-color: var(--brand-primary-500); }
+  .bg-brand-primary-600 { background-color: var(--brand-primary-600); }
+  .bg-brand-surface { background-color: var(--brand-surface); }
+  .bg-brand-surface-hover { background-color: var(--brand-surface-hover); }
+  .bg-brand-background { background-color: var(--brand-background); }
+  
+  .text-brand-primary { color: var(--brand-primary); }
+  .text-brand-text-primary { color: var(--brand-text-primary); }
+  .text-brand-text-secondary { color: var(--brand-text-secondary); }
+  .text-brand-text-muted { color: var(--brand-text-muted); }
+  
+  .border-brand-primary { border-color: var(--brand-primary); }
+  .border-brand-surface { border-color: var(--brand-surface); }
+  
+  .hover-brand-primary:hover { background-color: var(--brand-primary); }
+  .hover-brand-surface:hover { background-color: var(--brand-surface-hover); }
+  .hover-text-brand-primary:hover { color: var(--brand-primary); }
+  
+  .focus-brand:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(var(--brand-primary-rgb), 0.1);
+  }
+  
+  /* Brand status badges */
+  .badge-brand-success {
+    @apply badge;
+    background-color: var(--brand-primary-100);
+    color: var(--brand-primary-700);
+  }
+  
+  .badge-brand-warning {
+    @apply badge;
+    background-color: var(--brand-primary-200);
+    color: var(--brand-primary-800);
+  }
+  
+  .badge-brand-info {
+    @apply badge;
+    background-color: var(--brand-primary-50);
+    color: var(--brand-primary-600);
+  }
+  
+  .badge-brand-neutral {
+    @apply badge;
+    background-color: var(--brand-surface-hover);
+    color: var(--brand-text-primary);
+  }
+  
   /* Focus visible styles for better accessibility */
   .focus-visible {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-warm-gold focus-visible:ring-offset-2;
+    @apply focus:outline-none;
+  }
+  
+  .focus-visible:focus-visible {
+    box-shadow: 0 0 0 2px var(--brand-primary), 0 0 0 4px rgba(170, 142, 103, 0.2);
   }
 }
 

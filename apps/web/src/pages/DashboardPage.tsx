@@ -11,42 +11,54 @@ const DashboardPage: React.FC = () => {
       description: 'Access your important documents',
       icon: '📁',
       path: '/documents',
-      color: 'bg-blue-50 hover:bg-blue-100 border-blue-200'
+      bgColor: 'var(--brand-primary-50)',
+      hoverBgColor: 'var(--brand-primary-100)',
+      borderColor: 'var(--brand-primary-200)'
     },
     {
       title: 'Check Payroll',
       description: 'View your latest payslips',
       icon: '💰',
       path: '/payroll',
-      color: 'bg-green-50 hover:bg-green-100 border-green-200'
+      bgColor: 'var(--brand-primary-100)',
+      hoverBgColor: 'var(--brand-primary-200)',
+      borderColor: 'var(--brand-primary-300)'
     },
     {
       title: 'Request Vacation',
       description: 'Submit vacation requests',
       icon: '🏖️',
       path: '/vacation',
-      color: 'bg-orange-50 hover:bg-orange-100 border-orange-200'
+      bgColor: 'var(--brand-primary-200)',
+      hoverBgColor: 'var(--brand-primary-300)',
+      borderColor: 'var(--brand-primary-400)'
     },
     {
       title: 'Training Modules',
       description: 'Continue your learning',
       icon: '🎓',
       path: '/training',
-      color: 'bg-purple-50 hover:bg-purple-100 border-purple-200'
+      bgColor: 'var(--brand-primary-100)',
+      hoverBgColor: 'var(--brand-primary-200)',
+      borderColor: 'var(--brand-primary-300)'
     },
     {
       title: 'Employee Benefits',
       description: 'Explore available benefits',
       icon: '🎁',
       path: '/benefits',
-      color: 'bg-pink-50 hover:bg-pink-100 border-pink-200'
+      bgColor: 'var(--brand-primary-50)',
+      hoverBgColor: 'var(--brand-primary-100)',
+      borderColor: 'var(--brand-primary-200)'
     },
     {
       title: 'Update Profile',
       description: 'Manage your information',
       icon: '👤',
       path: '/profile',
-      color: 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+      bgColor: 'var(--brand-surface-hover)',
+      hoverBgColor: 'var(--brand-primary-100)',
+      borderColor: 'var(--brand-primary-200)'
     }
   ];
 
@@ -56,7 +68,9 @@ const DashboardPage: React.FC = () => {
       description: 'Add and manage staff',
       icon: '👥',
       path: '/users',
-      color: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200',
+      bgColor: 'var(--brand-primary-100)',
+      hoverBgColor: 'var(--brand-primary-200)',
+      borderColor: 'var(--brand-primary-300)',
       roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']
     },
     {
@@ -64,7 +78,9 @@ const DashboardPage: React.FC = () => {
       description: 'Manage departments',
       icon: '🏢',
       path: '/departments',
-      color: 'bg-teal-50 hover:bg-teal-100 border-teal-200',
+      bgColor: 'var(--brand-primary-200)',
+      hoverBgColor: 'var(--brand-primary-300)',
+      borderColor: 'var(--brand-primary-400)',
       roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
     }
   ];
@@ -78,25 +94,25 @@ const DashboardPage: React.FC = () => {
       title: 'Pending Tasks',
       value: '3',
       icon: '📋',
-      color: 'text-orange-600'
+      color: 'var(--brand-primary-700)'
     },
     {
       title: 'Notifications',
       value: '7',
       icon: '🔔',
-      color: 'text-blue-600'
+      color: 'var(--brand-primary-600)'
     },
     {
       title: 'Training Progress',
       value: '85%',
       icon: '📊',
-      color: 'text-green-600'
+      color: 'var(--brand-primary-800)'
     },
     {
       title: 'Vacation Days',
       value: '12',
       icon: '🌴',
-      color: 'text-purple-600'
+      color: 'var(--brand-primary-500)'
     }
   ];
 
@@ -126,7 +142,7 @@ const DashboardPage: React.FC = () => {
                 <p className="text-sm font-medium text-gray-600 mb-1">
                   {stat.title}
                 </p>
-                <p className={`text-2xl font-bold ${stat.color}`}>
+                <p className="text-2xl font-bold" style={{ color: stat.color }}>
                   {stat.value}
                 </p>
               </div>
@@ -146,10 +162,23 @@ const DashboardPage: React.FC = () => {
             <Link
               key={index}
               to={action.path}
-              className={`card p-6 border-2 transition-all duration-200 hover:shadow-medium ${action.color}`}
+              className="card p-6 border-2 transition-all duration-200"
+              style={{
+                backgroundColor: action.bgColor,
+                borderColor: action.borderColor,
+                boxShadow: 'var(--brand-shadow-soft)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = action.hoverBgColor;
+                e.currentTarget.style.boxShadow = 'var(--brand-shadow-medium)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = action.bgColor;
+                e.currentTarget.style.boxShadow = 'var(--brand-shadow-soft)';
+              }}
             >
               <div className="text-3xl mb-4">{action.icon}</div>
-              <h4 className="text-lg font-semibold text-charcoal mb-2">
+              <h4 className="text-lg font-semibold mb-2" style={{ color: 'var(--brand-text-primary)' }}>
                 {action.title}
               </h4>
               <p className="text-sm text-gray-600">
@@ -169,10 +198,23 @@ const DashboardPage: React.FC = () => {
               <Link
                 key={index}
                 to={action.path}
-                className={`card p-6 border-2 transition-all duration-200 hover:shadow-medium ${action.color}`}
+                className="card p-6 border-2 transition-all duration-200"
+                style={{
+                  backgroundColor: action.bgColor,
+                  borderColor: action.borderColor,
+                  boxShadow: 'var(--brand-shadow-soft)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = action.hoverBgColor;
+                  e.currentTarget.style.boxShadow = 'var(--brand-shadow-medium)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = action.bgColor;
+                  e.currentTarget.style.boxShadow = 'var(--brand-shadow-soft)';
+                }}
               >
                 <div className="text-3xl mb-4">{action.icon}</div>
-                <h4 className="text-lg font-semibold text-charcoal mb-2">
+                <h4 className="text-lg font-semibold mb-2" style={{ color: 'var(--brand-text-primary)' }}>
                   {action.title}
                 </h4>
                 <p className="text-sm text-gray-600">
@@ -187,14 +229,14 @@ const DashboardPage: React.FC = () => {
       {/* Recent Activity */}
       <div className="card">
         <div className="card-header">
-          <h3 className="text-lg font-semibold text-charcoal">Recent Activity</h3>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--brand-text-primary)' }}>Recent Activity</h3>
         </div>
         <div className="card-body">
           <div className="space-y-4">
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <div className="text-2xl">📄</div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-charcoal">
+                <p className="text-sm font-medium" style={{ color: 'var(--brand-text-primary)' }}>
                   New policy document uploaded
                 </p>
                 <p className="text-xs text-gray-500">2 hours ago</p>
@@ -203,7 +245,7 @@ const DashboardPage: React.FC = () => {
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <div className="text-2xl">💰</div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-charcoal">
+                <p className="text-sm font-medium" style={{ color: 'var(--brand-text-primary)' }}>
                   Payslip for January available
                 </p>
                 <p className="text-xs text-gray-500">1 day ago</p>
@@ -212,7 +254,7 @@ const DashboardPage: React.FC = () => {
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <div className="text-2xl">🎓</div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-charcoal">
+                <p className="text-sm font-medium" style={{ color: 'var(--brand-text-primary)' }}>
                   Training session completed
                 </p>
                 <p className="text-xs text-gray-500">3 days ago</p>

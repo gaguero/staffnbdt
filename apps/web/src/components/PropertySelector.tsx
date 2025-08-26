@@ -186,10 +186,18 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
         <button
           onClick={() => setIsOpen(!isOpen)}
           disabled={isLoading}
-          className={`flex items-center space-x-1 ${currentSize.button} text-left rounded-md border border-gray-200 hover:border-warm-gold hover:bg-sand transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+          className={`flex items-center space-x-1 ${currentSize.button} text-left rounded-md border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'var(--brand-primary)';
+            e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#d1d5db';
+            e.currentTarget.style.backgroundColor = '';
+          }}
           title={`${getCurrentOrganizationName()} - ${getCurrentPropertyName()}`}
         >
-          <div className={`${currentSize.avatar} bg-warm-gold text-white rounded-full flex items-center justify-center font-medium`}>
+          <div className={`${currentSize.avatar} text-white rounded-full flex items-center justify-center font-medium`} style={{ backgroundColor: 'var(--brand-primary)' }}>
             {getCurrentPropertyName()[0]?.toUpperCase() || 'P'}
           </div>
           <span className={`text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
@@ -375,7 +383,15 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={isLoading}
-        className="flex items-center justify-between w-full px-3 py-2 text-left rounded-lg border border-gray-200 hover:border-warm-gold hover:bg-sand transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center justify-between w-full px-3 py-2 text-left rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'var(--brand-primary)';
+          e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = '#d1d5db';
+          e.currentTarget.style.backgroundColor = '';
+        }}
       >
         <div className="flex-1 min-w-0">
           {showOrganization && (
@@ -383,13 +399,13 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
               {getCurrentOrganizationName()}
             </div>
           )}
-          <div className="text-sm font-medium text-charcoal truncate">
+          <div className="text-sm font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>
             {getCurrentPropertyName()}
           </div>
         </div>
         <div className="flex items-center space-x-2">
           {isLoading && (
-            <div className="w-4 h-4 border-2 border-warm-gold border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--brand-primary)', borderTopColor: 'transparent' }} />
           )}
           <span className={`text-sm transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
         </div>
