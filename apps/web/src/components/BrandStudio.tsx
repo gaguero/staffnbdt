@@ -273,27 +273,39 @@ const BrandStudio: React.FC = () => {
   const handleSaveToTenant = async () => {
     setSaving(true);
     try {
-      // TODO: Implement API call to save branding to organization/property
+      // Validate that we have the necessary context
+      if (!property && !organization?.id) {
+        throw new Error('No organization or property context found. Please refresh and try again.');
+      }
+
       const endpoint = property 
-        ? `/api/properties/${property.id}/branding`
-        : `/api/organizations/${organization?.id}/branding`;
+        ? `/api/branding/properties/${property.id}`
+        : `/api/branding/organizations/${organization.id}`;
+
+      const payload = property 
+        ? { branding: localConfig }
+        : { branding: localConfig };
 
       const response = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('hotel_ops_token')}`
         },
-        body: JSON.stringify(localConfig),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save branding');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to save branding (${response.status})`);
       }
 
+      const result = await response.json();
+      console.log('✅ Branding saved successfully:', result);
       alert('Branding saved successfully!');
     } catch (error) {
-      console.error('Save failed:', error);
-      alert('Failed to save branding. Please try again.');
+      console.error('❌ Save failed:', error);
+      alert(`Failed to save branding: ${error.message}`);
     } finally {
       setSaving(false);
     }
