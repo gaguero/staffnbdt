@@ -50,17 +50,35 @@ export class TenantInterceptor implements NestInterceptor {
       if (!organizationId || !propertyId) {
         // This is important to log as it indicates potential JWT issues
         this.safeLog('warn', `User ${jwtPayload.email} missing tenant info in JWT, fetching from database`);
-        const tenantContext = await this.tenantService.getTenantFromUser(jwtPayload.sub);
         
-        if (!tenantContext) {
-          // This is important to log as it indicates user setup issues
-          this.safeLog('warn', `No tenant context found for user ${jwtPayload.email}, using default tenant`);
-          const defaultTenant = await this.tenantService.getDefaultTenant();
-          organizationId = defaultTenant.organization.id;
-          propertyId = defaultTenant.property.id;
-        } else {
-          organizationId = tenantContext.organization.id;
-          propertyId = tenantContext.property.id;
+        try {
+          const tenantContext = await this.tenantService.getTenantFromUser(jwtPayload.sub);
+          
+          if (!tenantContext) {
+            // This is important to log as it indicates user setup issues
+            this.safeLog('warn', `No tenant context found for user ${jwtPayload.email}, using default tenant`);
+            const defaultTenant = await this.tenantService.getDefaultTenant();
+            organizationId = defaultTenant.organization.id;
+            propertyId = defaultTenant.property.id;
+          } else {
+            organizationId = tenantContext.organization.id;
+            propertyId = tenantContext.property.id;
+          }
+        } catch (tenantError) {
+          // Log the specific tenant lookup error but don't fail the request immediately
+          this.safeLog('error', `Failed to fetch tenant context for user ${jwtPayload.email}: ${tenantError.message}`);
+          
+          // Try to use default tenant as fallback
+          try {
+            this.safeLog('warn', `Falling back to default tenant for user ${jwtPayload.email}`);
+            const defaultTenant = await this.tenantService.getDefaultTenant();
+            organizationId = defaultTenant.organization.id;
+            propertyId = defaultTenant.property.id;
+          } catch (defaultError) {
+            // If even default tenant fails, this is a critical system issue
+            this.safeLog('error', `Failed to get default tenant: ${defaultError.message}`, defaultError.stack);
+            throw tenantError; // Throw the original error
+          }
         }
       }
 
@@ -80,7 +98,15 @@ export class TenantInterceptor implements NestInterceptor {
     } catch (error) {
       // Always log errors as they indicate real issues
       this.safeLog('error', `Failed to set tenant context for user ${jwtPayload.email}: ${error.message}`, error.stack);
-      throw new UnauthorizedException('Failed to validate tenant access');
+      
+      // Provide more specific error messages based on the type of failure
+      if (error.message?.includes('Database connectivity')) {
+        throw new UnauthorizedException('Temporary service unavailable. Please try again in a moment.');
+      } else if (error.message?.includes('User not found')) {
+        throw new UnauthorizedException('User account not found or has been deactivated.');
+      } else {
+        throw new UnauthorizedException('Failed to validate tenant access. Please try logging in again.');
+      }
     }
 
     return next.handle();
