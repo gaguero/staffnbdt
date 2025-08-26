@@ -161,9 +161,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               key={item.path}
               to={item.path}
               onClick={closeSidebar}
-              className={({ isActive }) =>
-                `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200`
-              }
+              className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200"
               style={({ isActive }) => isActive ? {
                 backgroundColor: 'var(--brand-primary)',
                 color: 'white',
