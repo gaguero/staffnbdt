@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTenant } from '../contexts/TenantContext';
+import { brandingApi } from '../services/brandingApi';
 
 interface ColorPickerProps {
   color: string;
@@ -174,17 +175,9 @@ const LogoUploader: React.FC<LogoUploaderProps> = ({ currentLogo, onLogoChange, 
       const formData = new FormData();
       formData.append('logo', file);
 
-      // TODO: Replace with actual API endpoint
-      const response = await fetch('/api/branding/upload-logo', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const { logoUrl } = await response.json();
+      // Use the configured brandingApi service
+      const result = await brandingApi.uploadLogo(file, 'logo');
+      const { logoUrl } = result;
       onLogoChange(logoUrl);
     } catch (error) {
       console.error('Logo upload failed:', error);
@@ -278,29 +271,10 @@ const BrandStudio: React.FC = () => {
         throw new Error('No organization or property context found. Please refresh and try again.');
       }
 
-      const endpoint = property 
-        ? `/api/branding/properties/${property.id}`
-        : `/api/branding/organizations/${organization?.id}`;
-
-      const payload = property 
-        ? { branding: localConfig }
-        : { branding: localConfig };
-
-      const response = await fetch(endpoint, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('hotel_ops_token')}`
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to save branding (${response.status})`);
-      }
-
-      const result = await response.json();
+      // Use the configured brandingApi service
+      const result = property 
+        ? await brandingApi.updatePropertyBranding(property.id, localConfig)
+        : await brandingApi.updateOrganizationBranding(organization!.id, localConfig);
       console.log('✅ Branding saved successfully:', result);
       alert('Branding saved successfully!');
     } catch (error) {
