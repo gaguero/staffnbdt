@@ -144,9 +144,34 @@ export interface PhotoTypesResponse {
 }
 
 class ProfileService {
+  // File validation helper
+  private validatePhotoFile = (file: File): void => {
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
+    
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      throw new Error('Invalid file type. Please select a JPG or PNG image.');
+    }
+    
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error('File is too large. Please select an image smaller than 5MB.');
+    }
+    
+    if (file.size === 0) {
+      throw new Error('File appears to be empty. Please select a valid image file.');
+    }
+  };
+
   async getProfile(): Promise<Profile> {
-    const response = await api.get('/profile');
-    return response.data.data;
+    try {
+      const response = await api.get('/profile');
+      return response.data.data;
+    } catch (error) {
+      if ((error as any).response?.status === 404) {
+        throw new Error('Profile not found. Please contact support if this problem persists.');
+      }
+      throw error;
+    }
   }
 
   async getProfileById(userId: string): Promise<Profile> {
@@ -160,20 +185,49 @@ class ProfileService {
   }
 
   async uploadProfilePhoto(file: File): Promise<ProfilePhotoUploadResult> {
+    // Validate file before upload
+    this.validatePhotoFile(file);
+    
     const formData = new FormData();
     formData.append('photo', file);
 
-    const response = await api.post('/profile/photo', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data.data;
+    try {
+      const response = await api.post('/profile/photo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 30000, // 30 second timeout for uploads
+      });
+      return response.data.data;
+    } catch (error) {
+      // Enhance error message for common upload issues
+      if ((error as any).code === 'ECONNABORTED') {
+        throw new Error('Upload timeout. Please check your connection and try again.');
+      }
+      
+      if ((error as any).response?.status === 413) {
+        throw new Error('File is too large. Please select a smaller image (max 5MB).');
+      }
+      
+      if ((error as any).response?.status === 415) {
+        throw new Error('Invalid file type. Please upload a JPG or PNG image.');
+      }
+      
+      throw error;
+    }
   }
 
   async deleteProfilePhoto(): Promise<{ success: boolean }> {
-    const response = await api.delete('/profile/photo');
-    return response.data.data;
+    try {
+      const response = await api.delete('/profile/photo');
+      return response.data.data;
+    } catch (error) {
+      if ((error as any).response?.status === 404) {
+        // Photo doesn't exist, consider it a success
+        return { success: true };
+      }
+      throw error;
+    }
   }
 
   async uploadIdDocument(file: File): Promise<IdDocumentUploadResult> {
@@ -298,10 +352,25 @@ class ProfileService {
 export const profileService = new ProfileService();
 export default profileService;
 
+
 // Helper function to get photo URL for display
 export const getPhotoUrl = (userId: string, photoType?: PhotoType): string => {
   if (photoType) {
     return `/api/profile/photo/${userId}/${photoType}`;
   }
   return `/api/profile/photo/${userId}`;
+};
+
+// Helper function to check if image URL is accessible
+export const checkImageUrl = async (url: string): Promise<boolean> => {
+  try {
+    const img = new Image();
+    return new Promise((resolve) => {
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url;
+    });
+  } catch {
+    return false;
+  }
 };

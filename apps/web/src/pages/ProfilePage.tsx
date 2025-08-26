@@ -5,6 +5,9 @@ import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
 import PhotoGallery from '../components/PhotoGallery';
 import IDDocumentUpload from '../components/IDDocumentUpload';
 import EmergencyContactsForm from '../components/EmergencyContactsForm';
+import ErrorDisplay from '../components/ErrorDisplay';
+import ImageFallback from '../components/ImageFallback';
+import useErrorHandler from '../hooks/useErrorHandler';
 import profileService, { Profile, EmergencyContactsData, LegacyEmergencyContactsData } from '../services/profileService';
 import toast from 'react-hot-toast';
 
@@ -76,6 +79,15 @@ const ProfilePage: React.FC = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [activeTab, setActiveTab] = useState('personal');
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoadError, setProfileLoadError] = useState<Error | null>(null);
+  
+  // Error handler for profile operations
+  const profileErrorHandler = useErrorHandler({
+    maxRetries: 3,
+    retryDelay: 2000,
+    exponentialBackoff: true,
+    showToast: false,
+  });
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -90,26 +102,31 @@ const ProfilePage: React.FC = () => {
   // Load profile data
   useEffect(() => {
     const loadProfile = async () => {
+      setIsLoadingProfile(true);
+      setProfileLoadError(null);
+      
       try {
-        setIsLoadingProfile(true);
-        const profileData = await profileService.getProfile();
-        setProfile(profileData);
-        
-        // Initialize form data with profile data
-        const emergencyContactData = getEmergencyContactData(profileData.emergencyContact);
-        setFormData({
-          firstName: profileData.firstName || '',
-          lastName: profileData.lastName || '',
-          phoneNumber: profileData.phoneNumber || '',
-          position: profileData.position || '',
-          emergencyContact: {
-            name: emergencyContactData?.name || '',
-            phoneNumber: emergencyContactData?.phoneNumber || ''
-          }
+        await profileErrorHandler.executeWithRetry(async () => {
+          const profileData = await profileService.getProfile();
+          setProfile(profileData);
+          
+          // Initialize form data with profile data
+          const emergencyContactData = getEmergencyContactData(profileData.emergencyContact);
+          setFormData({
+            firstName: profileData.firstName || '',
+            lastName: profileData.lastName || '',
+            phoneNumber: profileData.phoneNumber || '',
+            position: profileData.position || '',
+            emergencyContact: {
+              name: emergencyContactData?.name || '',
+              phoneNumber: emergencyContactData?.phoneNumber || ''
+            }
+          });
         });
       } catch (error) {
-        console.error('Failed to load profile:', error);
-        toast.error('Failed to load profile data');
+        const profileError = error instanceof Error ? error : new Error('Failed to load profile');
+        setProfileLoadError(profileError);
+        console.error('Failed to load profile after retries:', profileError);
       } finally {
         setIsLoadingProfile(false);
       }
@@ -212,12 +229,39 @@ const ProfilePage: React.FC = () => {
     );
   }
 
-  if (!profile) {
+  if (profileLoadError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <ErrorDisplay
+            error={profileLoadError}
+            title="Failed to Load Profile"
+            variant="modal"
+            showDetails={import.meta.env.DEV}
+            onRetry={() => {
+              setProfileLoadError(null);
+              setIsLoadingProfile(true);
+              // Trigger reload
+              window.location.reload();
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile && !isLoadingProfile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Profile not found</h2>
           <p className="text-gray-600">Unable to load your profile data.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 btn btn-primary"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -233,14 +277,17 @@ const ProfilePage: React.FC = () => {
             {/* Profile Avatar */}
             <div className="relative">
               {profile.profilePhoto ? (
-                <img 
-                  src={profile.profilePhoto.startsWith('/api/') ? profile.profilePhoto : `/api/profile/photo/${profile.id}`} 
-                  alt="Profile" 
+                <ImageFallback
+                  src={profile.profilePhoto.startsWith('/api/') ? profile.profilePhoto : `/api/profile/photo/${profile.id}`}
+                  alt="Profile"
                   className="w-20 h-20 rounded-full object-cover border-4 border-white/20 shadow-lg"
-                  onError={(e) => {
-                    console.log('Profile photo failed to load, hiding image');
-                    e.currentTarget.style.display = 'none';
-                  }}
+                  retryEnabled={true}
+                  maxRetries={2}
+                  fallbackComponent={
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-2xl font-bold border-4 border-white/20 shadow-lg">
+                      {profile.firstName?.[0]?.toUpperCase()}{profile.lastName?.[0]?.toUpperCase()}
+                    </div>
+                  }
                 />
               ) : (
                 <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-2xl font-bold border-4 border-white/20 shadow-lg">
@@ -544,14 +591,17 @@ const ProfilePage: React.FC = () => {
                 <div className="flex items-center space-x-6">
                   <div className="relative">
                     {profile.profilePhoto ? (
-                      <img 
-                        src={profile.profilePhoto.startsWith('/api/') ? profile.profilePhoto : `/api/profile/photo/${profile.id}`} 
-                        alt="Primary Profile" 
+                      <ImageFallback
+                        src={profile.profilePhoto.startsWith('/api/') ? profile.profilePhoto : `/api/profile/photo/${profile.id}`}
+                        alt="Primary Profile"
                         className="w-24 h-24 rounded-full object-cover border-4 border-warm-gold/20 shadow-lg"
-                        onError={(e) => {
-                          console.log('Primary photo failed to load');
-                          e.currentTarget.style.display = 'none';
-                        }}
+                        retryEnabled={true}
+                        maxRetries={2}
+                        fallbackComponent={
+                          <div className="w-24 h-24 bg-warm-gold/20 rounded-full flex items-center justify-center text-warm-gold text-2xl font-bold border-4 border-warm-gold/20 shadow-lg">
+                            {profile.firstName?.[0]?.toUpperCase()}{profile.lastName?.[0]?.toUpperCase()}
+                          </div>
+                        }
                       />
                     ) : (
                       <div className="w-24 h-24 bg-warm-gold/20 rounded-full flex items-center justify-center text-warm-gold text-2xl font-bold border-4 border-warm-gold/20 shadow-lg">
