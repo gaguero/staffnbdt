@@ -47,7 +47,7 @@ import { User, Role, PhotoType } from '@prisma/client';
 
 @ApiTags('Profile')
 @Controller('profile')
-@UseGuards(JwtAuthGuard, RolesGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class ProfileController {
   constructor(
