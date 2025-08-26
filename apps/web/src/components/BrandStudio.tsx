@@ -236,8 +236,16 @@ const BrandStudio: React.FC = () => {
   const { brandConfig, applyTheme, resetToDefault, isCustomTheme, exportTheme, importTheme } = useTheme();
   const { organization, property } = useTenant();
   const [activeTab, setActiveTab] = useState<'colors' | 'typography' | 'assets' | 'preview'>('colors');
-  const [localConfig, setLocalConfig] = useState(brandConfig);
+  const [localConfig, setLocalConfig] = useState(() => {
+    // Initialize with a deep copy to prevent reference issues
+    return JSON.parse(JSON.stringify(brandConfig));
+  });
   const [saving, setSaving] = useState(false);
+
+  // Sync localConfig with brandConfig changes
+  React.useEffect(() => {
+    setLocalConfig(JSON.parse(JSON.stringify(brandConfig)));
+  }, [brandConfig]);
 
   const tabs = [
     { id: 'colors', label: 'Colors', icon: '🎨' },
@@ -248,13 +256,28 @@ const BrandStudio: React.FC = () => {
 
   const updateConfig = (path: string, value: any) => {
     const keys = path.split('.');
-    const newConfig = { ...localConfig };
+    
+    // Create a deep copy to avoid mutation issues
+    const newConfig = JSON.parse(JSON.stringify(localConfig));
     let current: any = newConfig;
     
+    // Navigate to the correct nested object
     for (let i = 0; i < keys.length - 1; i++) {
+      if (!current[keys[i]]) {
+        current[keys[i]] = {};
+      }
       current = current[keys[i]];
     }
+    
+    // Set the final value
     current[keys[keys.length - 1]] = value;
+    
+    console.log(`🔧 Updated ${path}:`, value);
+    console.log('🔍 New config structure:', {
+      colors: Object.keys(newConfig.colors || {}),
+      typography: Object.keys(newConfig.typography || {}),
+      assets: Object.keys(newConfig.assets || {})
+    });
     
     setLocalConfig(newConfig);
   };
@@ -271,14 +294,70 @@ const BrandStudio: React.FC = () => {
         throw new Error('No organization or property context found. Please refresh and try again.');
       }
 
+      // Clean and validate the payload before sending
+      const cleanedPayload = {
+        colors: {
+          primary: localConfig.colors?.primary || '#AA8E67',
+          primaryShades: localConfig.colors?.primaryShades || {},
+          secondary: localConfig.colors?.secondary,
+          accent: localConfig.colors?.accent,
+          background: localConfig.colors?.background || '#F5EBD7',
+          surface: localConfig.colors?.surface || '#ffffff',
+          surfaceHover: localConfig.colors?.surfaceHover || '#f8f9fa',
+          textPrimary: localConfig.colors?.textPrimary || '#4A4A4A',
+          textSecondary: localConfig.colors?.textSecondary || '#606060',
+          textMuted: localConfig.colors?.textMuted || '#808080'
+        },
+        typography: {
+          heading: localConfig.typography?.heading || "'Gotham Black', sans-serif",
+          subheading: localConfig.typography?.subheading || "'Georgia', serif",
+          body: localConfig.typography?.body || "'Proxima Nova', sans-serif"
+        },
+        assets: {
+          logoUrl: localConfig.assets?.logoUrl,
+          logoDarkUrl: localConfig.assets?.logoDarkUrl,
+          faviconUrl: localConfig.assets?.faviconUrl
+        },
+        borderRadius: localConfig.borderRadius || {
+          sm: '0.5rem',
+          md: '0.75rem', 
+          lg: '1rem',
+          xl: '1.5rem'
+        },
+        shadows: localConfig.shadows || {
+          soft: '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+          medium: '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          strong: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        },
+        transitions: localConfig.transitions || {
+          fast: '0.15s',
+          normal: '0.3s',
+          slow: '0.6s'
+        }
+      };
+
+      // Validate JSON structure
+      const jsonTest = JSON.stringify(cleanedPayload);
+      const parsedTest = JSON.parse(jsonTest);
+      
+      console.log('🧹 Cleaned payload:', cleanedPayload);
+      console.log('🔍 JSON validation passed:', parsedTest);
+      
+      // Verify no corruption in the payload
+      if (!parsedTest.typography.heading || !parsedTest.colors.primary) {
+        throw new Error('Invalid payload structure detected');
+      }
+
       // Use the configured brandingApi service
       const result = property 
-        ? await brandingApi.updatePropertyBranding(property.id, localConfig)
-        : await brandingApi.updateOrganizationBranding(organization!.id, localConfig);
+        ? await brandingApi.updatePropertyBranding(property.id, cleanedPayload)
+        : await brandingApi.updateOrganizationBranding(organization!.id, cleanedPayload);
+        
       console.log('✅ Branding saved successfully:', result);
       alert('Branding saved successfully!');
     } catch (error) {
       console.error('❌ Save failed:', error);
+      console.error('❌ LocalConfig state:', localConfig);
       alert(`Failed to save branding: ${(error as Error).message}`);
     } finally {
       setSaving(false);
@@ -403,31 +482,31 @@ const BrandStudio: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">Brand Colors</h3>
               
               <ColorPicker
-                color={localConfig.colors.primary}
+                color={localConfig.colors?.primary || '#AA8E67'}
                 onChange={(color) => updateConfig('colors.primary', color)}
                 label="Primary Brand Color"
               />
               
               <ColorPicker
-                color={localConfig.colors.secondary || '#7C8E67'}
+                color={localConfig.colors?.secondary || '#7C8E67'}
                 onChange={(color) => updateConfig('colors.secondary', color)}
                 label="Secondary Color"
               />
               
               <ColorPicker
-                color={localConfig.colors.accent || '#A4C4C8'}
+                color={localConfig.colors?.accent || '#A4C4C8'}
                 onChange={(color) => updateConfig('colors.accent', color)}
                 label="Accent Color"
               />
               
               <ColorPicker
-                color={localConfig.colors.background}
+                color={localConfig.colors?.background || '#F5EBD7'}
                 onChange={(color) => updateConfig('colors.background', color)}
                 label="Background Color"
               />
               
               <ColorPicker
-                color={localConfig.colors.textPrimary}
+                color={localConfig.colors?.textPrimary || '#4A4A4A'}
                 onChange={(color) => updateConfig('colors.textPrimary', color)}
                 label="Primary Text Color"
               />
@@ -437,27 +516,27 @@ const BrandStudio: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">Color Preview</h3>
               <div 
                 className="p-6 rounded-lg border"
-                style={{ backgroundColor: localConfig.colors.background }}
+                style={{ backgroundColor: localConfig.colors?.background || '#F5EBD7' }}
               >
                 <div 
                   className="bg-white p-4 rounded-lg shadow-sm"
-                  style={{ backgroundColor: localConfig.colors.surface }}
+                  style={{ backgroundColor: localConfig.colors?.surface || '#ffffff' }}
                 >
                   <h4 
                     className="text-lg font-semibold mb-2"
-                    style={{ color: localConfig.colors.textPrimary }}
+                    style={{ color: localConfig.colors?.textPrimary || '#4A4A4A' }}
                   >
                     Sample Card
                   </h4>
                   <p 
                     className="text-sm mb-3"
-                    style={{ color: localConfig.colors.textSecondary }}
+                    style={{ color: localConfig.colors?.textSecondary || '#606060' }}
                   >
                     This is how your content will look with the selected colors.
                   </p>
                   <button
                     className="px-4 py-2 rounded text-white text-sm font-medium"
-                    style={{ backgroundColor: localConfig.colors.primary }}
+                    style={{ backgroundColor: localConfig.colors?.primary || '#AA8E67' }}
                   >
                     Primary Button
                   </button>
@@ -473,19 +552,19 @@ const BrandStudio: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">Typography</h3>
               
               <FontSelector
-                font={localConfig.typography.heading}
+                font={localConfig.typography?.heading || "'Gotham Black', sans-serif"}
                 onChange={(font) => updateConfig('typography.heading', font)}
                 label="Heading Font"
               />
               
               <FontSelector
-                font={localConfig.typography.subheading}
+                font={localConfig.typography?.subheading || "'Georgia', serif"}
                 onChange={(font) => updateConfig('typography.subheading', font)}
                 label="Subheading Font"
               />
               
               <FontSelector
-                font={localConfig.typography.body}
+                font={localConfig.typography?.body || "'Proxima Nova', sans-serif"}
                 onChange={(font) => updateConfig('typography.body', font)}
                 label="Body Font"
               />
@@ -496,19 +575,19 @@ const BrandStudio: React.FC = () => {
               <div className="space-y-4 p-6 bg-gray-50 rounded-lg">
                 <h1 
                   className="text-3xl font-bold"
-                  style={{ fontFamily: localConfig.typography.heading, color: localConfig.colors.textPrimary }}
+                  style={{ fontFamily: localConfig.typography?.heading || "'Gotham Black', sans-serif", color: localConfig.colors?.textPrimary || '#4A4A4A' }}
                 >
                   Heading 1 Sample
                 </h1>
                 <h2 
                   className="text-xl font-semibold"
-                  style={{ fontFamily: localConfig.typography.subheading, color: localConfig.colors.textPrimary }}
+                  style={{ fontFamily: localConfig.typography?.subheading || "'Georgia', serif", color: localConfig.colors?.textPrimary || '#4A4A4A' }}
                 >
                   Subheading Sample
                 </h2>
                 <p 
                   className="text-base"
-                  style={{ fontFamily: localConfig.typography.body, color: localConfig.colors.textSecondary }}
+                  style={{ fontFamily: localConfig.typography?.body || "'Proxima Nova', sans-serif", color: localConfig.colors?.textSecondary || '#606060' }}
                 >
                   This is how your body text will appear with the selected typography. The quick brown fox jumps over the lazy dog.
                 </p>
@@ -523,13 +602,13 @@ const BrandStudio: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">Brand Assets</h3>
               
               <LogoUploader
-                currentLogo={localConfig.assets.logoUrl}
+                currentLogo={localConfig.assets?.logoUrl}
                 onLogoChange={(logoUrl) => updateConfig('assets.logoUrl', logoUrl)}
                 label="Primary Logo (Light Backgrounds)"
               />
               
               <LogoUploader
-                currentLogo={localConfig.assets.logoDarkUrl}
+                currentLogo={localConfig.assets?.logoDarkUrl}
                 onLogoChange={(logoUrl) => updateConfig('assets.logoDarkUrl', logoUrl)}
                 label="Logo for Dark Backgrounds"
               />
@@ -541,7 +620,7 @@ const BrandStudio: React.FC = () => {
               {/* Light background preview */}
               <div className="p-6 bg-white border rounded-lg">
                 <p className="text-sm text-gray-600 mb-2">Light Background</p>
-                {localConfig.assets.logoUrl ? (
+                {localConfig.assets?.logoUrl ? (
                   <img 
                     src={localConfig.assets.logoUrl} 
                     alt="Logo on light background"
@@ -557,12 +636,12 @@ const BrandStudio: React.FC = () => {
               {/* Dark background preview */}
               <div 
                 className="p-6 rounded-lg"
-                style={{ backgroundColor: localConfig.colors.textPrimary }}
+                style={{ backgroundColor: localConfig.colors?.textPrimary || '#4A4A4A' }}
               >
                 <p className="text-sm text-white mb-2">Dark Background</p>
-                {localConfig.assets.logoDarkUrl || localConfig.assets.logoUrl ? (
+                {localConfig.assets?.logoDarkUrl || localConfig.assets?.logoUrl ? (
                   <img 
-                    src={localConfig.assets.logoDarkUrl || localConfig.assets.logoUrl} 
+                    src={localConfig.assets?.logoDarkUrl || localConfig.assets?.logoUrl} 
                     alt="Logo on dark background"
                     className="h-12 object-contain"
                   />
@@ -583,15 +662,15 @@ const BrandStudio: React.FC = () => {
             {/* Mini application preview */}
             <div 
               className="border rounded-lg overflow-hidden"
-              style={{ backgroundColor: localConfig.colors.background }}
+              style={{ backgroundColor: localConfig.colors?.background || '#F5EBD7' }}
             >
               {/* Mock header */}
               <div 
                 className="px-6 py-4 border-b flex items-center justify-between"
-                style={{ backgroundColor: localConfig.colors.surface }}
+                style={{ backgroundColor: localConfig.colors?.surface || '#ffffff' }}
               >
                 <div className="flex items-center space-x-3">
-                  {localConfig.assets.logoUrl ? (
+                  {localConfig.assets?.logoUrl ? (
                     <img 
                       src={localConfig.assets.logoUrl} 
                       alt="Logo preview"
@@ -600,7 +679,7 @@ const BrandStudio: React.FC = () => {
                   ) : (
                     <div 
                       className="h-8 w-20 rounded flex items-center justify-center text-xs font-bold text-white"
-                      style={{ backgroundColor: localConfig.colors.primary }}
+                      style={{ backgroundColor: localConfig.colors?.primary || '#AA8E67' }}
                     >
                       LOGO
                     </div>
@@ -608,8 +687,8 @@ const BrandStudio: React.FC = () => {
                   <h1 
                     className="text-xl font-bold"
                     style={{ 
-                      fontFamily: localConfig.typography.heading,
-                      color: localConfig.colors.textPrimary 
+                      fontFamily: localConfig.typography?.heading || "'Gotham Black', sans-serif",
+                      color: localConfig.colors?.textPrimary || '#4A4A4A' 
                     }}
                   >
                     Dashboard
@@ -618,7 +697,7 @@ const BrandStudio: React.FC = () => {
                 
                 <button
                   className="px-4 py-2 rounded text-white text-sm font-medium"
-                  style={{ backgroundColor: localConfig.colors.primary }}
+                  style={{ backgroundColor: localConfig.colors?.primary || '#AA8E67' }}
                 >
                   Sign Out
                 </button>
@@ -628,13 +707,13 @@ const BrandStudio: React.FC = () => {
               <div className="p-6 space-y-4">
                 <div 
                   className="p-4 rounded-lg"
-                  style={{ backgroundColor: localConfig.colors.surface }}
+                  style={{ backgroundColor: localConfig.colors?.surface || '#ffffff' }}
                 >
                   <h3 
                     className="text-lg font-semibold mb-2"
                     style={{ 
-                      fontFamily: localConfig.typography.subheading,
-                      color: localConfig.colors.textPrimary 
+                      fontFamily: localConfig.typography?.subheading || "'Georgia', serif",
+                      color: localConfig.colors?.textPrimary || '#4A4A4A' 
                     }}
                   >
                     Welcome Back!
@@ -642,8 +721,8 @@ const BrandStudio: React.FC = () => {
                   <p 
                     className="text-sm"
                     style={{ 
-                      fontFamily: localConfig.typography.body,
-                      color: localConfig.colors.textSecondary 
+                      fontFamily: localConfig.typography?.body || "'Proxima Nova', sans-serif",
+                      color: localConfig.colors?.textSecondary || '#606060' 
                     }}
                   >
                     This is how your application will look with the customized branding.
@@ -652,15 +731,15 @@ const BrandStudio: React.FC = () => {
                   <div className="flex space-x-3 mt-4">
                     <button
                       className="px-4 py-2 rounded text-white text-sm font-medium"
-                      style={{ backgroundColor: localConfig.colors.primary }}
+                      style={{ backgroundColor: localConfig.colors?.primary || '#AA8E67' }}
                     >
                       Primary Action
                     </button>
                     <button
                       className="px-4 py-2 rounded text-sm font-medium border"
                       style={{ 
-                        borderColor: localConfig.colors.primary,
-                        color: localConfig.colors.primary 
+                        borderColor: localConfig.colors?.primary || '#AA8E67',
+                        color: localConfig.colors?.primary || '#AA8E67' 
                       }}
                     >
                       Secondary Action
@@ -673,17 +752,17 @@ const BrandStudio: React.FC = () => {
                     <div 
                       key={metric}
                       className="p-4 rounded-lg"
-                      style={{ backgroundColor: localConfig.colors.surface }}
+                      style={{ backgroundColor: localConfig.colors?.surface || '#ffffff' }}
                     >
                       <h4 
                         className="text-sm font-medium"
-                        style={{ color: localConfig.colors.textSecondary }}
+                        style={{ color: localConfig.colors?.textSecondary || '#606060' }}
                       >
                         {metric}
                       </h4>
                       <p 
                         className="text-2xl font-bold mt-1"
-                        style={{ color: localConfig.colors.textPrimary }}
+                        style={{ color: localConfig.colors?.textPrimary || '#4A4A4A' }}
                       >
                         {(index + 1) * 123}
                       </p>
