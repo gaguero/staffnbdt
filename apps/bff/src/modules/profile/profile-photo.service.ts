@@ -345,7 +345,7 @@ export class ProfilePhotoService {
       }
     }
     
-    // If user still not found, throw error with detailed context
+    // If user still not found, log error but return empty array to prevent breaking the UI
     if (!targetUser) {
       const errorContext = {
         userId,
@@ -358,15 +358,17 @@ export class ProfilePhotoService {
         timestamp: new Date().toISOString(),
       };
       
-      console.error('❌ User not found after all fallback strategies:', errorContext);
+      console.error('❌ User not found after all fallback strategies, returning empty photos array:', errorContext);
       
-      this.logger.error('Profile photo user lookup failed', {
+      this.logger.error('Profile photo user lookup failed, returning empty photos', {
         context: 'ProfilePhotoService',
         method: 'getUserPhotos',
         ...errorContext,
       });
       
-      throw new NotFoundException(`User not found. The user may not exist, may be deleted, or you may not have access to view their profile photos.`);
+      // Return empty array instead of throwing error to prevent breaking the UI
+      // This allows the photo gallery to load even if database user lookup fails
+      return [];
     }
     
     // Ensure tenant context is properly set
