@@ -133,3 +133,9 @@ export * from './permission';
 
 // Re-export hotel types
 export * from './hotel';
+
+// Re-export role types
+export * from './role';
+
+// Re-export role history types
+export * from './roleHistory';

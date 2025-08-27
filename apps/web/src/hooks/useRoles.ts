@@ -207,6 +207,19 @@ export function useRoleStats() {
   });
 }
 
+// Export analytics hooks for easy access
+export { 
+  useRoleAnalytics,
+  usePermissionAnalytics, 
+  useAssignmentTrends,
+  useSecurityMetrics,
+  useOptimizationRecommendations,
+  useRealTimeStats,
+  useDashboardData,
+  useAnalyticsCalculations,
+  useRefreshDashboard
+} from './useRoleAnalytics';
+
 // Templates
 export function useRoleTemplates() {
   return useQuery({

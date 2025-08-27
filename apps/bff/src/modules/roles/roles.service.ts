@@ -4,7 +4,9 @@ import {
   NotFoundException, 
   BadRequestException, 
   ForbiddenException,
-  ConflictException
+  ConflictException,
+  Inject,
+  forwardRef
 } from '@nestjs/common';
 import { 
   CustomRole, 
@@ -17,6 +19,8 @@ import {
 import { PrismaService } from '../../shared/database/prisma.service';
 import { AuditService } from '../../shared/audit/audit.service';
 import { PermissionService } from '../permissions/permission.service';
+import { RolesHistoryService } from './roles-history.service';
+import { RoleHistoryAction, RoleHistorySource } from './dto/role-history.dto';
 import {
   CreateRoleDto,
   UpdateRoleDto,
@@ -63,6 +67,8 @@ export class RolesService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly permissionService: PermissionService,
+    @Inject(forwardRef(() => RolesHistoryService))
+    private readonly historyService: RolesHistoryService,
   ) {}
 
   /**
@@ -749,6 +755,23 @@ export class RolesService {
       // Clear user permission cache
       await this.permissionService.clearUserPermissionCache(userId);
 
+      // Create role history entry
+      await this.historyService.createHistoryEntry({
+        action: existingAssignment ? RoleHistoryAction.MODIFIED : RoleHistoryAction.ASSIGNED,
+        userId,
+        roleId,
+        userRoleId: assignment.id,
+        adminId: currentUser.id,
+        reason: metadata?.assignmentReason as string,
+        context: {
+          source: RoleHistorySource.MANUAL,
+          operationType: 'role_assignment',
+        },
+        auditTrail: {
+          requestId: `assign-${assignment.id}`,
+        },
+      });
+
       // Audit log
       await this.auditService.logCreate(
         currentUser.id,
@@ -806,6 +829,23 @@ export class RolesService {
       // Clear user permission cache
       await this.permissionService.clearUserPermissionCache(assignment.userId);
 
+      // Create role history entry
+      await this.historyService.createHistoryEntry({
+        action: RoleHistoryAction.REMOVED,
+        userId: assignment.userId,
+        roleId: assignment.roleId,
+        userRoleId: assignment.id,
+        adminId: currentUser.id,
+        reason: (assignment.metadata as any)?.removalReason,
+        context: {
+          source: RoleHistorySource.MANUAL,
+          operationType: 'role_removal',
+        },
+        auditTrail: {
+          requestId: `remove-${assignment.id}`,
+        },
+      });
+
       // Audit log
       await this.auditService.logDelete(
         currentUser.id,
@@ -829,9 +869,28 @@ export class RolesService {
       const { assignments } = bulkDto;
       const results = [];
       const errors = [];
+      const batchId = `bulk-assign-${Date.now()}-${currentUser.id}`;
 
+      // Create bulk history entries for all assignments
       for (const assignment of assignments) {
         try {
+          // Create history entry for bulk operation
+          await this.historyService.createHistoryEntry({
+            action: RoleHistoryAction.BULK_ASSIGNED,
+            userId: assignment.userId,
+            roleId: assignment.roleId,
+            adminId: currentUser.id,
+            reason: assignment.metadata?.assignmentReason as string,
+            context: {
+              source: RoleHistorySource.BULK,
+              batchId,
+              operationType: 'bulk_assignment',
+            },
+            auditTrail: {
+              requestId: `bulk-${batchId}`,
+            },
+          });
+
           const result = await this.assignRole(assignment, currentUser);
           results.push(result);
         } catch (error) {
@@ -865,9 +924,35 @@ export class RolesService {
       const { userRoleIds } = bulkDto;
       const results = [];
       const errors = [];
+      const batchId = `bulk-remove-${Date.now()}-${currentUser.id}`;
 
+      // Create bulk history entries for all removals
       for (const userRoleId of userRoleIds) {
         try {
+          // Get assignment details for history
+          const assignment = await this.prisma.userCustomRole.findUnique({
+            where: { id: userRoleId },
+            select: { userId: true, roleId: true },
+          });
+
+          if (assignment) {
+            await this.historyService.createHistoryEntry({
+              action: RoleHistoryAction.BULK_REMOVED,
+              userId: assignment.userId,
+              roleId: assignment.roleId,
+              userRoleId,
+              adminId: currentUser.id,
+              context: {
+                source: RoleHistorySource.BULK,
+                batchId,
+                operationType: 'bulk_removal',
+              },
+              auditTrail: {
+                requestId: `bulk-${batchId}`,
+              },
+            });
+          }
+
           await this.removeUserRole(userRoleId, currentUser);
           results.push(userRoleId);
         } catch (error) {

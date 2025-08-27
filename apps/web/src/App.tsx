@@ -32,6 +32,7 @@ import ReservationsPage from './pages/hotel/ReservationsPage';
 
 // Admin Pages
 import RolesManagementPage from './pages/admin/RolesManagementPage';
+import RoleStatsDashboardPage from './pages/RoleStatsDashboardPage';
 
 // Login component
 const LoginPage = () => {
@@ -329,6 +330,16 @@ const App: React.FC = () => {
             <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN']}>
               <Layout>
                 <RolesManagementPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/role-stats" 
+          element={
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN']}>
+              <Layout>
+                <RoleStatsDashboardPage />
               </Layout>
             </ProtectedRoute>
           } 

@@ -6,6 +6,10 @@ export { default as PermissionGate, withPermission, usePermissionGate } from './
 export { default as RoleBasedComponent, withRoles, useRoleCheck } from './RoleBasedComponent';
 export { default as PermissionDemo } from './PermissionDemo';
 export { default as PropertySelector } from './PropertySelector';
+export { default as RoleBadge } from './RoleBadge';
+export { default as RoleBadgeGroup } from './RoleBadgeGroup';
+export { default as UserCard } from './UserCard';
+export { default as RoleBadgeShowcase } from './RoleBadgeShowcase';
 
 // Phase 2 UX Improvements - List Operations
 export { default as EnhancedPagination } from './EnhancedPagination';

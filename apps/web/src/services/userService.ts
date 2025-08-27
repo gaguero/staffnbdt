@@ -207,6 +207,67 @@ class UserService {
     const response = await api.delete(`/users/${id}/permanent`);
     return response.data;
   }
+
+  // User Role Management Methods
+  async getUserPermissions(userId: string) {
+    const response = await api.get(`/users/${userId}/permissions`);
+    return response.data;
+  }
+
+  async getUserRoleHistory(userId: string) {
+    const response = await api.get(`/users/${userId}/role-history`);
+    return response.data;
+  }
+
+  async getUserEffectivePermissions(userId: string) {
+    const response = await api.get(`/users/${userId}/effective-permissions`);
+    return response.data;
+  }
+
+  async assignUserToProperties(userId: string, propertyIds: string[]) {
+    const response = await api.patch(`/users/${userId}/properties`, { propertyIds });
+    return response.data;
+  }
+
+  async removeUserFromProperties(userId: string, propertyIds: string[]) {
+    const response = await api.delete(`/users/${userId}/properties`, { data: { propertyIds } });
+    return response.data;
+  }
 }
 
 export const userService = new UserService();
+
+export default userService;
+
+// Additional interfaces for role management
+export interface UserRoleAssignment {
+  id: string;
+  userId: string;
+  roleId: string;
+  assignedAt: string;
+  assignedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  expiresAt?: string;
+  conditions?: Record<string, any>;
+  metadata?: Record<string, any>;
+}
+
+export interface UserPermissionSummary {
+  userId: string;
+  permissions: Array<{
+    id: string;
+    resource: string;
+    action: string;
+    scope: string;
+    source: 'system_role' | 'custom_role';
+    sourceRole: string;
+  }>;
+  permissionCount: {
+    byCategory: Record<string, number>;
+    total: number;
+  };
+  securityLevel: 'Low' | 'Medium' | 'High' | 'Critical';
+}

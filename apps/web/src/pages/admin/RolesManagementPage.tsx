@@ -6,6 +6,7 @@ import { Role, RoleAssignment, UserRole } from '../../services/roleService';
 import RoleCard from '../../components/roles/RoleCard';
 import CreateRoleModal from '../../components/roles/CreateRoleModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import RoleBadge from '../../components/RoleBadge';
 import PermissionGate from '../../components/PermissionGate';
 
 // BULLETPROOF UTILITY FUNCTIONS
@@ -715,12 +716,24 @@ const RolesManagementPage: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-gray-900">{userRole?.role?.name || 'Unknown Role'}</div>
-                          <div className="text-sm text-gray-600 line-clamp-1">{userRole?.role?.description || ''}</div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <RoleBadge
+                              role={userRole?.role?.name || 'Unknown Role'}
+                              isCustomRole={true}
+                              size="sm"
+                              showTooltip={true}
+                              customRoles={[{
+                                id: userRole?.role?.id || 'unknown',
+                                name: userRole?.role?.name || 'Unknown Role',
+                                description: userRole?.role?.description || ''
+                              }]}
+                            />
+                          </div>
+                          <div className="text-xs text-gray-500 line-clamp-1">{userRole?.role?.description || ''}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                            Level {userRole?.role?.level || 'N/A'}
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                            📊 Level {userRole?.role?.level || 'N/A'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
