@@ -28,7 +28,10 @@ import {
   BulkRoleAssignmentDto,
   BulkRoleRemovalDto,
   RoleFilterDto,
-  UserRoleFilterDto
+  UserRoleFilterDto,
+  CloneRoleDto,
+  BulkCloneRoleDto,
+  ClonePreviewDto
 } from './dto';
 
 interface RoleWithPermissions extends CustomRole {
@@ -974,6 +977,465 @@ export class RolesService {
       };
     } catch (error) {
       this.logger.error('Error in bulk role removal:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Clone a role
+   */
+  async cloneRole(cloneRoleDto: CloneRoleDto, currentUser: User) {
+    try {
+      const { sourceRoleId, cloneType, newMetadata, permissionFilters, preserveLineage } = cloneRoleDto;
+
+      // Get source role
+      const sourceRole = await this.prisma.customRole.findFirst({
+        where: {
+          id: sourceRoleId,
+          deletedAt: null,
+          ...this.buildTenantFilters(currentUser),
+        },
+        include: {
+          permissions: {
+            include: {
+              permission: {
+                select: {
+                  id: true,
+                  resource: true,
+                  action: true,
+                  scope: true,
+                },
+              },
+            },
+            where: { granted: true },
+          },
+        },
+      });
+
+      if (!sourceRole) {
+        throw new NotFoundException('Source role not found');
+      }
+
+      // Apply tenant context
+      const tenantContext = this.getTenantContext(currentUser);
+
+      // Filter permissions based on clone configuration
+      let permissionsToClone = sourceRole.permissions;
+      if (permissionFilters) {
+        // Apply permission filters (simplified implementation)
+        permissionsToClone = sourceRole.permissions.filter(rp => {
+          const permission = rp.permission;
+          
+          // Include/exclude based on categories
+          if (permissionFilters.includeCategories?.length > 0) {
+            if (!permissionFilters.includeCategories.includes(permission.resource)) {
+              return false;
+            }
+          }
+          
+          if (permissionFilters.excludeCategories?.length > 0) {
+            if (permissionFilters.excludeCategories.includes(permission.resource)) {
+              return false;
+            }
+          }
+
+          // Include/exclude based on scopes
+          if (permissionFilters.includeScopes?.length > 0) {
+            if (!permissionFilters.includeScopes.includes(permission.scope)) {
+              return false;
+            }
+          }
+
+          if (permissionFilters.excludeScopes?.length > 0) {
+            if (permissionFilters.excludeScopes.includes(permission.scope)) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+      }
+
+      // Create cloned role
+      const clonedRole = await this.prisma.$transaction(async (tx) => {
+        const createdRole = await tx.customRole.create({
+          data: {
+            name: newMetadata.name,
+            description: newMetadata.description,
+            priority: newMetadata.level,
+            organizationId: tenantContext.organizationId,
+            propertyId: tenantContext.propertyId,
+            isActive: true,
+            metadata: {
+              clonedFrom: sourceRoleId,
+              cloneType,
+              preserveLineage,
+              clonedAt: new Date(),
+              clonedBy: currentUser.id,
+            },
+          },
+        });
+
+        // Assign filtered permissions
+        if (permissionsToClone.length > 0) {
+          await tx.rolePermission.createMany({
+            data: permissionsToClone.map(rp => ({
+              roleId: createdRole.id,
+              permissionId: rp.permission.id,
+              granted: true,
+            })),
+          });
+        }
+
+        return createdRole;
+      });
+
+      // Audit log
+      await this.auditService.logCreate(
+        currentUser.id,
+        'CustomRole',
+        clonedRole.id,
+        { ...clonedRole, clonedFrom: sourceRoleId }
+      );
+
+      this.logger.log(`Role cloned: ${sourceRole.name} -> ${clonedRole.name} (${clonedRole.id}) by user ${currentUser.id}`);
+
+      return this.findOne(clonedRole.id, currentUser);
+    } catch (error) {
+      this.logger.error('Error cloning role:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch clone roles
+   */
+  async batchCloneRoles(bulkCloneDto: BulkCloneRoleDto, currentUser: User) {
+    try {
+      const { sourceRoles, batchType, namePattern, variations, globalAdjustments } = bulkCloneDto;
+      const results = [];
+      const errors = [];
+
+      for (const sourceRoleId of sourceRoles) {
+        for (const variation of variations) {
+          try {
+            // Create clone DTO for this variation
+            const cloneDto: CloneRoleDto = {
+              sourceRoleId,
+              cloneType: 'full' as any, // CloneType.FULL
+              newMetadata: {
+                name: namePattern.replace('{variation}', variation.name),
+                description: `Cloned from source role for ${variation.name}`,
+                level: 100, // Default level
+              },
+              permissionFilters: {
+                includeCategories: [],
+                excludeCategories: [],
+                includeScopes: [],
+                excludeScopes: [],
+                customSelections: [],
+              },
+              preserveLineage: true,
+            };
+
+            const clonedRole = await this.cloneRole(cloneDto, currentUser);
+            results.push(clonedRole);
+          } catch (error) {
+            errors.push({
+              sourceRoleId,
+              variation: variation.name,
+              error: error.message,
+            });
+          }
+        }
+      }
+
+      return {
+        successful: results,
+        failed: errors,
+        summary: {
+          total: sourceRoles.length * variations.length,
+          successful: results.length,
+          failed: errors.length,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Error in batch clone roles:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate clone preview
+   */
+  async generateClonePreview(previewDto: ClonePreviewDto, currentUser: User) {
+    try {
+      const { sourceRoleId, cloneType, newMetadata, permissionFilters } = previewDto;
+
+      // Get source role with permissions
+      const sourceRole = await this.prisma.customRole.findFirst({
+        where: {
+          id: sourceRoleId,
+          deletedAt: null,
+          ...this.buildTenantFilters(currentUser),
+        },
+        include: {
+          permissions: {
+            include: {
+              permission: {
+                select: {
+                  id: true,
+                  resource: true,
+                  action: true,
+                  scope: true,
+                  name: true,
+                  description: true,
+                },
+              },
+            },
+            where: { granted: true },
+          },
+        },
+      });
+
+      if (!sourceRole) {
+        throw new NotFoundException('Source role not found');
+      }
+
+      // Filter permissions based on preview configuration
+      let filteredPermissions = sourceRole.permissions;
+      if (permissionFilters) {
+        filteredPermissions = sourceRole.permissions.filter(rp => {
+          const permission = rp.permission;
+          
+          // Apply filters (same logic as cloneRole)
+          if (permissionFilters.includeCategories?.length > 0) {
+            if (!permissionFilters.includeCategories.includes(permission.resource)) {
+              return false;
+            }
+          }
+          
+          if (permissionFilters.excludeCategories?.length > 0) {
+            if (permissionFilters.excludeCategories.includes(permission.resource)) {
+              return false;
+            }
+          }
+
+          if (permissionFilters.includeScopes?.length > 0) {
+            if (!permissionFilters.includeScopes.includes(permission.scope)) {
+              return false;
+            }
+          }
+
+          if (permissionFilters.excludeScopes?.length > 0) {
+            if (permissionFilters.excludeScopes.includes(permission.scope)) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+      }
+
+      return {
+        sourceRole: {
+          id: sourceRole.id,
+          name: sourceRole.name,
+          description: sourceRole.description,
+          level: sourceRole.priority,
+          permissionCount: sourceRole.permissions.length,
+        },
+        previewRole: {
+          name: newMetadata.name,
+          description: newMetadata.description,
+          level: newMetadata.level,
+          permissionCount: filteredPermissions.length,
+        },
+        permissionChanges: {
+          total: sourceRole.permissions.length,
+          filtered: filteredPermissions.length,
+          removed: sourceRole.permissions.length - filteredPermissions.length,
+          permissions: filteredPermissions.map(rp => ({
+            id: rp.permission.id,
+            name: rp.permission.name,
+            resource: rp.permission.resource,
+            action: rp.permission.action,
+            scope: rp.permission.scope,
+            description: rp.permission.description,
+          })),
+        },
+        conflicts: [], // TODO: Check for name conflicts
+        recommendations: [], // TODO: Add recommendations
+      };
+    } catch (error) {
+      this.logger.error('Error generating clone preview:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get role lineage
+   */
+  async getRoleLineage(id: string, currentUser: User) {
+    try {
+      const role = await this.prisma.customRole.findFirst({
+        where: {
+          id,
+          deletedAt: null,
+          ...this.buildTenantFilters(currentUser),
+        },
+      });
+
+      if (!role) {
+        throw new NotFoundException('Role not found');
+      }
+
+      // Get cloned roles (children)
+      const clonedRoles = await this.prisma.customRole.findMany({
+        where: {
+          deletedAt: null,
+          metadata: {
+            path: ['clonedFrom'],
+            equals: id,
+          },
+          ...this.buildTenantFilters(currentUser),
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          priority: true,
+          createdAt: true,
+          metadata: true,
+        },
+      });
+
+      // Get source role (parent)
+      let sourceRole = null;
+      const metadata = role.metadata as any;
+      if (metadata?.clonedFrom) {
+        sourceRole = await this.prisma.customRole.findFirst({
+          where: {
+            id: metadata.clonedFrom,
+            deletedAt: null,
+            ...this.buildTenantFilters(currentUser),
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            priority: true,
+            createdAt: true,
+          },
+        });
+      }
+
+      return {
+        role: {
+          id: role.id,
+          name: role.name,
+          description: role.description,
+          level: role.priority,
+          createdAt: role.createdAt,
+        },
+        parent: sourceRole,
+        children: clonedRoles.map(child => ({
+          id: child.id,
+          name: child.name,
+          description: child.description,
+          level: child.priority,
+          createdAt: child.createdAt,
+          cloneType: (child.metadata as any)?.cloneType || 'unknown',
+        })),
+        depth: sourceRole ? 2 : 1, // Simple depth calculation
+        isRoot: !sourceRole,
+        hasChildren: clonedRoles.length > 0,
+      };
+    } catch (error) {
+      this.logger.error(`Error getting role lineage for ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get clone templates
+   */
+  async getCloneTemplates(currentUser: User) {
+    try {
+      // For now, return common clone templates
+      // In a real implementation, these would be stored in the database
+      return {
+        templates: [
+          {
+            id: 'department-manager',
+            name: 'Department Manager Template',
+            description: 'Template for department-level management roles',
+            category: 'management',
+            permissionFilters: {
+              includeScopes: ['department'],
+              includeCategories: ['user', 'schedule', 'report'],
+              excludeCategories: ['system'],
+              excludeScopes: ['organization'],
+            },
+            metadata: {
+              recommendedLevel: 500,
+              tags: ['management', 'department'],
+            },
+          },
+          {
+            id: 'staff-member',
+            name: 'Staff Member Template',
+            description: 'Template for basic staff roles',
+            category: 'staff',
+            permissionFilters: {
+              includeScopes: ['self'],
+              includeCategories: ['profile', 'schedule'],
+              excludeCategories: ['admin', 'management'],
+            },
+            metadata: {
+              recommendedLevel: 100,
+              tags: ['staff', 'basic'],
+            },
+          },
+        ],
+        categories: ['management', 'staff', 'admin', 'custom'],
+        totalTemplates: 2,
+      };
+    } catch (error) {
+      this.logger.error('Error getting clone templates:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save clone template
+   */
+  async saveCloneTemplate(template: any, currentUser: User) {
+    try {
+      // For now, just return a mock response
+      // In a real implementation, this would save to a templates table
+      const savedTemplate = {
+        id: `template-${Date.now()}`,
+        ...template,
+        createdBy: currentUser.id,
+        createdAt: new Date(),
+        organizationId: currentUser.organizationId,
+        propertyId: currentUser.propertyId,
+      };
+
+      // Audit log
+      await this.auditService.logCreate(
+        currentUser.id,
+        'CloneTemplate',
+        savedTemplate.id,
+        savedTemplate
+      );
+
+      this.logger.log(`Clone template saved: ${template.name} by user ${currentUser.id}`);
+
+      return savedTemplate;
+    } catch (error) {
+      this.logger.error('Error saving clone template:', error);
       throw error;
     }
   }

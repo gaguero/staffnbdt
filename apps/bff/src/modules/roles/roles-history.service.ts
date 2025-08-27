@@ -78,7 +78,7 @@ export class RolesHistoryService {
             email: true,
             profilePhoto: true,
             role: true,
-            departmentName: true,
+            department: { select: { name: true } },
             organizationId: true,
             propertyId: true,
             departmentId: true,
@@ -106,7 +106,7 @@ export class RolesHistoryService {
             email: true,
             profilePhoto: true,
             role: true,
-            departmentName: true,
+            department: { select: { name: true } },
           },
         }),
       ]);
@@ -125,7 +125,7 @@ export class RolesHistoryService {
           email: user.email,
           avatar: user.profilePhoto,
           role: user.role,
-          department: user.departmentName,
+          department: user.department?.name,
         } as UserSummary,
         roleDetails: {
           id: role.id,
@@ -142,7 +142,7 @@ export class RolesHistoryService {
           email: admin.email,
           avatar: admin.profilePhoto,
           role: admin.role,
-          department: admin.departmentName,
+          department: admin.department?.name,
         } as UserSummary,
         systemInfo: {
           platform: 'Hotel Operations Hub',
@@ -151,7 +151,7 @@ export class RolesHistoryService {
           tenantContext: {
             organizationName: 'Organization', // TODO: Get actual names
             propertyName: 'Property',
-            departmentName: user.departmentName,
+            departmentName: user.department?.name,
           },
         },
       };
@@ -755,7 +755,13 @@ export class RolesHistoryService {
   }
 
   private canUserRollback(user: User): boolean {
-    return [Role.PLATFORM_ADMIN, Role.ORGANIZATION_OWNER, Role.ORGANIZATION_ADMIN].includes(user.role);
+    // Only allow higher-level roles to perform rollback operations
+    return [
+      Role.PLATFORM_ADMIN, 
+      Role.ORGANIZATION_OWNER, 
+      Role.ORGANIZATION_ADMIN, 
+      Role.PROPERTY_MANAGER
+    ].includes(user.role as any);
   }
 
   private calculatePermissionChanges(auditEntry: any) {

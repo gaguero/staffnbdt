@@ -26,7 +26,10 @@ import {
   BulkRoleAssignmentDto,
   BulkRoleRemovalDto,
   RoleFilterDto,
-  UserRoleFilterDto
+  UserRoleFilterDto,
+  CloneRoleDto,
+  BulkCloneRoleDto,
+  ClonePreviewDto
 } from './dto';
 import { User, Role } from '@prisma/client';
 

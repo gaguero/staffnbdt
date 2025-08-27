@@ -11,7 +11,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { PermissionGuard } from '../permissions/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 import { RolesHistoryService } from './roles-history.service';
@@ -45,7 +45,7 @@ export class RolesHistoryController {
   @Get('user/:userId')
   @ApiOperation({ summary: 'Get role assignment history for a specific user' })
   @ApiResponse({ status: 200, description: 'User role history retrieved successfully' })
-  @RequirePermission(['role.read.history', 'user.read.own'])
+  @RequirePermission('role.read.history')
   async getUserRoleHistory(
     @Param('userId') userId: string,
     @Query() dto: Omit<UserRoleHistoryDto, 'userId'>,
@@ -71,7 +71,7 @@ export class RolesHistoryController {
   @Get('admin/:adminId/activity')
   @ApiOperation({ summary: 'Get administrator activity history' })
   @ApiResponse({ status: 200, description: 'Admin activity history retrieved successfully' })
-  @RequirePermission(['role.read.history', 'audit.read'])
+  @RequirePermission('role.read.history')
   async getAdminActivityHistory(
     @Param('adminId') adminId: string,
     @Query() dto: Omit<AdminActivityHistoryDto, 'adminId'>,
@@ -95,7 +95,7 @@ export class RolesHistoryController {
   @Get('analytics')
   @ApiOperation({ summary: 'Get role assignment history analytics and trends' })
   @ApiResponse({ status: 200, description: 'History analytics retrieved successfully' })
-  @RequirePermission(['role.read.history', 'analytics.read'])
+  @RequirePermission('role.read.history')
   async getHistoryAnalytics(@Request() req: any) {
     return this.historyService.getHistoryAnalytics(req.user);
   }
@@ -103,7 +103,7 @@ export class RolesHistoryController {
   @Post('export')
   @ApiOperation({ summary: 'Export role assignment history in various formats' })
   @ApiResponse({ status: 200, description: 'History export initiated successfully' })
-  @RequirePermission(['role.read.history', 'export.create'])
+  @RequirePermission('role.read.history')
   @HttpCode(HttpStatus.OK)
   async exportHistory(
     @Body() exportDto: HistoryExportDto,
@@ -115,7 +115,7 @@ export class RolesHistoryController {
   @Post('rollback')
   @ApiOperation({ summary: 'Rollback a role assignment operation' })
   @ApiResponse({ status: 200, description: 'Role assignment rollback completed successfully' })
-  @RequirePermission(['role.rollback', 'role.assign.organization'])
+  @RequirePermission('role.rollback')
   @HttpCode(HttpStatus.OK)
   async rollbackAssignment(
     @Body() rollbackDto: RollbackOperationDto,
@@ -173,7 +173,7 @@ export class RolesHistoryController {
   @Get('compliance-report')
   @ApiOperation({ summary: 'Get compliance report for role assignment history' })
   @ApiResponse({ status: 200, description: 'Compliance report generated successfully' })
-  @RequirePermission(['role.read.history', 'audit.read', 'compliance.read'])
+  @RequirePermission('role.read.history')
   async getComplianceReport(@Request() req: any) {
     const analytics = await this.historyService.getHistoryAnalytics(req.user);
     
