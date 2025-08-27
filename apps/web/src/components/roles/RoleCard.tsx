@@ -61,40 +61,42 @@ const RoleCard: React.FC<RoleCardProps> = ({
 
   if (compact) {
     return (
-      <div
-        className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
-        onClick={() => onClick?.(role)}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-gray-900">{role.name}</h3>
-              <span className={`
-                px-2 py-1 rounded-full text-xs font-medium border
-                ${getLevelBadgeColor(role.level)}
-              `}>
-                Level {role.level}
-              </span>
+      <>
+        <div
+          className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => onClick?.(role)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-semibold text-gray-900">{role.name}</h3>
+                <span className={`
+                  px-2 py-1 rounded-full text-xs font-medium border
+                  ${getLevelBadgeColor(role.level)}
+                `}>
+                  Level {role.level}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600 line-clamp-2">{role.description}</p>
             </div>
-            <p className="text-sm text-gray-600 line-clamp-2">{role.description}</p>
-          </div>
-          <div className="text-right ml-4">
-            <div className="text-lg font-bold text-blue-600">{role.userCount}</div>
-            <div className="text-sm text-gray-500">Users</div>
+            <div className="text-right ml-4">
+              <div className="text-lg font-bold text-blue-600">{role.userCount}</div>
+              <div className="text-sm text-gray-500">Users</div>
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* Backdrop to close dropdown when clicking outside */}
-      {showDropdown && (
-        <div 
-          className="fixed inset-0 z-0" 
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowDropdown(false);
-          }}
-        />
-      )}
+        
+        {/* Backdrop to close dropdown when clicking outside */}
+        {showDropdown && (
+          <div 
+            className="fixed inset-0 z-0" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDropdown(false);
+            }}
+          />
+        )}
+      </>
     );
   }
 
