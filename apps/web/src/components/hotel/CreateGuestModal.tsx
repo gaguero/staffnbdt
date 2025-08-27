@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { CreateGuestInput, Guest, Address, GuestPreferences } from '../../types/hotel';
+import { CreateGuestInput, Guest } from '../../types/hotel';
 import { useCreateGuest, useUpdateGuest } from '../../hooks/useHotel';
 
 interface CreateGuestModalProps {
@@ -26,8 +26,7 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({
     handleSubmit,
     formState: { errors },
     reset,
-    setValue,
-    watch
+    setValue
   } = useForm<CreateGuestInput>();
 
   useEffect(() => {

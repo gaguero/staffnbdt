@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { CreateRoomInput, RoomType } from '../../types/hotel';
+import { CreateRoomInput } from '../../types/hotel';
 import { useCreateRoom, useUpdateRoom, useRoomTypes } from '../../hooks/useHotel';
 import { Room } from '../../types/hotel';
 

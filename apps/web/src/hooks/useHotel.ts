@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hotelService } from '../services/hotelService';
 import {
-  Room,
-  Guest,
-  Reservation,
   RoomFilter,
   GuestFilter,
   ReservationFilter,
@@ -11,7 +8,6 @@ import {
   UpdateRoomInput,
   CreateGuestInput,
   CreateReservationInput,
-  HotelStats,
 } from '../types/hotel';
 import { toast } from 'react-hot-toast';
 

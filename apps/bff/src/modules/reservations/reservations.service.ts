@@ -4,7 +4,7 @@ import { AuditService } from '../../shared/audit/audit.service';
 import { PaginatedResponse } from '../../shared/dto/pagination.dto';
 import { CreateReservationDto, UpdateReservationDto, ReservationFilterDto, CheckInDto, CheckOutDto } from './dto';
 import { ReservationWithDetails, ReservationStats, ConflictCheckResult } from './interfaces';
-import { User, Reservation, ReservationStatus, UnitStatus } from '@prisma/client';
+import { User, Reservation, ReservationStatus, UnitStatus, PaymentStatus } from '@prisma/client';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -107,7 +107,7 @@ export class ReservationsService {
     });
 
     // Update unit status if reservation is confirmed
-    if (createReservationDto.status === 'CONFIRMED') {
+    if (createReservationDto.status === ReservationStatus.CONFIRMED) {
       await this.prisma.unit.update({
         where: { id: unitId },
         data: { status: UnitStatus.RESERVED },
@@ -336,11 +336,11 @@ export class ReservationsService {
       throw new NotFoundException('Reservation not found');
     }
 
-    if (reservation.status === 'CANCELLED') {
+    if (reservation.status === ReservationStatus.CANCELLED) {
       throw new BadRequestException('Reservation is already cancelled');
     }
 
-    if (reservation.status === 'CHECKED_OUT') {
+    if (reservation.status === ReservationStatus.CHECKED_OUT) {
       throw new BadRequestException('Cannot cancel completed reservation');
     }
 
@@ -392,7 +392,7 @@ export class ReservationsService {
       throw new NotFoundException('Reservation not found');
     }
 
-    if (reservation.status !== 'CONFIRMED') {
+    if (reservation.status !== ReservationStatus.CONFIRMED) {
       throw new BadRequestException('Only confirmed reservations can be checked in');
     }
 
@@ -449,7 +449,7 @@ export class ReservationsService {
       throw new NotFoundException('Reservation not found');
     }
 
-    if (reservation.status !== 'CHECKED_IN') {
+    if (reservation.status !== ReservationStatus.CHECKED_IN) {
       throw new BadRequestException('Only checked-in reservations can be checked out');
     }
 
@@ -507,7 +507,7 @@ export class ReservationsService {
     let whereClause: any = {
       unitId,
       propertyId: currentUser.propertyId!,
-      status: { in: ['CONFIRMED', 'CHECKED_IN'] },
+      status: { in: [ReservationStatus.CONFIRMED, ReservationStatus.CHECKED_IN] },
       OR: [
         {
           checkInDate: { lt: checkOutDate },
@@ -538,7 +538,7 @@ export class ReservationsService {
           id: { not: unitId },
           reservations: {
             none: {
-              status: { in: ['CONFIRMED', 'CHECKED_IN'] },
+              status: { in: [ReservationStatus.CONFIRMED, ReservationStatus.CHECKED_IN] },
               OR: [
                 {
                   checkInDate: { lt: checkOutDate },
@@ -576,27 +576,27 @@ export class ReservationsService {
       avgStayResult,
     ] = await Promise.all([
       this.prisma.reservation.count({ where: { propertyId } }),
-      this.prisma.reservation.count({ where: { propertyId, status: 'CONFIRMED' } }),
-      this.prisma.reservation.count({ where: { propertyId, status: 'CHECKED_IN' } }),
-      this.prisma.reservation.count({ where: { propertyId, status: 'CHECKED_OUT' } }),
-      this.prisma.reservation.count({ where: { propertyId, status: 'CANCELLED' } }),
-      this.prisma.reservation.count({ where: { propertyId, status: 'PENDING' } }),
+      this.prisma.reservation.count({ where: { propertyId, status: ReservationStatus.CONFIRMED } }),
+      this.prisma.reservation.count({ where: { propertyId, status: ReservationStatus.CHECKED_IN } }),
+      this.prisma.reservation.count({ where: { propertyId, status: ReservationStatus.CHECKED_OUT } }),
+      this.prisma.reservation.count({ where: { propertyId, status: ReservationStatus.CANCELLED } }),
+      this.prisma.reservation.count({ where: { propertyId, paymentStatus: PaymentStatus.PENDING } }),
       this.prisma.reservation.aggregate({
-        where: { propertyId, status: 'CHECKED_OUT' },
+        where: { propertyId, status: ReservationStatus.CHECKED_OUT },
         _sum: { totalAmount: true },
       }),
       this.prisma.reservation.aggregate({
-        where: { propertyId, status: 'CHECKED_OUT' },
+        where: { propertyId, status: ReservationStatus.CHECKED_OUT },
         _avg: { totalAmount: true },
       }),
       this.prisma.unit.count({
         where: { propertyId, isActive: true, deletedAt: null },
       }),
       this.prisma.unit.count({
-        where: { propertyId, isActive: true, deletedAt: null, status: 'OCCUPIED' },
+        where: { propertyId, isActive: true, deletedAt: null, status: UnitStatus.OCCUPIED },
       }),
       this.prisma.reservation.findMany({
-        where: { propertyId, status: 'CHECKED_OUT' },
+        where: { propertyId, status: ReservationStatus.CHECKED_OUT },
         select: { checkInDate: true, checkOutDate: true },
       }),
     ]);
