@@ -400,6 +400,26 @@ const RolesManagementPage: React.FC = () => {
     }
   };
 
+  // SAFE STATS CALCULATION - Must be before early returns to avoid hooks violation
+  const safeRoleStats = useMemo(() => {
+    try {
+      return {
+        totalRoles: filteredRoles.length,
+        totalAssignments: filteredUserRoles.length,
+        totalUsers: safeUsers.length,
+        unassignedUsers: getUsersWithoutRoles().length
+      };
+    } catch (error) {
+      console.error('[SafeRoleStats] Error calculating stats:', error);
+      return {
+        totalRoles: 0,
+        totalAssignments: 0,
+        totalUsers: 0,
+        unassignedUsers: 0
+      };
+    }
+  }, [filteredRoles, filteredUserRoles, safeUsers]);
+
   // ERROR STATE HANDLER
   const handleErrorDismiss = () => {
     setErrorState(null);
@@ -465,26 +485,6 @@ const RolesManagementPage: React.FC = () => {
       </div>
     );
   }
-
-  // SAFE STATS CALCULATION
-  const safeRoleStats = useMemo(() => {
-    try {
-      return {
-        totalRoles: filteredRoles.length,
-        totalAssignments: filteredUserRoles.length,
-        totalUsers: safeUsers.length,
-        unassignedUsers: getUsersWithoutRoles().length
-      };
-    } catch (error) {
-      console.error('[SafeRoleStats] Error calculating stats:', error);
-      return {
-        totalRoles: 0,
-        totalAssignments: 0,
-        totalUsers: 0,
-        unassignedUsers: 0
-      };
-    }
-  }, [filteredRoles, filteredUserRoles, safeUsers]);
 
   return (
     <div className="space-y-6">
