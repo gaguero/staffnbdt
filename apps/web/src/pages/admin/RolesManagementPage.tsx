@@ -27,20 +27,35 @@ const RolesManagementPage: React.FC = () => {
 
   const users = usersResponse?.data || [];
 
-  // Filter roles based on search
+  // Filter roles based on search with defensive programming
   const filteredRoles = useMemo(() => {
-    if (!roles) return [];
-    return roles.filter(role =>
-      role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      role.description.toLowerCase().includes(searchTerm.toLowerCase())
+    console.log('Roles data debug:', roles, typeof roles, Array.isArray(roles));
+    
+    // Ensure we always have an array
+    const rolesArray = Array.isArray(roles) ? roles : 
+                       (roles?.data && Array.isArray(roles.data)) ? roles.data : [];
+    
+    if (!rolesArray || rolesArray.length === 0) return [];
+    
+    return rolesArray.filter(role =>
+      role?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      role?.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [roles, searchTerm]);
 
-  // Filter user roles based on selected role
+  // Filter user roles based on selected role with defensive programming
   const filteredUserRoles = useMemo(() => {
-    if (!userRoles) return [];
-    if (!selectedRoleFilter) return userRoles;
-    return userRoles.filter(userRole => userRole.roleId === selectedRoleFilter);
+    console.log('UserRoles data debug:', userRoles, typeof userRoles, Array.isArray(userRoles));
+    
+    // Ensure we always have an array
+    const userRolesArray = Array.isArray(userRoles) ? userRoles : 
+                          (userRoles?.data && Array.isArray(userRoles.data)) ? userRoles.data : [];
+    
+    if (!userRolesArray || userRolesArray.length === 0) return [];
+    
+    if (!selectedRoleFilter) return userRolesArray;
+    
+    return userRolesArray.filter(userRole => userRole?.roleId === selectedRoleFilter);
   }, [userRoles, selectedRoleFilter]);
 
   const handleRoleClick = (role: Role) => {
@@ -72,7 +87,11 @@ const RolesManagementPage: React.FC = () => {
   };
 
   const getUsersWithoutRoles = () => {
-    const assignedUserIds = new Set(userRoles?.map(ur => ur.userId) || []);
+    // Ensure userRoles is an array before mapping
+    const userRolesArray = Array.isArray(userRoles) ? userRoles : 
+                          (userRoles?.data && Array.isArray(userRoles.data)) ? userRoles.data : [];
+    
+    const assignedUserIds = new Set(userRolesArray.map(ur => ur?.userId).filter(Boolean));
     return users.filter((user: any) => !assignedUserIds.has(user.id));
   };
 
@@ -229,11 +248,15 @@ const RolesManagementPage: React.FC = () => {
                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Roles</option>
-                  {roles?.map(role => (
+                  {Array.isArray(roles) ? roles.map(role => (
                     <option key={role.id} value={role.id}>
                       {role.name}
                     </option>
-                  ))}
+                  )) : (roles?.data && Array.isArray(roles.data)) ? roles.data.map(role => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  )) : null}
                 </select>
               </div>
               <PermissionGate resource="role" action="assign">
@@ -385,17 +408,23 @@ const RolesManagementPage: React.FC = () => {
                   <select
                     value={selectedRole?.id || ''}
                     onChange={(e) => {
-                      const role = roles?.find(r => r.id === e.target.value);
+                      const rolesArray = Array.isArray(roles) ? roles : 
+                                        (roles?.data && Array.isArray(roles.data)) ? roles.data : [];
+                      const role = rolesArray.find(r => r.id === e.target.value);
                       setSelectedRole(role || null);
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select role</option>
-                    {roles?.map(role => (
+                    {Array.isArray(roles) ? roles.map(role => (
                       <option key={role.id} value={role.id}>
                         {role.name} (Level {role.level})
                       </option>
-                    ))}
+                    )) : (roles?.data && Array.isArray(roles.data)) ? roles.data.map(role => (
+                      <option key={role.id} value={role.id}>
+                        {role.name} (Level {role.level})
+                      </option>
+                    )) : null}
                   </select>
                 </div>
               </div>
