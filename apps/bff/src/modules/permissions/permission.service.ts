@@ -247,6 +247,25 @@ export class PermissionService implements OnModuleInit {
         ...context,
       };
 
+      // Get user with roles and permissions first to check for PLATFORM_ADMIN
+      const user = await this.getUserWithRoles(userId);
+      if (!user) {
+        return { allowed: false, reason: 'User not found', source: 'default' };
+      }
+
+      // PLATFORM_ADMIN has unrestricted access - bypass all permission checks
+      if (user.role === 'PLATFORM_ADMIN') {
+        this.logger.debug(`PLATFORM_ADMIN user ${userId} granted unrestricted access to ${resource}.${action}.${scope}`);
+        const result: PermissionEvaluationResult = {
+          allowed: true,
+          reason: 'PLATFORM_ADMIN has unrestricted access',
+          source: 'platform_admin',
+        };
+        // Cache the result for performance
+        await this.cachePermissionResult(this.generatePermissionCacheKey(userId, resource, action, scope, context), result, evaluationContext, resource, action, scope);
+        return result;
+      }
+
       // Check cache first
       const cacheKey = this.generatePermissionCacheKey(userId, resource, action, scope, context);
       const cached = await this.getCachedPermission(cacheKey);
@@ -257,12 +276,6 @@ export class PermissionService implements OnModuleInit {
           source: 'cached',
           ttl: Math.floor((cached.expiresAt.getTime() - Date.now()) / 1000),
         };
-      }
-
-      // Get user with roles and permissions
-      const user = await this.getUserWithRoles(userId);
-      if (!user) {
-        return { allowed: false, reason: 'User not found', source: 'default' };
       }
 
       // Find the specific permission
