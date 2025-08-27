@@ -9,7 +9,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import PermissionGate from '../../components/PermissionGate';
 
 // BULLETPROOF UTILITY FUNCTIONS
-const extractSafeArray = <T>(data: any, fallback: T[] = []): T[] => {
+const extractSafeArray = <T,>(data: any, fallback: T[] = []): T[] => {
   try {
     // Direct array check
     if (Array.isArray(data)) {
@@ -56,7 +56,7 @@ const extractSafeArray = <T>(data: any, fallback: T[] = []): T[] => {
   }
 };
 
-const safeFilter = <T>(array: any, predicate: (item: T) => boolean, fallback: T[] = []): T[] => {
+const safeFilter = <T,>(array: any, predicate: (item: T) => boolean, fallback: T[] = []): T[] => {
   try {
     const safeArray = extractSafeArray<T>(array, fallback);
     if (safeArray.length === 0) return fallback;
@@ -100,7 +100,7 @@ const safeMap = <T, R>(array: any, mapper: (item: T) => R, fallback: R[] = []): 
   }
 };
 
-const safeFind = <T>(array: any, predicate: (item: T) => boolean): T | undefined => {
+const safeFind = <T,>(array: any, predicate: (item: T) => boolean): T | undefined => {
   try {
     const safeArray = extractSafeArray<T>(array, []);
     return safeArray.find((item: T) => {
