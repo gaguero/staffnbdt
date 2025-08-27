@@ -167,22 +167,31 @@ export class PermissionService implements OnModuleInit {
 
       // Get permissions from legacy role
       const legacyRolePermissions = await this.getLegacyRolePermissions(user.role);
+      this.logger.log(`User ${userId} with legacy role ${user.role} gets ${legacyRolePermissions.length} permissions from legacy system`);
+      
       legacyRolePermissions.forEach(permission => {
         permissions.set(permission.id, permission);
       });
+      
+      this.logger.debug(`After legacy role permissions: user has ${permissions.size} total permissions`);
 
       // Get permissions from custom roles
       for (const userRole of user.userCustomRoles) {
         if (!userRole.isActive || (userRole.expiresAt && userRole.expiresAt < new Date())) {
+          this.logger.debug(`Skipping inactive/expired custom role: ${userRole.role.name}`);
           continue;
         }
 
+        this.logger.debug(`Processing custom role: ${userRole.role.name} with ${userRole.role.permissions.length} role permissions`);
+        
         for (const rolePermission of userRole.role.permissions) {
           if (rolePermission.granted && rolePermission.permission) {
             permissions.set(rolePermission.permission.id, rolePermission.permission);
           }
         }
       }
+      
+      this.logger.debug(`After custom role permissions: user has ${permissions.size} total permissions`);
 
       // Apply direct user permission overrides
       for (const userPermission of user.userPermissions) {
@@ -199,6 +208,11 @@ export class PermissionService implements OnModuleInit {
       }
 
       const result = Array.from(permissions.values());
+      
+      // Log final result for debugging
+      const rolePermissions = result.filter(p => p.resource === 'role');
+      this.logger.log(`User ${userId} final permissions: ${result.length} total, ${rolePermissions.length} role-related permissions`);
+      this.logger.debug(`Role permissions: ${rolePermissions.map(p => `${p.resource}.${p.action}.${p.scope}`).join(', ')}`);
 
       // Cache the result
       await this.cacheUserPermissions(cacheKey, result);
@@ -1017,6 +1031,8 @@ export class PermissionService implements OnModuleInit {
       return [];
     }
     
+    this.logger.debug(`Getting legacy role permissions for role: ${role}`);
+    
     // This would map legacy roles to permissions
     // Implementation depends on how you want to handle backwards compatibility
     const rolePermissionMapping: Record<Role, string[]> = {
@@ -1031,23 +1047,101 @@ export class PermissionService implements OnModuleInit {
     const permissionPatterns = rolePermissionMapping[role] || [];
     if (permissionPatterns.includes('*.*.*')) {
       try {
-        // Return all permissions for platform admin
-        return this.prisma.permission.findMany({ where: { isSystem: true } });
+        // FIXED: Return ALL permissions for PLATFORM_ADMIN, not just isSystem=true
+        const allPermissions = await this.prisma.permission.findMany();
+        this.logger.log(`PLATFORM_ADMIN: Retrieved ${allPermissions.length} permissions (all permissions in system)`);
+        
+        // Also log what permissions we're returning for debugging
+        const rolePermissions = allPermissions.filter(p => p.resource === 'role');
+        this.logger.debug(`PLATFORM_ADMIN role permissions: ${rolePermissions.map(p => `${p.resource}.${p.action}.${p.scope}`).join(', ')}`);
+        
+        return allPermissions;
       } catch (error) {
-        this.logger.warn('Error fetching permissions for platform admin:', error);
+        this.logger.error('Error fetching permissions for PLATFORM_ADMIN:', error);
         return [];
       }
     }
 
-    // For other roles, you'd implement pattern matching
-    // This is a simplified implementation
-    return [];
+    // For other roles, implement pattern matching based on scope
+    try {
+      const scopePermissions: Permission[] = [];
+      
+      for (const pattern of permissionPatterns) {
+        const [resource, action, scope] = pattern.split('.');
+        
+        let whereClause: any = {};
+        
+        // Handle wildcard patterns
+        if (resource !== '*') whereClause.resource = resource;
+        if (action !== '*') whereClause.action = action;
+        if (scope !== '*') whereClause.scope = scope;
+        
+        const permissions = await this.prisma.permission.findMany({ where: whereClause });
+        scopePermissions.push(...permissions);
+      }
+      
+      // Remove duplicates
+      const uniquePermissions = Array.from(new Map(scopePermissions.map(p => [p.id, p])).values());
+      this.logger.debug(`Role ${role}: Retrieved ${uniquePermissions.length} permissions`);
+      
+      return uniquePermissions;
+    } catch (error) {
+      this.logger.error(`Error fetching permissions for role ${role}:`, error);
+      return [];
+    }
   }
 
   private async checkLegacyRolePermission(role: Role, permissionId: string): Promise<boolean> {
-    // Implement legacy role permission checking logic
-    // This is a placeholder - implement based on your needs
-    return false;
+    this.logger.debug(`Checking legacy role permission: role=${role}, permissionId=${permissionId}`);
+    
+    // PLATFORM_ADMIN gets access to ALL permissions
+    if (role === Role.PLATFORM_ADMIN) {
+      this.logger.debug(`PLATFORM_ADMIN granted access to permission ${permissionId}`);
+      return true;
+    }
+    
+    // For other roles, check if they have the specific permission based on scope
+    try {
+      const permission = await this.prisma.permission.findUnique({
+        where: { id: permissionId }
+      });
+      
+      if (!permission) {
+        this.logger.debug(`Permission ${permissionId} not found`);
+        return false;
+      }
+      
+      const rolePermissionMapping: Record<Role, string[]> = {
+        [Role.PLATFORM_ADMIN]: ['*.*.*'], // All permissions
+        [Role.ORGANIZATION_OWNER]: ['*.*.organization', '*.*.property'],
+        [Role.ORGANIZATION_ADMIN]: ['*.*.organization'],
+        [Role.PROPERTY_MANAGER]: ['*.*.property', '*.*.department'],
+        [Role.DEPARTMENT_ADMIN]: ['*.*.department', '*.*.own'],
+        [Role.STAFF]: ['*.*.own'],
+      };
+      
+      const permissionPatterns = rolePermissionMapping[role] || [];
+      
+      // Check if permission matches any of the role's patterns
+      for (const pattern of permissionPatterns) {
+        const [resourcePattern, actionPattern, scopePattern] = pattern.split('.');
+        
+        const resourceMatch = resourcePattern === '*' || resourcePattern === permission.resource;
+        const actionMatch = actionPattern === '*' || actionPattern === permission.action;
+        const scopeMatch = scopePattern === '*' || scopePattern === permission.scope;
+        
+        if (resourceMatch && actionMatch && scopeMatch) {
+          this.logger.debug(`Role ${role} granted access to ${permission.resource}.${permission.action}.${permission.scope} via pattern ${pattern}`);
+          return true;
+        }
+      }
+      
+      this.logger.debug(`Role ${role} denied access to ${permission.resource}.${permission.action}.${permission.scope}`);
+      return false;
+    } catch (error) {
+      this.logger.error(`Error checking legacy role permission:`, error);
+      return false;
+    }
   }
 
   private async evaluatePermissionConditions(
