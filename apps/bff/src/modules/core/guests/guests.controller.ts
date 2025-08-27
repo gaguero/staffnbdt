@@ -10,7 +10,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
-import { PermissionGuard, RequirePermissions } from '../../permissions/guards/permission.guard';
+import { PermissionGuard } from '../../permissions/guards/permission.guard';
+import { RequirePermission } from '../../../shared/decorators/require-permission.decorator';
 import { Role } from '@prisma/client';
 import { GuestsService } from './guests.service';
 import { CreateGuestDto, UpdateGuestDto, GuestFilterDto } from './dto';
@@ -21,19 +22,19 @@ export class GuestsController {
   constructor(private readonly guestsService: GuestsService) {}
 
   @Post()
-  @RequirePermissions('guest.create.property')
+  @RequirePermission('guest.create.property')
   create(@Body() createGuestDto: CreateGuestDto) {
     return this.guestsService.create(createGuestDto);
   }
 
   @Get()
-  @RequirePermissions('guest.read.property')
+  @RequirePermission('guest.read.property')
   findAll(@Query() filters: GuestFilterDto) {
     return this.guestsService.findAll(filters);
   }
 
   @Get('search')
-  @RequirePermissions('guest.read.property')
+  @RequirePermission('guest.read.property')
   searchGuests(
     @Query('q') query: string,
     @Query('organizationId') organizationId?: string,
@@ -42,25 +43,25 @@ export class GuestsController {
   }
 
   @Get(':id')
-  @RequirePermissions('guest.read.property')
+  @RequirePermission('guest.read.property')
   findOne(@Param('id') id: string) {
     return this.guestsService.findOne(id);
   }
 
   @Get(':id/history')
-  @RequirePermissions('guest.read.property')
+  @RequirePermission('guest.read.property')
   getGuestHistory(@Param('id') id: string) {
     return this.guestsService.getGuestHistory(id);
   }
 
   @Patch(':id')
-  @RequirePermissions('guest.update.property')
+  @RequirePermission('guest.update.property')
   update(@Param('id') id: string, @Body() updateGuestDto: UpdateGuestDto) {
     return this.guestsService.update(id, updateGuestDto);
   }
 
   @Delete(':id')
-  @RequirePermissions('guest.delete.property')
+  @RequirePermission('guest.delete.property')
   remove(@Param('id') id: string) {
     return this.guestsService.remove(id);
   }
