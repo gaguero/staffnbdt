@@ -259,7 +259,7 @@ export class PermissionService implements OnModuleInit {
         const result: PermissionEvaluationResult = {
           allowed: true,
           reason: 'PLATFORM_ADMIN has unrestricted access',
-          source: 'platform_admin',
+          source: 'role',
         };
         // Cache the result for performance
         await this.cachePermissionResult(this.generatePermissionCacheKey(userId, resource, action, scope, context), result, evaluationContext, resource, action, scope);
