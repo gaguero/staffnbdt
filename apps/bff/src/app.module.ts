@@ -40,6 +40,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { UnitsModule } from './modules/units/units.module';
 import { GuestsModule } from './modules/guests/guests.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
+import { RolesModule } from './modules/roles/roles.module';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
     UnitsModule,
     GuestsModule,
     ReservationsModule,
+    RolesModule,
   ],
   controllers: [],
   providers: [
