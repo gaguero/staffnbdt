@@ -10,34 +10,30 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../shared/guards/roles.guard';
-import { Roles } from '../../../shared/decorators/roles.decorator';
+import { PermissionGuard, RequirePermissions } from '../../permissions/guards/permission.guard';
 import { Role } from '@prisma/client';
 import { GuestsService } from './guests.service';
 import { CreateGuestDto, UpdateGuestDto, GuestFilterDto } from './dto';
 
 @Controller('api/core/guests')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class GuestsController {
   constructor(private readonly guestsService: GuestsService) {}
 
   @Post()
-  @Roles(
-    Role.PLATFORM_ADMIN,
-    Role.PROPERTY_MANAGER,
-    Role.ORGANIZATION_ADMIN,
-    Role.DEPARTMENT_ADMIN,
-  )
+  @RequirePermissions('guest.create.property')
   create(@Body() createGuestDto: CreateGuestDto) {
     return this.guestsService.create(createGuestDto);
   }
 
   @Get()
+  @RequirePermissions('guest.read.property')
   findAll(@Query() filters: GuestFilterDto) {
     return this.guestsService.findAll(filters);
   }
 
   @Get('search')
+  @RequirePermissions('guest.read.property')
   searchGuests(
     @Query('q') query: string,
     @Query('organizationId') organizationId?: string,
@@ -46,28 +42,25 @@ export class GuestsController {
   }
 
   @Get(':id')
+  @RequirePermissions('guest.read.property')
   findOne(@Param('id') id: string) {
     return this.guestsService.findOne(id);
   }
 
   @Get(':id/history')
+  @RequirePermissions('guest.read.property')
   getGuestHistory(@Param('id') id: string) {
     return this.guestsService.getGuestHistory(id);
   }
 
   @Patch(':id')
-  @Roles(
-    Role.PLATFORM_ADMIN,
-    Role.PROPERTY_MANAGER,
-    Role.ORGANIZATION_ADMIN,
-    Role.DEPARTMENT_ADMIN,
-  )
+  @RequirePermissions('guest.update.property')
   update(@Param('id') id: string, @Body() updateGuestDto: UpdateGuestDto) {
     return this.guestsService.update(id, updateGuestDto);
   }
 
   @Delete(':id')
-  @Roles(Role.PLATFORM_ADMIN, Role.PROPERTY_MANAGER, Role.ORGANIZATION_ADMIN)
+  @RequirePermissions('guest.delete.property')
   remove(@Param('id') id: string) {
     return this.guestsService.remove(id);
   }
