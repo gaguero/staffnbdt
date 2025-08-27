@@ -112,7 +112,7 @@ export function useUpdateRoomStatus() {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) => 
       hotelService.updateRoomStatus(id, status),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: hotelQueryKeys.rooms() });
       queryClient.invalidateQueries({ queryKey: hotelQueryKeys.room(variables.id) });
       toast.success('Room status updated successfully');
@@ -171,7 +171,7 @@ export function useUpdateGuest() {
   return useMutation({
     mutationFn: ({ id, guest }: { id: string; guest: Partial<CreateGuestInput> }) => 
       hotelService.updateGuest(id, guest),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: hotelQueryKeys.guests() });
       queryClient.invalidateQueries({ queryKey: hotelQueryKeys.guest(variables.id) });
       toast.success('Guest updated successfully');
@@ -222,7 +222,7 @@ export function useUpdateReservation() {
   return useMutation({
     mutationFn: ({ id, reservation }: { id: string; reservation: Partial<CreateReservationInput> }) => 
       hotelService.updateReservation(id, reservation),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: hotelQueryKeys.reservations() });
       queryClient.invalidateQueries({ queryKey: hotelQueryKeys.reservation(variables.id) });
       queryClient.invalidateQueries({ queryKey: hotelQueryKeys.stats() });

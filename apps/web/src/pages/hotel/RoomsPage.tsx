@@ -30,12 +30,12 @@ const RoomsPage: React.FC = () => {
     { value: 'RESERVED', label: 'Reserved', color: 'text-orange-600' },
   ];
 
-  const housekeepingOptions: { value: HousekeepingStatus; label: string }[] = [
-    { value: 'CLEAN', label: 'Clean' },
-    { value: 'DIRTY', label: 'Dirty' },
-    { value: 'INSPECTED', label: 'Inspected' },
-    { value: 'OUT_OF_ORDER', label: 'Out of Order' },
-  ];
+  // const housekeepingOptions: { value: HousekeepingStatus; label: string }[] = [
+  //   { value: 'CLEAN', label: 'Clean' },
+  //   { value: 'DIRTY', label: 'Dirty' },
+  //   { value: 'INSPECTED', label: 'Inspected' },
+  //   { value: 'OUT_OF_ORDER', label: 'Out of Order' },
+  // ];
 
   // Stats
   const stats = useMemo(() => {

@@ -73,7 +73,7 @@ const RolesManagementPage: React.FC = () => {
 
   const getUsersWithoutRoles = () => {
     const assignedUserIds = new Set(userRoles?.map(ur => ur.userId) || []);
-    return users.filter(user => !assignedUserIds.has(user.id));
+    return users.filter((user: any) => !assignedUserIds.has(user.id));
   };
 
   if (rolesLoading || userRolesLoading) {
@@ -370,7 +370,7 @@ const RolesManagementPage: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select user</option>
-                    {users.map(user => (
+                    {users.map((user: any) => (
                       <option key={user.id} value={user.id}>
                         {user.firstName} {user.lastName} ({user.email})
                       </option>

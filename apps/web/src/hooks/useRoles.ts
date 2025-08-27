@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { roleService, Role, UserRole, Permission, CreateRoleInput, UpdateRoleInput, RoleAssignment } from '../services/roleService';
+import { roleService, CreateRoleInput, UpdateRoleInput, RoleAssignment } from '../services/roleService';
 import { toast } from 'react-hot-toast';
 
 // Query Keys
@@ -54,7 +54,7 @@ export function useUpdateRole() {
   return useMutation({
     mutationFn: ({ id, role }: { id: string; role: UpdateRoleInput }) => 
       roleService.updateRole(id, role),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: roleQueryKeys.roles() });
       queryClient.invalidateQueries({ queryKey: roleQueryKeys.role(variables.id) });
       queryClient.invalidateQueries({ queryKey: roleQueryKeys.userRoles() });
@@ -114,7 +114,7 @@ export function useAssignRole() {
   
   return useMutation({
     mutationFn: (assignment: RoleAssignment) => roleService.assignRole(assignment),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: roleQueryKeys.userRoles() });
       queryClient.invalidateQueries({ queryKey: roleQueryKeys.userRoles(variables.userId) });
       queryClient.invalidateQueries({ queryKey: roleQueryKeys.roles() });
