@@ -69,7 +69,7 @@ export interface PaginatedResponse<T> {
 class RoleService {
   // Role Management
   async getRoles(): Promise<ApiResponse<Role[]>> {
-    const response = await api.get('/roles');
+    const response = await api.get('/roles?includeSystemRoles=true');
     return response.data;
   }
 
