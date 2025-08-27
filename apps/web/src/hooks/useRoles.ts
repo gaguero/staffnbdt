@@ -89,6 +89,10 @@ export function usePermissions() {
     queryKey: roleQueryKeys.permissions(),
     queryFn: () => roleService.getAllPermissions(),
     select: (data) => data.data,
+    retry: false, // Don't retry 404s
+    onError: (error: any) => {
+      console.warn('Permissions endpoint not available:', error.response?.status);
+    },
   });
 }
 
@@ -97,6 +101,10 @@ export function usePermissionsByResource() {
     queryKey: roleQueryKeys.permissionsByResource(),
     queryFn: () => roleService.getPermissionsByResource(),
     select: (data) => data.data,
+    retry: false, // Don't retry 404s
+    onError: (error: any) => {
+      console.warn('Permissions by resource endpoint not available:', error.response?.status);
+    },
   });
 }
 

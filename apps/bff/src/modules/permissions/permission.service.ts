@@ -1252,6 +1252,50 @@ export class PermissionService implements OnModuleInit {
   }
 
   /**
+   * Get all permissions
+   */
+  async getAllPermissions(): Promise<Permission[]> {
+    try {
+      const permissions = await this.prisma.permission.findMany({
+        orderBy: [
+          { resource: 'asc' },
+          { action: 'asc' },
+          { scope: 'asc' },
+        ],
+      });
+
+      return permissions;
+    } catch (error) {
+      this.logger.error('Error getting all permissions:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get permissions grouped by resource
+   */
+  async getPermissionsByResource(): Promise<Record<string, Permission[]>> {
+    try {
+      const permissions = await this.getAllPermissions();
+      
+      // Group permissions by resource
+      const permissionsByResource = permissions.reduce((acc, permission) => {
+        const resource = permission.resource;
+        if (!acc[resource]) {
+          acc[resource] = [];
+        }
+        acc[resource].push(permission);
+        return acc;
+      }, {} as Record<string, Permission[]>);
+
+      return permissionsByResource;
+    } catch (error) {
+      this.logger.error('Error getting permissions by resource:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get permission system status for debugging
    */
   async getSystemStatus(): Promise<{

@@ -281,6 +281,44 @@ export class PermissionController {
     );
   }
 
+  @Get('by-resource')
+  @ApiOperation({ summary: 'Get all permissions grouped by resource' })
+  @ApiResponse({
+    status: 200,
+    description: 'Permissions grouped by resource retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        user: { type: 'array', items: { type: 'object' } },
+        role: { type: 'array', items: { type: 'object' } },
+        organization: { type: 'array', items: { type: 'object' } },
+      },
+    },
+  })
+  async getPermissionsByResource() {
+    const permissionsByResource = await this.permissionService.getPermissionsByResource();
+    return {
+      success: true,
+      data: permissionsByResource,
+      message: 'Permissions by resource retrieved successfully'
+    };
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all permissions' })
+  @ApiResponse({
+    status: 200,
+    description: 'All permissions retrieved successfully',
+  })
+  async getAllPermissions() {
+    const permissions = await this.permissionService.getAllPermissions();
+    return {
+      success: true,
+      data: permissions,
+      message: 'All permissions retrieved successfully'
+    };
+  }
+
   @Get('system/status')
   @ApiOperation({ summary: 'Get permission system status for debugging' })
   @ApiResponse({ 
