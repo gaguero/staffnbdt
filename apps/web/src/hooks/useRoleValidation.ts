@@ -9,7 +9,6 @@ import {
   RoleLevel
 } from '../types/permissionEditor';
 import { Permission } from '../types/permission';
-import { Role } from '../../../packages/types/enums';
 
 interface UseRoleValidationOptions {
   enableRealTimeValidation?: boolean;
@@ -22,9 +21,11 @@ export function useRoleValidation(options: UseRoleValidationOptions = {}) {
   const {
     enableRealTimeValidation = true,
     strictMode = false,
-    customRules = [],
-    context = 'creation'
+    customRules = []
   } = options;
+  // Note: enableRealTimeValidation and strictMode are not used but kept for API compatibility
+  void enableRealTimeValidation; // Suppress unused variable warning
+  void strictMode; // Suppress unused variable warning
 
   // Core validation rules
   const coreValidationRules: ValidationRule[] = useMemo(() => [
@@ -32,7 +33,7 @@ export function useRoleValidation(options: UseRoleValidationOptions = {}) {
     {
       name: 'required-fields',
       severity: 'error',
-      check: (permissions: Permission[], role: RoleConfiguration): ValidationResult => {
+      check: (_permissions: Permission[], role: RoleConfiguration): ValidationResult => {
         const errors: ValidationError[] = [];
         
         if (!role.name?.trim()) {
@@ -85,7 +86,7 @@ export function useRoleValidation(options: UseRoleValidationOptions = {}) {
     {
       name: 'permission-consistency',
       severity: 'warning',
-      check: (permissions: Permission[], role: RoleConfiguration): ValidationResult => {
+      check: (permissions: Permission[], _role: RoleConfiguration): ValidationResult => {
         const errors: ValidationError[] = [];
         const suggestions: ValidationSuggestion[] = [];
 
@@ -181,7 +182,7 @@ export function useRoleValidation(options: UseRoleValidationOptions = {}) {
     {
       name: 'permission-conflicts',
       severity: 'error',
-      check: (permissions: Permission[], role: RoleConfiguration): ValidationResult => {
+      check: (permissions: Permission[], _role: RoleConfiguration): ValidationResult => {
         const errors: ValidationError[] = [];
         const suggestions: ValidationSuggestion[] = [];
 
@@ -253,7 +254,7 @@ export function useRoleValidation(options: UseRoleValidationOptions = {}) {
         // Analyze resource coverage
         const resourceGroups = groupPermissionsByResource(permissions);
         const incompleteResources = Object.entries(resourceGroups).filter(
-          ([resource, perms]) => {
+          ([_resource, perms]) => {
             const actions = perms.map(p => p.action);
             // Check if resource has read but no write permissions (might be intentional)
             return actions.includes('read') && 
@@ -263,7 +264,7 @@ export function useRoleValidation(options: UseRoleValidationOptions = {}) {
         );
 
         if (incompleteResources.length > 0) {
-          incompleteResources.forEach(([resource, perms]) => {
+          incompleteResources.forEach(([resource, _perms]) => {
             suggestions.push({
               type: 'add-permission',
               message: `Consider adding write permissions for ${resource} resource`,
@@ -426,7 +427,7 @@ export function useRoleValidation(options: UseRoleValidationOptions = {}) {
   // Generate suggestions based on role analysis
   const generateSuggestions = useCallback((
     permissions: Permission[],
-    role: RoleConfiguration
+    _role: RoleConfiguration
   ): ValidationSuggestion[] => {
     const suggestions: ValidationSuggestion[] = [];
 
@@ -555,10 +556,10 @@ function findMissingCommonPermissions(permissions: Permission[], role: RoleConfi
     ]
   };
 
-  const expectedPermissions = commonPermissionSets[role.level] || [];
+  const expectedPermissions = commonPermissionSets[role.level as keyof typeof commonPermissionSets] || [];
   const existingPermissionStrings = permissions.map(p => `${p.resource}.${p.action}.${p.scope}`);
   
-  return expectedPermissions.filter(expected => 
+  return expectedPermissions.filter((expected: string) => 
     !existingPermissionStrings.includes(expected)
   );
 }

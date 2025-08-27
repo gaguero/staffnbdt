@@ -90,6 +90,16 @@ export type Permission =
   | 'notifications:write'
   | 'audit:read';
 
+// Role enum for permissions
+export enum Role {
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
+  ORGANIZATION_OWNER = 'ORGANIZATION_OWNER',
+  ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN',
+  PROPERTY_MANAGER = 'PROPERTY_MANAGER',
+  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',
+  STAFF = 'STAFF'
+}
+
 export type RolePermissions = {
   [key in Role]: Permission[];
 };

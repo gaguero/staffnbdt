@@ -10,7 +10,7 @@ import {
   RoleAssignmentHistoryProps,
   AdminActivityHistoryProps,
 } from '../types/roleHistory';
-import { apiClient } from './api';
+import api from './api';
 
 class RoleHistoryService {
   private baseURL = '/api/roles/history';
@@ -20,7 +20,7 @@ class RoleHistoryService {
    */
   async getHistory(filters: RoleHistoryFilter = {}): Promise<RoleHistoryResponse> {
     const params = this.buildQueryParams(filters);
-    const response = await apiClient.get(`${this.baseURL}?${params}`);
+    const response = await api.get(`${this.baseURL}?${params}`);
     return response.data;
   }
 
@@ -46,7 +46,7 @@ class RoleHistoryService {
       queryParams.append('maxEntries', params.maxEntries.toString());
     }
 
-    const response = await apiClient.get(`${this.baseURL}/user/${userId}?${queryParams}`);
+    const response = await api.get(`${this.baseURL}/user/${userId}?${queryParams}`);
     return response.data;
   }
 
@@ -72,7 +72,7 @@ class RoleHistoryService {
       queryParams.append('maxEntries', params.maxEntries.toString());
     }
 
-    const response = await apiClient.get(`${this.baseURL}/role/${roleId}/assignments?${queryParams}`);
+    const response = await api.get(`${this.baseURL}/role/${roleId}/assignments?${queryParams}`);
     return response.data;
   }
 
@@ -103,7 +103,7 @@ class RoleHistoryService {
       ? `${this.baseURL}/admin/${adminId}/activity`
       : `${this.baseURL}/admin/activity`;
 
-    const response = await apiClient.get(`${endpoint}?${queryParams}`);
+    const response = await api.get(`${endpoint}?${queryParams}`);
     return response.data;
   }
 
@@ -111,7 +111,7 @@ class RoleHistoryService {
    * Get role history analytics and trends
    */
   async getAnalytics(): Promise<RoleHistoryAnalytics> {
-    const response = await apiClient.get(`${this.baseURL}/analytics`);
+    const response = await api.get(`${this.baseURL}/analytics`);
     return response.data;
   }
 
@@ -125,7 +125,7 @@ class RoleHistoryService {
     total: number;
   }> {
     const params = this.buildQueryParams(filters);
-    const response = await apiClient.get(`${this.baseURL}/timeline/${timeframe}?${params}`);
+    const response = await api.get(`${this.baseURL}/timeline/${timeframe}?${params}`);
     return response.data;
   }
 
@@ -134,7 +134,7 @@ class RoleHistoryService {
    */
   async getBulkOperationsHistory(filters: RoleHistoryFilter = {}): Promise<RoleHistoryResponse> {
     const params = this.buildQueryParams(filters);
-    const response = await apiClient.get(`${this.baseURL}/bulk-operations?${params}`);
+    const response = await api.get(`${this.baseURL}/bulk-operations?${params}`);
     return response.data;
   }
 
@@ -149,7 +149,7 @@ class RoleHistoryService {
     recommendations: any[];
     auditTrail: boolean;
   }> {
-    const response = await apiClient.get(`${this.baseURL}/compliance-report`);
+    const response = await api.get(`${this.baseURL}/compliance-report`);
     return response.data;
   }
 
@@ -162,7 +162,7 @@ class RoleHistoryService {
     relevanceScored: boolean;
   }> {
     const params = this.buildQueryParams(filters);
-    const response = await apiClient.get(`${this.baseURL}/search?${params}`);
+    const response = await api.get(`${this.baseURL}/search?${params}`);
     return response.data;
   }
 
@@ -170,7 +170,7 @@ class RoleHistoryService {
    * Export role assignment history
    */
   async exportHistory(options: HistoryExportOptions): Promise<ExportResult> {
-    const response = await apiClient.post(`${this.baseURL}/export`, options, {
+    const response = await api.post(`${this.baseURL}/export`, options, {
       responseType: 'json',
     });
     return response.data;
@@ -180,7 +180,7 @@ class RoleHistoryService {
    * Rollback a role assignment operation
    */
   async rollbackAssignment(operation: RollbackOperation): Promise<RollbackResult> {
-    const response = await apiClient.post(`${this.baseURL}/rollback`, operation);
+    const response = await api.post(`${this.baseURL}/rollback`, operation);
     return response.data;
   }
 
@@ -221,7 +221,7 @@ class RoleHistoryService {
     topActions: Array<{ action: string; count: number }>;
     hourlyActivity: Array<{ hour: number; count: number }>;
   }> {
-    const response = await apiClient.get(`${this.baseURL}/stats?timeRange=${timeRange}`);
+    const response = await api.get(`${this.baseURL}/stats?timeRange=${timeRange}`);
     return response.data;
   }
 

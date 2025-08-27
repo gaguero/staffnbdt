@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserRoleMatrix } from '../components/UserRoleMatrix';
 import { PermissionGate } from '../components/PermissionGate';
+import { MatrixUser } from '../types/userRoleMatrix';
 import { toast } from 'react-hot-toast';
 
 const UserRoleMatrixPage: React.FC = () => {
@@ -59,7 +60,7 @@ const UserRoleMatrixPage: React.FC = () => {
   
   const matrixConfiguration = {
     search: {
-      searchFields: ['firstName', 'lastName', 'email'] as const,
+      searchFields: ['firstName', 'lastName', 'email'] as (keyof MatrixUser)[],
       fuzzySearch: true,
       highlightMatches: true,
       debounceMs: 300,

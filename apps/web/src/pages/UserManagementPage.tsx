@@ -5,9 +5,7 @@ import { departmentService, Department } from '../services/departmentService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import RoleBadge from '../components/RoleBadge';
 import { PermissionGate, RoleBasedComponent } from '../components';
-import { UserRoleSection, QuickRoleSelector } from '../components/UserRoleManagement';
 import { COMMON_PERMISSIONS } from '../types/permission';
-import { useUserRoleManagement } from '../hooks/useUserRoleManagement';
 
 const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();

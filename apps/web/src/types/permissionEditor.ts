@@ -1,7 +1,16 @@
 // Permission Editor types and interfaces
 import { Permission, PermissionContext } from './permission';
-import { Role } from '../../../packages/types/enums';
 import { PermissionFilter } from './permissionViewer';
+
+// Local Role enum definition
+export enum Role {
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
+  ORGANIZATION_OWNER = 'ORGANIZATION_OWNER',
+  ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN',
+  PROPERTY_MANAGER = 'PROPERTY_MANAGER',
+  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',
+  STAFF = 'STAFF'
+}
 
 export interface PermissionEditorState {
   mode: 'create' | 'edit' | 'view' | 'clone';
@@ -421,7 +430,7 @@ export const EDITOR_VALIDATION_RULES: ValidationRule[] = [
   {
     name: 'required-fields',
     severity: 'error',
-    check: (permissions, role) => ({
+    check: (_permissions, role) => ({
       isValid: !!(role.name && role.description),
       errors: [
         ...(role.name ? [] : [{ type: 'error' as const, field: 'name', code: 'required', message: 'Role name is required' }]),
@@ -433,7 +442,7 @@ export const EDITOR_VALIDATION_RULES: ValidationRule[] = [
   {
     name: 'permission-conflicts',
     severity: 'warning',
-    check: (permissions, role) => {
+    check: (_permissions: Permission[], _role: RoleConfiguration) => {
       const conflicts: ValidationError[] = [];
       // Add conflict detection logic here
       return {

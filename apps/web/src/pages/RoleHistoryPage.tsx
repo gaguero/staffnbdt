@@ -1,8 +1,18 @@
 import React from 'react';
 import { RoleHistoryDashboard } from '../components/RoleHistory';
 import { PermissionGate } from '../components/PermissionGate';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
+
+// Simple Alert components since ui/alert doesn't exist
+const Alert: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+  <div className={`border border-yellow-400 bg-yellow-50 p-4 rounded-md ${className}`}>
+    {children}
+  </div>
+);
+
+const AlertDescription: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="text-yellow-800 text-sm">{children}</div>
+);
 
 export function RoleHistoryPage() {
   return (

@@ -209,7 +209,7 @@ class UserService {
   }
 
   // User Role Management Methods
-  async getUserPermissions(userId: string) {
+  async getUserRolePermissions(userId: string) {
     const response = await api.get(`/users/${userId}/permissions`);
     return response.data;
   }

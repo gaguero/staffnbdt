@@ -1,6 +1,15 @@
-import { User } from '../services/userService';
-import { Role, UserRole } from '../services/roleService';
-import { Role as SystemRole } from '../../../packages/types/enums';
+// Local Role enum definition
+export enum SystemRole {
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
+  ORGANIZATION_OWNER = 'ORGANIZATION_OWNER',
+  ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN',
+  PROPERTY_MANAGER = 'PROPERTY_MANAGER',
+  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',
+  STAFF = 'STAFF'
+}
+
+// Import types that are actually used
+import type { Role, UserRole } from '../services/roleService';
 
 // Core matrix data structures
 export interface MatrixUser {

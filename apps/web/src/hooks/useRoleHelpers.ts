@@ -1,5 +1,14 @@
 import { useMemo } from 'react';
-import { Role } from '../../../packages/types/enums';
+
+// Local Role enum definition
+export enum Role {
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
+  ORGANIZATION_OWNER = 'ORGANIZATION_OWNER',
+  ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN',
+  PROPERTY_MANAGER = 'PROPERTY_MANAGER',
+  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',
+  STAFF = 'STAFF'
+}
 import { 
   SYSTEM_ROLES, 
   ROLE_HIERARCHY, 

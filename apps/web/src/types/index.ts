@@ -128,14 +128,33 @@ export interface AuditLog {
   createdAt: date;
 }
 
-// Re-export permission types
-export * from './permission';
+// Re-export permission types - explicit exports to avoid conflicts
+export type {
+  PermissionEvaluationResult,
+  BulkPermissionResult,
+  Permission,
+  CustomRole,
+  UserPermissionSummary,
+  PermissionCheckDto,
+  BulkPermissionCheckDto,
+  PermissionContext,
+  PermissionSpec,
+  CommonPermission
+} from './permission';
+export { PERMISSION_RESOURCES, PERMISSION_ACTIONS, PERMISSION_SCOPES, COMMON_PERMISSIONS } from './permission';
 
 // Re-export hotel types
 export * from './hotel';
 
-// Re-export role types
-export * from './role';
+// Re-export role types - explicit exports to avoid conflicts
+export type {
+  SystemRole,
+  UserRoleAssignment,
+  RoleHierarchy,
+  RolePermissionMatrix,
+  RoleAnalytics
+} from './role';
+export { SYSTEM_ROLES, ROLE_HIERARCHY, isSystemRole, getSystemRoleInfo, getRoleLevel, canManageRole, getRoleHierarchyLevel, formatRoleName } from './role';
 
 // Re-export role history types
 export * from './roleHistory';

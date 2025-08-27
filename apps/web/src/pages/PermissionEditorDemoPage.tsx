@@ -3,7 +3,6 @@ import {
   PermissionEditor,
   EditorMode,
   RoleConfiguration,
-  DEFAULT_ROLE_CONFIGURATION,
   RoleLevel
 } from '../components/PermissionEditor';
 
@@ -61,7 +60,7 @@ const PermissionEditorDemoPage: React.FC = () => {
     // Preview functionality would be handled by the editor
   };
 
-  const startEditor = (mode: EditorMode, roleData?: RoleConfiguration) => {
+  const startEditor = (mode: EditorMode) => {
     setEditorMode(mode);
     setShowEditor(true);
   };

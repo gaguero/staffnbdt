@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
-  MagnifyingGlassIcon,
-  UserPlusIcon,
-  UserGroupIcon,
-  ClipboardDocumentListIcon,
-  CogIcon,
-} from '@heroicons/react/24/outline';
+  Search,
+  UserPlus,
+  Users,
+  ClipboardList,
+  Settings,
+} from 'lucide-react';
 import { PermissionSearch } from '../components/PermissionSearch';
 import { PermissionSearchIndex } from '../types/permissionSearch';
 import Layout from '../components/Layout';
@@ -37,25 +37,25 @@ const PermissionSearchDemoPage: React.FC = () => {
       id: 'generic' as const,
       name: 'Generic Search',
       description: 'General permission search with all features',
-      icon: MagnifyingGlassIcon,
+      icon: Search,
     },
     {
       id: 'role-creation' as const,
       name: 'Role Creation',
       description: 'Search permissions for creating custom roles',
-      icon: UserGroupIcon,
+      icon: Users,
     },
     {
       id: 'user-management' as const,
       name: 'User Management',
       description: 'User-focused permission management',
-      icon: UserPlusIcon,
+      icon: UserPlus,
     },
     {
       id: 'audit' as const,
       name: 'Audit Review',
       description: 'Permission audit and compliance review',
-      icon: ClipboardDocumentListIcon,
+      icon: ClipboardList,
     },
   ];
 
@@ -73,7 +73,7 @@ const PermissionSearchDemoPage: React.FC = () => {
         {/* Demo Controls */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <CogIcon className="h-5 w-5 mr-2" />
+            <Settings className="h-5 w-5 mr-2" />
             Demo Configuration
           </h2>
           

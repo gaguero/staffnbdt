@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from './usePermissions';
 import roleService from '../services/roleService';
-import userService, { User } from '../services/userService';
+import userService from '../services/userService';
 import toastService from '../utils/toast';
 
 export interface UserRole {
@@ -116,13 +116,12 @@ export function useUserRoleManagement(userId?: string): UseUserRoleManagementRet
   // Query current user roles
   const {
     data: currentRoles,
-    isLoading: isLoadingCurrentRoles,
-    refetch: refetchCurrentRoles
+    isLoading: isLoadingCurrentRoles
   } = useQuery({
     queryKey: ['userRoles', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const response = await roleService.getUserRoles({ userId });
+      const response = await roleService.getUserRoles(userId);
       return response.data;
     },
     enabled: !!userId,
@@ -136,10 +135,7 @@ export function useUserRoleManagement(userId?: string): UseUserRoleManagementRet
     queryKey: ['availableRoles', userId],
     queryFn: async () => {
       // Get all roles that user has permission to assign
-      const response = await roleService.getRoles({
-        includeSystem: true,
-        includeAssignable: true,
-      });
+      const response = await roleService.getRoles();
       return response.data;
     },
   });
@@ -212,14 +208,14 @@ export function useUserRoleManagement(userId?: string): UseUserRoleManagementRet
   // Bulk assign roles mutation
   const bulkAssignRolesMutation = useMutation({
     mutationFn: async (assignments: RoleAssignment[]) => {
-      return roleService.bulkAssignRoles({ assignments });
+      return roleService.bulkAssignRoles(assignments);
     },
     onSuccess: (data) => {
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ queryKey: ['userRoles', userId] });
       queryClient.invalidateQueries({ queryKey: ['userEffectivePermissions', userId] });
       queryClient.invalidateQueries({ queryKey: ['userRoleHistory', userId] });
-      toastService.success(`${data.successful} role(s) assigned successfully`);
+      toastService.success(`${data.success} role(s) assigned successfully`);
     },
     onError: (error: any) => {
       console.error('Failed to bulk assign roles:', error);
@@ -230,14 +226,14 @@ export function useUserRoleManagement(userId?: string): UseUserRoleManagementRet
   // Bulk remove roles mutation
   const bulkRemoveRolesMutation = useMutation({
     mutationFn: async (userRoleIds: string[]) => {
-      return roleService.bulkRemoveRoles({ userRoleIds });
+      return roleService.bulkRemoveRoles(userRoleIds);
     },
     onSuccess: (data) => {
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ queryKey: ['userRoles', userId] });
       queryClient.invalidateQueries({ queryKey: ['userEffectivePermissions', userId] });
       queryClient.invalidateQueries({ queryKey: ['userRoleHistory', userId] });
-      toastService.success(`${data.successful} role assignment(s) removed successfully`);
+      toastService.success(`${data.success} role assignment(s) removed successfully`);
     },
     onError: (error: any) => {
       console.error('Failed to bulk remove roles:', error);
@@ -300,7 +296,7 @@ export function useUserRoleManagement(userId?: string): UseUserRoleManagementRet
       const systemRoleLevel = role?.level || 0;
       const highestCurrentLevel = Math.max(...userCurrentRoles.map(ur => ur.role.level || 0));
       
-      if (role?.isSystem && systemRoleLevel < highestCurrentLevel) {
+      if (systemRoleLevel < highestCurrentLevel) {
         warnings.push('Assigning lower-level system role may reduce permissions');
       }
 
@@ -341,7 +337,7 @@ export function useUserRoleManagement(userId?: string): UseUserRoleManagementRet
   }, [currentRoles, availableRoles, validationCache]);
 
   // Permission checks for role operations
-  const canAssignRole = useCallback((roleId: string) => {
+  const canAssignRole = useCallback((_roleId: string) => {
     // This would typically check permissions based on role level and user's permissions
     // For now, use a simple permission check
     return hasPermission('role', 'assign', 'department').valueOf() || 
@@ -349,7 +345,7 @@ export function useUserRoleManagement(userId?: string): UseUserRoleManagementRet
            hasPermission('role', 'assign', 'organization').valueOf();
   }, [hasPermission]);
 
-  const canRemoveRole = useCallback((roleId: string) => {
+  const canRemoveRole = useCallback((_roleId: string) => {
     // Similar permission check for removal
     return hasPermission('role', 'assign', 'department').valueOf() || 
            hasPermission('role', 'assign', 'property').valueOf() ||
@@ -373,9 +369,9 @@ export function useUserRoleManagement(userId?: string): UseUserRoleManagementRet
 
   return {
     // Current roles data
-    currentRoles,
+    currentRoles: currentRoles as any,
     availableRoles,
-    effectivePermissions,
+    effectivePermissions: effectivePermissions as any,
     roleHistory,
     
     // Loading states
@@ -397,8 +393,8 @@ export function useUserRoleManagement(userId?: string): UseUserRoleManagementRet
     validateRoleAssignment,
     
     // Utilities
-    canAssignRole,
-    canRemoveRole,
+    canAssignRole: (roleId: string) => Boolean(canAssignRole(roleId)),
+    canRemoveRole: (roleId: string) => Boolean(canRemoveRole(roleId)),
     getRoleConflicts,
   };
 }

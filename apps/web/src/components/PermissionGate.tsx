@@ -347,4 +347,5 @@ export function usePermissionGate() {
   return { checkPermissionGate };
 }
 
+export { PermissionGate };
 export default PermissionGate;

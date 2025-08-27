@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  PermissionViewer,
-  usePermissionViewer 
+  PermissionViewer
 } from '../components/PermissionViewer';
-import { Permission, PermissionExportOptions } from '../types/permission';
+import { Permission } from '../types/permission';
 import toastService from '../utils/toast';
 
 const PermissionViewerPage: React.FC = () => {
