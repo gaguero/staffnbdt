@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-// Force rebuild - v1
+// Force rebuild - v3 (BULLETPROOF VERSION)
 import { useRoles, useUserRoles, useRoleStats, useDeleteRole, useAssignRole, useRemoveUserRole } from '../../hooks/useRoles';
 import { useUsers } from '../../hooks/useUsers';
 import { Role, RoleAssignment, UserRole } from '../../services/roleService';
@@ -8,7 +8,130 @@ import CreateRoleModal from '../../components/roles/CreateRoleModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PermissionGate from '../../components/PermissionGate';
 
+// BULLETPROOF UTILITY FUNCTIONS
+const extractSafeArray = <T>(data: any, fallback: T[] = []): T[] => {
+  try {
+    // Direct array check
+    if (Array.isArray(data)) {
+      console.log('[SafeArray] Direct array found:', data.length, 'items');
+      return data;
+    }
+    
+    // Check common response wrapper patterns
+    if (data && typeof data === 'object') {
+      // Check .data property
+      if (data.data && Array.isArray(data.data)) {
+        console.log('[SafeArray] Found array in .data property:', data.data.length, 'items');
+        return data.data;
+      }
+      
+      // Check .items property
+      if (data.items && Array.isArray(data.items)) {
+        console.log('[SafeArray] Found array in .items property:', data.items.length, 'items');
+        return data.items;
+      }
+      
+      // Check .results property
+      if (data.results && Array.isArray(data.results)) {
+        console.log('[SafeArray] Found array in .results property:', data.results.length, 'items');
+        return data.results;
+      }
+      
+      // Check .list property
+      if (data.list && Array.isArray(data.list)) {
+        console.log('[SafeArray] Found array in .list property:', data.list.length, 'items');
+        return data.list;
+      }
+      
+      // If it's an object but not an array-like structure, return fallback
+      console.log('[SafeArray] Object found but no array property detected:', Object.keys(data));
+    }
+    
+    // If data is null, undefined, or not an object
+    console.log('[SafeArray] No valid array found, using fallback. Data type:', typeof data, 'Data value:', data);
+    return fallback;
+  } catch (error) {
+    console.error('[SafeArray] Error extracting array:', error, 'Data:', data);
+    return fallback;
+  }
+};
+
+const safeFilter = <T>(array: any, predicate: (item: T) => boolean, fallback: T[] = []): T[] => {
+  try {
+    const safeArray = extractSafeArray<T>(array, fallback);
+    if (safeArray.length === 0) return fallback;
+    
+    const filtered = safeArray.filter((item: T) => {
+      try {
+        return predicate(item);
+      } catch (error) {
+        console.error('[SafeFilter] Error in predicate for item:', item, error);
+        return false;
+      }
+    });
+    
+    console.log('[SafeFilter] Filtered', safeArray.length, 'to', filtered.length, 'items');
+    return filtered;
+  } catch (error) {
+    console.error('[SafeFilter] Error in safeFilter:', error, 'Array:', array);
+    return fallback;
+  }
+};
+
+const safeMap = <T, R>(array: any, mapper: (item: T) => R, fallback: R[] = []): R[] => {
+  try {
+    const safeArray = extractSafeArray<T>(array, []);
+    if (safeArray.length === 0) return fallback;
+    
+    const mapped = safeArray.map((item: T) => {
+      try {
+        return mapper(item);
+      } catch (error) {
+        console.error('[SafeMap] Error in mapper for item:', item, error);
+        return null;
+      }
+    }).filter(Boolean) as R[];
+    
+    console.log('[SafeMap] Mapped', safeArray.length, 'to', mapped.length, 'items');
+    return mapped;
+  } catch (error) {
+    console.error('[SafeMap] Error in safeMap:', error, 'Array:', array);
+    return fallback;
+  }
+};
+
+const safeFind = <T>(array: any, predicate: (item: T) => boolean): T | undefined => {
+  try {
+    const safeArray = extractSafeArray<T>(array, []);
+    return safeArray.find((item: T) => {
+      try {
+        return predicate(item);
+      } catch (error) {
+        console.error('[SafeFind] Error in predicate for item:', item, error);
+        return false;
+      }
+    });
+  } catch (error) {
+    console.error('[SafeFind] Error in safeFind:', error, 'Array:', array);
+    return undefined;
+  }
+};
+
+const getQueryParam = (name: string): string | null => {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
+  } catch (error) {
+    console.error('[QueryParam] Error getting query param:', name, error);
+    return null;
+  }
+};
+
 const RolesManagementPage: React.FC = () => {
+  // Debug mode from query parameter
+  const debugMode = getQueryParam('debug') === 'true';
+  
+  // State management with safe initialization
   const [viewMode, setViewMode] = useState<'roles' | 'assignments'>('roles');
   const [showCreateRoleModal, setShowCreateRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -17,109 +140,369 @@ const RolesManagementPage: React.FC = () => {
   const [selectedRoleFilter, setSelectedRoleFilter] = useState('');
   const [showAssignRoleModal, setShowAssignRoleModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState('');
+  const [errorState, setErrorState] = useState<string | null>(null);
   
+  // Data hooks with error boundaries
   const { data: roles, isLoading: rolesLoading, error: rolesError } = useRoles();
-  const { data: userRoles, isLoading: userRolesLoading } = useUserRoles();
-  const { data: roleStats } = useRoleStats();
-  const { data: usersResponse } = useUsers({}); // Assuming this exists
+  const { data: userRoles, isLoading: userRolesLoading, error: userRolesError } = useUserRoles();
+  const { data: roleStats, error: roleStatsError } = useRoleStats();
+  const { data: usersResponse, error: usersError } = useUsers({});
   const deleteRole = useDeleteRole();
   const assignRole = useAssignRole();
   const removeUserRole = useRemoveUserRole();
 
-  const users = usersResponse?.data || [];
+  // COMPREHENSIVE DATA DEBUGGING
+  if (debugMode) {
+    console.log('[RolesPage] COMPREHENSIVE DEBUG DATA:');
+    console.log('- Roles:', { 
+      value: roles, 
+      type: typeof roles, 
+      isArray: Array.isArray(roles),
+      keys: roles && typeof roles === 'object' ? Object.keys(roles) : 'N/A',
+      length: Array.isArray(roles) ? roles.length : 'Not array'
+    });
+    console.log('- UserRoles:', { 
+      value: userRoles, 
+      type: typeof userRoles, 
+      isArray: Array.isArray(userRoles),
+      keys: userRoles && typeof userRoles === 'object' ? Object.keys(userRoles) : 'N/A',
+      length: Array.isArray(userRoles) ? userRoles.length : 'Not array'
+    });
+    console.log('- UsersResponse:', { 
+      value: usersResponse, 
+      type: typeof usersResponse, 
+      keys: usersResponse && typeof usersResponse === 'object' ? Object.keys(usersResponse) : 'N/A'
+    });
+    console.log('- RoleStats:', { 
+      value: roleStats, 
+      type: typeof roleStats,
+      keys: roleStats && typeof roleStats === 'object' ? Object.keys(roleStats) : 'N/A'
+    });
+  }
 
-  // Filter roles based on search with defensive programming
+  // BULLETPROOF DATA EXTRACTION
+  const safeUsers = useMemo(() => {
+    try {
+      const users = extractSafeArray(usersResponse?.data || usersResponse, []);
+      console.log('[Users] Extracted safe users:', users.length, 'items');
+      return users;
+    } catch (error) {
+      console.error('[Users] Error extracting users:', error);
+      setErrorState('Failed to load users data');
+      return [];
+    }
+  }, [usersResponse]);
+
+  // BULLETPROOF ROLES FILTERING
   const filteredRoles = useMemo(() => {
-    console.log('Roles data debug:', roles, typeof roles, Array.isArray(roles));
-    
-    // Ensure we always have an array - roles should be Role[] | undefined based on hook
-    const rolesArray: Role[] = Array.isArray(roles) ? roles : 
-                       ((roles as any)?.data && Array.isArray((roles as any).data)) ? (roles as any).data : [];
-    
-    if (!rolesArray || rolesArray.length === 0) return [];
-    
-    return rolesArray.filter((role: Role) =>
-      role?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      role?.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    try {
+      console.log('[FilteredRoles] Starting roles filtering...');
+      
+      // Extract safe roles array
+      const rolesArray = extractSafeArray<Role>(roles, []);
+      
+      if (rolesArray.length === 0) {
+        console.log('[FilteredRoles] No roles to filter');
+        return [];
+      }
+
+      // Apply search filter safely
+      const filtered = safeFilter<Role>(
+        rolesArray,
+        (role: Role) => {
+          try {
+            const name = role?.name || '';
+            const description = role?.description || '';
+            const searchLower = searchTerm.toLowerCase();
+            
+            return (
+              name.toLowerCase().includes(searchLower) ||
+              description.toLowerCase().includes(searchLower)
+            );
+          } catch (error) {
+            console.error('[FilteredRoles] Error filtering role:', role, error);
+            return false;
+          }
+        },
+        []
+      );
+      
+      console.log('[FilteredRoles] Successfully filtered roles:', filtered.length);
+      return filtered;
+    } catch (error) {
+      console.error('[FilteredRoles] Critical error in roles filtering:', error);
+      setErrorState('Failed to filter roles');
+      return [];
+    }
   }, [roles, searchTerm]);
 
-  // Filter user roles based on selected role with defensive programming
+  // BULLETPROOF USER ROLES FILTERING
   const filteredUserRoles = useMemo(() => {
-    console.log('UserRoles data debug:', userRoles, typeof userRoles, Array.isArray(userRoles));
-    
-    // Ensure we always have an array - userRoles should be UserRole[] | undefined based on hook
-    const userRolesArray: UserRole[] = Array.isArray(userRoles) ? userRoles : 
-                          ((userRoles as any)?.data && Array.isArray((userRoles as any).data)) ? (userRoles as any).data : [];
-    
-    if (!userRolesArray || userRolesArray.length === 0) return [];
-    
-    if (!selectedRoleFilter) return userRolesArray;
-    
-    return userRolesArray.filter((userRole: UserRole) => userRole?.roleId === selectedRoleFilter);
+    try {
+      console.log('[FilteredUserRoles] Starting user roles filtering...');
+      
+      // Extract safe user roles array
+      const userRolesArray = extractSafeArray<UserRole>(userRoles, []);
+      
+      if (userRolesArray.length === 0) {
+        console.log('[FilteredUserRoles] No user roles to filter');
+        return [];
+      }
+
+      // Apply role filter safely
+      if (!selectedRoleFilter) {
+        console.log('[FilteredUserRoles] No role filter, returning all user roles');
+        return userRolesArray;
+      }
+
+      const filtered = safeFilter<UserRole>(
+        userRolesArray,
+        (userRole: UserRole) => {
+          try {
+            return userRole?.roleId === selectedRoleFilter;
+          } catch (error) {
+            console.error('[FilteredUserRoles] Error filtering user role:', userRole, error);
+            return false;
+          }
+        },
+        []
+      );
+      
+      console.log('[FilteredUserRoles] Successfully filtered user roles:', filtered.length);
+      return filtered;
+    } catch (error) {
+      console.error('[FilteredUserRoles] Critical error in user roles filtering:', error);
+      setErrorState('Failed to filter user roles');
+      return [];
+    }
   }, [userRoles, selectedRoleFilter]);
 
+  // BULLETPROOF EVENT HANDLERS
   const handleRoleClick = (role: Role) => {
-    setSelectedRole(role);
-    // Could show role details modal here
+    try {
+      if (!role || !role.id) {
+        console.warn('[HandleRoleClick] Invalid role provided:', role);
+        return;
+      }
+      setSelectedRole(role);
+    } catch (error) {
+      console.error('[HandleRoleClick] Error handling role click:', error);
+      setErrorState('Failed to select role');
+    }
   };
 
   const handleEditRole = (role: Role) => {
-    setSelectedRole(role);
-    setShowEditRoleModal(true);
+    try {
+      if (!role || !role.id) {
+        console.warn('[HandleEditRole] Invalid role provided:', role);
+        return;
+      }
+      setSelectedRole(role);
+      setShowEditRoleModal(true);
+    } catch (error) {
+      console.error('[HandleEditRole] Error handling edit role:', error);
+      setErrorState('Failed to edit role');
+    }
   };
 
   const handleDeleteRole = async (role: Role) => {
-    if (window.confirm(`Are you sure you want to delete the role "${role.name}"? This will remove all assignments.`)) {
-      await deleteRole.mutateAsync(role.id);
+    try {
+      if (!role || !role.id || !role.name) {
+        console.warn('[HandleDeleteRole] Invalid role provided:', role);
+        return;
+      }
+      
+      if (window.confirm(`Are you sure you want to delete the role "${role.name}"? This will remove all assignments.`)) {
+        await deleteRole.mutateAsync(role.id);
+      }
+    } catch (error) {
+      console.error('[HandleDeleteRole] Error deleting role:', error);
+      setErrorState('Failed to delete role');
     }
   };
 
   const handleAssignRole = async (assignment: RoleAssignment) => {
-    await assignRole.mutateAsync(assignment);
-    setShowAssignRoleModal(false);
-    setSelectedUserId('');
-  };
-
-  const handleRemoveUserRole = async (userRoleId: string) => {
-    if (window.confirm('Are you sure you want to remove this role assignment?')) {
-      await removeUserRole.mutateAsync(userRoleId);
+    try {
+      if (!assignment || !assignment.userId || !assignment.roleId) {
+        console.warn('[HandleAssignRole] Invalid assignment provided:', assignment);
+        return;
+      }
+      
+      await assignRole.mutateAsync(assignment);
+      setShowAssignRoleModal(false);
+      setSelectedUserId('');
+    } catch (error) {
+      console.error('[HandleAssignRole] Error assigning role:', error);
+      setErrorState('Failed to assign role');
     }
   };
 
-  const getUsersWithoutRoles = () => {
-    // Ensure userRoles is an array before mapping
-    const userRolesArray: UserRole[] = Array.isArray(userRoles) ? userRoles : 
-                          ((userRoles as any)?.data && Array.isArray((userRoles as any).data)) ? (userRoles as any).data : [];
-    
-    const assignedUserIds = new Set(userRolesArray.map((ur: UserRole) => ur?.userId).filter(Boolean));
-    return users.filter((user: any) => !assignedUserIds.has(user.id));
+  const handleRemoveUserRole = async (userRoleId: string) => {
+    try {
+      if (!userRoleId) {
+        console.warn('[HandleRemoveUserRole] Invalid userRoleId provided:', userRoleId);
+        return;
+      }
+      
+      if (window.confirm('Are you sure you want to remove this role assignment?')) {
+        await removeUserRole.mutateAsync(userRoleId);
+      }
+    } catch (error) {
+      console.error('[HandleRemoveUserRole] Error removing user role:', error);
+      setErrorState('Failed to remove user role');
+    }
   };
 
+  // BULLETPROOF USERS WITHOUT ROLES CALCULATION
+  const getUsersWithoutRoles = () => {
+    try {
+      console.log('[GetUsersWithoutRoles] Calculating users without roles...');
+      
+      const userRolesArray = extractSafeArray<UserRole>(userRoles, []);
+      const usersArray = extractSafeArray(safeUsers, []);
+      
+      if (usersArray.length === 0) {
+        console.log('[GetUsersWithoutRoles] No users available');
+        return [];
+      }
+
+      // Create set of assigned user IDs safely
+      const assignedUserIds = new Set(
+        userRolesArray
+          .map((ur: UserRole) => {
+            try {
+              return ur?.userId;
+            } catch (error) {
+              console.error('[GetUsersWithoutRoles] Error getting userId from userRole:', ur, error);
+              return null;
+            }
+          })
+          .filter(Boolean)
+      );
+      
+      // Filter users safely
+      const unassignedUsers = usersArray.filter((user: any) => {
+        try {
+          return user && user.id && !assignedUserIds.has(user.id);
+        } catch (error) {
+          console.error('[GetUsersWithoutRoles] Error filtering user:', user, error);
+          return false;
+        }
+      });
+      
+      console.log('[GetUsersWithoutRoles] Found', unassignedUsers.length, 'unassigned users');
+      return unassignedUsers;
+    } catch (error) {
+      console.error('[GetUsersWithoutRoles] Critical error:', error);
+      return [];
+    }
+  };
+
+  // ERROR STATE HANDLER
+  const handleErrorDismiss = () => {
+    setErrorState(null);
+  };
+
+  const handleRefreshData = () => {
+    try {
+      window.location.reload();
+    } catch (error) {
+      console.error('[RefreshData] Error refreshing:', error);
+    }
+  };
+
+  // LOADING STATE
   if (rolesLoading || userRolesLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <LoadingSpinner size="lg" text="Loading roles..." />
+        <LoadingSpinner size="lg" text="Loading roles data..." />
       </div>
     );
   }
 
-  if (rolesError) {
+  // COMPREHENSIVE ERROR STATE
+  const hasErrors = rolesError || userRolesError || roleStatsError || usersError || errorState;
+  if (hasErrors) {
     return (
       <div className="text-center py-12">
-        <div className="text-red-600 mb-4">❌ Failed to load roles</div>
-        <button 
-          onClick={() => window.location.reload()}
-          className="btn btn-primary"
-        >
-          Retry
-        </button>
+        <div className="text-red-600 mb-4">❌ Failed to load roles data</div>
+        
+        {debugMode && (
+          <div className="text-left bg-gray-100 p-4 rounded-lg mb-4 text-sm">
+            <h4 className="font-bold mb-2">Debug Information:</h4>
+            <div>Roles Error: {rolesError?.message || 'None'}</div>
+            <div>User Roles Error: {userRolesError?.message || 'None'}</div>
+            <div>Role Stats Error: {roleStatsError?.message || 'None'}</div>
+            <div>Users Error: {usersError?.message || 'None'}</div>
+            <div>Component Error: {errorState || 'None'}</div>
+          </div>
+        )}
+        
+        {errorState && (
+          <div className="text-orange-600 mb-4">
+            Component Error: {errorState}
+          </div>
+        )}
+        
+        <div className="flex justify-center gap-4">
+          <button 
+            onClick={handleRefreshData}
+            className="btn btn-primary"
+          >
+            Retry Loading
+          </button>
+          {errorState && (
+            <button 
+              onClick={handleErrorDismiss}
+              className="btn btn-secondary"
+            >
+              Dismiss Error
+            </button>
+          )}
+        </div>
       </div>
     );
   }
+
+  // SAFE STATS CALCULATION
+  const safeRoleStats = useMemo(() => {
+    try {
+      return {
+        totalRoles: filteredRoles.length,
+        totalAssignments: filteredUserRoles.length,
+        totalUsers: safeUsers.length,
+        unassignedUsers: getUsersWithoutRoles().length
+      };
+    } catch (error) {
+      console.error('[SafeRoleStats] Error calculating stats:', error);
+      return {
+        totalRoles: 0,
+        totalAssignments: 0,
+        totalUsers: 0,
+        unassignedUsers: 0
+      };
+    }
+  }, [filteredRoles, filteredUserRoles, safeUsers]);
 
   return (
     <div className="space-y-6">
+      {/* DEBUG MODE INDICATOR */}
+      {debugMode && (
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+          🐛 Debug Mode Active - Check console for detailed logs
+        </div>
+      )}
+
+      {/* ERROR STATE INDICATOR */}
+      {errorState && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded flex justify-between items-center">
+          <span>⚠️ {errorState}</span>
+          <button onClick={handleErrorDismiss} className="text-red-900 hover:text-red-600">
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -139,27 +522,25 @@ const RolesManagementPage: React.FC = () => {
         </PermissionGate>
       </div>
 
-      {/* Stats Cards */}
-      {roleStats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-2xl font-bold text-blue-600">{roleStats.totalRoles}</div>
-            <div className="text-sm text-gray-600">Total Roles</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-2xl font-bold text-green-600">{roleStats.totalAssignments}</div>
-            <div className="text-sm text-gray-600">Active Assignments</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-2xl font-bold text-orange-600">{users.length}</div>
-            <div className="text-sm text-gray-600">Total Users</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-2xl font-bold text-purple-600">{getUsersWithoutRoles().length}</div>
-            <div className="text-sm text-gray-600">Unassigned Users</div>
-          </div>
+      {/* Stats Cards with Safe Data */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-blue-600">{safeRoleStats.totalRoles}</div>
+          <div className="text-sm text-gray-600">Total Roles</div>
         </div>
-      )}
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-green-600">{safeRoleStats.totalAssignments}</div>
+          <div className="text-sm text-gray-600">Active Assignments</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-orange-600">{safeRoleStats.totalUsers}</div>
+          <div className="text-sm text-gray-600">Total Users</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="text-2xl font-bold text-purple-600">{safeRoleStats.unassignedUsers}</div>
+          <div className="text-sm text-gray-600">Unassigned Users</div>
+        </div>
+      </div>
 
       {/* View Toggle */}
       <div className="flex items-center gap-4">
@@ -197,7 +578,13 @@ const RolesManagementPage: React.FC = () => {
                   type="text"
                   placeholder="Search roles by name or description..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    try {
+                      setSearchTerm(e.target.value);
+                    } catch (error) {
+                      console.error('[SearchTerm] Error setting search term:', error);
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -225,15 +612,19 @@ const RolesManagementPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRoles.map((role: Role) => (
-                <RoleCard
-                  key={role.id}
-                  role={role}
-                  onClick={handleRoleClick}
-                  onEdit={handleEditRole}
-                  onDelete={handleDeleteRole}
-                />
-              ))}
+              {safeMap<Role, JSX.Element>(
+                filteredRoles,
+                (role: Role) => (
+                  <RoleCard
+                    key={role.id}
+                    role={role}
+                    onClick={handleRoleClick}
+                    onEdit={handleEditRole}
+                    onDelete={handleDeleteRole}
+                  />
+                ),
+                []
+              )}
             </div>
           )}
         </>
@@ -245,19 +636,25 @@ const RolesManagementPage: React.FC = () => {
               <div className="flex items-center gap-4">
                 <select
                   value={selectedRoleFilter}
-                  onChange={(e) => setSelectedRoleFilter(e.target.value)}
+                  onChange={(e) => {
+                    try {
+                      setSelectedRoleFilter(e.target.value);
+                    } catch (error) {
+                      console.error('[RoleFilter] Error setting role filter:', error);
+                    }
+                  }}
                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Roles</option>
-                  {Array.isArray(roles) ? roles.map((role: Role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  )) : ((roles as any)?.data && Array.isArray((roles as any).data)) ? (roles as any).data.map((role: Role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  )) : null}
+                  {safeMap<Role, JSX.Element>(
+                    roles,
+                    (role: Role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
+                      </option>
+                    ),
+                    []
+                  )}
                 </select>
               </div>
               <PermissionGate resource="role" action="assign">
@@ -296,47 +693,51 @@ const RolesManagementPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUserRoles.map((userRole: UserRole) => (
-                    <tr key={userRole.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
-                            {userRole.user.firstName[0]}{userRole.user.lastName[0]}
-                          </div>
-                          <div className="ml-3">
-                            <div className="font-medium text-gray-900">
-                              {userRole.user.firstName} {userRole.user.lastName}
+                  {safeMap<UserRole, JSX.Element>(
+                    filteredUserRoles,
+                    (userRole: UserRole) => (
+                      <tr key={userRole.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
+                              {(userRole?.user?.firstName?.[0] || '?')}{(userRole?.user?.lastName?.[0] || '')}
                             </div>
-                            <div className="text-sm text-gray-600">
-                              {userRole.user.email}
+                            <div className="ml-3">
+                              <div className="font-medium text-gray-900">
+                                {userRole?.user?.firstName || 'Unknown'} {userRole?.user?.lastName || 'User'}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {userRole?.user?.email || 'No email'}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-gray-900">{userRole.role.name}</div>
-                        <div className="text-sm text-gray-600 line-clamp-1">{userRole.role.description}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                          Level {userRole.role.level}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {new Date(userRole.assignedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <PermissionGate resource="role" action="remove">
-                          <button
-                            onClick={() => handleRemoveUserRole(userRole.id)}
-                            className="text-red-600 hover:text-red-900 transition-colors"
-                          >
-                            Remove
-                          </button>
-                        </PermissionGate>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="font-medium text-gray-900">{userRole?.role?.name || 'Unknown Role'}</div>
+                          <div className="text-sm text-gray-600 line-clamp-1">{userRole?.role?.description || ''}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                            Level {userRole?.role?.level || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {userRole?.assignedAt ? new Date(userRole.assignedAt).toLocaleDateString() : 'Unknown'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <PermissionGate resource="role" action="remove">
+                            <button
+                              onClick={() => handleRemoveUserRole(userRole.id)}
+                              className="text-red-600 hover:text-red-900 transition-colors"
+                            >
+                              Remove
+                            </button>
+                          </PermissionGate>
+                        </td>
+                      </tr>
+                    ),
+                    []
+                  )}
                 </tbody>
               </table>
             </div>
@@ -390,15 +791,25 @@ const RolesManagementPage: React.FC = () => {
                   </label>
                   <select
                     value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    onChange={(e) => {
+                      try {
+                        setSelectedUserId(e.target.value);
+                      } catch (error) {
+                        console.error('[AssignModal] Error setting selected user:', error);
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select user</option>
-                    {users.map((user: any) => (
-                      <option key={user.id} value={user.id}>
-                        {user.firstName} {user.lastName} ({user.email})
-                      </option>
-                    ))}
+                    {safeMap(
+                      safeUsers,
+                      (user: any) => (
+                        <option key={user.id} value={user.id}>
+                          {user.firstName} {user.lastName} ({user.email})
+                        </option>
+                      ),
+                      []
+                    )}
                   </select>
                 </div>
 
@@ -409,23 +820,25 @@ const RolesManagementPage: React.FC = () => {
                   <select
                     value={selectedRole?.id || ''}
                     onChange={(e) => {
-                      const rolesArray: Role[] = Array.isArray(roles) ? roles : 
-                                        ((roles as any)?.data && Array.isArray((roles as any).data)) ? (roles as any).data : [];
-                      const role = rolesArray.find((r: Role) => r.id === e.target.value);
-                      setSelectedRole(role || null);
+                      try {
+                        const role = safeFind<Role>(roles, (r: Role) => r.id === e.target.value);
+                        setSelectedRole(role || null);
+                      } catch (error) {
+                        console.error('[AssignModal] Error setting selected role:', error);
+                      }
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select role</option>
-                    {Array.isArray(roles) ? roles.map((role: Role) => (
-                      <option key={role.id} value={role.id}>
-                        {role.name} (Level {role.level})
-                      </option>
-                    )) : ((roles as any)?.data && Array.isArray((roles as any).data)) ? (roles as any).data.map((role: Role) => (
-                      <option key={role.id} value={role.id}>
-                        {role.name} (Level {role.level})
-                      </option>
-                    )) : null}
+                    {safeMap<Role, JSX.Element>(
+                      roles,
+                      (role: Role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.name} (Level {role.level})
+                        </option>
+                      ),
+                      []
+                    )}
                   </select>
                 </div>
               </div>
@@ -439,11 +852,15 @@ const RolesManagementPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => {
-                    if (selectedUserId && selectedRole) {
-                      handleAssignRole({
-                        userId: selectedUserId,
-                        roleId: selectedRole.id
-                      });
+                    try {
+                      if (selectedUserId && selectedRole) {
+                        handleAssignRole({
+                          userId: selectedUserId,
+                          roleId: selectedRole.id
+                        });
+                      }
+                    } catch (error) {
+                      console.error('[AssignModal] Error in assign role button:', error);
                     }
                   }}
                   disabled={!selectedUserId || !selectedRole}
