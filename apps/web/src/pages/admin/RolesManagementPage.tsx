@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 // Force rebuild - v3 (BULLETPROOF VERSION)
 import { useRoles, useUserRoles, useRoleStats, useDeleteRole, useAssignRole, useRemoveUserRole } from '../../hooks/useRoles';
 import { useUsers } from '../../hooks/useUsers';
@@ -151,34 +151,36 @@ const RolesManagementPage: React.FC = () => {
   const assignRole = useAssignRole();
   const removeUserRole = useRemoveUserRole();
 
-  // COMPREHENSIVE DATA DEBUGGING
-  if (debugMode) {
-    console.log('[RolesPage] COMPREHENSIVE DEBUG DATA:');
-    console.log('- Roles:', { 
-      value: roles, 
-      type: typeof roles, 
-      isArray: Array.isArray(roles),
-      keys: roles && typeof roles === 'object' ? Object.keys(roles) : 'N/A',
-      length: Array.isArray(roles) ? roles.length : 'Not array'
-    });
-    console.log('- UserRoles:', { 
-      value: userRoles, 
-      type: typeof userRoles, 
-      isArray: Array.isArray(userRoles),
-      keys: userRoles && typeof userRoles === 'object' ? Object.keys(userRoles) : 'N/A',
-      length: Array.isArray(userRoles) ? userRoles.length : 'Not array'
-    });
-    console.log('- UsersResponse:', { 
-      value: usersResponse, 
-      type: typeof usersResponse, 
-      keys: usersResponse && typeof usersResponse === 'object' ? Object.keys(usersResponse) : 'N/A'
-    });
-    console.log('- RoleStats:', { 
-      value: roleStats, 
-      type: typeof roleStats,
-      keys: roleStats && typeof roleStats === 'object' ? Object.keys(roleStats) : 'N/A'
-    });
-  }
+  // COMPREHENSIVE DATA DEBUGGING (moved to useEffect to avoid hook order violations)
+  useEffect(() => {
+    if (debugMode) {
+      console.log('[RolesPage] COMPREHENSIVE DEBUG DATA:');
+      console.log('- Roles:', { 
+        value: roles, 
+        type: typeof roles, 
+        isArray: Array.isArray(roles),
+        keys: roles && typeof roles === 'object' ? Object.keys(roles) : 'N/A',
+        length: Array.isArray(roles) ? roles.length : 'Not array'
+      });
+      console.log('- UserRoles:', { 
+        value: userRoles, 
+        type: typeof userRoles, 
+        isArray: Array.isArray(userRoles),
+        keys: userRoles && typeof userRoles === 'object' ? Object.keys(userRoles) : 'N/A',
+        length: Array.isArray(userRoles) ? userRoles.length : 'Not array'
+      });
+      console.log('- UsersResponse:', { 
+        value: usersResponse, 
+        type: typeof usersResponse, 
+        keys: usersResponse && typeof usersResponse === 'object' ? Object.keys(usersResponse) : 'N/A'
+      });
+      console.log('- RoleStats:', { 
+        value: roleStats, 
+        type: typeof roleStats,
+        keys: roleStats && typeof roleStats === 'object' ? Object.keys(roleStats) : 'N/A'
+      });
+    }
+  }, [debugMode, roles, userRoles, usersResponse, roleStats]);
 
   // BULLETPROOF DATA EXTRACTION
   const safeUsers = useMemo(() => {
