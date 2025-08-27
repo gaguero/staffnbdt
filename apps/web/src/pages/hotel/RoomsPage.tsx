@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useRooms, useRoomTypes } from '../../hooks/useHotel';
-import { RoomFilter, RoomStatus, HousekeepingStatus } from '../../types/hotel';
+import { RoomFilter, RoomStatus } from '../../types/hotel';
 import RoomCard from '../../components/hotel/RoomCard';
 import CreateRoomModal from '../../components/hotel/CreateRoomModal';
 import LoadingSpinner from '../../components/LoadingSpinner';

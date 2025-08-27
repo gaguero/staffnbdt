@@ -95,7 +95,7 @@ export function useUpdateRoom() {
   return useMutation({
     mutationFn: ({ id, room }: { id: string; room: UpdateRoomInput }) => 
       hotelService.updateRoom(id, room),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: hotelQueryKeys.rooms() });
       queryClient.invalidateQueries({ queryKey: hotelQueryKeys.room(variables.id) });
       toast.success('Room updated successfully');
