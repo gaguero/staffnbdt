@@ -24,17 +24,54 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    this.logger.log(`Validating JWT payload for user: ${payload.sub}`);
-    this.logger.debug(`JWT payload: ${JSON.stringify(payload)}`);
+    this.logger.log(`🔐 Validating JWT for user: ${payload.sub}`);
     
-    const user = await this.authService.validateUserById(payload.sub);
-    
-    if (!user) {
-      this.logger.warn(`User not found for ID: ${payload.sub}`);
-      throw new UnauthorizedException('User not found');
-    }
+    try {
+      const user = await this.authService.validateUserById(payload.sub);
+      
+      if (!user) {
+        // Enhanced error logging for diagnostics
+        this.logger.error(`❌ JWT validation failed - User not found: ${payload.sub}`);
+        this.logger.error(`📍 Possible causes:`);
+        this.logger.error(`   1. User deleted but JWT still valid (token issued: ${payload.iat ? new Date(payload.iat * 1000).toISOString() : 'unknown'})`);
+        this.logger.error(`   2. Invalid user ID in JWT token`);
+        this.logger.error(`   3. Database connectivity issue`);
+        
+        // Log additional context for debugging (without exposing sensitive data)
+        this.logger.error(`🔍 Token details: issued=${payload.iat ? new Date(payload.iat * 1000).toISOString() : 'unknown'}, expires=${payload.exp ? new Date(payload.exp * 1000).toISOString() : 'unknown'}`);
+        
+        throw new UnauthorizedException({
+          message: 'Authentication failed',
+          code: 'USER_NOT_FOUND',
+          details: 'Your session may have expired. Please log in again.'
+        });
+      }
 
-    this.logger.log(`User validated successfully: ${user.email}`);
-    return user;
+      // Additional validation: check if user account is active
+      if (user.deletedAt) {
+        this.logger.warn(`⚠️ Soft-deleted user attempted access: ${user.email}`);
+        throw new UnauthorizedException({
+          message: 'Account deactivated',
+          code: 'ACCOUNT_DEACTIVATED',
+          details: 'This account has been deactivated. Please contact support.'
+        });
+      }
+
+      this.logger.log(`✅ JWT validated successfully: ${user.email} (${user.firstName} ${user.lastName})`);
+      return user;
+      
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error; // Re-throw our custom unauthorized errors
+      }
+      
+      // Handle unexpected errors (database connection, etc.)
+      this.logger.error(`🚫 Unexpected error during JWT validation for user ${payload.sub}:`, error);
+      throw new UnauthorizedException({
+        message: 'Authentication service temporarily unavailable',
+        code: 'AUTH_SERVICE_ERROR',
+        details: 'Please try again in a moment.'
+      });
+    }
   }
 }

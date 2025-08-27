@@ -45,17 +45,47 @@ export class R2Service implements OnModuleInit {
   private readonly maxFileSize: number;
   private readonly allowedFileTypes: string[];
   private readonly region: string;
-
+  private readonly isCustomDomain: boolean;
   constructor(
     private readonly configService: ConfigService,
     private readonly tenantContextService: TenantContextService,
   ) {
     // Cloudflare R2 configuration
     this.bucketName = this.configService.get('R2_BUCKET_NAME') || 'hoh-storage';
+    
+    // Debug bucket name configuration
+    console.log('🗂️ R2 Bucket Configuration:', {
+      envBucketName: this.configService.get('R2_BUCKET_NAME'),
+      finalBucketName: this.bucketName,
+      accountId: this.configService.get('R2_ACCOUNT_ID') ? 'present' : 'missing',
+    });
+    
+    // Validate bucket name configuration (R2 allows 3-63 characters)
+    if (this.bucketName && this.bucketName.length < 3) {
+      console.error('❌ Bucket name too short (minimum 3 characters):', {
+        currentName: this.bucketName,
+        length: this.bucketName.length,
+        suggestion: 'Check R2_BUCKET_NAME environment variable'
+      });
+    } else if (this.bucketName && this.bucketName.length > 63) {
+      console.error('❌ Bucket name too long (maximum 63 characters):', {
+        currentName: this.bucketName,
+        length: this.bucketName.length,
+        suggestion: 'Check R2_BUCKET_NAME environment variable'
+      });
+    } else if (this.bucketName) {
+      console.log('✅ Bucket name is valid:', {
+        name: this.bucketName,
+        length: this.bucketName.length
+      });
+    }
     this.publicUrl = this.configService.get('R2_PUBLIC_URL') || '';
     this.maxFileSize = parseInt(this.configService.get('MAX_FILE_SIZE') || '10485760'); // 10MB default
     this.allowedFileTypes = (this.configService.get('ALLOWED_FILE_TYPES') || 'pdf,jpg,jpeg,png,doc,docx,xls,xlsx,mp4,avi').split(',');
     this.region = 'auto'; // Cloudflare R2 uses 'auto' region
+    
+    // Detect if using custom domain (bucket-specific endpoint)
+    this.isCustomDomain = this.publicUrl && !this.publicUrl.includes('r2.cloudflarestorage.com');
 
     // Get required R2 credentials
     const accountId = this.configService.get('R2_ACCOUNT_ID');
@@ -70,14 +100,48 @@ export class R2Service implements OnModuleInit {
     }
 
     // Initialize S3-compatible client for Cloudflare R2
+    // For R2 API operations, always use the standard R2 endpoint, not custom domains
+    const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
+    
+    console.log('🔧 R2 Endpoint Configuration:', {
+      accountId,
+      endpoint,
+      publicUrl: this.publicUrl,
+      isCustomDomain: this.isCustomDomain,
+      accessKeyId: accessKeyId ? `${accessKeyId.substring(0, 8)}...` : 'missing',
+      secretKeyLength: secretAccessKey ? secretAccessKey.length : 0,
+      secretKeyPreview: secretAccessKey ? `${secretAccessKey.substring(0, 8)}...` : 'missing'
+    });
+    
     this.s3Client = new S3Client({
       region: this.region,
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      endpoint,
       credentials: {
         accessKeyId,
         secretAccessKey,
       },
-      forcePathStyle: false, // R2 supports virtual-hosted-style requests
+      forcePathStyle: false, // R2 uses virtual-hosted-style requests
+      // AWS SDK v3 R2 compatibility configurations
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
+      // Additional R2-specific configurations
+      maxAttempts: 3,
+      retryMode: 'adaptive',
+    });
+
+    this.logger.log(`R2 endpoint configured: ${endpoint}`);
+    this.logger.log(`Custom domain detected: ${this.isCustomDomain}`);
+    this.logger.log(`Using bucket name: ${this.bucketName}`);
+    
+    // Log actual S3Client configuration for debugging
+    console.log('🔧 S3Client Configuration:', {
+      endpoint,
+      region: this.region,
+      forcePathStyle: false,
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
+      maxAttempts: 3,
+      retryMode: 'adaptive',
     });
 
     this.logger.log(`R2 Service initialized - Bucket: ${this.bucketName}, Region: ${this.region}`);
@@ -89,26 +153,183 @@ export class R2Service implements OnModuleInit {
   }
 
   /**
-   * Health check to verify R2 connectivity
+   * Health check to verify R2 connectivity with detailed error categorization
    */
   async healthCheck(): Promise<boolean> {
     if (!this.s3Client) {
-      this.logger.warn('R2 client not initialized - health check failed');
+      this.logger.warn('R2 client not initialized - health check failed', {
+        context: 'R2Service',
+        environment: process.env.NODE_ENV || 'development',
+        service: 'staffnbdt-bff',
+        timestamp: new Date().toISOString(),
+        error: 'CLIENT_NOT_INITIALIZED'
+      });
       return false;
     }
     
-    try {
-      await this.s3Client.send(new ListObjectsV2Command({
-        Bucket: this.bucketName,
-        MaxKeys: 1,
-      }));
-      
-      this.logger.log('R2 health check passed');
-      return true;
-    } catch (error) {
-      this.logger.error('R2 health check failed:', error.message);
-      return false;
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const command = new ListObjectsV2Command({
+          Bucket: this.bucketName,
+          MaxKeys: 1,
+        });
+        
+        const startTime = Date.now();
+        const response = await this.s3Client.send(command);
+        const duration = Date.now() - startTime;
+        
+        this.logger.log(`R2 health check passed on attempt ${attempt}`, {
+          context: 'R2Service',
+          environment: process.env.NODE_ENV || 'development',
+          service: 'staffnbdt-bff',
+          timestamp: new Date().toISOString(),
+          attempt,
+          duration: `${duration}ms`,
+          bucket: this.bucketName,
+          endpoint: this.s3Client.config.endpoint,
+          isCustomDomain: this.isCustomDomain,
+          objectCount: response.KeyCount || 0
+        });
+        return true;
+      } catch (error: any) {
+        const errorType = this.categorizeR2Error(error);
+        const isLastAttempt = attempt === maxRetries;
+        
+        if (isLastAttempt) {
+          this.logger.error('R2 health check failed after all retries', {
+            context: 'R2Service',
+            environment: process.env.NODE_ENV || 'development',
+            service: 'staffnbdt-bff',
+            timestamp: new Date().toISOString(),
+            error: errorType,
+            errorMessage: error.message,
+            errorCode: error.Code || error.name,
+            httpStatus: error.$metadata?.httpStatusCode,
+            attempt,
+            maxRetries,
+            bucket: this.bucketName,
+            endpoint: this.s3Client.config.endpoint,
+            isCustomDomain: this.isCustomDomain,
+            // Include additional debug info for production troubleshooting
+            credentials: {
+              hasAccessKey: !!this.configService.get('R2_ACCESS_KEY_ID'),
+              hasSecretKey: !!this.configService.get('R2_SECRET_ACCESS_KEY'),
+              hasAccountId: !!this.configService.get('R2_ACCOUNT_ID'),
+              hasBucketName: !!this.bucketName,
+              hasPublicUrl: !!this.publicUrl,
+            },
+            config: {
+              region: this.region,
+              forcePathStyle: false, // R2 uses virtual-hosted-style requests
+              maxAttempts: this.s3Client.config.maxAttempts,
+              retryMode: this.s3Client.config.retryMode,
+            },
+            // Additional diagnostic info for authentication issues
+            diagnostics: {
+              bucketNameFromEnv: this.configService.get('R2_BUCKET_NAME'),
+              finalBucketName: this.bucketName,
+              endpointUsed: this.s3Client.config.endpoint,
+              isUsingCustomDomain: this.isCustomDomain,
+              publicUrlProvided: !!this.publicUrl,
+            }
+          });
+        } else {
+          this.logger.warn(`R2 health check failed on attempt ${attempt}, retrying...`, {
+            context: 'R2Service',
+            error: errorType,
+            errorMessage: error.message,
+            attempt,
+            nextRetryIn: `${retryDelay}ms`
+          });
+          
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+        
+        if (isLastAttempt) {
+          return false;
+        }
+      }
     }
+    
+    return false;
+  }
+  
+  /**
+   * Categorize R2 errors for better debugging and monitoring
+   */
+  private categorizeR2Error(error: any): string {
+    const errorCode = error.Code || error.name || 'UnknownError';
+    const errorMessage = error.message || '';
+    const httpStatus = error.$metadata?.httpStatusCode;
+    
+    // AWS SDK v3 specific errors
+    if (errorCode === 'NetworkingError' || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+      return 'NETWORK_ERROR';
+    }
+    
+    if (errorCode === 'SignatureDoesNotMatch' || errorCode === 'InvalidAccessKeyId' || errorCode === 'AccessDenied') {
+      // Log specific guidance for authentication errors
+      if (errorCode === 'SignatureDoesNotMatch') {
+        console.error('🔑 R2 Authentication Error - SignatureDoesNotMatch:', {
+          possibleCauses: [
+            'Incorrect R2_SECRET_ACCESS_KEY',
+            'Incorrect R2_ACCESS_KEY_ID',
+            'Credentials from wrong R2 account',
+            'Clock drift on server',
+            'Invalid characters in credentials'
+          ],
+          troubleshooting: 'Check Cloudflare R2 dashboard > Manage R2 API tokens'
+        });
+      }
+      return 'AUTHENTICATION_ERROR';
+    }
+    
+    if (errorCode === 'NoSuchBucket' || errorMessage.includes('bucket does not exist')) {
+      return 'BUCKET_NOT_FOUND';
+    }
+    
+    if (errorCode === 'InvalidBucketName') {
+      return 'INVALID_BUCKET_NAME';
+    }
+    
+    if (httpStatus === 403) {
+      return 'PERMISSION_DENIED';
+    }
+    
+    if (httpStatus === 404) {
+      return 'RESOURCE_NOT_FOUND';
+    }
+    
+    if (httpStatus === 429) {
+      return 'RATE_LIMITED';
+    }
+    
+    if (httpStatus && httpStatus >= 500) {
+      return 'SERVER_ERROR';
+    }
+    
+    if (errorMessage.includes('timeout') || errorMessage.includes('TIMEOUT')) {
+      return 'TIMEOUT_ERROR';
+    }
+    
+    if (errorMessage.includes('checksum') || errorMessage.includes('integrity')) {
+      return 'CHECKSUM_ERROR';
+    }
+    
+    if (errorCode === 'PermanentRedirect' || errorCode === 'BucketNotEmpty') {
+      return 'CONFIGURATION_ERROR';
+    }
+    
+    // R2-specific errors
+    if (errorMessage.includes('r2.cloudflarestorage.com') || errorMessage.includes('R2')) {
+      return 'R2_SPECIFIC_ERROR';
+    }
+    
+    return errorCode || 'UNKNOWN_ERROR';
   }
 
   /**

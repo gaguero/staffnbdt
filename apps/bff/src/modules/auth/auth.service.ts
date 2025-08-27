@@ -16,11 +16,21 @@ export interface JwtPayload {
   departmentId?: string;
   organizationId?: string;
   propertyId?: string;
+  // Standard JWT claims
+  iat?: number;
+  exp?: number;
+  nbf?: number;
+  aud?: string | string[];
+  iss?: string;
+  jti?: string;
 }
 
 export interface AuthResponse {
   user: Omit<User, 'deletedAt' | 'password'>;
   accessToken: string;
+  organization?: any;
+  property?: any;
+  availableProperties?: any[];
 }
 
 @Injectable()
@@ -78,6 +88,49 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
 
+    // Fetch organization and property details
+    let organization = null;
+    let property = null;
+    let availableProperties = [];
+
+    if (user.organizationId) {
+      organization = await this.prisma.organization.findUnique({
+        where: { id: user.organizationId },
+        select: {
+          id: true,
+          name: true,
+          branding: true,
+        },
+      });
+    }
+
+    if (user.propertyId) {
+      property = await this.prisma.property.findUnique({
+        where: { id: user.propertyId },
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          organizationId: true,
+          branding: true,
+        },
+      });
+    }
+
+    // Fetch available properties for the user's organization
+    if (user.organizationId) {
+      availableProperties = await this.prisma.property.findMany({
+        where: { organizationId: user.organizationId },
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          organizationId: true,
+          branding: true,
+        },
+      });
+    }
+
     // Log successful login
     await this.auditService.log({
       userId: user.id,
@@ -108,6 +161,9 @@ export class AuthService {
         updatedAt: user.updatedAt,
       },
       accessToken,
+      organization,
+      property,
+      availableProperties,
     };
   }
 
@@ -167,6 +223,49 @@ export class AuthService {
 
       const accessToken = this.jwtService.sign(newPayload);
 
+      // Fetch organization and property details
+      let organization = null;
+      let property = null;
+      let availableProperties = [];
+
+      if (user.organizationId) {
+        organization = await this.prisma.organization.findUnique({
+          where: { id: user.organizationId },
+          select: {
+            id: true,
+            name: true,
+            branding: true,
+          },
+        });
+      }
+
+      if (user.propertyId) {
+        property = await this.prisma.property.findUnique({
+          where: { id: user.propertyId },
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            organizationId: true,
+            branding: true,
+          },
+        });
+      }
+
+      // Fetch available properties for the user's organization
+      if (user.organizationId) {
+        availableProperties = await this.prisma.property.findMany({
+          where: { organizationId: user.organizationId },
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            organizationId: true,
+            branding: true,
+          },
+        });
+      }
+
       // Log successful magic link login
       await this.auditService.log({
         userId: user.id,
@@ -197,6 +296,9 @@ export class AuthService {
           updatedAt: user.updatedAt,
         },
         accessToken,
+        organization,
+        property,
+        availableProperties,
       };
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired magic link');

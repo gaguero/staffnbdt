@@ -40,23 +40,23 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 bg-sand">
+        <div className="px-6 py-4 border-b border-gray-200" style={{ backgroundColor: 'var(--brand-background)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Avatar */}
-              <div className="w-12 h-12 bg-warm-gold text-white rounded-full flex items-center justify-center font-medium text-lg">
+              <div className="w-12 h-12 text-white rounded-full flex items-center justify-center font-medium text-lg" style={{ backgroundColor: 'var(--brand-primary)' }}>
                 {user.firstName[0]}{user.lastName[0]}
               </div>
               <div>
-                <h2 className="text-xl font-heading font-bold text-charcoal">
+                <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--brand-text-primary)' }}>
                   {user.firstName} {user.lastName}
                   {user.deletedAt && (
-                    <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
+                    <span className="ml-2 px-2 py-1 text-xs rounded" style={{ backgroundColor: 'var(--brand-primary-200)', color: 'var(--brand-primary-800)' }}>
                       Inactive
                     </span>
                   )}
                 </h2>
-                <p className="text-sm text-gray-600">{user.email}</p>
+                <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>{user.email}</p>
               </div>
             </div>
             <button
@@ -75,9 +75,23 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               onClick={() => setActiveTab('details')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'details'
-                  ? 'border-warm-gold text-warm-gold'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-transparent'
+                  : 'border-transparent hover:border-gray-300'
               }`}
+              style={{
+                borderBottomColor: activeTab === 'details' ? 'var(--brand-primary)' : 'transparent',
+                color: activeTab === 'details' ? 'var(--brand-primary)' : 'var(--brand-text-secondary)'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== 'details') {
+                  e.currentTarget.style.color = 'var(--brand-text-primary)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== 'details') {
+                  e.currentTarget.style.color = 'var(--brand-text-secondary)';
+                }
+              }}
             >
               <span className="flex items-center space-x-2">
                 <span>👤</span>
@@ -88,9 +102,23 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               onClick={() => setActiveTab('activity')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'activity'
-                  ? 'border-warm-gold text-warm-gold'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-transparent'
+                  : 'border-transparent hover:border-gray-300'
               }`}
+              style={{
+                borderBottomColor: activeTab === 'activity' ? 'var(--brand-primary)' : 'transparent',
+                color: activeTab === 'activity' ? 'var(--brand-primary)' : 'var(--brand-text-secondary)'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== 'activity') {
+                  e.currentTarget.style.color = 'var(--brand-text-primary)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== 'activity') {
+                  e.currentTarget.style.color = 'var(--brand-text-secondary)';
+                }
+              }}
             >
               <span className="flex items-center space-x-2">
                 <span>📋</span>
@@ -101,9 +129,23 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               onClick={() => setActiveTab('properties')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'properties'
-                  ? 'border-warm-gold text-warm-gold'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-transparent'
+                  : 'border-transparent hover:border-gray-300'
               }`}
+              style={{
+                borderBottomColor: activeTab === 'properties' ? 'var(--brand-primary)' : 'transparent',
+                color: activeTab === 'properties' ? 'var(--brand-primary)' : 'var(--brand-text-secondary)'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== 'properties') {
+                  e.currentTarget.style.color = 'var(--brand-text-primary)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== 'properties') {
+                  e.currentTarget.style.color = 'var(--brand-text-secondary)';
+                }
+              }}
             >
               <span className="flex items-center space-x-2">
                 <span>🏢</span>
@@ -121,51 +163,51 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-charcoal border-b border-gray-200 pb-2">
+                  <h3 className="text-lg font-semibold border-b border-gray-200 pb-2" style={{ color: 'var(--brand-text-primary)' }}>
                     Basic Information
                   </h3>
                   
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--brand-text-secondary)' }}>
                         Full Name
                       </label>
-                      <p className="text-gray-900">{user.firstName} {user.lastName}</p>
+                      <p style={{ color: 'var(--brand-text-primary)' }}>{user.firstName} {user.lastName}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--brand-text-secondary)' }}>
                         Email Address
                       </label>
-                      <p className="text-gray-900">{user.email}</p>
+                      <p style={{ color: 'var(--brand-text-primary)' }}>{user.email}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--brand-text-secondary)' }}>
                         Role
                       </label>
-                      <p className="text-gray-900">{formatRole(user.role)}</p>
+                      <p style={{ color: 'var(--brand-text-primary)' }}>{formatRole(user.role)}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--brand-text-secondary)' }}>
                         Position
                       </label>
-                      <p className="text-gray-900">{user.position || 'Not set'}</p>
+                      <p style={{ color: 'var(--brand-text-primary)' }}>{user.position || 'Not set'}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--brand-text-secondary)' }}>
                         Phone Number
                       </label>
-                      <p className="text-gray-900">{user.phoneNumber || 'Not set'}</p>
+                      <p style={{ color: 'var(--brand-text-primary)' }}>{user.phoneNumber || 'Not set'}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--brand-text-secondary)' }}>
                         Department
                       </label>
-                      <p className="text-gray-900">{user.department?.name || 'No Department'}</p>
+                      <p style={{ color: 'var(--brand-text-primary)' }}>{user.department?.name || 'No Department'}</p>
                     </div>
 
                     {/* Property Access Summary */}
@@ -174,13 +216,16 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                         Property Access
                       </label>
                       <div className="flex items-center space-x-2">
-                        <p className="text-gray-900">
+                        <p style={{ color: 'var(--brand-text-primary)' }}>
                           {user.properties ? `${user.properties.length} properties` : 'No property access'}
                         </p>
                         {canManageProperty() && (
                           <button
                             onClick={() => setShowPropertyAssignment(true)}
-                            className="text-xs text-warm-gold hover:text-opacity-80 underline"
+                            className="text-xs underline"
+                            style={{ color: 'var(--brand-primary)' }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--brand-primary-600)'}
+                            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--brand-primary)'}
                           >
                             Manage
                           </button>
@@ -191,13 +236,14 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                           {user.properties.slice(0, 3).map((property) => (
                             <span
                               key={property.id}
-                              className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-warm-gold bg-opacity-10 text-warm-gold"
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs"
+                              style={{ backgroundColor: 'var(--brand-primary-50)', color: 'var(--brand-primary)' }}
                             >
                               {property.name}
                             </span>
                           ))}
                           {user.properties.length > 3 && (
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs" style={{ color: 'var(--brand-text-muted)' }}>
                               +{user.properties.length - 3} more
                             </span>
                           )}
@@ -209,7 +255,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 
                 {/* Employment & Contact Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-charcoal border-b border-gray-200 pb-2">
+                  <h3 className="text-lg font-semibold border-b border-gray-200 pb-2" style={{ color: 'var(--brand-text-primary)' }}>
                     Employment & Contact
                   </h3>
                   
@@ -218,27 +264,27 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Hire Date
                       </label>
-                      <p className="text-gray-900">{formatDate(user.hireDate)}</p>
+                      <p style={{ color: 'var(--brand-text-primary)' }}>{formatDate(user.hireDate)}</p>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Account Created
                       </label>
-                      <p className="text-gray-900">{formatDate(user.createdAt)}</p>
+                      <p style={{ color: 'var(--brand-text-primary)' }}>{formatDate(user.createdAt)}</p>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Status
                       </label>
-                      <p className="text-gray-900">
+                      <p style={{ color: 'var(--brand-text-primary)' }}>
                         {user.deletedAt ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'var(--brand-primary-200)', color: 'var(--brand-primary-800)' }}>
                             Inactive since {formatDate(user.deletedAt)}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'var(--brand-primary-100)', color: 'var(--brand-primary-700)' }}>
                             Active
                           </span>
                         )}
@@ -257,12 +303,12 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                             // New format
                             user.emergencyContact.contacts.map((contact: any, index: number) => (
                               <div key={index} className={index > 0 ? 'border-t border-gray-200 pt-2' : ''}>
-                                <p className="font-medium text-gray-900">
-                                  {contact.name} {contact.isPrimary && <span className="text-xs bg-warm-gold text-white px-1 rounded">Primary</span>}
+                                <p className="font-medium" style={{ color: 'var(--brand-text-primary)' }}>
+                                  {contact.name} {contact.isPrimary && <span className="text-xs text-white px-1 rounded" style={{ backgroundColor: 'var(--brand-primary)' }}>Primary</span>}
                                 </p>
-                                <p className="text-sm text-gray-600">{contact.relationship}</p>
-                                <p className="text-sm text-gray-600">{contact.phoneNumber}</p>
-                                {contact.email && <p className="text-sm text-gray-600">{contact.email}</p>}
+                                <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>{contact.relationship}</p>
+                                <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>{contact.phoneNumber}</p>
+                                {contact.email && <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>{contact.email}</p>}
                               </div>
                             ))
                           ) : (
@@ -270,22 +316,22 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                             <>
                               {user.emergencyContact.primaryContact && (
                                 <div>
-                                  <p className="font-medium text-gray-900">
-                                    {user.emergencyContact.primaryContact.name} <span className="text-xs bg-warm-gold text-white px-1 rounded">Primary</span>
+                                  <p className="font-medium" style={{ color: 'var(--brand-text-primary)' }}>
+                                    {user.emergencyContact.primaryContact.name} <span className="text-xs text-white px-1 rounded" style={{ backgroundColor: 'var(--brand-primary)' }}>Primary</span>
                                   </p>
-                                  <p className="text-sm text-gray-600">{user.emergencyContact.primaryContact.relationship}</p>
-                                  <p className="text-sm text-gray-600">{user.emergencyContact.primaryContact.phoneNumber}</p>
-                                  {user.emergencyContact.primaryContact.email && <p className="text-sm text-gray-600">{user.emergencyContact.primaryContact.email}</p>}
+                                  <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>{user.emergencyContact.primaryContact.relationship}</p>
+                                  <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>{user.emergencyContact.primaryContact.phoneNumber}</p>
+                                  {user.emergencyContact.primaryContact.email && <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>{user.emergencyContact.primaryContact.email}</p>}
                                 </div>
                               )}
                               {user.emergencyContact.secondaryContact && (
                                 <div className="border-t border-gray-200 pt-2">
-                                  <p className="font-medium text-gray-900">
-                                    {user.emergencyContact.secondaryContact.name} <span className="text-xs bg-gray-500 text-white px-1 rounded">Secondary</span>
+                                  <p className="font-medium" style={{ color: 'var(--brand-text-primary)' }}>
+                                    {user.emergencyContact.secondaryContact.name} <span className="text-xs text-white px-1 rounded" style={{ backgroundColor: 'var(--brand-text-secondary)' }}>Secondary</span>
                                   </p>
-                                  <p className="text-sm text-gray-600">{user.emergencyContact.secondaryContact.relationship}</p>
-                                  <p className="text-sm text-gray-600">{user.emergencyContact.secondaryContact.phoneNumber}</p>
-                                  {user.emergencyContact.secondaryContact.email && <p className="text-sm text-gray-600">{user.emergencyContact.secondaryContact.email}</p>}
+                                  <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>{user.emergencyContact.secondaryContact.relationship}</p>
+                                  <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>{user.emergencyContact.secondaryContact.phoneNumber}</p>
+                                  {user.emergencyContact.secondaryContact.email && <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>{user.emergencyContact.secondaryContact.email}</p>}
                                 </div>
                               )}
                             </>
@@ -299,10 +345,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 
               {/* System Information */}
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-charcoal mb-4">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--brand-text-primary)' }}>
                   System Information
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm" style={{ color: 'var(--brand-text-secondary)' }}>
                   <div>
                     <span className="font-medium">User ID:</span> {user.id}
                   </div>
@@ -328,7 +374,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
             <div className="p-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-charcoal">
+                  <h3 className="text-lg font-semibold" style={{ color: 'var(--brand-text-primary)' }}>
                     Property Access
                   </h3>
                   {canManageProperty() && (
@@ -349,18 +395,18 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                         className="border border-gray-200 rounded-lg p-3"
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-warm-gold text-white rounded-full flex items-center justify-center font-medium text-sm">
+                          <div className="w-8 h-8 text-white rounded-full flex items-center justify-center font-medium text-sm" style={{ backgroundColor: 'var(--brand-primary)' }}>
                             {property.name[0]?.toUpperCase() || 'P'}
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-medium text-charcoal">
+                            <h4 className="font-medium" style={{ color: 'var(--brand-text-primary)' }}>
                               {property.name}
                             </h4>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm" style={{ color: 'var(--brand-text-secondary)' }}>
                               {property.code}
                             </p>
                             {property.address && (
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs" style={{ color: 'var(--brand-text-muted)' }}>
                                 {typeof property.address === 'string' 
                                   ? property.address
                                   : `${property.address.city || ''}, ${property.address.country || ''}`
@@ -368,7 +414,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                               </p>
                             )}
                           </div>
-                          <div className="text-green-600">
+                          <div style={{ color: 'var(--brand-primary)' }}>
                             <span className="text-sm">✓</span>
                           </div>
                         </div>
@@ -378,11 +424,14 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                 ) : (
                   <div className="text-center py-8">
                     <div className="text-4xl mb-2">🏢</div>
-                    <p className="text-gray-500">No property access assigned</p>
+                    <p style={{ color: 'var(--brand-text-secondary)' }}>No property access assigned</p>
                     {canManageProperty() && (
                       <button
                         onClick={() => setShowPropertyAssignment(true)}
-                        className="mt-3 text-sm text-warm-gold hover:text-opacity-80 underline"
+                        className="mt-3 text-sm underline"
+                        style={{ color: 'var(--brand-primary)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--brand-primary-600)'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--brand-primary)'}
                       >
                         Assign Properties
                       </button>
@@ -401,7 +450,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               {onEdit && (
                 <button
                   onClick={() => onEdit(user)}
-                  className="px-4 py-2 bg-warm-gold text-white rounded-md hover:bg-opacity-90 font-medium"
+                  className="px-4 py-2 text-white rounded-md font-medium transition-colors"
+                  style={{ backgroundColor: 'var(--brand-primary)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--brand-primary-600)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--brand-primary)'}
                 >
                   Edit User
                 </button>
@@ -409,7 +461,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              className="px-4 py-2 transition-colors"
+              style={{ color: 'var(--brand-text-secondary)' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--brand-text-primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--brand-text-secondary)'}
             >
               Close
             </button>

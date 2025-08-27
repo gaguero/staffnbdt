@@ -161,7 +161,7 @@ const InvitationModal: React.FC<InvitationModalProps> = ({
           fallback={
             <div className="p-6 text-center">
               <div className="text-4xl mb-3">🔒</div>
-              <h3 className="text-lg font-bold text-charcoal mb-2">Access Denied</h3>
+              <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--brand-text-primary)' }}>Access Denied</h3>
               <p className="text-gray-600 mb-4">You don't have permission to send user invitations.</p>
               <button
                 onClick={onClose}
@@ -173,10 +173,10 @@ const InvitationModal: React.FC<InvitationModalProps> = ({
           }
         >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 bg-sand">
+        <div className="px-6 py-4 border-b border-gray-200" style={{ backgroundColor: 'var(--brand-background)' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-warm-gold text-white rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 text-white rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--brand-primary)' }}>
                 <span className="text-lg">📧</span>
               </div>
               <div>

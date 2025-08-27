@@ -1,0 +1,274 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\jovy2\\Documents\\VTF\\staffnbdt\\playwright.config.ts",
+    "rootDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/tests",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "C:\\Users\\jovy2\\Documents\\VTF\\staffnbdt\\tests\\global-setup.ts",
+    "globalTeardown": "C:\\Users\\jovy2\\Documents\\VTF\\staffnbdt\\tests\\global-teardown.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "environment": "development",
+      "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
+      "apiUrl": "https://backend-copy-production-328d.up.railway.app",
+      "testSuite": "Hotel Operations Hub - Logging Verification",
+      "version": "1.0.0"
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "environment": "development",
+          "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
+          "apiUrl": "https://backend-copy-production-328d.up.railway.app",
+          "testSuite": "Hotel Operations Hub - Logging Verification",
+          "version": "1.0.0"
+        },
+        "id": "setup",
+        "name": "setup",
+        "testDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.setup\\.ts/"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "environment": "development",
+          "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
+          "apiUrl": "https://backend-copy-production-328d.up.railway.app",
+          "testSuite": "Hotel Operations Hub - Logging Verification",
+          "version": "1.0.0"
+        },
+        "id": "Desktop Chrome",
+        "name": "Desktop Chrome",
+        "testDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/tests",
+        "testIgnore": [
+          "**/setup/**",
+          "**/*.setup.ts"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "environment": "development",
+          "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
+          "apiUrl": "https://backend-copy-production-328d.up.railway.app",
+          "testSuite": "Hotel Operations Hub - Logging Verification",
+          "version": "1.0.0"
+        },
+        "id": "Desktop Firefox",
+        "name": "Desktop Firefox",
+        "testDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/tests",
+        "testIgnore": [
+          "**/setup/**",
+          "**/*.setup.ts"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "environment": "development",
+          "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
+          "apiUrl": "https://backend-copy-production-328d.up.railway.app",
+          "testSuite": "Hotel Operations Hub - Logging Verification",
+          "version": "1.0.0"
+        },
+        "id": "Desktop Safari",
+        "name": "Desktop Safari",
+        "testDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/tests",
+        "testIgnore": [
+          "**/setup/**",
+          "**/*.setup.ts"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "environment": "development",
+          "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
+          "apiUrl": "https://backend-copy-production-328d.up.railway.app",
+          "testSuite": "Hotel Operations Hub - Logging Verification",
+          "version": "1.0.0"
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/tests",
+        "testIgnore": [
+          "**/setup/**",
+          "**/*.setup.ts"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "environment": "development",
+          "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
+          "apiUrl": "https://backend-copy-production-328d.up.railway.app",
+          "testSuite": "Hotel Operations Hub - Logging Verification",
+          "version": "1.0.0"
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/tests",
+        "testIgnore": [
+          "**/setup/**",
+          "**/*.setup.ts"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "environment": "development",
+          "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
+          "apiUrl": "https://backend-copy-production-328d.up.railway.app",
+          "testSuite": "Hotel Operations Hub - Logging Verification",
+          "version": "1.0.0"
+        },
+        "id": "API Tests",
+        "name": "API Tests",
+        "testDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/api/**/*.test.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "environment": "development",
+          "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
+          "apiUrl": "https://backend-copy-production-328d.up.railway.app",
+          "testSuite": "Hotel Operations Hub - Logging Verification",
+          "version": "1.0.0"
+        },
+        "id": "Logging Verification",
+        "name": "Logging Verification",
+        "testDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/logging/**/*.test.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "environment": "development",
+          "railwayUrl": "https://frontend-copy-production-f1da.up.railway.app",
+          "apiUrl": "https://backend-copy-production-328d.up.railway.app",
+          "testSuite": "Hotel Operations Hub - Logging Verification",
+          "version": "1.0.0"
+        },
+        "id": "Performance Tests",
+        "name": "Performance Tests",
+        "testDir": "C:/Users/jovy2/Documents/VTF/staffnbdt/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/performance/**/*.test.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.54.2",
+    "workers": 4,
+    "webServer": {
+      "command": "echo \"Using Railway deployment for testing\"",
+      "url": "https://frontend-copy-production-f1da.up.railway.app",
+      "timeout": 10000,
+      "reuseExistingServer": true
+    }
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "Error: Login failed - still on login page",
+      "stack": "Error: Login failed - still on login page\n    at LoginPage.login (C:\\Users\\jovy2\\Documents\\VTF\\staffnbdt\\tests\\utils\\LoginPage.ts:45:15)\n    at globalSetup (C:\\Users\\jovy2\\Documents\\VTF\\staffnbdt\\tests\\global-setup.ts:31:5)",
+      "location": {
+        "file": "C:\\Users\\jovy2\\Documents\\VTF\\staffnbdt\\tests\\utils\\LoginPage.ts",
+        "column": 15,
+        "line": 45
+      },
+      "snippet": "\u001b[90m   at \u001b[39mutils\\LoginPage.ts:45\n\n\u001b[0m \u001b[90m 43 |\u001b[39m           \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m`Login failed with error: ${errorText}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 44 |\u001b[39m         }\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 45 |\u001b[39m         \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'Login failed - still on login page'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 46 |\u001b[39m       }\n \u001b[90m 47 |\u001b[39m       \u001b[90m// If we're not on login page, assume success\u001b[39m\n \u001b[90m 48 |\u001b[39m       console\u001b[33m.\u001b[39mlog(\u001b[32m`Login appears successful, current URL: ${currentUrl}`\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+    }
+  ],
+  "stats": {
+    "startTime": "2025-08-26T22:21:18.057Z",
+    "duration": 26126.607,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

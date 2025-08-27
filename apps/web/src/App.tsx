@@ -23,6 +23,7 @@ import OrganizationsPage from './pages/OrganizationsPage';
 import PropertiesPage from './pages/PropertiesPage';
 import BrandStudioPage from './pages/BrandStudioPage';
 import ComponentsTestPage from './pages/ComponentsTestPage';
+import EnhancedOrganizationsPagePhase4 from './pages/EnhancedOrganizationsPagePhase4';
 
 // Login component
 const LoginPage = () => {
@@ -246,6 +247,16 @@ const App: React.FC = () => {
             <ProtectedRoute roles={['PLATFORM_ADMIN', 'PROPERTY_MANAGER']}>
               <Layout>
                 <OrganizationsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/organizations-enhanced" 
+          element={
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'PROPERTY_MANAGER']}>
+              <Layout>
+                <EnhancedOrganizationsPagePhase4 />
               </Layout>
             </ProtectedRoute>
           } 

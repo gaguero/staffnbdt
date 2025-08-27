@@ -59,15 +59,15 @@ export class BrandTypographyDto {
 
 export class BrandAssetsDto {
   @IsOptional()
-  @IsUrl()
+  @IsString()
   logoUrl?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
   logoDarkUrl?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
   faviconUrl?: string;
 }
 

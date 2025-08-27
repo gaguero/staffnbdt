@@ -186,10 +186,18 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
         <button
           onClick={() => setIsOpen(!isOpen)}
           disabled={isLoading}
-          className={`flex items-center space-x-1 ${currentSize.button} text-left rounded-md border border-gray-200 hover:border-warm-gold hover:bg-sand transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+          className={`flex items-center space-x-1 ${currentSize.button} text-left rounded-md border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'var(--brand-primary)';
+            e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#d1d5db';
+            e.currentTarget.style.backgroundColor = '';
+          }}
           title={`${getCurrentOrganizationName()} - ${getCurrentPropertyName()}`}
         >
-          <div className={`${currentSize.avatar} bg-warm-gold text-white rounded-full flex items-center justify-center font-medium`}>
+          <div className={`${currentSize.avatar} text-white rounded-full flex items-center justify-center font-medium`} style={{ backgroundColor: 'var(--brand-primary)' }}>
             {getCurrentPropertyName()[0]?.toUpperCase() || 'P'}
           </div>
           <span className={`text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
@@ -209,9 +217,23 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
                 key={property.id}
                 onClick={() => handlePropertySelect(property.id)}
                 disabled={isLoading}
-                className={`w-full p-2 text-left hover:bg-sand transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${currentPropertyId === property.id ? 'bg-warm-gold bg-opacity-10 border-l-2 border-warm-gold' : ''}`}
+                className={`w-full p-2 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${currentPropertyId === property.id ? 'border-l-2' : ''}`}
+                style={{
+                  backgroundColor: currentPropertyId === property.id ? 'var(--brand-primary-50)' : 'transparent',
+                  borderLeftColor: currentPropertyId === property.id ? 'var(--brand-primary)' : 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.backgroundColor = currentPropertyId === property.id ? 'var(--brand-primary-50)' : 'transparent';
+                  }
+                }}
               >
-                <div className="text-xs font-medium text-charcoal truncate">{property.name}</div>
+                <div className="text-xs font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>{property.name}</div>
                 <div className="text-xs text-gray-500 truncate">{property.code}</div>
               </button>
             ))}
@@ -236,7 +258,19 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
         <button
           onClick={() => setIsOpen(true)}
           disabled={isLoading}
-          className={`flex items-center space-x-2 px-3 py-2 text-left rounded-lg border border-gray-200 hover:border-warm-gold hover:bg-sand transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+          className={`flex items-center space-x-2 px-3 py-2 text-left rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+          onMouseEnter={(e) => {
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.borderColor = 'var(--brand-primary)';
+              e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.backgroundColor = '';
+            }
+          }}
         >
           <div className="flex-1 min-w-0">
             {showOrganization && (
@@ -244,13 +278,13 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
                 {getCurrentOrganizationName()}
               </div>
             )}
-            <div className="text-sm font-medium text-charcoal truncate">
+            <div className="text-sm font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>
               {getCurrentPropertyName()}
             </div>
           </div>
           <div className="text-gray-400">
             {isLoading ? (
-              <div className="w-4 h-4 border-2 border-warm-gold border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--brand-primary)', borderTopColor: 'transparent' }} />
             ) : (
               <span className="text-lg">🔄</span>
             )}
@@ -263,12 +297,14 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-96 overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-charcoal">
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--brand-text-primary)' }}>
                   {t('propertySelector.selectProperty')}
                 </h3>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="text-gray-400 hover:text-charcoal transition-colors"
+                  className="text-gray-400 transition-colors"
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--brand-text-primary)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}
                   aria-label="Close"
                 >
                   <span className="text-xl">✕</span>
@@ -282,7 +318,15 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
                   placeholder={t('common.search')}  
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent"
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--brand-primary)';
+                    e.currentTarget.style.boxShadow = `0 0 0 2px rgba(170, 142, 103, 0.2)`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                    e.currentTarget.style.boxShadow = '';
+                  }}
                   autoFocus
                 />
               </div>
@@ -327,23 +371,37 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
                       key={property.id}
                       onClick={() => handlePropertySelect(property.id)}
                       disabled={isLoading}
-                      className={`w-full p-4 text-left hover:bg-sand transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                        currentPropertyId === property.id ? 'bg-warm-gold bg-opacity-10 border-l-4 border-warm-gold' : ''
+                      className={`w-full p-4 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        currentPropertyId === property.id ? 'border-l-4' : ''
                       } ${index === 0 ? 'rounded-t-lg' : ''} ${index === filteredProperties.length - 1 ? 'rounded-b-lg' : ''}`}
+                      style={{
+                        backgroundColor: currentPropertyId === property.id ? 'var(--brand-primary-50)' : 'transparent',
+                        borderLeftColor: currentPropertyId === property.id ? 'var(--brand-primary)' : 'transparent'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!e.currentTarget.disabled) {
+                          e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!e.currentTarget.disabled) {
+                          e.currentTarget.style.backgroundColor = currentPropertyId === property.id ? 'var(--brand-primary-50)' : 'transparent';
+                        }
+                      }}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-warm-gold text-white rounded-full flex items-center justify-center text-sm font-medium">
+                        <div className="w-8 h-8 text-white rounded-full flex items-center justify-center text-sm font-medium" style={{ backgroundColor: 'var(--brand-primary)' }}>
                           {property.name[0]?.toUpperCase() || 'P'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-charcoal truncate">{property.name}</div>
+                          <div className="font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>{property.name}</div>
                           <div className="text-sm text-gray-500 truncate">{property.code}</div>
                           {property.address && (
                             <div className="text-xs text-gray-400 mt-1 truncate">{formatAddress(property.address)}</div>
                           )}
                         </div>
                         {currentPropertyId === property.id && (
-                          <div className="text-warm-gold">
+                          <div style={{ color: 'var(--brand-primary)' }}>
                             <span className="text-lg">✓</span>
                           </div>
                         )}
@@ -375,7 +433,15 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={isLoading}
-        className="flex items-center justify-between w-full px-3 py-2 text-left rounded-lg border border-gray-200 hover:border-warm-gold hover:bg-sand transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center justify-between w-full px-3 py-2 text-left rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'var(--brand-primary)';
+          e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = '#d1d5db';
+          e.currentTarget.style.backgroundColor = '';
+        }}
       >
         <div className="flex-1 min-w-0">
           {showOrganization && (
@@ -383,13 +449,13 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
               {getCurrentOrganizationName()}
             </div>
           )}
-          <div className="text-sm font-medium text-charcoal truncate">
+          <div className="text-sm font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>
             {getCurrentPropertyName()}
           </div>
         </div>
         <div className="flex items-center space-x-2">
           {isLoading && (
-            <div className="w-4 h-4 border-2 border-warm-gold border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--brand-primary)', borderTopColor: 'transparent' }} />
           )}
           <span className={`text-sm transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
         </div>
@@ -406,7 +472,15 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
                 placeholder={`Search ${availableProperties.length} properties...`}
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-warm-gold"
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1"
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--brand-primary)';
+                  e.currentTarget.style.boxShadow = `0 0 0 1px var(--brand-primary)`;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.boxShadow = '';
+                }}
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
@@ -442,23 +516,37 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
                 key={property.id}
                 onClick={() => handlePropertySelect(property.id)}
                 disabled={isLoading}
-                className={`w-full p-3 text-left hover:bg-sand transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                  currentPropertyId === property.id ? 'bg-warm-gold bg-opacity-10 border-l-4 border-warm-gold' : ''
+                className={`w-full p-3 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  currentPropertyId === property.id ? 'border-l-4' : ''
                 } ${index === 0 ? 'first:rounded-t-lg' : ''} ${index === filteredProperties.length - 1 ? 'last:rounded-b-lg' : ''}`}
+                style={{
+                  backgroundColor: currentPropertyId === property.id ? 'var(--brand-primary-50)' : 'transparent',
+                  borderLeftColor: currentPropertyId === property.id ? 'var(--brand-primary)' : 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.backgroundColor = currentPropertyId === property.id ? 'var(--brand-primary-50)' : 'transparent';
+                  }
+                }}
               >
                 <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-warm-gold text-white rounded-full flex items-center justify-center text-xs font-medium">
+                  <div className="w-6 h-6 text-white rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'var(--brand-primary)' }}>
                     {property.name[0]?.toUpperCase() || 'P'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-charcoal truncate">{property.name}</div>
+                    <div className="font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>{property.name}</div>
                     <div className="text-sm text-gray-500 truncate">{property.code}</div>
                     {property.address && (
                       <div className="text-xs text-gray-400 mt-1 truncate">{formatAddress(property.address)}</div>
                     )}
                   </div>
                   {currentPropertyId === property.id && (
-                    <div className="text-warm-gold">
+                    <div style={{ color: 'var(--brand-primary)' }}>
                       <span className="text-sm">✓</span>
                     </div>
                   )}
@@ -481,7 +569,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
       {isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50 rounded-lg">
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 border-2 border-warm-gold border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--brand-primary)', borderTopColor: 'transparent' }}></div>
             <span className="text-sm text-gray-600">{t('propertySelector.loading')}</span>
           </div>
         </div>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Frontend Branding API</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .log { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffe6e6; color: #cc0000; }
+        .success { background: #e6ffe6; color: #008000; }
+        .warning { background: #fff3cd; color: #856404; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Frontend Branding API Test</h1>
+        <p>This will test the branding API fix by navigating to the Railway frontend and testing the brand studio functionality.</p>
+        
+        <button onclick="testBrandStudio()">Test Brand Studio</button>
+        <button onclick="checkUserContext()">Check User Context</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+        
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'log') {
+            const logs = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `${new Date().toLocaleTimeString()}: ${message}`;
+            logs.appendChild(div);
+            console.log(message);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function checkUserContext() {
+            log('🔍 Opening Railway frontend to check user context...');
+            
+            // Open Railway frontend in new tab
+            const frontendWindow = window.open('https://frontend-production-55d3.up.railway.app', '_blank');
+            
+            log('✅ Opened frontend. Please login manually and then click "Test Brand Studio" to continue the test.', 'success');
+        }
+
+        async function testBrandStudio() {
+            log('🎨 Testing Brand Studio functionality...');
+            log('⚠️ This test requires manual navigation. Please follow these steps:', 'warning');
+            log('1. Login to the Railway frontend: https://frontend-production-55d3.up.railway.app');
+            log('2. Use credentials: admin@nayara.com with any password');
+            log('3. Navigate to Brand Studio (look for it in the navigation)');
+            log('4. Try to save branding changes');
+            log('5. Check browser console for any errors');
+            log('6. Look for API calls to /api/branding/organizations/{id} (should NOT be undefined)');
+            
+            // Additional instructions for manual testing
+            log('🔧 What to test:', 'warning');
+            log('- Primary color picker works');
+            log('- Save button triggers API call');
+            log('- API endpoint shows organization ID (not undefined)');
+            log('- No 404 errors in network tab');
+            log('- User shows proper organization context');
+            
+            // Open frontend for manual testing
+            window.open('https://frontend-production-55d3.up.railway.app', '_blank');
+        }
+
+        // Auto-check on page load
+        window.onload = function() {
+            log('🚀 Branding API Fix Test Page Loaded');
+            log('📋 This page will help test if the organization context undefined issue is fixed.');
+            log('Click "Check User Context" to start the test.');
+        };
+    </script>
+</body>
+</html>

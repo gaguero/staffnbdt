@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { Organization, Property, User, Role } from '@prisma/client';
 
@@ -7,11 +7,63 @@ export interface TenantContext {
   property: Property;
 }
 
-@Injectable()
-export class TenantService {
-  private readonly logger = new Logger(TenantService.name);
+interface CachedTenantContext {
+  tenantContext: TenantContext | null;
+  timestamp: number;
+}
 
-  constructor(private readonly prisma: PrismaService) {}
+const TENANT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_BASE_DELAY = 1000; // 1 second
+
+@Injectable()
+export class TenantService implements OnModuleDestroy {
+  private readonly logger = new Logger(TenantService.name);
+  private readonly tenantCache = new Map<string, CachedTenantContext>();
+  private cacheCleanupInterval: NodeJS.Timeout;
+
+  constructor(private readonly prisma: PrismaService) {
+    // Start periodic cache cleanup
+    this.startCacheCleanup();
+  }
+
+  /**
+   * Start periodic cache cleanup to prevent memory leaks
+   */
+  private startCacheCleanup(): void {
+    this.cacheCleanupInterval = setInterval(() => {
+      this.cleanupExpiredCacheEntries();
+    }, TENANT_CACHE_TTL); // Clean up every TTL period
+  }
+
+  /**
+   * Clean up expired cache entries
+   */
+  private cleanupExpiredCacheEntries(): void {
+    const now = Date.now();
+    let cleanedCount = 0;
+    
+    for (const [key, cached] of this.tenantCache.entries()) {
+      if ((now - cached.timestamp) >= TENANT_CACHE_TTL) {
+        this.tenantCache.delete(key);
+        cleanedCount++;
+      }
+    }
+    
+    if (cleanedCount > 0) {
+      this.logger.debug(`Cleaned up ${cleanedCount} expired cache entries`);
+    }
+  }
+
+  /**
+   * Cleanup resources when service is destroyed
+   */
+  onModuleDestroy(): void {
+    if (this.cacheCleanupInterval) {
+      clearInterval(this.cacheCleanupInterval);
+    }
+    this.clearAllTenantCache();
+  }
 
   async getDefaultTenant(): Promise<TenantContext> {
     // Try to find existing default organization and property
@@ -104,36 +156,167 @@ export class TenantService {
   }
 
   /**
-   * Get tenant context from a user
+   * Get tenant context from a user with caching and retry logic
    */
   async getTenantFromUser(userId: string): Promise<TenantContext | null> {
+    if (!userId) {
+      this.logger.warn('getTenantFromUser called with empty userId');
+      return null;
+    }
+
+    // Check memory cache first
+    const cacheKey = `tenant_${userId}`;
+    const cachedResult = this.tenantCache.get(cacheKey);
+    if (cachedResult && (Date.now() - cachedResult.timestamp) < TENANT_CACHE_TTL) {
+      this.logger.debug(`Using cached tenant context for user ${userId}`);
+      return cachedResult.tenantContext;
+    }
+
+    // Attempt database lookup with retries
+    let tenantContext: TenantContext | null = null;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+      try {
+        this.logger.debug(`Attempting to fetch tenant context for user ${userId} (attempt ${attempt}/${MAX_RETRY_ATTEMPTS})`);
+        
+        // Check database connectivity before making query
+        await this.checkDatabaseConnectivity();
+        
+        tenantContext = await this.fetchUserTenantContext(userId);
+        
+        // Cache the result (even if null)
+        this.tenantCache.set(cacheKey, {
+          tenantContext,
+          timestamp: Date.now()
+        });
+        
+        if (tenantContext) {
+          this.logger.debug(`Successfully retrieved tenant context for user ${userId}`);
+        } else {
+          this.logger.warn(`No tenant context found for user ${userId}`);
+        }
+        
+        return tenantContext;
+        
+      } catch (error) {
+        lastError = error;
+        this.logger.warn(`Attempt ${attempt} failed for user ${userId}: ${error.message}`);
+        
+        if (attempt < MAX_RETRY_ATTEMPTS) {
+          const delay = RETRY_BASE_DELAY * Math.pow(2, attempt - 1); // Exponential backoff
+          this.logger.debug(`Retrying in ${delay}ms...`);
+          await this.sleep(delay);
+        }
+      }
+    }
+
+    // All retries failed
+    this.logger.error(`Failed to get tenant context for user ${userId} after ${MAX_RETRY_ATTEMPTS} attempts. Last error: ${lastError?.message}`, lastError?.stack);
+    
+    // Cache the failure to prevent repeated attempts for a short period
+    this.tenantCache.set(cacheKey, {
+      tenantContext: null,
+      timestamp: Date.now()
+    });
+    
+    return null;
+  }
+
+  /**
+   * Actual database query logic separated for better testing and error handling
+   */
+  private async fetchUserTenantContext(userId: string): Promise<TenantContext | null> {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { 
+        id: userId,
+        deletedAt: null  // Important: only fetch active users
+      },
       include: {
         organization: true,
         property: true
       }
     });
 
-    if (!user?.organization) {
+    if (!user) {
+      this.logger.warn(`User ${userId} not found in database`);
+      return null;
+    }
+
+    if (!user.organization) {
+      this.logger.warn(`User ${userId} (${user.email}) has no organization assignment`);
       return null;
     }
 
     // If user has no property, use the first property of their organization
     let property = user.property;
     if (!property) {
+      this.logger.warn(`User ${userId} (${user.email}) has no property assignment, finding first property in organization`);
+      
       property = await this.prisma.property.findFirst({
-        where: { organizationId: user.organizationId! }
+        where: { 
+          organizationId: user.organizationId!,
+          isActive: true
+        },
+        orderBy: { createdAt: 'asc' }
       });
-    }
-
-    if (!property) {
-      return null;
+      
+      if (!property) {
+        this.logger.warn(`No active properties found for organization ${user.organizationId}`);
+        return null;
+      }
     }
 
     return {
       organization: user.organization,
       property
+    };
+  }
+
+  /**
+   * Check database connectivity
+   */
+  private async checkDatabaseConnectivity(): Promise<void> {
+    try {
+      await this.prisma.$queryRaw`SELECT 1 as health_check`;
+    } catch (error) {
+      this.logger.error('Database connectivity check failed', error.stack);
+      throw new Error(`Database connectivity issue: ${error.message}`);
+    }
+  }
+
+  /**
+   * Sleep utility for retry delays
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Clear tenant cache for a specific user
+   */
+  clearTenantCache(userId: string): void {
+    const cacheKey = `tenant_${userId}`;
+    this.tenantCache.delete(cacheKey);
+    this.logger.debug(`Cleared tenant cache for user ${userId}`);
+  }
+
+  /**
+   * Clear all tenant cache entries
+   */
+  clearAllTenantCache(): void {
+    const size = this.tenantCache.size;
+    this.tenantCache.clear();
+    this.logger.debug(`Cleared entire tenant cache (${size} entries)`);
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats(): { size: number; entries: string[] } {
+    return {
+      size: this.tenantCache.size,
+      entries: Array.from(this.tenantCache.keys())
     };
   }
 
@@ -368,62 +551,134 @@ export class TenantService {
    * This should be called during user login/JWT refresh
    */
   async ensureUserTenantAssignment(userId: string): Promise<{ organizationId: string; propertyId: string }> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        organizationId: true,
-        propertyId: true,
-        role: true
+    if (!userId) {
+      this.logger.error('ensureUserTenantAssignment called with empty userId');
+      throw new NotFoundException('User ID is required');
+    }
+
+    this.logger.debug(`Ensuring tenant assignment for user ${userId}`);
+    
+    let user: any;
+    let lastError: Error | null = null;
+    
+    // Retry logic for database lookup
+    for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+      try {
+        this.logger.debug(`Fetching user ${userId} for tenant assignment (attempt ${attempt}/${MAX_RETRY_ATTEMPTS})`);
+        
+        // Check database connectivity
+        await this.checkDatabaseConnectivity();
+        
+        user = await this.prisma.user.findUnique({
+          where: { 
+            id: userId,
+            deletedAt: null // Only active users
+          },
+          select: {
+            id: true,
+            email: true,
+            organizationId: true,
+            propertyId: true,
+            role: true
+          }
+        });
+        
+        break; // Success, exit retry loop
+        
+      } catch (error) {
+        lastError = error;
+        this.logger.warn(`Database lookup attempt ${attempt} failed for user ${userId}: ${error.message}`);
+        
+        if (attempt < MAX_RETRY_ATTEMPTS) {
+          const delay = RETRY_BASE_DELAY * Math.pow(2, attempt - 1);
+          this.logger.debug(`Retrying user lookup in ${delay}ms...`);
+          await this.sleep(delay);
+        }
       }
-    });
+    }
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      const errorMessage = lastError 
+        ? `User ${userId} not found after ${MAX_RETRY_ATTEMPTS} attempts. Last error: ${lastError.message}`
+        : `User ${userId} not found or has been deleted`;
+      
+      this.logger.error(errorMessage, lastError?.stack);
+      throw new NotFoundException(errorMessage);
     }
+    
+    this.logger.debug(`Found user ${userId} (${user.email}) for tenant assignment validation`);
 
     let { organizationId, propertyId } = user;
 
     // If user has no organization, assign to default
     if (!organizationId) {
-      const defaultTenant = await this.getDefaultTenant();
-      organizationId = defaultTenant.organization.id;
+      this.logger.warn(`User ${userId} (${user.email}) has no organization assignment, assigning to default tenant`);
       
-      this.logger.warn(`User ${userId} had no organization, assigned to default: ${organizationId}`);
+      try {
+        const defaultTenant = await this.getDefaultTenant();
+        organizationId = defaultTenant.organization.id;
+        
+        this.logger.log(`User ${userId} assigned to default organization: ${organizationId}`);
+      } catch (error) {
+        this.logger.error(`Failed to get default tenant for user ${userId}: ${error.message}`, error.stack);
+        throw new Error(`Unable to assign default tenant: ${error.message}`);
+      }
     }
 
     // If user has no property, assign to first available property in their organization
     if (!propertyId) {
-      const firstProperty = await this.prisma.property.findFirst({
-        where: {
-          organizationId,
-          isActive: true
-        }
-      });
+      this.logger.warn(`User ${userId} (${user.email}) has no property assignment, finding first property in organization ${organizationId}`);
+      
+      try {
+        const firstProperty = await this.prisma.property.findFirst({
+          where: {
+            organizationId,
+            isActive: true
+          },
+          orderBy: { createdAt: 'asc' }
+        });
 
-      if (!firstProperty) {
-        // If no properties exist, create default tenant
-        const defaultTenant = await this.getDefaultTenant();
-        organizationId = defaultTenant.organization.id;
-        propertyId = defaultTenant.property.id;
-        
-        this.logger.warn(`No properties found for organization, using default tenant`);
-      } else {
-        propertyId = firstProperty.id;
-        this.logger.warn(`User ${userId} had no property, assigned to: ${propertyId}`);
+        if (!firstProperty) {
+          this.logger.warn(`No active properties found for organization ${organizationId}, using default tenant`);
+          
+          // If no properties exist, create default tenant
+          const defaultTenant = await this.getDefaultTenant();
+          organizationId = defaultTenant.organization.id;
+          propertyId = defaultTenant.property.id;
+          
+          this.logger.log(`User ${userId} assigned to default tenant: org=${organizationId}, property=${propertyId}`);
+        } else {
+          propertyId = firstProperty.id;
+          this.logger.log(`User ${userId} assigned to first available property: ${propertyId} (${firstProperty.name})`);
+        }
+      } catch (error) {
+        this.logger.error(`Failed to find property for user ${userId}: ${error.message}`, error.stack);
+        throw new Error(`Unable to assign property: ${error.message}`);
       }
     }
 
     // Update user if assignments were changed
     if (user.organizationId !== organizationId || user.propertyId !== propertyId) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          organizationId,
-          propertyId
-        }
-      });
-      
-      this.logger.log(`Updated user ${userId} tenant assignments: org=${organizationId}, property=${propertyId}`);
+      try {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            organizationId,
+            propertyId
+          }
+        });
+        
+        // Clear cache since user data changed
+        const cacheKey = `tenant_${userId}`;
+        this.tenantCache.delete(cacheKey);
+        
+        this.logger.log(`Updated user ${userId} (${user.email}) tenant assignments: org=${organizationId}, property=${propertyId}`);
+      } catch (error) {
+        this.logger.error(`Failed to update tenant assignments for user ${userId}: ${error.message}`, error.stack);
+        throw new Error(`Unable to update user tenant assignments: ${error.message}`);
+      }
+    } else {
+      this.logger.debug(`User ${userId} already has correct tenant assignments`);
     }
 
     return { organizationId, propertyId };

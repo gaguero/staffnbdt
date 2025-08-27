@@ -14,6 +14,8 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -21,9 +23,7 @@ import { Response, Request } from 'express';
 import { ProfileService } from './profile.service';
 import { ProfilePhotoService } from './profile-photo.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
-import { RolesGuard } from '../../shared/guards/roles.guard';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
-import { Roles } from '../../shared/decorators/roles.decorator';
 import { RequirePermission, PERMISSIONS } from '../../shared/decorators/require-permission.decorator';
 import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { Audit } from '../../shared/decorators/audit.decorator';
@@ -45,7 +45,7 @@ import { User, Role, PhotoType } from '@prisma/client';
 
 @ApiTags('Profile')
 @Controller('profile')
-@UseGuards(JwtAuthGuard, RolesGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @ApiBearerAuth()
 export class ProfileController {
   constructor(
@@ -63,7 +63,6 @@ export class ProfileController {
   }
 
   @Get(':id')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
   @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @Audit({ action: 'VIEW_PROFILE', entity: 'User' })
   @ApiOperation({ summary: 'Get user profile by ID (Admin only)' })
@@ -191,7 +190,6 @@ export class ProfileController {
   }
 
   @Get('id/:userId')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
   @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @Audit({ action: 'VIEW_ID_DOCUMENT', entity: 'User' })
   @ApiOperation({ summary: 'Get ID document (Admin only)' })
@@ -231,7 +229,6 @@ export class ProfileController {
   }
 
   @Post('id/:userId/verify')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
   @RequirePermission('user.update.all', 'user.update.organization', 'user.update.property', 'user.update.department')
   @Audit({ action: 'VERIFY_ID_DOCUMENT', entity: 'User' })
   @ApiOperation({ summary: 'Verify ID document (Admin only)' })
@@ -261,7 +258,6 @@ export class ProfileController {
   }
 
   @Get('id/:userId/status')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)  // Backwards compatibility
   @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @ApiOperation({ summary: 'Get ID document verification status for user (Admin only)' })
   @ApiResponse({ status: 200, description: 'ID document status retrieved successfully', type: IdDocumentStatusDto })
@@ -307,7 +303,7 @@ export class ProfileController {
         throw new NotFoundException('No profile photo found for this user');
       }
       
-      const { stream, metadata } = await this.profilePhotoService.getPhotoStream(primaryPhoto.id, currentUser);
+      const { stream, metadata } = await this.profilePhotoService.getPhotoStream(primaryPhoto.id, currentUser, request);
       
       console.log('📸 Serving profile photo:', {
         userId,
@@ -427,9 +423,24 @@ export class ProfileController {
     @CurrentUser() currentUser: User,
     @Req() request: Request,
   ) {
-    console.log('📸 GET /api/profile/photos endpoint hit by user:', currentUser.id);
+    console.log('📸 GET /api/profile/photos - User:', currentUser.id, `(${currentUser.email})`);
     
     try {
+      // Validate user context
+      if (!currentUser || !currentUser.id) {
+        console.error('❌ Invalid user context in getCurrentUserPhotos');
+        throw new UnauthorizedException('Invalid user session');
+      }
+
+      // Additional debug info for troubleshooting
+      console.log('👤 User context in getCurrentUserPhotos:', {
+        userId: currentUser.id,
+        email: currentUser.email,
+        organizationId: currentUser.organizationId,
+        propertyId: currentUser.propertyId,
+        role: currentUser.role,
+      });
+
       const photos = await this.profilePhotoService.getUserPhotos(currentUser.id, currentUser, request);
       
       const photosByType = {
@@ -451,19 +462,30 @@ export class ProfileController {
         primaryPhoto,
       };
 
+      console.log(`✅ Profile photos retrieved successfully for ${currentUser.email}: ${photos.length} photos`);
       return CustomApiResponse.success(result, 'User photos retrieved successfully');
+      
     } catch (error) {
       console.error('❌ Failed to get user photos:', {
         error: error.message,
-        stack: error.stack,
-        userId: currentUser.id,
+        userId: currentUser?.id || 'unknown',
+        userEmail: currentUser?.email || 'unknown',
+        errorType: error.constructor.name,
       });
-      throw error;
+      
+      // Re-throw with proper error handling
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      
+      throw new InternalServerErrorException({
+        message: 'Failed to retrieve profile photos',
+        details: 'Please try again or contact support if the issue persists.'
+      });
     }
   }
 
   @Get('photos/:userId')
-  @Roles(Role.PLATFORM_ADMIN, Role.DEPARTMENT_ADMIN)
   @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department')
   @ApiOperation({ summary: 'Get all photos for user (Admin only)' })
   @ApiResponse({ status: 200, description: 'User photos retrieved successfully', type: UserPhotosResponseDto })
@@ -550,6 +572,7 @@ export class ProfileController {
     @Param('userId') userId: string,
     @Param('photoType') photoType: string,
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
     @Res() res: Response,
   ) {
     // Validate photo type
@@ -563,14 +586,14 @@ export class ProfileController {
     }
 
     try {
-      const photos = await this.profilePhotoService.getUserPhotos(userId, currentUser, photoType as PhotoType);
+      const photos = await this.profilePhotoService.getUserPhotos(userId, currentUser, request, photoType as PhotoType);
       
       if (!photos.length) {
         throw new NotFoundException(`No ${photoType} photo found for this user`);
       }
 
       const photo = photos[0]; // Get the photo of this type
-      const { stream, metadata } = await this.profilePhotoService.getPhotoStream(photo.id, currentUser);
+      const { stream, metadata } = await this.profilePhotoService.getPhotoStream(photo.id, currentUser, request);
       
       // Set headers
       res.setHeader('Content-Type', metadata.mimeType || 'image/jpeg');
@@ -595,8 +618,9 @@ export class ProfileController {
   async setPrimaryPhoto(
     @Param('photoId') photoId: string,
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
   ) {
-    const updatedPhoto = await this.profilePhotoService.setPrimaryPhoto(photoId, currentUser);
+    const updatedPhoto = await this.profilePhotoService.setPrimaryPhoto(photoId, currentUser, request);
     return CustomApiResponse.success(updatedPhoto, 'Primary photo updated successfully');
   }
 
@@ -609,8 +633,9 @@ export class ProfileController {
   async deleteSpecificPhoto(
     @Param('photoId') photoId: string,
     @CurrentUser() currentUser: User,
+    @Req() request: Request,
   ) {
-    await this.profilePhotoService.deletePhoto(photoId, currentUser);
+    await this.profilePhotoService.deletePhoto(photoId, currentUser, request);
     return CustomApiResponse.success(null, 'Photo deleted successfully');
   }
 

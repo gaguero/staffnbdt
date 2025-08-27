@@ -118,7 +118,13 @@
   }
   
   .btn-secondary {
-    @apply btn bg-gray-100 text-charcoal hover:bg-gray-200 focus:ring-gray-400;
+    @apply btn text-white;
+    background-color: var(--brand-text-secondary);
+    transition: all var(--brand-transition-normal) ease;
+  }
+  
+  .btn-secondary:hover {
+    background-color: var(--brand-text-primary);
   }
   
   .btn-outline {
@@ -176,7 +182,8 @@
   }
   
   .form-label {
-    @apply block text-sm font-medium text-charcoal mb-1;
+    @apply block text-sm font-medium mb-1;
+    color: var(--brand-text-primary);
   }
   
   .form-error {
@@ -284,9 +291,113 @@
     @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
   }
   
+  /* Brand-aware utility classes */
+  .bg-brand-primary { background-color: var(--brand-primary); }
+  .bg-brand-primary-50 { background-color: var(--brand-primary-50); }
+  .bg-brand-primary-100 { background-color: var(--brand-primary-100); }
+  .bg-brand-primary-200 { background-color: var(--brand-primary-200); }
+  .bg-brand-primary-300 { background-color: var(--brand-primary-300); }
+  .bg-brand-primary-400 { background-color: var(--brand-primary-400); }
+  .bg-brand-primary-500 { background-color: var(--brand-primary-500); }
+  .bg-brand-primary-600 { background-color: var(--brand-primary-600); }
+  .bg-brand-surface { background-color: var(--brand-surface); }
+  .bg-brand-surface-hover { background-color: var(--brand-surface-hover); }
+  .bg-brand-background { background-color: var(--brand-background); }
+  
+  .text-brand-primary { color: var(--brand-primary); }
+  .text-brand-text-primary { color: var(--brand-text-primary); }
+  .text-brand-text-secondary { color: var(--brand-text-secondary); }
+  .text-brand-text-muted { color: var(--brand-text-muted); }
+  
+  .border-brand-primary { border-color: var(--brand-primary); }
+  .border-brand-surface { border-color: var(--brand-surface); }
+  
+  .hover-brand-primary:hover { background-color: var(--brand-primary); }
+  .hover-brand-surface:hover { background-color: var(--brand-surface-hover); }
+  .hover-text-brand-primary:hover { color: var(--brand-primary); }
+  
+  .focus-brand:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(170, 142, 103, 0.1);
+  }
+
+  /* Enhanced brand color utilities */
+  .bg-brand-primary-700 { background-color: var(--brand-primary-700); }
+  .bg-brand-primary-800 { background-color: var(--brand-primary-800); }
+  .bg-brand-primary-900 { background-color: var(--brand-primary-900); }
+  
+  .text-brand-primary-50 { color: var(--brand-primary-50); }
+  .text-brand-primary-100 { color: var(--brand-primary-100); }
+  .text-brand-primary-200 { color: var(--brand-primary-200); }
+  .text-brand-primary-300 { color: var(--brand-primary-300); }
+  .text-brand-primary-400 { color: var(--brand-primary-400); }
+  .text-brand-primary-500 { color: var(--brand-primary-500); }
+  .text-brand-primary-600 { color: var(--brand-primary-600); }
+  .text-brand-primary-700 { color: var(--brand-primary-700); }
+  .text-brand-primary-800 { color: var(--brand-primary-800); }
+  .text-brand-primary-900 { color: var(--brand-primary-900); }
+
+  .border-brand-primary-100 { border-color: var(--brand-primary-100); }
+  .border-brand-primary-200 { border-color: var(--brand-primary-200); }
+  .border-brand-primary-300 { border-color: var(--brand-primary-300); }
+  .border-brand-primary-400 { border-color: var(--brand-primary-400); }
+  .border-brand-primary-500 { border-color: var(--brand-primary-500); }
+  .border-brand-primary-600 { border-color: var(--brand-primary-600); }
+
+  /* Status color variants using brand colors */
+  .bg-brand-status-success { background-color: var(--brand-primary-100); color: var(--brand-primary-800); }
+  .bg-brand-status-warning { background-color: var(--brand-primary-200); color: var(--brand-primary-800); }
+  .bg-brand-status-error { background-color: var(--brand-primary-100); color: var(--brand-primary-900); }
+  .bg-brand-status-info { background-color: var(--brand-primary-50); color: var(--brand-primary-700); }
+  
+  .text-brand-status-success { color: var(--brand-primary-700); }
+  .text-brand-status-warning { color: var(--brand-primary-800); }
+  .text-brand-status-error { color: var(--brand-primary-900); }
+  .text-brand-status-info { color: var(--brand-primary-600); }
+
+  /* Interactive states */
+  .hover-bg-brand-primary:hover { background-color: var(--brand-primary); }
+  .hover-bg-brand-primary-100:hover { background-color: var(--brand-primary-100); }
+  .hover-bg-brand-primary-200:hover { background-color: var(--brand-primary-200); }
+  .hover-bg-brand-primary-600:hover { background-color: var(--brand-primary-600); }
+
+  .hover-text-brand-primary:hover { color: var(--brand-primary); }
+  .hover-text-brand-primary-600:hover { color: var(--brand-primary-600); }
+  .hover-text-brand-primary-700:hover { color: var(--brand-primary-700); }
+  
+  /* Brand status badges */
+  .badge-brand-success {
+    @apply badge;
+    background-color: var(--brand-primary-100);
+    color: var(--brand-primary-700);
+  }
+  
+  .badge-brand-warning {
+    @apply badge;
+    background-color: var(--brand-primary-200);
+    color: var(--brand-primary-800);
+  }
+  
+  .badge-brand-info {
+    @apply badge;
+    background-color: var(--brand-primary-50);
+    color: var(--brand-primary-600);
+  }
+  
+  .badge-brand-neutral {
+    @apply badge;
+    background-color: var(--brand-surface-hover);
+    color: var(--brand-text-primary);
+  }
+  
   /* Focus visible styles for better accessibility */
   .focus-visible {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-warm-gold focus-visible:ring-offset-2;
+    @apply focus:outline-none;
+  }
+  
+  .focus-visible:focus-visible {
+    box-shadow: 0 0 0 2px var(--brand-primary), 0 0 0 4px rgba(170, 142, 103, 0.2);
   }
 }
 
