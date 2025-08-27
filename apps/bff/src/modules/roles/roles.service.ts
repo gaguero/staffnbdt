@@ -11,6 +11,7 @@ import {
   UserCustomRole, 
   RolePermission, 
   User,
+  Role,
   Prisma 
 } from '@prisma/client';
 import { PrismaService } from '../../shared/database/prisma.service';
@@ -960,6 +961,11 @@ export class RolesService {
   }
 
   private buildTenantFilters(currentUser: User, organizationId?: string, propertyId?: string) {
+    // PLATFORM_ADMIN sees all roles without tenant restrictions
+    if (currentUser.role === Role.PLATFORM_ADMIN) {
+      return {};
+    }
+
     const filters: Prisma.CustomRoleWhereInput = {};
 
     // If specific tenant IDs are provided, use those (for admin operations)
