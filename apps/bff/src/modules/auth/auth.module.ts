@@ -9,14 +9,14 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { EmailService } from './email.service';
 import { TenantModule } from '../../shared/tenant/tenant.module';
 import { DatabaseModule } from '../../shared/database/database.module';
-import { PermissionsModule } from '../permissions/permissions.module';
+import { PermissionModule } from '../permissions/permission.module';
 
 @Module({
   imports: [
     PassportModule,
     TenantModule,
     DatabaseModule,
-    PermissionsModule,
+    PermissionModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
