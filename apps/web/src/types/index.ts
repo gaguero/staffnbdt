@@ -130,3 +130,6 @@ export interface AuditLog {
 
 // Re-export permission types
 export * from './permission';
+
+// Re-export hotel types
+export * from './hotel';

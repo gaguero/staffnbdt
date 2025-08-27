@@ -25,6 +25,14 @@ import BrandStudioPage from './pages/BrandStudioPage';
 import ComponentsTestPage from './pages/ComponentsTestPage';
 import EnhancedOrganizationsPagePhase4 from './pages/EnhancedOrganizationsPagePhase4';
 
+// Hotel Operations Pages
+import RoomsPage from './pages/hotel/RoomsPage';
+import GuestsPage from './pages/hotel/GuestsPage';
+import ReservationsPage from './pages/hotel/ReservationsPage';
+
+// Admin Pages
+import RolesManagementPage from './pages/admin/RolesManagementPage';
+
 // Login component
 const LoginPage = () => {
   const { login } = useAuth();
@@ -277,6 +285,50 @@ const App: React.FC = () => {
             <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}>
               <Layout>
                 <BrandStudioPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Hotel Operations Routes */}
+        <Route 
+          path="/hotel/rooms" 
+          element={
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+              <Layout>
+                <RoomsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hotel/guests" 
+          element={
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+              <Layout>
+                <GuestsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hotel/reservations" 
+          element={
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+              <Layout>
+                <ReservationsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Admin Routes */}
+        <Route 
+          path="/admin/roles" 
+          element={
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN']}>
+              <Layout>
+                <RolesManagementPage />
               </Layout>
             </ProtectedRoute>
           } 

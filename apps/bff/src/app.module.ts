@@ -37,6 +37,9 @@ import { OrganizationModule } from './modules/organizations/organization.module'
 import { PropertyModule } from './modules/properties/property.module';
 import { BrandingModule } from './modules/branding/branding.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { UnitsModule } from './modules/units/units.module';
+import { GuestsModule } from './modules/guests/guests.module';
+import { ReservationsModule } from './modules/reservations/reservations.module';
 
 @Module({
   imports: [
@@ -92,6 +95,9 @@ import { AdminModule } from './modules/admin/admin.module';
     PropertyModule,
     BrandingModule,
     AdminModule,
+    UnitsModule,
+    GuestsModule,
+    ReservationsModule,
   ],
   controllers: [],
   providers: [

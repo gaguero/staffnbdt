@@ -26,6 +26,14 @@ const translations = {
     'nav.notifications': 'Notifications',
     'nav.signOut': 'Sign Out',
     
+    // Hotel Operations
+    'nav.rooms': 'Rooms',
+    'nav.guests': 'Guests', 
+    'nav.reservations': 'Reservations',
+    
+    // Admin
+    'nav.roles': 'Roles',
+    
     // Dashboard
     'dashboard.welcome': 'Welcome',
     'dashboard.quickActions': 'Quick Actions',
@@ -184,6 +192,14 @@ const translations = {
     'nav.brandStudio': 'Estudio de Marca',
     'nav.notifications': 'Notificaciones',
     'nav.signOut': 'Cerrar Sesión',
+    
+    // Hotel Operations
+    'nav.rooms': 'Habitaciones',
+    'nav.guests': 'Huéspedes',
+    'nav.reservations': 'Reservaciones',
+    
+    // Admin
+    'nav.roles': 'Roles',
     
     // Dashboard
     'dashboard.welcome': 'Bienvenido',

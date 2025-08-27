@@ -19,84 +19,138 @@ interface NavItem {
   roles: string[];
 }
 
-const navigationItems: NavItem[] = [
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const navigationSections: NavSection[] = [
   {
-    label: 'nav.dashboard',
-    path: '/dashboard',
-    icon: '📊',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+    title: 'Dashboard',
+    items: [
+      {
+        label: 'nav.dashboard',
+        path: '/dashboard',
+        icon: '📊',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+      },
+      {
+        label: 'nav.profile',
+        path: '/profile',
+        icon: '👤',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+      }
+    ]
   },
   {
-    label: 'nav.profile',
-    path: '/profile',
-    icon: '👤',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+    title: 'Hotel Operations',
+    items: [
+      {
+        label: 'nav.rooms',
+        path: '/hotel/rooms',
+        icon: '🏨',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']
+      },
+      {
+        label: 'nav.guests',
+        path: '/hotel/guests',
+        icon: '👥',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']
+      },
+      {
+        label: 'nav.reservations',
+        path: '/hotel/reservations',
+        icon: '📅',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']
+      }
+    ]
   },
   {
-    label: 'nav.documents',
-    path: '/documents',
-    icon: '📁',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+    title: 'Staff Management',
+    items: [
+      {
+        label: 'nav.documents',
+        path: '/documents',
+        icon: '📁',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+      },
+      {
+        label: 'nav.payroll',
+        path: '/payroll',
+        icon: '💰',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+      },
+      {
+        label: 'nav.vacation',
+        path: '/vacation',
+        icon: '🏖️',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+      },
+      {
+        label: 'nav.training',
+        path: '/training',
+        icon: '🎓',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+      },
+      {
+        label: 'nav.benefits',
+        path: '/benefits',
+        icon: '🎁',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+      }
+    ]
   },
   {
-    label: 'nav.payroll',
-    path: '/payroll',
-    icon: '💰',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+    title: 'Administration',
+    items: [
+      {
+        label: 'nav.users',
+        path: '/users',
+        icon: '👥',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']
+      },
+      {
+        label: 'nav.roles',
+        path: '/admin/roles',
+        icon: '🔐',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN']
+      },
+      {
+        label: 'nav.departments',
+        path: '/departments',
+        icon: '🏢',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
+      },
+      {
+        label: 'nav.organizations',
+        path: '/organizations',
+        icon: '🏨',
+        roles: ['PLATFORM_ADMIN', 'PROPERTY_MANAGER']
+      },
+      {
+        label: 'nav.properties',
+        path: '/properties',
+        icon: '🏠',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
+      },
+      {
+        label: 'nav.brandStudio',
+        path: '/brand-studio',
+        icon: '🎨',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
+      }
+    ]
   },
   {
-    label: 'nav.vacation',
-    path: '/vacation',
-    icon: '🏖️',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.training',
-    path: '/training',
-    icon: '🎓',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.benefits',
-    path: '/benefits',
-    icon: '🎁',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.notifications',
-    path: '/notifications',
-    icon: '🔔',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.users',
-    path: '/users',
-    icon: '👥',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']
-  },
-  {
-    label: 'nav.departments',
-    path: '/departments',
-    icon: '🏢',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
-  },
-  {
-    label: 'nav.organizations',
-    path: '/organizations',
-    icon: '🏨',
-    roles: ['PLATFORM_ADMIN', 'PROPERTY_MANAGER']
-  },
-  {
-    label: 'nav.properties',
-    path: '/properties',
-    icon: '🏠',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
-  },
-  {
-    label: 'nav.brandStudio',
-    path: '/brand-studio',
-    icon: '🎨',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
+    title: 'System',
+    items: [
+      {
+        label: 'nav.notifications',
+        path: '/notifications',
+        icon: '🔔',
+        roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
+      }
+    ]
   }
 ];
 
@@ -107,9 +161,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const filteredNavItems = navigationItems.filter(item => 
-    user?.role && item.roles.includes(user.role)
-  );
+  const filteredNavSections = navigationSections.map(section => ({
+    ...section,
+    items: section.items.filter(item => 
+      user?.role && item.roles.includes(user.role)
+    )
+  })).filter(section => section.items.length > 0);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -155,38 +212,47 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {filteredNavItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={closeSidebar}
-              className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200"
-              style={({ isActive }) => isActive ? {
-                backgroundColor: 'var(--brand-primary)',
-                color: 'white',
-                boxShadow: 'var(--brand-shadow-soft)'
-              } : {
-                color: 'var(--brand-text-primary)'
-              }}
-              onMouseEnter={(e) => {
-                if (!e.currentTarget.classList.contains('active')) {
-                  e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
-                  e.currentTarget.style.color = 'var(--brand-primary)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!e.currentTarget.classList.contains('active')) {
-                  e.currentTarget.style.backgroundColor = '';
-                  e.currentTarget.style.color = 'var(--brand-text-primary)';
-                }
-              }}
-            >
-              <span className="mr-3 text-lg" role="img" aria-hidden="true">
-                {item.icon}
-              </span>
-              {t(item.label)}
-            </NavLink>
+        <nav className="flex-1 px-4 py-6 space-y-6">
+          {filteredNavSections.map((section) => (
+            <div key={section.title}>
+              <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                {section.title}
+              </h3>
+              <div className="space-y-1">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={closeSidebar}
+                    className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200"
+                    style={({ isActive }) => isActive ? {
+                      backgroundColor: 'var(--brand-primary)',
+                      color: 'white',
+                      boxShadow: 'var(--brand-shadow-soft)'
+                    } : {
+                      color: 'var(--brand-text-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!e.currentTarget.classList.contains('active')) {
+                        e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
+                        e.currentTarget.style.color = 'var(--brand-primary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!e.currentTarget.classList.contains('active')) {
+                        e.currentTarget.style.backgroundColor = '';
+                        e.currentTarget.style.color = 'var(--brand-text-primary)';
+                      }
+                    }}
+                  >
+                    <span className="mr-3 text-lg" role="img" aria-hidden="true">
+                      {item.icon}
+                    </span>
+                    {t(item.label)}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
@@ -255,7 +321,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Page title with tenant context */}
             <div className="flex-1 lg:ml-0 ml-4">
               <h1 className="text-2xl uppercase" style={{ fontFamily: 'var(--brand-font-heading)', color: 'var(--brand-text-primary)' }}>
-                {t(navigationItems.find(item => item.path === location.pathname)?.label || 'nav.dashboard')}
+                {t(filteredNavSections.flatMap(s => s.items).find(item => item.path === location.pathname)?.label || 'nav.dashboard')}
               </h1>
               <div className="text-xs text-gray-500 mt-1 lg:hidden">
                 {getCurrentOrganizationName()} • {getCurrentPropertyName()}

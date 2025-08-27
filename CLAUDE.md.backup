@@ -62,17 +62,6 @@ playwright.checkConsole() # Must have no errors
 
 ## CRITICAL INSTRUCTIONS FOR ALL AGENTS
 
-### MANDATORY: Discussion-First, Delegation-Always Workflow
-
-**PRIMARY RULE**: NEVER perform implementation tasks directly. Instead:
-
-1. **DISCUSS** - Understand requirements, explore options, help user make decisions
-2. **PLAN** - Break down work into clear tasks for delegation
-3. **DELEGATE** - Deploy specialized subagents for ALL implementation work
-4. **REVIEW** - Evaluate subagent results and iterate with user
-
-**You are the orchestrator and advisor, NOT the implementer.**
-
 ### MANDATORY: Documentation Research with Context7
 **ALWAYS** use Context7 MCP server to search for updated documentation before attempting to fix any issues:
 - When encountering errors → First search Context7 for related error messages and solutions
@@ -276,49 +265,17 @@ This project uses specialized engineering subagents. You MUST use these agents f
 
 **ALWAYS use subagents for:**
 - Building complete feature modules → Use the relevant specialist agent
-- Writing or modifying any code → Use appropriate developer agent
-- Creating or updating tests → Use test-writer-fixer
+- After ANY code changes → Use test-writer-fixer to ensure tests pass
 - Complex architectural decisions → Use backend-architect
 - UI component development → Use frontend-developer
 - Deployment and infrastructure → Use devops-automator
 
-**CRITICAL: When deploying subagents:**
-1. Provide complete context from our discussion
-2. Include all user decisions and requirements
-3. Specify exact deliverables expected
-4. **INSTRUCT SUBAGENTS TO:**
-   - NOT perform git push or pull operations (only you handle git)
-   - NOT use Playwright/Puppeteer for testing (you verify deployments)
-   - Focus solely on code implementation
-   - Use Context7 to research solutions before implementing
-   - Return complete files and changes for your review
-
-**Subagent Instruction Template:**
-"Implement [specific feature/fix] based on these requirements: [...]
-Do NOT perform any git operations (no push/pull/commit).
-Do NOT use browser automation for testing.
-Focus only on code implementation and use Context7 for research.
-Return complete solution for review."
-
-### Delegation Workflow Pattern
-
-When user requests implementation:
-1. **Discuss** the approach and requirements
-2. **Create TodoWrite** list of tasks to delegate
-3. **Deploy subagents** with clear, restricted instructions
-4. **Review** subagent deliverables
-5. **You handle** all git operations and deployment verification
-6. **You perform** Playwright testing on Railway URLs
-
-Example:
-User: "Add user authentication"
-You: "Let's discuss the authentication approach first..."
-[After discussion]
-You: "I'll deploy backend-architect to design the auth system"
-[Subagent returns design]
-You: "Now deploying frontend-developer for UI components"
-[Subagent returns code]
-You: "I'll commit these changes and test on Railway"
+**CRITICAL: All subagents MUST:**
+1. Use Context7 to research solutions before implementing
+2. Use Playwright/Puppeteer to verify all changes work
+3. Take screenshots as proof of success
+4. Check browser console for errors
+5. Test both mobile and desktop views
 
 ### Integration with Todo List
 
@@ -329,21 +286,6 @@ When using TodoWrite, specify which subagent to use in brackets:
 - "Setup Railway deployment [devops-automator]"
 
 ## Testing Strategy
-
-### Testing Responsibility Division
-
-**Your Responsibilities (NOT delegated):**
-- Browser automation testing with Playwright/Puppeteer
-- Railway deployment verification
-- Screenshot capture and console checking
-- End-to-end user flow testing
-
-**Subagent Responsibilities (delegated):**
-- Writing unit tests
-- Creating integration tests
-- Test file generation
-- Test logic implementation
-- BUT NO execution of browser automation
 
 ### Browser Automation Testing Requirements
 
