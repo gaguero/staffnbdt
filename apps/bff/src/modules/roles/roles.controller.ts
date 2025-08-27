@@ -56,14 +56,15 @@ export class RolesController {
 
   @Get()
   @RequirePermission('role.read.all', 'role.read.organization', 'role.read.property')
-  @ApiOperation({ summary: 'Get all roles with filtering and pagination' })
+  @ApiOperation({ summary: 'Get all roles' })
   @ApiResponse({ status: 200, description: 'Roles retrieved successfully' })
   async findAll(
     @Query() filterDto: RoleFilterDto,
     @CurrentUser() currentUser: User,
   ) {
     const result = await this.rolesService.findAll(filterDto, currentUser);
-    return CustomApiResponse.success(result, 'Roles retrieved successfully');
+    // Return just the roles array to match frontend expectations
+    return CustomApiResponse.success(result.data, 'Roles retrieved successfully');
   }
 
   @Get('stats')
@@ -141,7 +142,8 @@ export class UserRolesController {
     @CurrentUser() currentUser: User,
   ) {
     const result = await this.rolesService.getUserRoles(filterDto, currentUser);
-    return CustomApiResponse.success(result, 'User roles retrieved successfully');
+    // Return just the user roles array to match frontend expectations
+    return CustomApiResponse.success(result.data, 'User roles retrieved successfully');
   }
 
   @Post()

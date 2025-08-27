@@ -399,7 +399,9 @@ export class GuestsService {
           guest: { deletedAt: null }
         },
         _avg: { 
-          // Calculate average stay duration in days
+          totalAmount: true,
+          adults: true,
+          children: true
         },
       }),
       this.prisma.guest.groupBy({
