@@ -37,7 +37,7 @@ interface RoleWithPermissions extends CustomRole {
       description?: string;
     };
   })[];
-  userRoles: UserCustomRole[];
+  userRoles?: UserCustomRole[];
   _count?: {
     userRoles: number;
   };
@@ -543,7 +543,7 @@ export class RolesService {
           deletedAt: null,
           ...tenantFilter,
         },
-        select: { priority: true },
+        select: { id: true, priority: true },
       });
 
       const assignmentsByLevel = roles.reduce((acc, role) => {
@@ -687,7 +687,7 @@ export class RolesService {
         where: {
           id: userId,
           deletedAt: null,
-          ...this.buildTenantFilters(currentUser),
+          ...this.buildUserTenantFilters(currentUser),
         },
       });
 
@@ -961,6 +961,28 @@ export class RolesService {
 
   private buildTenantFilters(currentUser: User, organizationId?: string, propertyId?: string) {
     const filters: Prisma.CustomRoleWhereInput = {};
+
+    // If specific tenant IDs are provided, use those (for admin operations)
+    if (organizationId || propertyId) {
+      if (organizationId) filters.organizationId = organizationId;
+      if (propertyId) filters.propertyId = propertyId;
+      return filters;
+    }
+
+    // Otherwise, filter based on user's context
+    if (currentUser.organizationId) {
+      filters.organizationId = currentUser.organizationId;
+    }
+
+    if (currentUser.propertyId) {
+      filters.propertyId = currentUser.propertyId;
+    }
+
+    return filters;
+  }
+
+  private buildUserTenantFilters(currentUser: User, organizationId?: string, propertyId?: string): Prisma.UserWhereInput {
+    const filters: Prisma.UserWhereInput = {};
 
     // If specific tenant IDs are provided, use those (for admin operations)
     if (organizationId || propertyId) {
