@@ -1,5 +1,5 @@
 import React from 'react';
-import { Role } from '../../../../packages/types';
+import { Role } from '../../../../packages/types/enums';
 import { SYSTEM_ROLES, isSystemRole, formatRoleName } from '../types/role';
 
 export interface RoleBadgeProps {

@@ -1,6 +1,6 @@
 import React from 'react';
 import RoleBadge from './RoleBadge';
-import { Role } from '../../../../packages/types';
+import { Role } from '../../../../packages/types/enums';
 
 export interface RoleBadgeGroupProps {
   /** Primary system role */
