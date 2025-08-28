@@ -2,7 +2,7 @@ import React from 'react';
 import RoleBadge from './RoleBadge';
 import RoleBadgeGroup from './RoleBadgeGroup';
 import UserCard from './UserCard';
-import { Role } from '../../../../packages/types/enums';
+import { Role } from '../types/role';
 import { SYSTEM_ROLES } from '../types/role';
 
 const RoleBadgeShowcase: React.FC = () => {
