@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  DocumentDuplicateIcon,
-  UserGroupIcon,
-  CalendarIcon,
-  TagIcon,
-  ArrowTopRightOnSquareIcon
-} from '@heroicons/react/24/outline';
+  ChevronRight,
+  ChevronDown,
+  Copy,
+  Users,
+  Calendar,
+  Tag,
+  ExternalLink
+} from 'lucide-react';
 import {
   RoleLineage,
   RoleLineageTreeProps,
@@ -91,9 +91,9 @@ const RoleLineageTree: React.FC<RoleLineageTreeProps> = ({
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 {isExpanded ? (
-                  <ChevronDownIcon className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4" />
                 ) : (
-                  <ChevronRightIcon className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" />
                 )}
               </button>
             ) : hasChildren ? (
@@ -107,9 +107,9 @@ const RoleLineageTree: React.FC<RoleLineageTreeProps> = ({
             ${isOriginal ? 'bg-green-100 text-green-600' : getCloneTypeColor(role.cloneType)}
           `}>
             {isOriginal ? (
-              <UserGroupIcon className="h-5 w-5" />
+              <Users className="h-5 w-5" />
             ) : (
-              <DocumentDuplicateIcon className="h-5 w-5" />
+              <Copy className="h-5 w-5" />
             )}
           </div>
 
@@ -150,20 +150,20 @@ const RoleLineageTree: React.FC<RoleLineageTreeProps> = ({
             {/* Role Metadata */}
             <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
               <div className="flex items-center space-x-1">
-                <UserGroupIcon className="h-3 w-3" />
+                <Users className="h-3 w-3" />
                 <span>{role.cloneCount} clones</span>
               </div>
               
               {role.clonedAt && (
                 <div className="flex items-center space-x-1">
-                  <CalendarIcon className="h-3 w-3" />
+                  <Calendar className="h-3 w-3" />
                   <span>{new Date(role.clonedAt).toLocaleDateString()}</span>
                 </div>
               )}
               
               {role.lineagePath.length > 1 && (
                 <div className="flex items-center space-x-1">
-                  <TagIcon className="h-3 w-3" />
+                  <Tag className="h-3 w-3" />
                   <span>Path: {role.lineagePath.length - 1} ancestors</span>
                 </div>
               )}
@@ -181,7 +181,7 @@ const RoleLineageTree: React.FC<RoleLineageTreeProps> = ({
                 className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 title="Clone this role"
               >
-                <DocumentDuplicateIcon className="h-4 w-4" />
+                <Copy className="h-4 w-4" />
               </button>
               
               <button
@@ -193,7 +193,7 @@ const RoleLineageTree: React.FC<RoleLineageTreeProps> = ({
                 className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 title="Open role details"
               >
-                <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                <ExternalLink className="h-4 w-4" />
               </button>
             </div>
           )}

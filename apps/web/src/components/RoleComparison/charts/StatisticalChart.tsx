@@ -1,10 +1,10 @@
 import React from 'react';
 import {
-  ChartBarIcon,
-  ScaleIcon,
-  CalculatorIcon,
-  ExclamationTriangleIcon,
-} from '@heroicons/react/24/outline';
+  BarChart3,
+  Scale,
+  Calculator,
+  AlertTriangle,
+} from 'lucide-react';
 import { RoleComparisonData } from '../../../types/roleComparison';
 import RoleBadge from '../../RoleBadge';
 
@@ -66,7 +66,7 @@ const StatisticalChart: React.FC<StatisticalChartProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
-            <CalculatorIcon className="h-5 w-5 text-blue-600" />
+            <Calculator className="h-5 w-5 text-blue-600" />
             <h4 className="font-medium text-blue-900">Mean Permissions</h4>
           </div>
           <div className="text-2xl font-bold text-blue-900">
@@ -79,7 +79,7 @@ const StatisticalChart: React.FC<StatisticalChartProps> = ({
         
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
-            <ScaleIcon className="h-5 w-5 text-green-600" />
+            <Scale className="h-5 w-5 text-green-600" />
             <h4 className="font-medium text-green-900">Median Permissions</h4>
           </div>
           <div className="text-2xl font-bold text-green-900">
@@ -92,7 +92,7 @@ const StatisticalChart: React.FC<StatisticalChartProps> = ({
         
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
-            <ChartBarIcon className="h-5 w-5 text-purple-600" />
+            <BarChart3 className="h-5 w-5 text-purple-600" />
             <h4 className="font-medium text-purple-900">Variance</h4>
           </div>
           <div className="text-2xl font-bold text-purple-900">
@@ -105,7 +105,7 @@ const StatisticalChart: React.FC<StatisticalChartProps> = ({
         
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
-            <ExclamationTriangleIcon className="h-5 w-5 text-orange-600" />
+            <AlertTriangle className="h-5 w-5 text-orange-600" />
             <h4 className="font-medium text-orange-900">Entropy Score</h4>
           </div>
           <div className="text-2xl font-bold text-orange-900">

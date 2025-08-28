@@ -1,16 +1,16 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  DocumentDuplicateIcon,
-  CogIcon,
-  EyeIcon,
-  CheckIcon,
-  XMarkIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  SparklesIcon,
-  ClipboardDocumentListIcon,
-  ArrowPathIcon
-} from '@heroicons/react/24/outline';
+  Copy,
+  Settings,
+  Eye,
+  Check,
+  X,
+  AlertTriangle,
+  Info,
+  Sparkles,
+  ClipboardList,
+  RotateCcw
+} from 'lucide-react';
 import { Role } from '../../services/roleService';
 import {
   CloneConfiguration,
@@ -34,31 +34,31 @@ const CLONE_TYPE_OPTIONS: Array<{
     value: 'full',
     label: 'Full Clone',
     description: 'Copy everything exactly as is',
-    icon: <DocumentDuplicateIcon className="h-5 w-5" />
+    icon: <Copy className="h-5 w-5" />
   },
   {
     value: 'permissions',
     label: 'Permissions Only',
     description: 'Copy only permissions, reset metadata',
-    icon: <ClipboardDocumentListIcon className="h-5 w-5" />
+    icon: <ClipboardList className="h-5 w-5" />
   },
   {
     value: 'template',
     label: 'Template Clone',
     description: 'Create template with suggested modifications',
-    icon: <SparklesIcon className="h-5 w-5" />
+    icon: <Sparkles className="h-5 w-5" />
   },
   {
     value: 'partial',
     label: 'Partial Clone',
     description: 'Select specific permissions to copy',
-    icon: <CogIcon className="h-5 w-5" />
+    icon: <Settings className="h-5 w-5" />
   },
   {
     value: 'hierarchy',
     label: 'Hierarchy Clone',
     description: 'Clone with hierarchy-appropriate adjustments',
-    icon: <ArrowPathIcon className="h-5 w-5" />
+    icon: <RotateCcw className="h-5 w-5" />
   }
 ];
 
@@ -69,7 +69,7 @@ const RoleDuplicator: React.FC<RoleDuplicatorProps> = ({
   initialConfiguration,
   context,
   showAdvancedOptions = true,
-  enableBatchCloning = false,
+  _enableBatchCloning = false,
   className = ''
 }) => {
   const [step, setStep] = useState<'configure' | 'preview' | 'confirm'>('configure');
@@ -85,11 +85,11 @@ const RoleDuplicator: React.FC<RoleDuplicatorProps> = ({
     startClone,
     updateConfiguration,
     generatePreview,
-    validateConfiguration,
+    _validateConfiguration,
     executeClone,
     cancelClone,
     applyRecommendation,
-    getSmartSuggestions
+    _getSmartSuggestions
   } = useRoleDuplication(context);
   
   const {
@@ -156,7 +156,7 @@ const RoleDuplicator: React.FC<RoleDuplicatorProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-              <DocumentDuplicateIcon className="h-6 w-6" />
+              <Copy className="h-6 w-6" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">Clone Role</h2>
@@ -174,7 +174,7 @@ const RoleDuplicator: React.FC<RoleDuplicatorProps> = ({
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 title="View role lineage"
               >
-                <ArrowPathIcon className="h-5 w-5" />
+                <RotateCcw className="h-5 w-5" />
               </button>
             )}
             
@@ -185,7 +185,7 @@ const RoleDuplicator: React.FC<RoleDuplicatorProps> = ({
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Advanced options"
               >
-                <CogIcon className="h-5 w-5" />
+                <Settings className="h-5 w-5" />
               </button>
             )}
           </div>
@@ -207,7 +207,7 @@ const RoleDuplicator: React.FC<RoleDuplicatorProps> = ({
                       'bg-gray-200 text-gray-600'}
                   `}>
                     {isCompleted ? (
-                      <CheckIcon className="h-4 w-4" />
+                      <Check className="h-4 w-4" />
                     ) : (
                       index + 1
                     )}
@@ -281,7 +281,7 @@ const RoleDuplicator: React.FC<RoleDuplicatorProps> = ({
                   onClick={() => setShowLineageTree(false)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <XMarkIcon className="h-6 w-6" />
+                  <X className="h-6 w-6" />
                 </button>
               </div>
             </div>
@@ -446,7 +446,7 @@ const ConfigureStep: React.FC<ConfigureStepProps> = ({
       {recommendations.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center space-x-2 mb-3">
-            <SparklesIcon className="h-5 w-5 text-blue-600" />
+            <Sparkles className="h-5 w-5 text-blue-600" />
             <span className="font-medium text-blue-900">Smart Suggestions</span>
           </div>
           <div className="space-y-2">
@@ -480,13 +480,13 @@ const ConfigureStep: React.FC<ConfigureStepProps> = ({
         <div className="space-y-2">
           {validationResult.errors.filter((e: any) => e.severity === 'error').map((error: any, index: number) => (
             <div key={index} className="flex items-center space-x-2 text-red-600 text-sm">
-              <ExclamationTriangleIcon className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4" />
               <span>{error.message}</span>
             </div>
           ))}
           {validationResult.errors.filter((e: any) => e.severity === 'warning').map((warning: any, index: number) => (
             <div key={index} className="flex items-center space-x-2 text-yellow-600 text-sm">
-              <InformationCircleIcon className="h-4 w-4" />
+              <Info className="h-4 w-4" />
               <span>{warning.message}</span>
             </div>
           ))}
@@ -507,7 +507,7 @@ const ConfigureStep: React.FC<ConfigureStepProps> = ({
           className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <div className="flex items-center space-x-2">
-            <EyeIcon className="h-4 w-4" />
+            <Eye className="h-4 w-4" />
             <span>Preview</span>
           </div>
         </button>
@@ -538,7 +538,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({
     <div className="space-y-6">
       <div className="text-center">
         <div className="mx-auto w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
-          <CheckIcon className="h-8 w-8" />
+          <Check className="h-8 w-8" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           Ready to Clone Role
@@ -595,7 +595,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({
             </div>
           ) : (
             <div className="flex items-center space-x-2">
-              <DocumentDuplicateIcon className="h-4 w-4" />
+              <Copy className="h-4 w-4" />
               <span>Create Role</span>
             </div>
           )}

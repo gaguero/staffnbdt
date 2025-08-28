@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import {
-  Squares2X2Icon,
-  DocumentTextIcon,
-  ChartBarIcon,
-  TableCellsIcon,
-  AdjustmentsHorizontalIcon,
-  ArrowPathIcon,
-  ExclamationCircleIcon,
-} from '@heroicons/react/24/outline';
+  LayoutGrid,
+  FileText,
+  BarChart3,
+  Table,
+  Settings,
+  RotateCcw,
+  AlertTriangle,
+} from 'lucide-react';
 import { useRoleComparison } from '../../hooks/useRoleComparison';
 import { useComparisonAnalytics } from '../../hooks/useComparisonAnalytics';
 import { ComparisonViewState } from '../../types/roleComparison';
@@ -40,7 +40,7 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
     comparison,
     selectedRoles,
     availableRoles,
-    isLoading,
+    _isLoading,
     isAnalyzing,
     error,
     viewState,
@@ -50,7 +50,7 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
     analyzeRoles,
     setFilters,
     setView,
-    canAddMore,
+    _canAddMore,
     hasMinimumRoles,
   } = useRoleComparison({ initialRoles, maxRoles, autoAnalyze });
   
@@ -63,11 +63,11 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
   const [showAdvanced, setShowAdvanced] = useState(false);
   
   const viewTabs = [
-    { id: 'summary', label: 'Summary', icon: Squares2X2Icon },
-    { id: 'matrix', label: 'Matrix', icon: TableCellsIcon },
-    { id: 'diff', label: 'Differences', icon: DocumentTextIcon },
+    { id: 'summary', label: 'Summary', icon: LayoutGrid },
+    { id: 'matrix', label: 'Matrix', icon: Table },
+    { id: 'diff', label: 'Differences', icon: FileText },
     ...(showVisualizations ? [
-      { id: 'charts', label: 'Charts', icon: ChartBarIcon },
+      { id: 'chart', label: 'Charts', icon: BarChart3 },
     ] : []),
   ] as const;
   
@@ -86,7 +86,7 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
       return (
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <div className="flex items-center gap-3 mb-2">
-            <ExclamationCircleIcon className="h-6 w-6 text-red-600" />
+            <AlertTriangle className="h-6 w-6 text-red-600" />
             <h3 className="text-lg font-medium text-red-900">Analysis Error</h3>
           </div>
           <p className="text-red-700 mb-4">{error.message}</p>
@@ -104,7 +104,7 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
     if (!hasMinimumRoles) {
       return (
         <div className="text-center py-12">
-          <Squares2X2Icon className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+          <LayoutGrid className="h-16 w-16 mx-auto text-gray-300 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Select Roles to Compare
           </h3>
@@ -156,7 +156,7 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
           />
         );
       
-      case 'charts':
+      case 'chart':
         return showVisualizations && analytics ? (
           <ComparisonChart
             roles={comparison.roles}
@@ -187,7 +187,7 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
               onClick={() => setShowAdvanced(!showAdvanced)}
               className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
             >
-              <AdjustmentsHorizontalIcon className="h-4 w-4" />
+              <Settings className="h-4 w-4" />
               Advanced
             </button>
             
@@ -199,9 +199,9 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isAnalyzing ? (
-                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  <RotateCcw className="h-4 w-4 animate-spin" />
                 ) : (
-                  <ChartBarIcon className="h-4 w-4" />
+                  <BarChart3 className="h-4 w-4" />
                 )}
                 Analyze Roles
               </button>
@@ -301,7 +301,7 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
             )}
             {isAnalyzing && (
               <div className="flex items-center gap-1">
-                <ArrowPathIcon className="h-3 w-3 animate-spin" />
+                <RotateCcw className="h-3 w-3 animate-spin" />
                 <span>Analyzing...</span>
               </div>
             )}

@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { MagnifyingGlassIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
-import { RoleComparisonData, ComparisonFilters } from '../../types/roleComparison';
+import { Search, X, Check } from 'lucide-react';
+import { RoleComparisonData, ComparisonFilters, Role } from '../../types/roleComparison';
 import RoleBadge from '../RoleBadge';
-import { Role } from '../../../../packages/types/enums';
 
 interface RoleSelectorProps {
   availableRoles: RoleComparisonData[];
@@ -116,7 +115,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({
                     className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                     title="Remove role"
                   >
-                    <XMarkIcon className="h-3 w-3 text-gray-400" />
+                    <X className="h-3 w-3 text-gray-400" />
                   </button>
                 </div>
               </div>
@@ -128,7 +127,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({
       {/* Search */}
       <div className="px-4 py-3">
         <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search roles..."
@@ -141,7 +140,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({
               onClick={handleClearSearch}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full"
             >
-              <XMarkIcon className="h-4 w-4 text-gray-400" />
+              <X className="h-4 w-4 text-gray-400" />
             </button>
           )}
         </div>
@@ -222,7 +221,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({
                             }
                           `}>
                             {isSelected && (
-                              <CheckIcon className="h-3 w-3 text-white" />
+                              <Check className="h-3 w-3 text-white" />
                             )}
                           </div>
                           

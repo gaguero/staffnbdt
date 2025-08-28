@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  XMarkIcon,
-  CogIcon,
-  FunnelIcon,
-  AdjustmentsHorizontalIcon,
-  CheckIcon,
-  InformationCircleIcon,
-  SparklesIcon,
-  EyeIcon
-} from '@heroicons/react/24/outline';
+  X,
+  Settings,
+  Filter,
+  SlidersHorizontal,
+  Check,
+  Info,
+  Sparkles,
+  Eye
+} from 'lucide-react';
 import { Role } from '../../services/roleService';
 import {
   CloneConfiguration,
@@ -62,7 +62,7 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
     clonePreview,
     generatePreview,
     recommendations,
-    getSmartSuggestions
+    _getSmartSuggestions
   } = useRoleDuplication();
 
   // Initialize available permissions and categories
@@ -73,14 +73,14 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
       const categories = [...new Set(sourceRole.permissions.map(p => p.resource))];
       setAvailableCategories(categories);
       
-      const scopes = [...new Set(sourceRole.permissions.map(p => p.scope))];
+      const scopes = [...new Set(sourceRole.permissions.filter(p => p.scope).map(p => p.scope))];
       setAvailableScopes(scopes);
     }
   }, [sourceRole]);
 
   // Update configuration
   const updateConfiguration = useCallback((updates: Partial<CloneConfiguration>) => {
-    setConfiguration(prev => ({
+    setConfiguration((prev: CloneConfiguration) => ({
       ...prev,
       ...updates,
       newMetadata: {
@@ -175,7 +175,7 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                  <CogIcon className="h-6 w-6" />
+                  <Settings className="h-6 w-6" />
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900">Advanced Clone Options</h2>
@@ -188,7 +188,7 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
                 onClick={onCancel}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <XMarkIcon className="h-6 w-6" />
+                <X className="h-6 w-6" />
               </button>
             </div>
 
@@ -196,9 +196,9 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
             <div className="mt-6">
               <div className="flex space-x-6 border-b border-gray-200">
                 {[
-                  { key: 'basic', label: 'Basic Settings', icon: <CogIcon className="h-4 w-4" /> },
-                  { key: 'permissions', label: 'Permission Filters', icon: <FunnelIcon className="h-4 w-4" /> },
-                  { key: 'advanced', label: 'Advanced', icon: <AdjustmentsHorizontalIcon className="h-4 w-4" /> }
+                  { key: 'basic', label: 'Basic Settings', icon: <Settings className="h-4 w-4" /> },
+                  { key: 'permissions', label: 'Permission Filters', icon: <Filter className="h-4 w-4" /> },
+                  { key: 'advanced', label: 'Advanced', icon: <SlidersHorizontal className="h-4 w-4" /> }
                 ].map(tab => (
                   <button
                     key={tab.key}
@@ -259,14 +259,14 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
                     onClick={handleGeneratePreview}
                     className="flex items-center space-x-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                   >
-                    <EyeIcon className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                     <span>Preview</span>
                   </button>
                 )}
                 
                 {enableSmartSuggestions && recommendations.length > 0 && (
                   <div className="text-sm text-blue-600">
-                    <SparklesIcon className="h-4 w-4 inline mr-1" />
+                    <Sparkles className="h-4 w-4 inline mr-1" />
                     {recommendations.length} suggestions available
                   </div>
                 )}
@@ -302,7 +302,7 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
                   onClick={() => setShowPreviewPanel(false)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <XMarkIcon className="h-5 w-5" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
@@ -438,7 +438,7 @@ const BasicSettingsTab: React.FC<BasicSettingsTabProps> = ({
       {enableSmartSuggestions && recommendations.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center space-x-2 mb-3">
-            <SparklesIcon className="h-5 w-5 text-blue-600" />
+            <Sparkles className="h-5 w-5 text-blue-600" />
             <span className="font-medium text-blue-900">Smart Suggestions</span>
           </div>
           <div className="space-y-2">

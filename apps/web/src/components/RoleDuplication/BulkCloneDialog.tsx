@@ -1,12 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import {
-  XMarkIcon,
-  DocumentDuplicateIcon,
-  PlusIcon,
-  TrashIcon,
-  SparklesIcon,
-  ClipboardDocumentListIcon
-} from '@heroicons/react/24/outline';
+  X,
+  Copy,
+  Plus,
+  Trash2,
+  Sparkles,
+  ClipboardList
+} from 'lucide-react';
 import { Role } from '../../services/roleService';
 import {
   BulkCloneDialogProps,
@@ -91,7 +91,7 @@ const BulkCloneDialog: React.FC<BulkCloneDialogProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                <ClipboardDocumentListIcon className="h-6 w-6" />
+                <ClipboardList className="h-6 w-6" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Bulk Clone Roles</h2>
@@ -104,7 +104,7 @@ const BulkCloneDialog: React.FC<BulkCloneDialogProps> = ({
               onClick={onCancel}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <XMarkIcon className="h-6 w-6" />
+              <X className="h-6 w-6" />
             </button>
           </div>
         </div>
@@ -179,7 +179,7 @@ const BulkCloneDialog: React.FC<BulkCloneDialogProps> = ({
                       `}
                     >
                       <div className="flex items-center space-x-2">
-                        <SparklesIcon className="h-4 w-4 text-gray-400" />
+                        <Sparkles className="h-4 w-4 text-gray-400" />
                         <span className="font-medium text-sm">{template.name}</span>
                       </div>
                       <div className="text-xs text-gray-600 mt-1">{template.description}</div>
@@ -223,7 +223,7 @@ const BulkCloneDialog: React.FC<BulkCloneDialogProps> = ({
                     disabled={!newVariation.name.trim() || batchConfig.variations.length >= maxBatchSize}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    <PlusIcon className="h-4 w-4" />
+                    <Plus className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -243,7 +243,7 @@ const BulkCloneDialog: React.FC<BulkCloneDialogProps> = ({
                         onClick={() => removeVariation(index)}
                         className="text-gray-400 hover:text-red-600 transition-colors"
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
@@ -328,7 +328,7 @@ const BulkCloneDialog: React.FC<BulkCloneDialogProps> = ({
                   }
                 `}
               >
-                <DocumentDuplicateIcon className="h-4 w-4" />
+                <Copy className="h-4 w-4" />
                 <span>Create {totalRolesToCreate} Roles</span>
               </button>
             </div>
