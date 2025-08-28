@@ -3,7 +3,7 @@ import {
   Eye,
   Pencil,
   Check,
-  X,
+  // X,
   AlertTriangle,
   Info,
   Plus,
@@ -13,7 +13,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import {
-  ClonePreview as ClonePreviewType,
+  ClonePreview as ClonePreviewType, // Type alias needed for component props
   ClonePreviewProps
 } from '../../types/roleDuplication';
 import { Permission } from '../../types/permission';
@@ -41,23 +41,24 @@ const ClonePreview: React.FC<ClonePreviewProps> = ({
     }));
   };
 
-  const _getSeverityColor = (severity: 'error' | 'warning' | 'info') => {
-    switch (severity) {
-      case 'error': return 'text-red-600 bg-red-50 border-red-200';
-      case 'warning': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'info': return 'text-blue-600 bg-blue-50 border-blue-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
+  // Helper functions commented out for now as they're not used
+  // const getSeverityColor = (severity: 'error' | 'warning' | 'info') => {
+  //   switch (severity) {
+  //     case 'error': return 'text-red-600 bg-red-50 border-red-200';
+  //     case 'warning': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+  //     case 'info': return 'text-blue-600 bg-blue-50 border-blue-200';
+  //     default: return 'text-gray-600 bg-gray-50 border-gray-200';
+  //   }
+  // };
 
-  const _getSeverityIcon = (severity: 'error' | 'warning' | 'info') => {
-    switch (severity) {
-      case 'error': return <AlertTriangle className="h-4 w-4" />;
-      case 'warning': return <AlertTriangle className="h-4 w-4" />;
-      case 'info': return <Info className="h-4 w-4" />;
-      default: return <Info className="h-4 w-4" />;
-    }
-  };
+  // const getSeverityIcon = (severity: 'error' | 'warning' | 'info') => {
+  //   switch (severity) {
+  //     case 'error': return <AlertTriangle className="h-4 w-4" />;
+  //     case 'warning': return <AlertTriangle className="h-4 w-4" />;
+  //     case 'info': return <Info className="h-4 w-4" />;
+  //     default: return <Info className="h-4 w-4" />;
+  //   }
+  // };
 
   const hasValidationIssues = preview.validationErrors.length > 0;
   const hasWarnings = preview.validationWarnings.length > 0;

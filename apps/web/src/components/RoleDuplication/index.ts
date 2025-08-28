@@ -3,7 +3,7 @@ export { default as CloneOptionsDialog } from './CloneOptionsDialog';
 export { default as BulkCloneDialog } from './BulkCloneDialog';
 export { default as ClonePreview } from './ClonePreview';
 export { default as RoleLineageTree } from './RoleLineageTree';
-export { default as CloneTemplateGallery } from './CloneTemplateGallery';
+// export { default as CloneTemplateGallery } from './CloneTemplateGallery'; // Component doesn't exist yet
 
 // Hooks
 export { useRoleDuplication } from '../../hooks/useRoleDuplication';

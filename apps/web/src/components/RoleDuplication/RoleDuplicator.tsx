@@ -69,7 +69,7 @@ const RoleDuplicator: React.FC<RoleDuplicatorProps> = ({
   initialConfiguration,
   context,
   showAdvancedOptions = true,
-  _enableBatchCloning = false,
+  // enableBatchCloning = false, // Feature not implemented yet
   className = ''
 }) => {
   const [step, setStep] = useState<'configure' | 'preview' | 'confirm'>('configure');
@@ -85,11 +85,11 @@ const RoleDuplicator: React.FC<RoleDuplicatorProps> = ({
     startClone,
     updateConfiguration,
     generatePreview,
-    _validateConfiguration,
+    // validateConfiguration,
     executeClone,
     cancelClone,
     applyRecommendation,
-    _getSmartSuggestions
+    // getSmartSuggestions
   } = useRoleDuplication(context);
   
   const {
@@ -329,7 +329,7 @@ interface ConfigureStepProps {
 }
 
 const ConfigureStep: React.FC<ConfigureStepProps> = ({
-  sourceRole,
+  // sourceRole, // Available in parent scope
   selectedCloneType,
   cloneTypeOptions,
   recommendations,

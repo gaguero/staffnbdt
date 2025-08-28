@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronDownIcon, ChevronRightIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { CheckIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { ChevronDown as ChevronDownIcon, ChevronRight as ChevronRightIcon, Search as MagnifyingGlassIcon } from 'lucide-react';
+import { Check as CheckIcon, X as XMarkIcon } from 'lucide-react';
 import { RoleComparisonData, PermissionMatrix } from '../../types/roleComparison';
 import { Permission } from '../../types/permission';
 import RoleBadge from '../RoleBadge';

@@ -184,7 +184,7 @@ export interface ComparisonHistory {
 }
 
 // View state interfaces
-export type ComparisonView = 'matrix' | 'diff' | 'venn' | 'summary' | 'hierarchy' | 'network';
+export type ComparisonView = 'matrix' | 'diff' | 'venn' | 'summary' | 'hierarchy' | 'network' | 'chart';
 
 export interface ComparisonViewState {
   currentView: ComparisonView;

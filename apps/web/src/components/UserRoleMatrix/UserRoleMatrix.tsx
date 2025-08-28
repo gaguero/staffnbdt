@@ -15,7 +15,7 @@ const MAX_VISIBLE_ITEMS_BEFORE_PAGINATION = 100;
 const UserRoleMatrix: React.FC<UserRoleMatrixProps> = ({
   users: propUsers,
   roles: propRoles,
-  assignments: _propAssignments,
+  assignments: _propAssignments, // Prefixed to indicate intentional unused
   onAssignRole,
   onUnassignRole,
   onBulkAssign,

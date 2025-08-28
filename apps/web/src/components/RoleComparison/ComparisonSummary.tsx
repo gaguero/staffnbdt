@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-  ChartBarIcon,
-  UserGroupIcon,
-  ShieldCheckIcon,
-  ExclamationTriangleIcon,
-  LightBulbIcon,
-} from '@heroicons/react/24/outline';
+  BarChart3 as ChartBarIcon,
+  Users as UserGroupIcon,
+  Shield as ShieldCheckIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  Lightbulb as LightBulbIcon,
+} from 'lucide-react';
 import { RoleComparisonData, ComparisonMetrics, ComparisonSuggestion } from '../../types/roleComparison';
 import RoleBadge from '../RoleBadge';
 

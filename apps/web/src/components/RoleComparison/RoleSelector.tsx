@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, X, Check } from 'lucide-react';
-import { RoleComparisonData, ComparisonFilters, Role } from '../../types/roleComparison';
+import { RoleComparisonData, ComparisonFilters } from '../../types/roleComparison';
 import RoleBadge from '../RoleBadge';
 
 interface RoleSelectorProps {

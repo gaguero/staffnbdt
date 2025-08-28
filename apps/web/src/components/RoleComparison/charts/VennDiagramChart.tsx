@@ -123,7 +123,7 @@ const VennDiagramChart: React.FC<VennDiagramChartProps> = ({
 };
 
 // Simplified two-set Venn diagram
-const TwoSetVenn: React.FC<{ data: VennDiagramData; roles: RoleComparisonData[] }> = ({ data, _roles }) => {
+const TwoSetVenn: React.FC<{ data: VennDiagramData; roles: RoleComparisonData[] }> = ({ data }) => {
   const [set1, set2] = data.sets;
   const intersection = data.intersections.find(i => i.sets.length === 2);
   
@@ -160,7 +160,7 @@ const TwoSetVenn: React.FC<{ data: VennDiagramData; roles: RoleComparisonData[] 
 };
 
 // Simplified three-set Venn diagram
-const ThreeSetVenn: React.FC<{ data: VennDiagramData; roles: RoleComparisonData[] }> = ({ _data }) => {
+const ThreeSetVenn: React.FC<{ data: VennDiagramData; roles: RoleComparisonData[] }> = ({ }) => {
   return (
     <div className="text-center text-gray-500">
       <div className="text-sm">Three-set Venn diagram</div>

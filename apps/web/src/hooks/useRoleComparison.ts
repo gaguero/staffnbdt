@@ -61,8 +61,8 @@ export function useRoleComparison({
 }: UseRoleComparisonProps = {}): UseRoleComparisonReturn {
   // External data
   const { data: rolesData, isLoading: rolesLoading } = useRoles();
-  const { data: _permissionsData, isLoading: permissionsLoading } = usePermissions();
-  const { hasPermission: _hasPermission } = useUserPermissions();
+  const { data: _permissionsData, isLoading: permissionsLoading } = usePermissions(); // Not used yet
+  const { hasPermission: _hasPermission } = useUserPermissions(); // Not used yet
   
   // Internal state
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>(initialRoles);

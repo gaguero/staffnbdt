@@ -4,16 +4,16 @@ import {
   Settings,
   Filter,
   SlidersHorizontal,
-  Check,
-  Info,
+  // Check,
+  // Info,
   Sparkles,
   Eye
 } from 'lucide-react';
-import { Role } from '../../services/roleService';
+// import { Role } from '../../services/roleService'; // Not used
 import {
   CloneConfiguration,
   CloneOptionsDialogProps,
-  CloneType
+  // CloneType // Not used
 } from '../../types/roleDuplication';
 import { useRoleDuplication } from '../../hooks/useRoleDuplication';
 import { Permission } from '../../types/permission';
@@ -49,7 +49,7 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
       copyUserAssignments: false,
       adjustLevel: true,
       autoSuggestLevel: true
-    },
+    } as CloneConfiguration['inheritanceRules'],
     ...initialConfiguration
   });
   
@@ -62,13 +62,19 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
     clonePreview,
     generatePreview,
     recommendations,
-    _getSmartSuggestions
+    // getSmartSuggestions
   } = useRoleDuplication();
 
   // Initialize available permissions and categories
   useEffect(() => {
     if (sourceRole.permissions) {
-      setAvailablePermissions(sourceRole.permissions);
+      // Add required timestamps to permissions if missing
+      const permissionsWithTimestamps = sourceRole.permissions.map(p => ({
+        ...p,
+        createdAt: p.createdAt || new Date().toISOString(),
+        updatedAt: p.updatedAt || new Date().toISOString()
+      }));
+      setAvailablePermissions(permissionsWithTimestamps);
       
       const categories = [...new Set(sourceRole.permissions.map(p => p.resource))];
       setAvailableCategories(categories);

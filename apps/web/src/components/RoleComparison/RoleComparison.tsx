@@ -40,7 +40,7 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
     comparison,
     selectedRoles,
     availableRoles,
-    _isLoading,
+    // isLoading,
     isAnalyzing,
     error,
     viewState,
@@ -50,7 +50,7 @@ const RoleComparison: React.FC<RoleComparisonProps> = ({
     analyzeRoles,
     setFilters,
     setView,
-    _canAddMore,
+    // canAddMore,
     hasMinimumRoles,
   } = useRoleComparison({ initialRoles, maxRoles, autoAnalyze });
   

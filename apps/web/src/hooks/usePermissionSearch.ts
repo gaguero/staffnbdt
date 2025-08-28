@@ -100,7 +100,7 @@ export function usePermissionSearch(options: UsePermissionSearchOptions = {}): U
     context = 'generic',
   } = options;
 
-  const { user: _user } = useAuth();
+  const { user: _user } = useAuth(); // Prefixed to indicate intentional unused
   const [permissions, setPermissions] = useState<PermissionSearchIndex[]>([]);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
   const searchCacheRef = useRef<Map<string, SearchResult[]>>(new Map());
