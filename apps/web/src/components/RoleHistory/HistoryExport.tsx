@@ -1,17 +1,104 @@
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Badge } from '@/components/ui/badge';
+
+// Inline UI components
+const Dialog = ({ children, open, onOpenChange: _onOpenChange }: any) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-lg" onClick={e => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+  );
+};
+const DialogContent = ({ children, className = '' }: any) => (
+  <div className={`p-6 ${className}`}>{children}</div>
+);
+const DialogHeader = ({ children, className = '' }: any) => (
+  <div className={`mb-4 ${className}`}>{children}</div>
+);
+const DialogTitle = ({ children, className = '' }: any) => (
+  <h2 className={`text-lg font-semibold ${className}`}>{children}</h2>
+);
+const DialogDescription = ({ children, className = '' }: any) => (
+  <p className={`text-sm text-gray-600 mt-2 ${className}`}>{children}</p>
+);
+const DialogFooter = ({ children, className = '' }: any) => (
+  <div className={`mt-6 flex justify-end space-x-3 ${className}`}>{children}</div>
+);
+
+const Button = ({ children, onClick, className = '', variant = 'default', size = 'default', disabled = false, ...props }: any) => {
+  const baseClasses = 'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+  const variants: Record<string, string> = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/90',
+    outline: 'border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900',
+    ghost: 'hover:bg-slate-100 hover:text-slate-900'
+  };
+  const sizes: Record<string, string> = {
+    default: 'h-10 px-4 py-2',
+    sm: 'h-9 rounded-md px-3',
+    lg: 'h-11 rounded-md px-8'
+  };
+  return (
+    <button 
+      className={`${baseClasses} ${variants[variant] || variants.default} ${sizes[size] || sizes.default} ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Label = ({ children, className = '', htmlFor, ...props }: any) => (
+  <label className={`text-sm font-medium text-gray-700 ${className}`} htmlFor={htmlFor} {...props}>
+    {children}
+  </label>
+);
+
+const Checkbox = ({ checked, onCheckedChange, className = '', id, ...props }: any) => (
+  <input
+    type="checkbox"
+    checked={checked}
+    onChange={(e) => onCheckedChange?.(e.target.checked)}
+    className={`rounded border-gray-300 ${className}`}
+    id={id}
+    {...props}
+  />
+);
+
+const RadioGroup = ({ children, value, onValueChange, className = '' }: any) => (
+  <div className={`grid gap-2 ${className}`}>
+    {React.Children.map(children, (child) =>
+      React.isValidElement(child)
+        ? React.cloneElement(child, { groupValue: value, onGroupChange: onValueChange } as any)
+        : child
+    )}
+  </div>
+);
+const RadioGroupItem = ({ value, ...props }: any) => (
+  <input
+    type="radio"
+    value={value}
+    className="rounded-full border-gray-300"
+    {...props}
+  />
+);
+
+const Badge = ({ children, variant = 'default', className = '' }: any) => {
+  const variants: Record<string, string> = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/80',
+    secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-100/80',
+    outline: 'text-slate-950 border border-slate-200 bg-transparent hover:bg-slate-100'
+  };
+  return (
+    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${variants[variant] || variants.default} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
 import { 
   Download,
   FileText,
@@ -21,8 +108,7 @@ import {
   Loader2,
   CheckCircle,
   Users,
-  Calendar,
-  Shield
+  Calendar
 } from 'lucide-react';
 
 interface HistoryExportProps {

@@ -1,32 +1,117 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+
+// Inline utility function
+const cn = (...classes: (string | undefined | null | false)[]) => {
+  return classes.filter(Boolean).join(' ');
+};
+
+// Inline UI components
+const Button = ({ children, onClick, className = '', variant = 'default', size = 'default', disabled = false, ...props }: any) => {
+  const baseClasses = 'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+  const variants: Record<string, string> = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/90',
+    outline: 'border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900',
+    ghost: 'hover:bg-slate-100 hover:text-slate-900'
+  };
+  const sizes: Record<string, string> = {
+    default: 'h-10 px-4 py-2',
+    sm: 'h-9 rounded-md px-3',
+    lg: 'h-11 rounded-md px-8'
+  };
+  return (
+    <button 
+      className={`${baseClasses} ${variants[variant] || variants.default} ${sizes[size] || sizes.default} ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Input = ({ className = '', ...props }: any) => (
+  <input 
+    className={`flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    {...props}
+  />
+);
+
+const Label = ({ children, className = '', htmlFor, ...props }: any) => (
+  <label className={`text-sm font-medium text-gray-700 ${className}`} htmlFor={htmlFor} {...props}>
+    {children}
+  </label>
+);
+
+const Badge = ({ children, variant = 'default', className = '' }: any) => {
+  const variants: Record<string, string> = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/80',
+    secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-100/80',
+    outline: 'text-slate-950 border border-slate-200 bg-transparent hover:bg-slate-100'
+  };
+  return (
+    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${variants[variant] || variants.default} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+const Separator = ({ className = '' }: any) => (
+  <hr className={`shrink-0 bg-slate-200 h-[1px] w-full ${className}`} />
+);
+
+const Calendar = ({ mode: _mode, selected, onSelect, initialFocus: _initialFocus, className = '' }: any) => {
+  const [currentDate, setCurrentDate] = useState(selected || new Date());
+  const handleDateClick = (date: Date) => {
+    setCurrentDate(date);
+    onSelect?.(date);
+  };
+  return (
+    <div className={`p-3 ${className}`}>
+      <input 
+        type="date" 
+        value={currentDate?.toISOString().split('T')[0] || ''}
+        onChange={(e: any) => handleDateClick(new Date(e.target.value))}
+        className="w-full p-2 border border-gray-300 rounded"
+      />
+    </div>
+  );
+};
+
+const Popover = ({ children, open, onOpenChange }: any) => {
+  return (
+    <div className="relative">
+      {React.Children.map(children, (child) =>
+        React.isValidElement(child)
+          ? React.cloneElement(child, { popoverOpen: open, onPopoverChange: onOpenChange } as any)
+          : child
+      )}
+    </div>
+  );
+};
+const PopoverTrigger = ({ children, asChild: _asChild, popoverOpen, onPopoverChange, ...props }: any) => (
+  <div onClick={() => onPopoverChange?.(!popoverOpen)} {...props}>{children}</div>
+);
+const PopoverContent = ({ children, className = '', popoverOpen }: any) => {
+  if (!popoverOpen) return null;
+  return (
+    <div className={`absolute z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg p-2 ${className}`}>
+      {children}
+    </div>
+  );
+};
+
 import { 
   CalendarIcon,
-  Filter,
   X,
   Clock,
   Users,
   UserCheck,
-  Shield,
   Zap,
   RotateCcw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { RoleHistoryFilter } from '../../types/roleHistory';
-import { cn } from '@/lib/utils';
 
 interface HistoryFiltersProps {
   filters: RoleHistoryFilter;
@@ -185,7 +270,7 @@ export function HistoryFilters({
                   <Calendar
                     mode="single"
                     selected={filters.dateFrom}
-                    onSelect={(date) => {
+                    onSelect={(date: Date | undefined) => {
                       updateFilter('dateFrom', date);
                       setDateFromOpen(false);
                     }}
@@ -218,7 +303,7 @@ export function HistoryFilters({
                   <Calendar
                     mode="single"
                     selected={filters.dateTo}
-                    onSelect={(date) => {
+                    onSelect={(date: Date | undefined) => {
                       updateFilter('dateTo', date);
                       setDateToOpen(false);
                     }}
@@ -290,7 +375,7 @@ export function HistoryFilters({
           id="search"
           placeholder="Search users, roles, or admins..."
           value={filters.searchTerm || ''}
-          onChange={(e) => updateFilter('searchTerm', e.target.value || undefined)}
+          onChange={(e: any) => updateFilter('searchTerm', e.target.value || undefined)}
         />
       </div>
 

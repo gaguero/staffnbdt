@@ -327,7 +327,6 @@ const PermissionAnalytics: React.FC<PermissionAnalyticsProps> = ({
               <Treemap
                 data={heatmapData}
                 dataKey="value"
-                ratio={4/3}
                 stroke="#fff"
                 fill="#8884d8"
               />

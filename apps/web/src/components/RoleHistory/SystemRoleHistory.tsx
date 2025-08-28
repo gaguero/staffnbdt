@@ -10,19 +10,19 @@ const CardContent = ({ children, className = '' }: any) => (
 
 const Button = ({ children, onClick, className = '', variant = 'default', size = 'default', disabled = false, ...props }: any) => {
   const baseClasses = 'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
-  const variants = {
+  const variants: Record<string, string> = {
     default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/90',
     outline: 'border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900',
     ghost: 'hover:bg-slate-100 hover:text-slate-900'
   };
-  const sizes = {
+  const sizes: Record<string, string> = {
     default: 'h-10 px-4 py-2',
     sm: 'h-9 rounded-md px-3',
     lg: 'h-11 rounded-md px-8'
   };
   return (
     <button 
-      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`${baseClasses} ${variants[variant] || variants.default} ${sizes[size] || sizes.default} ${className}`}
       onClick={onClick}
       disabled={disabled}
       {...props}
@@ -33,13 +33,13 @@ const Button = ({ children, onClick, className = '', variant = 'default', size =
 };
 
 const Badge = ({ children, variant = 'default', className = '' }: any) => {
-  const variants = {
+  const variants: Record<string, string> = {
     default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/80',
     secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-100/80',
     outline: 'text-slate-950 border border-slate-200 bg-transparent hover:bg-slate-100'
   };
   return (
-    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${variants[variant]} ${className}`}>
+    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${variants[variant] || variants.default} ${className}`}>
       {children}
     </div>
   );
