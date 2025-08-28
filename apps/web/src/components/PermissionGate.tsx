@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useMemo, useCallback, ReactNode } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import {
@@ -102,109 +102,87 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
   debug = false,
 }) => {
   const { isAuthenticated, user } = useAuth();
-  const { hasPermission, hasAnyPermission, hasAllPermissions } = usePermissions();
-  
-  const [isAllowed, setIsAllowed] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const { hasPermission, hasAnyPermission, hasAllPermissions, isLoading, error } = usePermissions();
 
-  // Build permissions array from props
-  const getPermissionsToCheck = (): PermissionSpec[] => {
-    const permissionsToCheck: PermissionSpec[] = [];
+  // Memoize permissions to check for optimization
+  const permissionsToCheck = useMemo((): PermissionSpec[] => {
+    const specs: PermissionSpec[] = [];
 
     // Single permission
     if (resource && action) {
-      permissionsToCheck.push({ resource, action, scope, context });
+      specs.push({ resource, action, scope, context });
     }
 
     // Multiple permissions
     if (permissions) {
-      permissionsToCheck.push(...permissions);
+      specs.push(...permissions);
     }
 
     // Common permission
     if (commonPermission) {
-      permissionsToCheck.push(commonPermission);
+      specs.push(commonPermission);
     }
 
     // Multiple common permissions
     if (commonPermissions) {
-      permissionsToCheck.push(...commonPermissions);
+      specs.push(...commonPermissions);
     }
 
-    return permissionsToCheck;
-  };
+    return specs;
+  }, [resource, action, scope, context, permissions, commonPermission, commonPermissions]);
 
-  // Check permissions
-  useEffect(() => {
-    const checkPermissions = async () => {
-      if (!isAuthenticated || !user) {
-        setIsAllowed(false);
-        setIsLoading(false);
-        return;
+  // Synchronous permission check using memoized computation
+  const isAllowed = useMemo(() => {
+    if (!isAuthenticated || !user) {
+      return false;
+    }
+
+    if (permissionsToCheck.length === 0) {
+      // No permissions specified, allow by default
+      if (debug) {
+        console.log('PermissionGate: No permissions specified, allowing access by default');
       }
+      return true;
+    }
 
-      const permissionsToCheck = getPermissionsToCheck();
+    try {
+      let allowed = false;
 
-      if (permissionsToCheck.length === 0) {
-        // No permissions specified, allow by default
-        setIsAllowed(true);
-        setIsLoading(false);
-        if (debug) {
-          // No permissions specified, allowing access by default
-        }
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        let allowed = false;
-
-        if (permissionsToCheck.length === 1) {
-          // Single permission check
-          const permission = permissionsToCheck[0];
-          allowed = await hasPermission(
-            permission.resource,
-            permission.action,
-            permission.scope || 'own',
-            permission.context
-          );
+      if (permissionsToCheck.length === 1) {
+        // Single permission check
+        const permission = permissionsToCheck[0];
+        allowed = hasPermission(
+          permission.resource,
+          permission.action,
+          permission.scope || 'own',
+          permission.context
+        );
+      } else {
+        // Multiple permissions check
+        if (requireAll) {
+          allowed = hasAllPermissions(permissionsToCheck);
         } else {
-          // Multiple permissions check
-          if (requireAll) {
-            allowed = await hasAllPermissions(permissionsToCheck);
-          } else {
-            allowed = await hasAnyPermission(permissionsToCheck);
-          }
+          allowed = hasAnyPermission(permissionsToCheck);
         }
-
-        setIsAllowed(allowed);
-
-        if (debug) {
-          // Permission check result logged
-        }
-      } catch (err) {
-        // Permission check failed
-        setError(err instanceof Error ? err.message : 'Permission check failed');
-        setIsAllowed(false); // Fail closed for security
-      } finally {
-        setIsLoading(false);
       }
-    };
 
-    checkPermissions();
+      if (debug) {
+        console.log('PermissionGate: Permission check result:', {
+          permissionsToCheck,
+          requireAll,
+          allowed,
+        });
+      }
+
+      return allowed;
+    } catch (err) {
+      console.error('PermissionGate: Permission check failed:', err);
+      return false; // Fail closed for security
+    }
   }, [
     isAuthenticated,
     user,
-    resource,
-    action,
-    scope,
-    context,
-    permissions,
-    commonPermission,
-    commonPermissions,
+    permissionsToCheck,
     requireAll,
     hasPermission,
     hasAnyPermission,
@@ -220,17 +198,28 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
     return <>{unauthorized || fallback || <div>Please log in to access this content</div>}</>;
   }
 
-  // Loading state
-  if (isLoading && showLoading) {
-    return (
-      <>
-        {loading || (
-          <div className="flex items-center justify-center p-4">
-            <LoadingSpinner size="sm" text="Checking permissions..." />
-          </div>
-        )}
-      </>
+  // Loading state with conservative fallback
+  // In optimized version, we prefer to show nothing or cached data rather than loading states
+  if (isLoading && showLoading && permissionsToCheck.length > 0) {
+    // For critical permissions, show loading; for UI elements, hide during loading
+    const showLoadingState = permissionsToCheck.some(p => 
+      ['create', 'delete', 'admin'].includes(p.action || '')
     );
+    
+    if (showLoadingState) {
+      return (
+        <>
+          {loading || (
+            <div className="flex items-center justify-center p-2">
+              <LoadingSpinner size="sm" text="Loading..." />
+            </div>
+          )}
+        </>
+      );
+    } else {
+      // Conservative approach: hide UI elements while loading to prevent flicker
+      return null;
+    }
   }
 
   // Error state
@@ -283,11 +272,11 @@ export function withPermission<P extends object>(
   };
 }
 
-// Hook for imperative permission checking in components
+// Optimized hook for imperative permission checking in components
 export function usePermissionGate() {
   const { hasPermission, hasAnyPermission, hasAllPermissions } = usePermissions();
 
-  const checkPermissionGate = async (props: Omit<PermissionGateProps, 'children'>): Promise<boolean> => {
+  const checkPermissionGate = useCallback((props: Omit<PermissionGateProps, 'children'>): boolean => {
     const {
       resource,
       action,
@@ -325,7 +314,7 @@ export function usePermissionGate() {
     try {
       if (permissionsToCheck.length === 1) {
         const permission = permissionsToCheck[0];
-        return await hasPermission(
+        return hasPermission(
           permission.resource,
           permission.action,
           permission.scope || 'own',
@@ -333,16 +322,16 @@ export function usePermissionGate() {
         );
       } else {
         if (requireAll) {
-          return await hasAllPermissions(permissionsToCheck);
+          return hasAllPermissions(permissionsToCheck);
         } else {
-          return await hasAnyPermission(permissionsToCheck);
+          return hasAnyPermission(permissionsToCheck);
         }
       }
     } catch (error) {
-      // Permission gate check failed
+      console.error('Permission gate check failed:', error);
       return false;
     }
-  };
+  }, [hasPermission, hasAnyPermission, hasAllPermissions]);
 
   return { checkPermissionGate };
 }
