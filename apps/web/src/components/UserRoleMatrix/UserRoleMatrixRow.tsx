@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { MatrixUser, MatrixRole, UserRoleMatrixRowProps } from '../../types/userRoleMatrix';
-import { formatRoleName } from '../../types/role';
 
 interface RoleCellProps {
   user: MatrixUser;

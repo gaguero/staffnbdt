@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { EffectivePermissions } from '../../hooks/useUserRoleManagement';
-import PermissionSearch from '../PermissionSearch/PermissionSearch';
 
 interface UserPermissionPreviewProps {
   userId: string;
@@ -11,7 +10,7 @@ interface UserPermissionPreviewProps {
 }
 
 const UserPermissionPreview: React.FC<UserPermissionPreviewProps> = ({
-  userId,
+  userId: _userId,
   userName,
   effectivePermissions,
   isOpen,

@@ -83,12 +83,12 @@ const UserRoleMatrixHeader: React.FC<UserRoleMatrixHeaderProps> = ({
   selectedRoles,
   onRoleSelect,
   onSelectAllUsers,
-  onSelectAllRoles,
+  onSelectAllRoles: _onSelectAllRoles,
   userCount,
   permissions,
 }) => {
   const allRolesSelected = roles.length > 0 && roles.every(role => selectedRoles.has(role.id));
-  const someRolesSelected = roles.some(role => selectedRoles.has(role.id));
+  const _someRolesSelected = roles.some(role => selectedRoles.has(role.id));
 
   const handleSelectAllRoles = () => {
     if (allRolesSelected) {

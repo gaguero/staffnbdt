@@ -123,7 +123,6 @@ const UserRoleHistory: React.FC<UserRoleHistoryProps> = ({
                               </span>
                               <RoleBadge 
                                 role={entry.roleName} 
-                                variant="custom" 
                                 size="sm"
                                 showTooltip={false}
                               />

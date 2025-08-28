@@ -3,8 +3,7 @@ import { User } from '../../services/userService';
 import { useUserRoleManagement, UserRole, RoleAssignment } from '../../hooks/useUserRoleManagement';
 import { usePermissions } from '../../hooks/usePermissions';
 import RoleBadge from '../RoleBadge';
-import PermissionSearch from '../PermissionSearch/PermissionSearch';
-import { toast } from '../../utils/toast';
+import toast from '../../utils/toast';
 
 interface UserRoleAssignmentProps {
   user: User;
@@ -43,14 +42,14 @@ const UserRoleAssignment: React.FC<UserRoleAssignmentProps> = ({
     assignRole,
     removeRole,
     bulkAssignRoles,
-    bulkRemoveRoles,
+    bulkRemoveRoles: _bulkRemoveRoles,
     validateRoleAssignment,
     canAssignRole,
     canRemoveRole,
     getRoleConflicts
   } = useUserRoleManagement(user.id);
 
-  const { hasPermission } = usePermissions();
+  const { hasPermission: _hasPermission } = usePermissions();
 
   if (!isOpen) return null;
 
@@ -279,7 +278,7 @@ const UserRoleAssignment: React.FC<UserRoleAssignmentProps> = ({
                       {user.role && (
                         <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                           <div className="flex items-center space-x-3">
-                            <RoleBadge role={user.role} variant="system" size="md" />
+                            <RoleBadge role={user.role} size="md" />
                             <span className="text-sm text-gray-600">System Role</span>
                           </div>
                         </div>
@@ -289,7 +288,7 @@ const UserRoleAssignment: React.FC<UserRoleAssignmentProps> = ({
                       {currentRoles.filter(ur => !ur.role.isSystem).map((userRole) => (
                         <div key={userRole.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="flex items-center space-x-3">
-                            <RoleBadge role={userRole.role.name} variant="custom" size="md" />
+                            <RoleBadge role={userRole.role.name} size="md" />
                             <div className="text-sm text-gray-600">
                               <div>Assigned: {new Date(userRole.assignedAt).toLocaleDateString()}</div>
                               {userRole.expiresAt && (
@@ -359,7 +358,7 @@ const UserRoleAssignment: React.FC<UserRoleAssignmentProps> = ({
                         />
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
-                            <RoleBadge role={role.name} variant={role.isSystem ? 'system' : 'custom'} size="sm" />
+                            <RoleBadge role={role.name} size="sm" />
                             <span className="font-medium text-gray-900">{role.name}</span>
                           </div>
                           {role.description && (

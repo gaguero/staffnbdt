@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-  DocumentDuplicateIcon,
-  EllipsisVerticalIcon,
-  PencilIcon,
-  TrashIcon,
-  EyeIcon,
-  ChevronDownIcon
-} from '@heroicons/react/24/outline';
+  Copy as DocumentDuplicateIcon,
+  MoreVertical as EllipsisVerticalIcon,
+  Edit as PencilIcon,
+  Trash as TrashIcon,
+  Eye as EyeIcon,
+  ChevronDown as ChevronDownIcon
+} from 'lucide-react';
 import { Role } from '../../services/roleService';
 
 interface RoleCardProps {

@@ -7,7 +7,6 @@ import {
   HeatmapData,
   ComparisonMetrics,
 } from '../types/roleComparison';
-import { Permission } from '../types/permission';
 
 interface UseComparisonAnalyticsProps {
   roles: RoleComparisonData[];
@@ -57,13 +56,13 @@ const ROLE_COLORS = {
 export function useComparisonAnalytics({
   roles,
   matrix,
-  metrics,
+  metrics: _metrics,
 }: UseComparisonAnalyticsProps): UseComparisonAnalyticsReturn {
   // Venn Diagram Data
   const vennDiagramData = useMemo((): VennDiagramData | null => {
     if (roles.length < 2 || roles.length > 3) return null;
     
-    const sets = roles.map((role, index) => ({
+    const sets = roles.map((role, _index) => ({
       id: role.id,
       label: role.name,
       size: role.permissions.length,
@@ -99,7 +98,7 @@ export function useComparisonAnalytics({
     });
     
     // Permission category nodes
-    Object.entries(matrix.categories).forEach(([category, permissions]) => {
+    Object.entries(matrix.categories).forEach(([category, _permissions]) => {
       nodes.push({
         id: `category_${category}`,
         label: category,
@@ -243,7 +242,7 @@ export function useComparisonAnalytics({
     const categoryDiversity: Record<string, number> = {};
     const criticalGaps: CategoryAnalysis['criticalGaps'] = [];
     
-    Object.entries(matrix.categories).forEach(([category, permissions]) => {
+    Object.entries(matrix.categories).forEach(([category, _permissions]) => {
       // Calculate overlap - how many roles share permissions in this category
       const rolesWithCategory = roles.filter(role => 
         role.permissions.some(p => p.resource === category)

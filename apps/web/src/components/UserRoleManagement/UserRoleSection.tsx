@@ -3,7 +3,6 @@ import { User } from '../../services/userService';
 import { useUserRoleManagement, UserRole } from '../../hooks/useUserRoleManagement';
 import { usePermissions } from '../../hooks/usePermissions';
 import RoleBadge from '../RoleBadge';
-import RoleBadgeGroup from '../RoleBadgeGroup';
 import PermissionGate from '../PermissionGate';
 import UserRoleAssignment from './UserRoleAssignment';
 import UserRoleHistory from './UserRoleHistory';
@@ -172,7 +171,7 @@ const UserRoleSection: React.FC<UserRoleSectionProps> = ({
           )}
         </div>
 
-        <PermissionGate permission="role.assign.department" fallback={null}>
+        <PermissionGate permissions={["role.assign.department"]} fallback={null}>
           <div className="flex items-center space-x-2">
             {enableAdvancedManagement && hasManagementPermissions && (
               <button
@@ -190,7 +189,7 @@ const UserRoleSection: React.FC<UserRoleSectionProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-gray-700">Current Roles</label>
-          <PermissionGate permission="role.assign.department" fallback={null}>
+          <PermissionGate permissions={["role.assign.department"]} fallback={null}>
             {hasManagementPermissions && (
               <QuickRoleSelector
                 availableRoles={availableRoles || []}
@@ -213,7 +212,6 @@ const UserRoleSection: React.FC<UserRoleSectionProps> = ({
                   role={systemRole}
                   size={compact ? 'sm' : 'md'}
                   showTooltip={true}
-                  variant="system"
                 />
               )}
 
@@ -224,7 +222,6 @@ const UserRoleSection: React.FC<UserRoleSectionProps> = ({
                     role={userRole.role.name}
                     size={compact ? 'sm' : 'md'}
                     showTooltip={true}
-                    variant="custom"
                   />
                   
                   {hasManagementPermissions && canRemoveRole(userRole.roleId) && (
@@ -266,7 +263,6 @@ const UserRoleSection: React.FC<UserRoleSectionProps> = ({
                     role={userRole.role.name}
                     size="sm"
                     showTooltip={true}
-                    variant="custom"
                   />
                   
                   {hasManagementPermissions && canRemoveRole(userRole.roleId) && (

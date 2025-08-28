@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import useUserRoleMatrix from '../../hooks/useUserRoleMatrix';
 import { usePermissions } from '../../hooks/usePermissions';
-import { UserRoleMatrixProps, MatrixUser, MatrixRole } from '../../types/userRoleMatrix';
+import { UserRoleMatrixProps } from '../../types/userRoleMatrix';
 import UserRoleMatrixHeader from './UserRoleMatrixHeader';
 import UserRoleMatrixRow from './UserRoleMatrixRow';
 import BulkActionBar from './BulkActionBar';
@@ -15,7 +15,7 @@ const MAX_VISIBLE_ITEMS_BEFORE_PAGINATION = 100;
 const UserRoleMatrix: React.FC<UserRoleMatrixProps> = ({
   users: propUsers,
   roles: propRoles,
-  assignments: propAssignments,
+  assignments: _propAssignments,
   onAssignRole,
   onUnassignRole,
   onBulkAssign,
@@ -171,7 +171,7 @@ const UserRoleMatrix: React.FC<UserRoleMatrixProps> = ({
     return (
       <div className={className}>
         <ErrorDisplay
-          error={state.error}
+          error={new Error(state.error)}
           onRetry={actions.refreshData}
           className="h-64"
         />
