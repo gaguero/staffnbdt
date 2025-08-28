@@ -2,7 +2,7 @@ import React from 'react';
 import RoleBadge from './RoleBadge';
 import RoleBadgeGroup from './RoleBadgeGroup';
 import UserCard from './UserCard';
-import { Role } from '../../../../packages/types/enums';
+import { Role } from '../../../../packages/types';
 import { SYSTEM_ROLES } from '../types/role';
 
 const RoleBadgeShowcase: React.FC = () => {
@@ -78,18 +78,21 @@ const RoleBadgeShowcase: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Size Variants</h3>
           <div className="space-y-4">
-            {Object.values(Role).map((role) => (
-              <div key={role} className="flex items-center gap-4">
-                <div className="w-32 text-sm text-gray-600 font-medium">
-                  {SYSTEM_ROLES[role as keyof typeof SYSTEM_ROLES]?.label || role}:
-                </div>
+            {Object.values(Role).map((role) => {
+              const roleKey = role as keyof typeof SYSTEM_ROLES;
+              return (
+                <div key={role} className="flex items-center gap-4">
+                  <div className="w-32 text-sm text-gray-600 font-medium">
+                    {SYSTEM_ROLES[roleKey]?.label || role}:
+                  </div>
                 <div className="flex items-center gap-2">
                   <RoleBadge role={role} size="sm" showTooltip={false} />
                   <RoleBadge role={role} size="md" showTooltip={false} />
                   <RoleBadge role={role} size="lg" showTooltip={false} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -99,14 +102,16 @@ const RoleBadgeShowcase: React.FC = () => {
             With Tooltips (Hover to see descriptions)
           </h3>
           <div className="flex flex-wrap gap-2">
-            {Object.values(Role).map((role) => (
-              <RoleBadge
-                key={role}
-                role={role}
-                size="md"
-                showTooltip={true}
-              />
-            ))}
+            {Object.values(Role).map((role) => {
+              return (
+                <RoleBadge
+                  key={role}
+                  role={role}
+                  size="md"
+                  showTooltip={true}
+                />
+              );
+            })}
           </div>
         </div>
       </section>

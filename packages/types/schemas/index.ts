@@ -108,7 +108,7 @@ export const createVacationSchema = z.object({
   endDate: z.string().datetime(),
   reason: z.string().max(1000).optional(),
   attachments: z.array(z.string().url()).max(5).optional().default([])
-}).refine(data => new Date(data.endDate) > new Date(data.startDate), {
+}).refine((data: { endDate: string; startDate: string }) => new Date(data.endDate) > new Date(data.startDate), {
   message: 'End date must be after start date',
   path: ['endDate']
 });
@@ -118,7 +118,7 @@ export const updateVacationSchema = z.object({
   endDate: z.string().datetime().optional(),
   reason: z.string().max(1000).optional(),
   attachments: z.array(z.string().url()).max(5).optional()
-}).refine(data => {
+}).refine((data: { startDate?: string; endDate?: string }) => {
   if (data.startDate && data.endDate) {
     return new Date(data.endDate) > new Date(data.startDate);
   }
@@ -131,7 +131,7 @@ export const updateVacationSchema = z.object({
 export const vacationApprovalSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED']),
   rejectedReason: z.string().max(1000).optional()
-}).refine(data => {
+}).refine((data: { status: string; rejectedReason?: string }) => {
   if (data.status === 'REJECTED') {
     return !!data.rejectedReason;
   }
@@ -159,7 +159,7 @@ export const contentBlockSchema = z.object({
   linkUrl: z.string().url().optional(),
   formSchema: z.record(z.any()).optional(),
   order: z.number().min(0)
-}).refine(data => {
+}).refine((data: { type: ContentBlockType; content?: string; fileUrl?: string; videoUrl?: string; linkUrl?: string; formSchema?: any }) => {
   switch (data.type) {
     case ContentBlockType.TEXT:
       return !!data.content;
@@ -223,7 +223,7 @@ export const createBenefitSchema = z.object({
   validFrom: z.string().datetime().optional(),
   validUntil: z.string().datetime().optional(),
   terms: z.string().max(5000).optional()
-}).refine(data => {
+}).refine((data: { validFrom?: string; validUntil?: string }) => {
   if (data.validFrom && data.validUntil) {
     return new Date(data.validUntil) > new Date(data.validFrom);
   }

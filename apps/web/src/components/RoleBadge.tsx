@@ -1,5 +1,5 @@
 import React from 'react';
-import { Role } from '../../../../packages/types/enums';
+import { Role } from '../../../../packages/types';
 import { SYSTEM_ROLES, isSystemRole, formatRoleName } from '../types/role';
 
 export interface RoleBadgeProps {
@@ -74,7 +74,7 @@ const RoleBadge: React.FC<RoleBadgeProps> = ({
   // Get configuration for the role
   const roleKey = role as Role;
   const systemRoleInfo = isSystem && Object.prototype.hasOwnProperty.call(SYSTEM_ROLES, roleKey) ? SYSTEM_ROLES[roleKey] : null;
-  const systemConfig = isSystem && Object.prototype.hasOwnProperty.call(SYSTEM_ROLE_CONFIG, roleKey) ? SYSTEM_ROLE_CONFIG[roleKey] : null;
+  const systemConfig = isSystem && Object.prototype.hasOwnProperty.call(SYSTEM_ROLE_CONFIG, roleKey) ? SYSTEM_ROLE_CONFIG[roleKey as keyof typeof SYSTEM_ROLE_CONFIG] : null;
   const customRoleData = isCustomRole ? customRoles.find(r => r.name === role) : false;
   
   // Determine display properties

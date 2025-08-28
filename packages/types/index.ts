@@ -4,6 +4,10 @@ export * from './api';
 export * from './enums';
 export * from './schemas';
 
+// Import types for internal use in this file
+import type { User, Department, Document, Vacation, Enrollment, TrainingSession, Payslip, Notification, AuditLog } from './entities';
+import { Role } from './enums';
+
 // Type utilities
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type RequiredOnly<T, K extends keyof T> = Pick<T, K>;
@@ -90,15 +94,7 @@ export type Permission =
   | 'notifications:write'
   | 'audit:read';
 
-// Role enum for permissions
-export enum Role {
-  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
-  ORGANIZATION_OWNER = 'ORGANIZATION_OWNER',
-  ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN',
-  PROPERTY_MANAGER = 'PROPERTY_MANAGER',
-  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',
-  STAFF = 'STAFF'
-}
+// Note: Role enum is already exported from './enums'
 
 export type RolePermissions = {
   [key in Role]: Permission[];
