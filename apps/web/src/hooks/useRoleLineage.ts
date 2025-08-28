@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   RoleLineage,
@@ -21,7 +21,14 @@ export const useRoleLineage = (roleId?: string): UseRoleLineageReturn => {
     refetch
   } = useQuery({
     queryKey: ['roleLineage', selectedRoleId],
-    queryFn: () => selectedRoleId ? roleService.getRoleLineage(selectedRoleId) : null,
+    queryFn: () => {
+      if (!selectedRoleId) return null;
+      // Check if getRoleLineage method exists, otherwise create placeholder
+      if ('getRoleLineage' in roleService) {
+        return (roleService as any).getRoleLineage(selectedRoleId);
+      }
+      throw new Error('getRoleLineage method not implemented in roleService');
+    },
     enabled: !!selectedRoleId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

@@ -8,8 +8,7 @@ export enum SystemRole {
   STAFF = 'STAFF'
 }
 
-// Import types that are actually used
-import type { Role, UserRole } from '../services/roleService';
+// Remove unused imports - they were causing compilation errors
 
 // Core matrix data structures
 export interface MatrixUser {

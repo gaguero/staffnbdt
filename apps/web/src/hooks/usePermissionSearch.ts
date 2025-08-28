@@ -5,11 +5,8 @@ import {
   SearchOptions,
   SearchResult,
   SearchFilters,
-  SearchHistory,
   SavedSearch,
   PermissionSearchState,
-  FuzzySearchOptions,
-  PERMISSION_CATEGORIES,
 } from '../types/permissionSearch';
 import { Permission } from '../types/permission';
 import { useAuth } from '../contexts/AuthContext';
@@ -103,7 +100,7 @@ export function usePermissionSearch(options: UsePermissionSearchOptions = {}): U
     context = 'generic',
   } = options;
 
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [permissions, setPermissions] = useState<PermissionSearchIndex[]>([]);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
   const searchCacheRef = useRef<Map<string, SearchResult[]>>(new Map());
@@ -482,7 +479,7 @@ export function usePermissionSearch(options: UsePermissionSearchOptions = {}): U
   /**
    * Score a permission against a search query
    */
-  const scorePermission = (permission: PermissionSearchIndex, query: string, options: SearchOptions): SearchResult => {
+  const scorePermission = (permission: PermissionSearchIndex, query: string, _options: SearchOptions): SearchResult => {
     const matchedFields: string[] = [];
     let totalScore = 0;
     const queryParts = query.split(/\s+/).filter(Boolean);
@@ -636,7 +633,7 @@ export function usePermissionSearch(options: UsePermissionSearchOptions = {}): U
   const selectPermission = useCallback((permission: PermissionSearchIndex) => {
     setState(prev => ({
       ...prev,
-      selectedPermissions: new Set([...prev.selectedPermissions, permission.name]),
+      selectedPermissions: new Set([...Array.from(prev.selectedPermissions), permission.name]),
     }));
   }, []);
 
@@ -763,7 +760,15 @@ export function usePermissionSearch(options: UsePermissionSearchOptions = {}): U
     setState(prev => ({
       ...prev,
       query: search.query,
-      filters: search.filters,
+      filters: { 
+        ...search.filters, 
+        resources: search.filters.resources || [],
+        actions: search.filters.actions || [],
+        scopes: search.filters.scopes || [],
+        categories: search.filters.categories || [],
+        includeSystemPermissions: search.filters.includeSystemPermissions ?? true,
+        includeConditionalPermissions: search.filters.includeConditionalPermissions ?? true
+      },
       savedSearches: prev.savedSearches.map(s => 
         s.id === search.id 
           ? { ...s, lastUsed: new Date(), useCount: s.useCount + 1 }

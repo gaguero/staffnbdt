@@ -16,7 +16,7 @@ const AlertDescription: React.FC<{ children: React.ReactNode }> = ({ children })
 
 export function RoleHistoryPage() {
   return (
-    <PermissionGate permission="role.read.history">
+    <PermissionGate permissions={[{ resource: 'role', action: 'read', scope: 'history' }]}>
       <div className="container mx-auto py-6">
         <RoleHistoryDashboard
           initialFilters={{

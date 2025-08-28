@@ -3,13 +3,10 @@ import { useState, useCallback, useMemo } from 'react';
 import { roleHistoryService } from '../services/roleHistoryService';
 import {
   RoleHistoryFilter,
-  RoleHistoryResponse,
   RoleAssignmentHistoryEntry,
-  RoleHistoryAnalytics,
   HistoryExportOptions,
   ExportResult,
   RollbackOperation,
-  RollbackResult,
 } from '../types/roleHistory';
 
 export interface UseRoleHistoryOptions {

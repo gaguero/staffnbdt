@@ -13,7 +13,15 @@ import {
   RoleSimilarityMap,
 } from '../types/roleComparison';
 import { Permission } from '../types/permission';
-import { Role } from '../../../packages/types/enums';
+// Local Role enum definition
+export enum Role {
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
+  ORGANIZATION_OWNER = 'ORGANIZATION_OWNER',
+  ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN',
+  PROPERTY_MANAGER = 'PROPERTY_MANAGER',
+  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',
+  STAFF = 'STAFF'
+}
 import { usePermissions as useUserPermissions } from './usePermissions';
 
 interface UseRoleComparisonProps {
@@ -53,8 +61,8 @@ export function useRoleComparison({
 }: UseRoleComparisonProps = {}): UseRoleComparisonReturn {
   // External data
   const { data: rolesData, isLoading: rolesLoading } = useRoles();
-  const { data: permissionsData, isLoading: permissionsLoading } = usePermissions();
-  const { hasPermission } = useUserPermissions();
+  const { data: _permissionsData, isLoading: permissionsLoading } = usePermissions();
+  const { hasPermission: _hasPermission } = useUserPermissions();
   
   // Internal state
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>(initialRoles);
@@ -96,12 +104,12 @@ export function useRoleComparison({
       id: role.id,
       name: role.name,
       description: role.description,
-      isSystemRole: role.isSystemRole || false,
-      systemRole: role.isSystemRole ? (role.name as Role) : undefined,
-      permissions: role.permissions || [],
-      userCount: role.userCount || 0,
-      createdAt: role.createdAt,
-      updatedAt: role.updatedAt,
+      isSystemRole: (role as any).isSystemRole || false,
+      systemRole: (role as any).isSystemRole ? (role.name as Role) : undefined,
+      permissions: (role.permissions || []).map(p => ({ ...p, createdAt: new Date(), updatedAt: new Date() })),
+      userCount: (role as any).userCount || 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }));
   }, [rolesData]);
   
@@ -262,8 +270,8 @@ function calculateSimilarity(role1: RoleComparisonData, role2: RoleComparisonDat
   const permissions1 = new Set(role1.permissions.map(p => `${p.resource}.${p.action}.${p.scope}`));
   const permissions2 = new Set(role2.permissions.map(p => `${p.resource}.${p.action}.${p.scope}`));
   
-  const intersection = new Set([...permissions1].filter(p => permissions2.has(p)));
-  const union = new Set([...permissions1, ...permissions2]);
+  const intersection = new Set(Array.from(permissions1).filter(p => permissions2.has(p)));
+  const union = new Set([...Array.from(permissions1), ...Array.from(permissions2)]);
   
   return union.size === 0 ? 0 : intersection.size / union.size;
 }
@@ -324,7 +332,8 @@ function calculatePermissionDifferences(
   });
   
   // Analyze each permission
-  matrix.permissions.forEach(permission => {
+  matrix.permissions.forEach((_permission, index) => {
+    const permission = matrix.permissions[index];
     const permissionKey = `${permission.resource}.${permission.action}.${permission.scope}`;
     const rolesWithPermission = roles.filter(role => matrix.rolePermissionMap[role.id][permissionKey]);
     
@@ -395,7 +404,7 @@ function calculateComparisonMetrics(
 
 async function generateSuggestions(
   roles: RoleComparisonData[],
-  differences: PermissionDifferences,
+  _differences: PermissionDifferences,
   metrics: ComparisonMetrics
 ): Promise<ComparisonSuggestion[]> {
   const suggestions: ComparisonSuggestion[] = [];

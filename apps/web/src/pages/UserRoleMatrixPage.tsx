@@ -138,7 +138,7 @@ const UserRoleMatrixPage: React.FC = () => {
       </div>
       
       {/* Permission-gated matrix */}
-      <PermissionGate permission="user.read.property">
+      <PermissionGate permissions={[{ resource: 'user', action: 'read', scope: 'property' }]}>
         <div className="bg-white shadow-sm rounded-lg">
           <UserRoleMatrix
             key={refreshKey}
@@ -160,7 +160,7 @@ const UserRoleMatrixPage: React.FC = () => {
       
       {/* Access denied fallback */}
       <PermissionGate 
-        permission="user.read.property" 
+        permissions={[{ resource: 'user', action: 'read', scope: 'property' }]} 
         fallback={
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -54,7 +54,7 @@ export function usePermissionViewer(options: UsePermissionViewerOptions = {}) {
     autoLoad = true,
     cacheResults = true,
     debounceSearch = true,
-    virtualScrolling = false,
+    virtualScrolling: _virtualScrolling = false,
   } = options;
 
   // State management
@@ -146,7 +146,7 @@ export function usePermissionViewer(options: UsePermissionViewerOptions = {}) {
           name: action,
           type: 'action',
           expanded: state.expandedNodes.has(actionNodeId),
-          children: permissionNodeIds,
+          children: permissionNodeIds as any[],
           count: actionPermissions.length,
           level: 2,
           parentId: resourceNodeId,
@@ -161,7 +161,7 @@ export function usePermissionViewer(options: UsePermissionViewerOptions = {}) {
         name: resource,
         type: 'resource',
         expanded: state.expandedNodes.has(resourceNodeId),
-        children: actionNodeIds,
+        children: actionNodeIds as any[],
         count: resourcePermissions.length,
         level: 1,
         parentId: 'root',
@@ -559,9 +559,9 @@ export function usePermissionViewer(options: UsePermissionViewerOptions = {}) {
       .map(node => node.permission!);
 
     return {
-      resources: [...new Set(permissions.map(p => p.resource))].sort(),
-      actions: [...new Set(permissions.map(p => p.action))].sort(),
-      scopes: [...new Set(permissions.map(p => p.scope))].sort(),
+      resources: Array.from(new Set(permissions.map(p => p.resource))).sort(),
+      actions: Array.from(new Set(permissions.map(p => p.action))).sort(),
+      scopes: Array.from(new Set(permissions.map(p => p.scope))).sort(),
     };
   }, [state.treeData]);
 
