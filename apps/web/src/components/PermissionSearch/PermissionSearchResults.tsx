@@ -102,7 +102,7 @@ export const PermissionSearchResults: React.FC<PermissionSearchResultsProps> = (
     return CATEGORY_COLORS[category] || 'gray';
   };
 
-  const renderPermissionItem = (result: SearchResult, index: number) => {
+  const renderPermissionItem = (result: SearchResult) => {
     const { permission } = result;
     const isSelected = selectedPermissions.has(permission.name);
     const Icon = getResourceIcon(permission.resource);

@@ -2,12 +2,8 @@ import React, { useState, useMemo, useCallback } from 'react';
 import {
   Sparkles as SparklesIcon,
   Search as MagnifyingGlassIcon,
-  Tag as TagIcon,
   Users as UserGroupIcon,
-  Clock as ClockIcon,
-  CheckCircle as CheckCircleIcon,
   Star as StarIcon,
-  Filter as FunnelIcon,
   Plus as PlusIcon,
   Eye as EyeIcon
 } from 'lucide-react';
@@ -127,7 +123,6 @@ const CATEGORY_INFO = {
 const RoleTemplates: React.FC<RoleTemplatesProps> = ({
   onSelectTemplate,
   onStartFromScratch,
-  context = 'role-management',
   showSystemTemplates = true,
   showCustomTemplates = false,
   maxHeight = 600,
@@ -181,19 +176,6 @@ const RoleTemplates: React.FC<RoleTemplatesProps> = ({
     return templates;
   }, [searchQuery, selectedCategory, sortBy, showSystemTemplates, showCustomTemplates]);
 
-  // Group templates by category
-  const groupedTemplates = useMemo(() => {
-    const groups: Record<string, PermissionTemplate[]> = {};
-    
-    filteredTemplates.forEach(template => {
-      if (!groups[template.category]) {
-        groups[template.category] = [];
-      }
-      groups[template.category].push(template);
-    });
-
-    return groups;
-  }, [filteredTemplates]);
 
   // Get unique categories from filtered templates
   const availableCategories = useMemo(() => {
@@ -281,7 +263,7 @@ const RoleTemplates: React.FC<RoleTemplatesProps> = ({
 
           {template.isSystemTemplate && (
             <div className="flex items-center space-x-1 text-blue-600">
-              <SparklesSolidIcon className="h-3 w-3" />
+              <SparklesIcon className="h-3 w-3" />
               <span className="text-xs">System</span>
             </div>
           )}

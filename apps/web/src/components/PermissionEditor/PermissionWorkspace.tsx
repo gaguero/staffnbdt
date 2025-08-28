@@ -14,18 +14,14 @@ import {
 
 import { 
   PermissionWorkspaceProps, 
-  PermissionCard as PermissionCardType, 
- 
+  PermissionCard as PermissionCardType
 } from '../../types/permissionEditor';
 import { Permission } from '../../types/permission';
-import PermissionCard from './PermissionCard';
 
 const PermissionWorkspace: React.FC<PermissionWorkspaceProps> = ({
   permissions,
-  dragDropState,
   validationErrors,
   onPermissionRemove,
-  onPermissionReorder,
   onDropPermission,
   className = '',
   layout = 'grouped',
@@ -36,7 +32,6 @@ const PermissionWorkspace: React.FC<PermissionWorkspaceProps> = ({
     layout === 'grid' ? 'grid' : layout === 'list' ? 'list' : 'compact'
   );
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
 
   // Group permissions by category
   const groupedPermissions = useMemo(() => {
@@ -119,11 +114,11 @@ const PermissionWorkspace: React.FC<PermissionWorkspaceProps> = ({
   // Handle permission details
   const handleShowDetails = useCallback((permission: Permission) => {
     setSelectedCard(permission.id);
-    setShowDetails(true);
+    // Could expand to show details panel in future
   }, []);
 
   // Render permission card
-  const renderPermissionCard = useCallback((permissionCard: PermissionCardType, index: number) => {
+  const renderPermissionCard = useCallback((permissionCard: PermissionCardType) => {
     const isSelected = selectedCard === permissionCard.permission.id;
     const hasConflicts = showConflicts && permissionCard.conflicts.length > 0;
     const hasDependencies = showDependencies && permissionCard.dependencies.length > 0;
@@ -314,14 +309,14 @@ const PermissionWorkspace: React.FC<PermissionWorkspaceProps> = ({
   // Render grid layout
   const renderGridLayout = useCallback(() => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
-      {permissions.map((permissionCard, index) => renderPermissionCard(permissionCard, index))}
+      {permissions.map((permissionCard) => renderPermissionCard(permissionCard))}
     </div>
   ), [permissions, renderPermissionCard]);
 
   // Render list layout
   const renderListLayout = useCallback(() => (
     <div className="space-y-2 p-4">
-      {permissions.map((permissionCard, index) => renderPermissionCard(permissionCard, index))}
+      {permissions.map((permissionCard) => renderPermissionCard(permissionCard))}
     </div>
   ), [permissions, renderPermissionCard]);
 
@@ -338,8 +333,8 @@ const PermissionWorkspace: React.FC<PermissionWorkspaceProps> = ({
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {categoryPermissions.map((permissionCard, index) => 
-              renderPermissionCard(permissionCard, index)
+            {categoryPermissions.map((permissionCard) => 
+              renderPermissionCard(permissionCard)
             )}
           </div>
         </div>

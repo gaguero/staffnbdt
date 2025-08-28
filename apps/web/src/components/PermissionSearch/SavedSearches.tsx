@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Bookmark,
   Plus,
-  X,
   Trash,
   Search,
 } from 'lucide-react';
@@ -177,10 +176,10 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
             })
             .map((search) => {
               const hasFilters = (
-                search.filters.resources?.length > 0 ||
-                search.filters.actions?.length > 0 ||
-                search.filters.scopes?.length > 0 ||
-                search.filters.categories?.length > 0 ||
+                (search.filters.resources?.length ?? 0) > 0 ||
+                (search.filters.actions?.length ?? 0) > 0 ||
+                (search.filters.scopes?.length ?? 0) > 0 ||
+                (search.filters.categories?.length ?? 0) > 0 ||
                 !search.filters.includeSystemPermissions ||
                 !search.filters.includeConditionalPermissions
               );

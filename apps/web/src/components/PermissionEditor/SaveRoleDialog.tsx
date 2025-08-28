@@ -14,7 +14,6 @@ import {
 import { 
   SaveRoleDialogProps, 
   RoleConfiguration, 
-  ValidationError 
 } from '../../types/permissionEditor';
 import RoleBadge from '../RoleBadge';
 

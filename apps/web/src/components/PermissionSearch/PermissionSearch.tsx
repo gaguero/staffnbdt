@@ -32,13 +32,11 @@ export const PermissionSearch: React.FC<PermissionSearchProps> = ({
   placeholder = 'Search permissions...',
   searchOptions = {},
   filters = {},
-  selectedPermissions = [],
   onSelect,
   onPermissionSelect,
   onPermissionDeselect,
   onSearch,
   onFilterChange,
-  permissions = [],
   isLoading = false,
   error = null,
   showFilters = true,
@@ -68,22 +66,18 @@ export const PermissionSearch: React.FC<PermissionSearchProps> = ({
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Custom hook for permission search logic
   const {
     state,
     search,
     clearSearch,
-    setQuery,
     selectPermission,
     deselectPermission,
     selectAll,
     clearSelection,
-    toggleSelection,
     updateFilters,
     resetFilters,
-    setResourceFilter,
     setCategoryFilter,
     addToHistory,
     clearHistory,
@@ -94,7 +88,6 @@ export const PermissionSearch: React.FC<PermissionSearchProps> = ({
     getRecentPermissions,
     exportResults,
     copyPermissionNames,
-    refreshPermissions,
     isLoading: hookIsLoading,
   } = usePermissionSearch({
     initialQuery: '',
@@ -153,6 +146,7 @@ export const PermissionSearch: React.FC<PermissionSearchProps> = ({
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
+    return () => {}; // Empty cleanup for when showKeyboardShortcuts is false
   }, [showKeyboardShortcuts, mode, clearSearch, selectAll, copyPermissionNames, state.selectedPermissions.size]);
 
   // Handle click outside to close dropdown

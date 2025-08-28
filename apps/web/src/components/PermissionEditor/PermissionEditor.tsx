@@ -103,7 +103,7 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
   });
 
   // Initialize validation
-  const { autoFixIssues } = useRoleValidation({
+  useRoleValidation({
     enableRealTimeValidation: true,
     strictMode: context === 'role-management',
     context: context === 'role-management' ? 'creation' : 'assignment'
@@ -223,25 +223,6 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
     setShowPermissionDetails(true);
   }, []);
 
-  // Handle auto-fix suggestions
-  const handleAutoFix = useCallback(() => {
-    const selectedPermissions = state.availablePermissions.filter(p => 
-      state.selectedPermissions.has(p.id)
-    );
-
-    const { permissions: _fixedPermissions, role: fixedRole } = autoFixIssues(
-      selectedPermissions, 
-      state.role, 
-      state.validationErrors
-    );
-
-    // Apply fixes
-    if (fixedRole !== state.role) {
-      updateRoleMetadata(fixedRole);
-    }
-
-    announceToScreenReader('Applied automatic fixes');
-  }, [state.availablePermissions, state.selectedPermissions, state.role, state.validationErrors, autoFixIssues, updateRoleMetadata]);
 
   // Validation error summary
   const errorSummary = React.useMemo(() => {

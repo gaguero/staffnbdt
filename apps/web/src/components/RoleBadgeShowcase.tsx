@@ -2,7 +2,7 @@ import React from 'react';
 import RoleBadge from './RoleBadge';
 import RoleBadgeGroup from './RoleBadgeGroup';
 import UserCard from './UserCard';
-import { Role } from '../../../packages/types/enums';
+import { Role } from '../../../../packages/types/enums';
 import { SYSTEM_ROLES } from '../types/role';
 
 const RoleBadgeShowcase: React.FC = () => {
@@ -81,7 +81,7 @@ const RoleBadgeShowcase: React.FC = () => {
             {Object.values(Role).map((role) => (
               <div key={role} className="flex items-center gap-4">
                 <div className="w-32 text-sm text-gray-600 font-medium">
-                  {SYSTEM_ROLES[role].label}:
+                  {SYSTEM_ROLES[role as keyof typeof SYSTEM_ROLES]?.label || role}:
                 </div>
                 <div className="flex items-center gap-2">
                   <RoleBadge role={role} size="sm" showTooltip={false} />

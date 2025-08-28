@@ -109,10 +109,11 @@ const RoleMetadataEditor: React.FC<RoleMetadataEditorProps> = ({
   // Handle role name change
   const handleNameChange = useCallback((name: string) => {
     onChange({
+      ...role,
       name,
       displayName: role.displayName || name
     });
-  }, [onChange, role.displayName]);
+  }, [onChange, role]);
 
   // Handle tag addition
   const handleAddTag = useCallback((tag: string) => {
@@ -120,6 +121,7 @@ const RoleMetadataEditor: React.FC<RoleMetadataEditorProps> = ({
 
     const newTags = [...role.metadata.tags, tag.trim().toLowerCase()];
     onChange({
+      ...role,
       metadata: {
         ...role.metadata,
         tags: newTags
@@ -128,43 +130,46 @@ const RoleMetadataEditor: React.FC<RoleMetadataEditorProps> = ({
 
     setNewTag('');
     setShowTagSuggestions(false);
-  }, [role.metadata, onChange]);
+  }, [role, onChange]);
 
   // Handle tag removal
   const handleRemoveTag = useCallback((tagToRemove: string) => {
     const newTags = role.metadata.tags.filter(tag => tag !== tagToRemove);
     onChange({
+      ...role,
       metadata: {
         ...role.metadata,
         tags: newTags
       }
     });
-  }, [role.metadata, onChange]);
+  }, [role, onChange]);
 
   // Handle role level change
   const handleLevelChange = useCallback((level: RoleLevel) => {
-    onChange({ level });
-  }, [onChange]);
+    onChange({ ...role, level });
+  }, [onChange, role]);
 
   // Handle category change
   const handleCategoryChange = useCallback((category: string) => {
     onChange({
+      ...role,
       metadata: {
         ...role.metadata,
         category
       }
     });
-  }, [role.metadata, onChange]);
+  }, [role, onChange]);
 
   // Handle color change
   const handleColorChange = useCallback((color: string) => {
     onChange({
+      ...role,
       metadata: {
         ...role.metadata,
         color
       }
     });
-  }, [role.metadata, onChange]);
+  }, [role, onChange]);
 
   // Filter tag suggestions
   const tagSuggestions = COMMON_TAGS.filter(tag => 
@@ -213,7 +218,7 @@ const RoleMetadataEditor: React.FC<RoleMetadataEditorProps> = ({
             type="text"
             id="display-name"
             value={role.displayName || ''}
-            onChange={(e) => onChange({ displayName: e.target.value })}
+            onChange={(e) => onChange({ ...role, displayName: e.target.value })}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-blue-500 focus:ring-blue-500"
             placeholder="Friendly display name..."
             maxLength={60}
@@ -232,7 +237,7 @@ const RoleMetadataEditor: React.FC<RoleMetadataEditorProps> = ({
         <textarea
           id="role-description"
           value={role.description}
-          onChange={(e) => onChange({ description: e.target.value })}
+          onChange={(e) => onChange({ ...role, description: e.target.value })}
           rows={3}
           className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 ${getInputErrorClass('description')}`}
           placeholder="Describe what this role can do and its intended use..."
@@ -438,6 +443,7 @@ const RoleMetadataEditor: React.FC<RoleMetadataEditorProps> = ({
                   id="is-template"
                   checked={role.metadata.isTemplate}
                   onChange={(e) => onChange({
+                    ...role,
                     metadata: {
                       ...role.metadata,
                       isTemplate: e.target.checked

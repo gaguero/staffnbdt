@@ -13,7 +13,6 @@ import {
   ChevronRight
 } from 'lucide-react';
 import {
-  ClonePreview as ClonePreviewType, // Type alias needed for component props
   ClonePreviewProps
 } from '../../types/roleDuplication';
 import { Permission } from '../../types/permission';

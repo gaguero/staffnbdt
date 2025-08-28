@@ -327,7 +327,7 @@ export interface PermissionEditorProps {
 
 export interface RoleMetadataEditorProps {
   role: RoleConfiguration;
-  onChange: (metadata: Partial<RoleMetadata>) => void;
+  onChange: (role: Partial<RoleConfiguration>) => void;
   errors: ValidationError[];
   className?: string;
   showAdvanced?: boolean;

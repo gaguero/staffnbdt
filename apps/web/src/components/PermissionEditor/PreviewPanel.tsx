@@ -7,13 +7,8 @@ import {
   Info as InformationCircleIcon,
   Download as DocumentArrowDownIcon,
   ClipboardCheck as ClipboardDocumentCheckIcon,
-  User as UserIcon,
-  Building2 as BuildingOfficeIcon,
-  Settings as CogIcon,
   ChevronRight as ChevronRightIcon,
   ChevronDown as ChevronDownIcon,
-  Star as StarIcon,
-  Clock as ClockIcon,
   Zap as BoltIcon
 } from 'lucide-react';
 
@@ -22,9 +17,7 @@ import {
   PreviewResult, 
   TestCase, 
   TestScenario,
-  RoleConfiguration 
 } from '../../types/permissionEditor';
-import { Permission } from '../../types/permission';
 import RoleBadge from '../RoleBadge';
 
 const PreviewPanel: React.FC<PreviewPanelProps> = ({
@@ -86,7 +79,32 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
         id: 'daily-operations',
         name: 'Daily Operations',
         description: 'Common daily tasks and operations',
-        testCases: ['user-read-department', 'schedule-manage-department'],
+        testCases: [
+          {
+            id: 'user-read-department',
+            name: 'Read department users',
+            description: 'Test ability to read users within the same department',
+            resource: 'user',
+            action: 'read',
+            scope: 'department',
+            context: { departmentId: 'dept-123', propertyId: 'prop-456' },
+            expectedResult: true,
+            actualResult: true,
+            passed: true
+          },
+          {
+            id: 'schedule-manage-department',
+            name: 'Manage department schedules',
+            description: 'Test schedule management within department',
+            resource: 'schedule',
+            action: 'manage',
+            scope: 'department',
+            context: { departmentId: 'dept-123', propertyId: 'prop-456' },
+            expectedResult: true,
+            actualResult: true,
+            passed: true
+          }
+        ],
         passed: true,
         coverage: 85
       },
@@ -94,7 +112,20 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
         id: 'administrative-tasks',
         name: 'Administrative Tasks',
         description: 'Administrative and management operations',
-        testCases: ['user-delete-platform'],
+        testCases: [
+          {
+            id: 'user-delete-platform',
+            name: 'Delete platform users',
+            description: 'Test platform-wide user deletion (should fail for department level)',
+            resource: 'user',
+            action: 'delete',
+            scope: 'platform',
+            context: { departmentId: 'dept-123', propertyId: 'prop-456' },
+            expectedResult: false,
+            actualResult: false,
+            passed: true
+          }
+        ],
         passed: true,
         coverage: 92
       }
@@ -142,7 +173,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
   // Render test case
   const renderTestCase = useCallback((testCase: TestCase) => {
     const isSelected = selectedTestCase === testCase.id;
-    const statusIcon = testCase.passed ? CheckCircleIcon : XCircleIcon;
+    const StatusIcon = testCase.passed ? CheckCircleIcon : XCircleIcon;
     const statusColor = testCase.passed ? 'text-green-500' : 'text-red-500';
 
     return (
@@ -157,7 +188,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
       >
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3 flex-1">
-            <statusIcon className={`h-5 w-5 ${statusColor} flex-shrink-0 mt-0.5`} />
+            <StatusIcon className={`h-5 w-5 ${statusColor} flex-shrink-0 mt-0.5`} />
             
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-medium text-gray-900">{testCase.name}</h4>
@@ -211,9 +242,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
   // Render test scenario
   const renderTestScenario = useCallback((scenario: TestScenario) => {
     const isExpanded = expandedScenarios.has(scenario.id);
-    const scenarioTests = results.testCases.filter(test => 
-      scenario.testCases.includes(test.id)
-    );
+    const scenarioTests = scenario.testCases;
 
     return (
       <div key={scenario.id} className="border border-gray-200 rounded-lg overflow-hidden">

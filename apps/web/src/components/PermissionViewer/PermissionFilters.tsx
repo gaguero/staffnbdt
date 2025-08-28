@@ -3,7 +3,6 @@ import {
   Filter, 
   ChevronDown,
   X,
-  Check
 } from 'lucide-react';
 import { PermissionFiltersProps } from '../../types/permissionViewer';
 import { RESOURCE_ICONS, ACTION_ICONS, SCOPE_ICONS } from '../../types/permissionViewer';
@@ -51,14 +50,6 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
     onFilterChange({ [field]: newValues });
   };
 
-  // Clear specific filter
-  const clearFilter = (field: keyof typeof filter) => {
-    if (Array.isArray(filter[field])) {
-      onFilterChange({ [field]: [] });
-    } else {
-      onFilterChange({ [field]: false });
-    }
-  };
 
   // Clear all filters
   const clearAllFilters = () => {

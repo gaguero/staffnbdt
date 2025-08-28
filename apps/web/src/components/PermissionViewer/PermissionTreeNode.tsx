@@ -87,7 +87,7 @@ export const PermissionTreeNode: React.FC<PermissionTreeNodeProps> = memo(({
   };
 
   // Handle checkbox change
-  const handleCheckboxChange = (e: React.MouseEvent) => {
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
     onSelect(node.id, node.permission);
   };
@@ -128,7 +128,6 @@ export const PermissionTreeNode: React.FC<PermissionTreeNodeProps> = memo(({
             type="checkbox"
             checked={isSelected}
             onChange={handleCheckboxChange}
-            onClick={handleCheckboxChange}
             className="flex-shrink-0 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
         )}
@@ -167,10 +166,9 @@ export const PermissionTreeNode: React.FC<PermissionTreeNodeProps> = memo(({
 
         {/* Description Info Icon */}
         {showDescriptions && node.description && (
-          <Info 
-            className="flex-shrink-0 h-4 w-4 text-gray-400 hover:text-gray-600" 
-            title={node.description}
-          />
+          <span title={node.description}>
+            <Info className="flex-shrink-0 h-4 w-4 text-gray-400 hover:text-gray-600" />
+          </span>
         )}
       </div>
 

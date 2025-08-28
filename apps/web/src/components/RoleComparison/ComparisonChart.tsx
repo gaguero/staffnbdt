@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import {
-  ChartBarIcon,
-  CircleStackIcon,
-  MapIcon,
-  TableCellsIcon,
-} from '@heroicons/react/24/outline';
+  BarChart3 as ChartBarIcon,
+  Database as CircleStackIcon,
+  Map as MapIcon,
+  Grid3x3 as TableCellsIcon,
+} from 'lucide-react';
 import { RoleComparisonData } from '../../types/roleComparison';
 import { type UseComparisonAnalyticsReturn } from '../../hooks/useComparisonAnalytics';
 import VennDiagramChart from './charts/VennDiagramChart';

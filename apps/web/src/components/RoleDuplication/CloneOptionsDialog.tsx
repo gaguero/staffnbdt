@@ -68,13 +68,9 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
   // Initialize available permissions and categories
   useEffect(() => {
     if (sourceRole.permissions) {
-      // Add required timestamps to permissions if missing
-      const permissionsWithTimestamps = sourceRole.permissions.map(p => ({
-        ...p,
-        createdAt: p.createdAt || new Date().toISOString(),
-        updatedAt: p.updatedAt || new Date().toISOString()
-      }));
-      setAvailablePermissions(permissionsWithTimestamps);
+      // Use permissions as-is since timestamps are optional
+      const permissionsWithTimestamps = sourceRole.permissions;
+      setAvailablePermissions(permissionsWithTimestamps as Permission[]);
       
       const categories = [...new Set(sourceRole.permissions.map(p => p.resource))];
       setAvailableCategories(categories);
@@ -98,6 +94,9 @@ const CloneOptionsDialog: React.FC<CloneOptionsDialogProps> = ({
         ...updates.permissionFilters
       },
       inheritanceRules: {
+        copyUserAssignments: false,
+        adjustLevel: false,
+        autoSuggestLevel: false,
         ...prev.inheritanceRules,
         ...updates.inheritanceRules
       }

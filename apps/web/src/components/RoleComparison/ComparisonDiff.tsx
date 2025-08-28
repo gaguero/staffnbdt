@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  PlusIcon, 
-  MinusIcon, 
-  CheckIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-} from '@heroicons/react/24/outline';
+  Plus as PlusIcon, 
+  Minus as MinusIcon, 
+  Check as CheckIcon,
+  Search as MagnifyingGlassIcon,
+  Filter as FunnelIcon,
+} from 'lucide-react';
 import { RoleComparisonData, PermissionDifferences } from '../../types/roleComparison';
 import { Permission } from '../../types/permission';
 import RoleBadge from '../RoleBadge';
@@ -275,7 +275,7 @@ const ComparisonDiff: React.FC<ComparisonDiffProps> = ({
             </p>
             {filteredShared.length > 0 ? (
               <div className="grid gap-3">
-                {filteredShared.map((permission, index) => (
+                {filteredShared.map((permission) => (
                   <PermissionItem 
                     key={`${permission.resource}.${permission.action}.${permission.scope}`} 
                     permission={permission} 
@@ -307,7 +307,7 @@ const ComparisonDiff: React.FC<ComparisonDiffProps> = ({
             </p>
             {filteredUnique.length > 0 ? (
               <div className="grid gap-3">
-                {filteredUnique.map((permission, index) => (
+                {filteredUnique.map((permission) => (
                   <PermissionItem 
                     key={`${permission.resource}.${permission.action}.${permission.scope}`} 
                     permission={permission} 
@@ -339,7 +339,7 @@ const ComparisonDiff: React.FC<ComparisonDiffProps> = ({
             </p>
             {filteredMissing.length > 0 ? (
               <div className="grid gap-3">
-                {filteredMissing.map((permission, index) => (
+                {filteredMissing.map((permission) => (
                   <PermissionItem 
                     key={`${permission.resource}.${permission.action}.${permission.scope}`} 
                     permission={permission} 

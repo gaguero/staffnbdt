@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import {
-  DocumentArrowDownIcon,
-  DocumentIcon,
-  TableCellsIcon,
-  ChartBarIcon,
-  CodeBracketIcon,
-} from '@heroicons/react/24/outline';
+  Download as DocumentArrowDownIcon,
+  FileText as DocumentIcon,
+  Grid3x3 as TableCellsIcon,
+  Code as CodeBracketIcon,
+} from 'lucide-react';
 import { RoleComparison } from '../../types/roleComparison';
 import { type UseComparisonAnalyticsReturn } from '../../hooks/useComparisonAnalytics';
 

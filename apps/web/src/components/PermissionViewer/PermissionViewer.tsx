@@ -1,13 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  ChevronRight,
-  ChevronDown,
   List,
   Grid2X2,
   Menu,
   Maximize,
   Minimize,
-  Settings,
 } from 'lucide-react';
 import { PermissionViewerProps } from '../../types/permissionViewer';
 import { usePermissionViewer } from '../../hooks/usePermissionViewer';
@@ -22,7 +19,6 @@ export const PermissionViewer: React.FC<PermissionViewerProps> = ({
   options: propOptions,
   onPermissionSelect,
   onBulkSelect,
-  onExport,
   className = '',
   height = 600,
   showToolbar = true,
@@ -44,7 +40,6 @@ export const PermissionViewer: React.FC<PermissionViewerProps> = ({
     filterOptions,
     selectedPermissions,
     updateFilter,
-    updateOptions,
     toggleNode,
     selectNode,
     clearSelection,
@@ -146,7 +141,7 @@ export const PermissionViewer: React.FC<PermissionViewerProps> = ({
             showDescriptions={mergedOptions.showDescriptions}
           />
           
-          {isExpanded && node.children.map(childId => renderNode(childId))}
+          {isExpanded && node.children.map(childId => renderNode(typeof childId === 'string' ? childId : childId.id))}
         </div>
       );
     };
@@ -247,7 +242,7 @@ export const PermissionViewer: React.FC<PermissionViewerProps> = ({
                 <PermissionExport
                   permissions={displayPermissions}
                   selectedPermissions={selectedPermissions}
-                  onExport={onExport || exportPermissions}
+                  onExport={exportPermissions}
                 />
               )}
             </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Role } from '../../../packages/types/enums';
+import { Role } from '../../../../packages/types/enums';
 import { SYSTEM_ROLES, isSystemRole, formatRoleName } from '../types/role';
 
 export interface RoleBadgeProps {
@@ -72,13 +72,14 @@ const RoleBadge: React.FC<RoleBadgeProps> = ({
   const isSystem = !isCustomRole && isSystemRole(role as string);
   
   // Get configuration for the role
-  const systemRoleInfo = isSystem ? SYSTEM_ROLES[role as Role] : null;
-  const systemConfig = isSystem ? SYSTEM_ROLE_CONFIG[role as Role] : null;
-  const customRoleData = isCustomRole && customRoles.find(r => r.name === role);
+  const roleKey = role as Role;
+  const systemRoleInfo = isSystem && Object.prototype.hasOwnProperty.call(SYSTEM_ROLES, roleKey) ? SYSTEM_ROLES[roleKey] : null;
+  const systemConfig = isSystem && Object.prototype.hasOwnProperty.call(SYSTEM_ROLE_CONFIG, roleKey) ? SYSTEM_ROLE_CONFIG[roleKey] : null;
+  const customRoleData = isCustomRole ? customRoles.find(r => r.name === role) : false;
   
   // Determine display properties
-  const label = systemRoleInfo?.label || customRoleData?.name || formatRoleName(role as string);
-  const description = systemRoleInfo?.description || customRoleData?.description || '';
+  const label = systemRoleInfo?.label || (customRoleData && typeof customRoleData !== 'boolean' ? customRoleData.name : undefined) || formatRoleName(role as string);
+  const description = systemRoleInfo?.description || (customRoleData && typeof customRoleData !== 'boolean' ? customRoleData.description : undefined) || '';
   const icon = systemRoleInfo?.icon || CUSTOM_ROLE_CONFIG.icon;
   const colorClasses = systemConfig?.colorClasses || CUSTOM_ROLE_CONFIG.colorClasses;
   const darkColorClasses = systemConfig?.darkColorClasses || CUSTOM_ROLE_CONFIG.darkColorClasses;
