@@ -192,7 +192,7 @@ export function useHistoryFilters(options: UseHistoryFiltersOptions = {}) {
     const preset = presets.find(p => p.name === presetName);
     if (!preset) return;
 
-    setFilters(prev => ({
+    setFilters(_prev => ({
       ...initialFilters,
       ...preset.filters,
       page: 1,

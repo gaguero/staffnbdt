@@ -11,11 +11,19 @@ import {
   CoverageAnalysis,
   PreviewResult,
   DEFAULT_ROLE_CONFIGURATION,
-  EDITOR_VALIDATION_RULES,
-  RoleLevel
+  EDITOR_VALIDATION_RULES
 } from '../types/permissionEditor';
 import { Permission } from '../types/permission';
-import { Role } from '../../../packages/types/enums';
+
+// Local Role enum definition
+export enum Role {
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
+  ORGANIZATION_OWNER = 'ORGANIZATION_OWNER',
+  ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN',
+  PROPERTY_MANAGER = 'PROPERTY_MANAGER',
+  DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',
+  STAFF = 'STAFF'
+}
 import { useDebounce } from './useDebounce';
 
 interface UsePermissionEditorOptions {
@@ -329,7 +337,7 @@ export function usePermissionEditor(options: UsePermissionEditorOptions) {
     if (newPermissionIds.length === 0) return;
 
     const newSelectedPermissions = new Set([
-      ...state.selectedPermissions,
+      ...Array.from(state.selectedPermissions),
       ...newPermissionIds
     ]);
 
@@ -635,12 +643,12 @@ async function fetchAvailablePermissions(): Promise<Permission[]> {
   return [];
 }
 
-async function fetchRole(roleId: string): Promise<RoleConfiguration> {
+async function fetchRole(_roleId: string): Promise<RoleConfiguration> {
   // Mock implementation - replace with actual API call
   throw new Error('Not implemented');
 }
 
-async function fetchRoleTemplate(templateId: string): Promise<any> {
+async function fetchRoleTemplate(_templateId: string): Promise<any> {
   // Mock implementation - replace with actual API call
   throw new Error('Not implemented');
 }
@@ -664,17 +672,17 @@ async function saveDraftToLocalStorage(key: string, data: any): Promise<void> {
   localStorage.setItem(`role-draft-${key}`, JSON.stringify(data));
 }
 
-function findConflicts(permission: Permission, allPermissions: Permission[]): string[] {
+function findConflicts(_permission: Permission, _allPermissions: Permission[]): string[] {
   // Mock implementation - replace with actual conflict detection logic
   return [];
 }
 
-function findDependencies(permission: Permission, allPermissions: Permission[]): string[] {
+function findDependencies(_permission: Permission, _allPermissions: Permission[]): string[] {
   // Mock implementation - replace with actual dependency detection logic
   return [];
 }
 
-function findAllConflicts(permissions: Permission[]): PermissionConflict[] {
+function findAllConflicts(_permissions: Permission[]): PermissionConflict[] {
   // Mock implementation - replace with actual conflict detection logic
   return [];
 }
@@ -703,7 +711,7 @@ function groupPermissionsByCategory(permissions: PermissionCard[]): Record<strin
   }, {} as Record<string, PermissionCard[]>);
 }
 
-function groupAvailablePermissions(permissions: Permission[], activeCategory: string | null): any {
+function groupAvailablePermissions(_permissions: Permission[], _activeCategory: string | null): any {
   // Mock implementation - replace with actual grouping logic
   return {};
 }
@@ -713,14 +721,14 @@ function filterPermissionsBySearch(permissions: PermissionCard[], query: string)
   
   const lowerQuery = query.toLowerCase();
   return permissions.filter(({ permission }) => 
-    permission.name?.toLowerCase().includes(lowerQuery) ||
+    permission.resource?.toLowerCase().includes(lowerQuery) ||
     permission.description?.toLowerCase().includes(lowerQuery) ||
     permission.resource?.toLowerCase().includes(lowerQuery) ||
     permission.action?.toLowerCase().includes(lowerQuery)
   );
 }
 
-function getRecentlyAddedPermissions(permissions: PermissionCard[], lastAction: EditorAction | null): PermissionCard[] {
+function getRecentlyAddedPermissions(permissions: PermissionCard[], _lastAction: EditorAction | null): PermissionCard[] {
   // Mock implementation - return recently added based on last action
   return permissions.slice(-5);
 }
@@ -735,22 +743,22 @@ function getPopularPermissions(): Permission[] {
   return [];
 }
 
-function getRecommendedPermissions(role: RoleConfiguration, selected: Set<string>): Permission[] {
+function getRecommendedPermissions(_role: RoleConfiguration, _selected: Set<string>): Permission[] {
   // Mock implementation - replace with actual recommendation logic
   return [];
 }
 
-function generateTestCases(role: RoleConfiguration, permissions: Permission[]): any[] {
+function generateTestCases(_role: RoleConfiguration, _permissions: Permission[]): any[] {
   // Mock implementation - replace with actual test case generation
   return [];
 }
 
-function generateTestScenarios(role: RoleConfiguration): any[] {
+function generateTestScenarios(_role: RoleConfiguration): any[] {
   // Mock implementation - replace with actual test scenario generation
   return [];
 }
 
-function generateRecommendations(role: RoleConfiguration, coverage: CoverageAnalysis): string[] {
+function generateRecommendations(_role: RoleConfiguration, _coverage: CoverageAnalysis): string[] {
   // Mock implementation - replace with actual recommendation generation
   return [];
 }

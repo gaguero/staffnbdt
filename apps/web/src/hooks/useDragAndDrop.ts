@@ -1,11 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   DragDropState, 
-  DropTarget, 
   DropZone, 
   DragPreview,
-  DRAG_TYPES,
-  DROP_ZONES
+  DRAG_TYPES
 } from '../types/permissionEditor';
 import { Permission } from '../types/permission';
 
@@ -42,7 +40,6 @@ export function useDragAndDrop(options: UseDragAndDropOptions = {}) {
   });
 
   // Refs for performance and state management
-  const dragElementRef = useRef<HTMLElement | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);

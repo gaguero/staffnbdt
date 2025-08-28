@@ -302,7 +302,7 @@ function buildPermissionMatrix(roles: RoleComparisonData[]): PermissionMatrix {
   
   // Fill in missing permissions as false
   roles.forEach(role => {
-    allPermissions.forEach((permission, key) => {
+    allPermissions.forEach((_permission, key) => {
       if (!(key in rolePermissionMap[role.id])) {
         rolePermissionMap[role.id][key] = false;
       }
@@ -332,8 +332,7 @@ function calculatePermissionDifferences(
   });
   
   // Analyze each permission
-  matrix.permissions.forEach((_permission, index) => {
-    const permission = matrix.permissions[index];
+  matrix.permissions.forEach((permission, _index) => {
     const permissionKey = `${permission.resource}.${permission.action}.${permission.scope}`;
     const rolesWithPermission = roles.filter(role => matrix.rolePermissionMap[role.id][permissionKey]);
     
