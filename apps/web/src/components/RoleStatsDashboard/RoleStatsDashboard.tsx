@@ -1,13 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { 
-  ChartBarIcon,
-  CogIcon,
-  ShieldCheckIcon,
-  UsersIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  ArrowPathIcon
-} from '@heroicons/react/24/outline';
+  BarChart3,
+  Settings,
+  Shield,
+  Users,
+  Clock,
+  AlertTriangle,
+  RotateCcw
+} from 'lucide-react';
 import { useDashboardData, useAnalyticsCalculations } from '../../hooks/useRoleAnalytics';
 import { DashboardFilters } from '../../types/roleStats';
 import LoadingSpinner from '../LoadingSpinner';
@@ -62,7 +62,7 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
     {
       id: 'executive' as DashboardSection,
       name: 'Executive Summary',
-      icon: ChartBarIcon,
+      icon: BarChart3,
       description: 'High-level KPIs and system health',
       badge: analytics?.healthScore ? `${Math.round(analytics.healthScore)}%` : undefined,
       badgeColor: analytics?.healthScore 
@@ -74,7 +74,7 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
     {
       id: 'roles' as DashboardSection,
       name: 'Role Analytics',
-      icon: UsersIcon,
+      icon: Users,
       description: 'Role usage and effectiveness',
       badge: comprehensive?.roleAnalytics?.usage?.length?.toString(),
       badgeColor: 'blue'
@@ -82,7 +82,7 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
     {
       id: 'permissions' as DashboardSection,
       name: 'Permission Analytics',
-      icon: ShieldCheckIcon,
+      icon: Shield,
       description: 'Permission utilization and coverage',
       badge: analytics?.permissionCoverage ? `${analytics.permissionCoverage}%` : undefined,
       badgeColor: analytics?.permissionCoverage 
@@ -94,7 +94,7 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
     {
       id: 'users' as DashboardSection,
       name: 'User Analytics',
-      icon: UsersIcon,
+      icon: Users,
       description: 'User behavior and patterns',
       badge: realTime?.activeUsers?.toString(),
       badgeColor: 'purple'
@@ -102,7 +102,7 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
     {
       id: 'security' as DashboardSection,
       name: 'Security Dashboard',
-      icon: ExclamationTriangleIcon,
+      icon: AlertTriangle,
       description: 'Risk assessment and compliance',
       badge: analytics?.riskLevel === 'high' ? 'HIGH' : analytics?.riskLevel === 'medium' ? 'MED' : 'LOW',
       badgeColor: analytics?.riskLevel === 'high' ? 'red' : analytics?.riskLevel === 'medium' ? 'yellow' : 'green'
@@ -110,7 +110,7 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
     {
       id: 'optimization' as DashboardSection,
       name: 'Optimization',
-      icon: CogIcon,
+      icon: Settings,
       description: 'Improvement recommendations',
       badge: optimization?.length?.toString(),
       badgeColor: optimization?.length && optimization.length > 0 ? 'orange' : 'gray'
@@ -174,7 +174,11 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
       case 'users':
         return (
           <UserAnalytics
-            data={comprehensive?.userAnalytics}
+            data={{
+              mostActiveAssigners: [],
+              assignmentPatterns: [],
+              rolePopularity: []
+            }}
             realTimeData={realTime}
             isLoading={isLoading}
             {...commonProps}
@@ -222,7 +226,7 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
         <div className="flex items-center">
-          <ExclamationTriangleIcon className="h-6 w-6 text-red-600 mr-3" />
+          <AlertTriangle className="h-6 w-6 text-red-600 mr-3" />
           <div>
             <h3 className="text-lg font-medium text-red-800">Failed to load dashboard data</h3>
             <p className="text-red-700 mt-1">
@@ -238,12 +242,12 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
           >
             {isRefreshing ? (
               <>
-                <ArrowPathIcon className="h-4 w-4 mr-2 animate-spin" />
+                <RotateCcw className="h-4 w-4 mr-2 animate-spin" />
                 Retrying...
               </>
             ) : (
               <>
-                <ArrowPathIcon className="h-4 w-4 mr-2" />
+                <RotateCcw className="h-4 w-4 mr-2" />
                 Retry
               </>
             )}
@@ -279,7 +283,7 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
             className="btn btn-outline"
             title="Refresh dashboard data"
           >
-            <ArrowPathIcon 
+            <RotateCcw 
               className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} 
             />
           </button>
@@ -290,7 +294,7 @@ const RoleStatsDashboard: React.FC<RoleStatsDashboardProps> = ({
       {analytics?.topInsights && analytics.topInsights.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start">
-            <ClockIcon className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+            <Clock className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
             <div className="flex-1">
               <h3 className="text-sm font-medium text-blue-800 mb-2">Key Insights</h3>
               <div className="space-y-2">
