@@ -131,7 +131,7 @@ export const updateVacationSchema = z.object({
 export const vacationApprovalSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED']),
   rejectedReason: z.string().max(1000).optional()
-}).refine((data: { status: string; rejectedReason?: string }) => {
+}).refine((data: { status?: 'APPROVED' | 'REJECTED'; rejectedReason?: string }) => {
   if (data.status === 'REJECTED') {
     return !!data.rejectedReason;
   }
