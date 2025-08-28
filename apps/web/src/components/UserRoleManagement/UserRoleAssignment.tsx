@@ -39,7 +39,7 @@ const UserRoleAssignment: React.FC<UserRoleAssignmentProps> = ({
     effectivePermissions,
     isLoadingCurrentRoles,
     isLoadingAvailableRoles,
-    assignRole,
+    assignRole: _assignRole,
     removeRole,
     bulkAssignRoles,
     bulkRemoveRoles: _bulkRemoveRoles,

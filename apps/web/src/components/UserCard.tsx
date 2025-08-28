@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../services/userService';
 import RoleBadge from './RoleBadge';
-import RoleBadgeGroup from './RoleBadgeGroup';
 import { useRoleHelpers } from '../hooks/useRoleHelpers';
 import { useUserRoleManagement } from '../hooks/useUserRoleManagement';
 import { usePermissions } from '../hooks/usePermissions';
@@ -40,8 +39,8 @@ const UserCard: React.FC<UserCardProps> = ({
   enableQuickRoleEdit = false,
   enableRoleManagement = false,
   maxVisibleRoles = 3,
-  showRoleHistory = false,
-  compact = false,
+  showRoleHistory: _showRoleHistory = false,
+  compact: _compact = false,
   onClick,
   onEdit,
   onDelete,
@@ -51,7 +50,7 @@ const UserCard: React.FC<UserCardProps> = ({
   const [showRoleManagementModal, setShowRoleManagementModal] = useState(false);
   const [showQuickSelector, setShowQuickSelector] = useState(false);
   
-  const { getRoleIcon, getRoleDescription } = useRoleHelpers(customRoles);
+  const { getRoleIcon: _getRoleIcon, getRoleDescription: _getRoleDescription } = useRoleHelpers(customRoles as any);
   const { hasPermission } = usePermissions();
   const {
     currentRoles,
@@ -178,7 +177,6 @@ const UserCard: React.FC<UserCardProps> = ({
                     role={user.role}
                     size="sm"
                     showTooltip={true}
-                    variant="system"
                   />
                   
                   {/* Custom Roles */}
@@ -188,7 +186,6 @@ const UserCard: React.FC<UserCardProps> = ({
                       role={userRole.role.name}
                       size="sm"
                       showTooltip={true}
-                      variant="custom"
                     />
                   ))}
                   
@@ -203,7 +200,7 @@ const UserCard: React.FC<UserCardProps> = ({
             </div>
             
             {/* Role Management Actions */}
-            <PermissionGate permission="role.assign.department" fallback={null}>
+            <PermissionGate resource="role" action="assign" scope="department" fallback={null}>
               {(enableQuickRoleEdit || enableRoleManagement) && hasManagementPermissions && (
                 <div className="flex items-center space-x-1">
                   {enableQuickRoleEdit && (

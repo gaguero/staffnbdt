@@ -103,10 +103,10 @@ export function useComparisonAnalytics({
         id: `category_${category}`,
         label: category,
         type: 'category',
-        size: Math.max(15, Math.min(40, permissions.length * 1.5)),
+        size: Math.max(15, Math.min(40, _permissions.length * 1.5)),
         color: '#e5e7eb',
         metadata: {
-          permissionCount: permissions.length,
+          permissionCount: _permissions.length,
         },
       });
     });

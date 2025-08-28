@@ -8,8 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  LineChart,
-  Line,
   ScatterChart,
   Scatter,
   Cell,
@@ -17,11 +15,11 @@ import {
   Pie
 } from 'recharts';
 import {
-  UsersIcon,
-  ClockIcon,
-  TrendingUpIcon,
-  UserPlusIcon
-} from '@heroicons/react/24/outline';
+  Users,
+  Clock,
+  TrendingUp,
+  UserPlus
+} from 'lucide-react';
 import { UserBehaviorMetrics, DashboardFilters } from '../../types/roleStats';
 
 interface UserAnalyticsProps {
@@ -57,7 +55,7 @@ const UserAnalytics: React.FC<UserAnalyticsProps> = ({
         const pattern = data.assignmentPatterns.find(p => 
           p.dayOfWeek === days.indexOf(day) && p.timeOfDay === hour
         );
-        dayData[`hour${hour}`] = pattern ? pattern.assignmentCount : 0;
+        (dayData as any)[`hour${hour}`] = pattern ? pattern.assignmentCount : 0;
       });
       return dayData;
     });
@@ -127,7 +125,7 @@ const UserAnalytics: React.FC<UserAnalyticsProps> = ({
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-2">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <UsersIcon className="h-6 w-6 text-blue-600" />
+              <Users className="h-6 w-6 text-blue-600" />
             </div>
           </div>
           <div className="text-2xl font-bold text-gray-900">{realTimeData?.activeUsers || 0}</div>
@@ -137,7 +135,7 @@ const UserAnalytics: React.FC<UserAnalyticsProps> = ({
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-2">
             <div className="p-2 bg-green-100 rounded-lg">
-              <UserPlusIcon className="h-6 w-6 text-green-600" />
+              <UserPlus className="h-6 w-6 text-green-600" />
             </div>
           </div>
           <div className="text-2xl font-bold text-gray-900">{stats.totalAssigners}</div>
@@ -147,7 +145,7 @@ const UserAnalytics: React.FC<UserAnalyticsProps> = ({
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-2">
             <div className="p-2 bg-purple-100 rounded-lg">
-              <ClockIcon className="h-6 w-6 text-purple-600" />
+              <Clock className="h-6 w-6 text-purple-600" />
             </div>
           </div>
           <div className="text-2xl font-bold text-gray-900">{stats.avgAssignmentTime}h</div>
@@ -157,7 +155,7 @@ const UserAnalytics: React.FC<UserAnalyticsProps> = ({
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-2">
             <div className="p-2 bg-orange-100 rounded-lg">
-              <TrendingUpIcon className="h-6 w-6 text-orange-600" />
+              <TrendingUp className="h-6 w-6 text-orange-600" />
             </div>
           </div>
           <div className="text-2xl font-bold text-gray-900">{stats.fulfillmentRate}%</div>
@@ -281,8 +279,8 @@ const UserAnalytics: React.FC<UserAnalyticsProps> = ({
               ))}
             </div>
             
-            {assignmentHeatmapData.map((dayData, dayIndex) => {
-              const maxCount = Math.max(...Object.values(dayData).slice(1) as number[]);
+            {assignmentHeatmapData.map((dayData, _dayIndex) => {
+              const maxCount = Math.max(...(Object.values(dayData).slice(1).filter(v => typeof v === 'number') as number[]));
               
               return (
                 <div key={dayData.day} className="flex items-center">
@@ -291,7 +289,7 @@ const UserAnalytics: React.FC<UserAnalyticsProps> = ({
                   </div>
                   <div className="flex">
                     {Array.from({ length: 24 }, (_, hour) => {
-                      const count = dayData[`hour${hour}`] as number || 0;
+                      const count = ((dayData as any)[`hour${hour}`] as number) || 0;
                       const intensity = maxCount > 0 ? count / maxCount : 0;
                       
                       return (
@@ -415,7 +413,7 @@ const UserAnalytics: React.FC<UserAnalyticsProps> = ({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {data.mostActiveAssigners.map((assigner, index) => {
+                {data.mostActiveAssigners.map((assigner, _index) => {
                   const efficiency = assigner.avgTimeToAssign < 2 ? 'High' : 
                                    assigner.avgTimeToAssign < 8 ? 'Medium' : 'Low';
                   const efficiencyColor = efficiency === 'High' ? 'text-green-600 bg-green-100' :

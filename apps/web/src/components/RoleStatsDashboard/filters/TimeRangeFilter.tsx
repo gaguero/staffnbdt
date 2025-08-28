@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CalendarIcon } from '@heroicons/react/24/outline';
+import { Calendar } from 'lucide-react';
 import { DashboardFilters } from '../../../types/roleStats';
 
 interface TimeRangeFilterProps {
@@ -67,7 +67,7 @@ const TimeRangeFilter: React.FC<TimeRangeFilterProps> = ({
           Time Range
         </label>
         <div className="relative">
-          <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <select
             value={value.preset || 'month'}
             onChange={(e) => handlePresetChange(e.target.value)}

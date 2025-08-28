@@ -73,6 +73,7 @@ const QuickRoleSelector: React.FC<QuickRoleSelectorProps> = ({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [isOpen]);
 
   // Handle keyboard navigation
@@ -223,8 +224,7 @@ const QuickRoleSelector: React.FC<QuickRoleSelectorProps> = ({
                       <div className="flex items-center space-x-2">
                         <RoleBadge 
                           role={role.name} 
-                          variant={role.isSystem ? 'system' : 'custom'} 
-                          size="xs"
+                          size="sm"
                           showTooltip={false}
                         />
                         <span className="font-medium text-gray-900">{role.name}</span>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserGroupIcon } from '@heroicons/react/24/outline';
+import { Users } from 'lucide-react';
 
 interface RoleFilterProps {
   value?: ('system' | 'custom')[];
@@ -31,7 +31,7 @@ const RoleFilter: React.FC<RoleFilterProps> = ({
         Role Types
       </label>
       <div className="relative">
-        <UserGroupIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
         <div className="pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white min-w-[140px]">
           <div className="space-y-2">
             {/* All option */}

@@ -171,7 +171,7 @@ const UserRoleSection: React.FC<UserRoleSectionProps> = ({
           )}
         </div>
 
-        <PermissionGate permissions={["role.assign.department"]} fallback={null}>
+        <PermissionGate resource="role" action="assign" scope="department" fallback={null}>
           <div className="flex items-center space-x-2">
             {enableAdvancedManagement && hasManagementPermissions && (
               <button
@@ -189,7 +189,7 @@ const UserRoleSection: React.FC<UserRoleSectionProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-gray-700">Current Roles</label>
-          <PermissionGate permissions={["role.assign.department"]} fallback={null}>
+          <PermissionGate resource="role" action="assign" scope="department" fallback={null}>
             {hasManagementPermissions && (
               <QuickRoleSelector
                 availableRoles={availableRoles || []}

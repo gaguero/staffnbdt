@@ -1,5 +1,5 @@
 import React from 'react';
-import { BuildingOfficeIcon } from '@heroicons/react/24/outline';
+import { Building2 } from 'lucide-react';
 
 interface PropertyFilterProps {
   organizationId?: string;
@@ -48,7 +48,7 @@ const PropertyFilter: React.FC<PropertyFilterProps> = ({
           Organization
         </label>
         <div className="relative">
-          <BuildingOfficeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <select
             value={organizationId || 'all'}
             onChange={(e) => handleOrganizationChange(e.target.value)}
