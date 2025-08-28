@@ -1,19 +1,91 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useState, useMemo, useEffect } from 'react';
+
+// Inline UI components
+const Card = ({ children, className = '' }: any) => (
+  <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>{children}</div>
+);
+const CardHeader = ({ children, className = '' }: any) => (
+  <div className={`px-6 py-4 border-b border-gray-200 ${className}`}>{children}</div>
+);
+const CardTitle = ({ children, className = '' }: any) => (
+  <h3 className={`text-lg font-semibold text-gray-900 ${className}`}>{children}</h3>
+);
+const CardContent = ({ children, className = '' }: any) => (
+  <div className={`px-6 py-4 ${className}`}>{children}</div>
+);
+
+const Tabs = ({ children, className = '' }: any) => (
+  <div className={`${className}`}>{children}</div>
+);
+const TabsList = ({ children, className = '' }: any) => (
+  <div className={`inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1 ${className}`}>{children}</div>
+);
+const TabsTrigger = ({ value, children, className = '' }: any) => (
+  <button className={`inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-sm ${className}`}>{children}</button>
+);
+const TabsContent = ({ value, children, className = '' }: any) => (
+  <div className={`mt-2 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 ${className}`}>{children}</div>
+);
+
+const Button = ({ children, onClick, className = '', variant = 'default', size = 'default', disabled = false, ...props }: any) => {
+  const baseClasses = 'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+  const variants: { [key: string]: string } = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/90',
+    outline: 'border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900',
+    ghost: 'hover:bg-slate-100 hover:text-slate-900'
+  };
+  const sizes: { [key: string]: string } = {
+    default: 'h-10 px-4 py-2',
+    sm: 'h-9 rounded-md px-3',
+    lg: 'h-11 rounded-md px-8'
+  };
+  return (
+    <button 
+      className={`${baseClasses} ${variants[variant] || variants.default} ${sizes[size] || sizes.default} ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Input = ({ className = '', ...props }: any) => (
+  <input 
+    className={`flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    {...props}
+  />
+);
+
+const Badge = ({ children, variant = 'default', className = '' }: any) => {
+  const variants: { [key: string]: string } = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/80',
+    secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-100/80',
+    outline: 'text-slate-950 border border-slate-200 bg-transparent hover:bg-slate-100'
+  };
+  return (
+    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${variants[variant] || variants.default} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+const Alert = ({ children, className = '' }: any) => (
+  <div className={`relative w-full rounded-lg border border-slate-200 p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-slate-950 ${className}`}>
+    {children}
+  </div>
+);
+const AlertDescription = ({ children, className = '' }: any) => (
+  <div className={`text-sm [&_p]:leading-relaxed ${className}`}>{children}</div>
+);
+
 import { 
   History, 
   Download, 
   Filter, 
   Search,
   Calendar,
-  Users,
-  UserCheck,
-  UserX,
   Clock,
   TrendingUp,
   AlertTriangle,
@@ -78,14 +150,29 @@ export function RoleHistoryDashboard({
     applyPreset,
     clearFilters,
     updateFilters,
-    quickFilters,
+    // quickFilters,
   } = useHistoryFilters({ initialFilters });
 
   // Permission checks
-  const canViewHistory = hasPermission('role.read.history');
-  const canExportHistory = hasPermission('export.create');
-  const canViewAnalytics = hasPermission('analytics.read');
-  const canViewAdminActivity = hasPermission('audit.read');
+  const [permissions, setPermissions] = useState({
+    canViewHistory: false,
+    canExportHistory: false,
+    canViewAnalytics: false,
+    canViewAdminActivity: false
+  });
+
+  useEffect(() => {
+    const checkPermissions = async () => {
+      const [canViewHistory, canExportHistory, canViewAnalytics, canViewAdminActivity] = await Promise.all([
+        hasPermission('role', 'read', 'history'),
+        hasPermission('export', 'create'),
+        hasPermission('analytics', 'read'),
+        hasPermission('audit', 'read')
+      ]);
+      setPermissions({ canViewHistory, canExportHistory, canViewAnalytics, canViewAdminActivity });
+    };
+    checkPermissions();
+  }, [hasPermission]);
 
   // Quick stats from summary
   const quickStats = useMemo(() => {
@@ -144,7 +231,7 @@ export function RoleHistoryDashboard({
     setShowExportModal(false);
   };
 
-  if (!canViewHistory) {
+  if (!permissions.canViewHistory) {
     return (
       <Alert>
         <AlertTriangle className="h-4 w-4" />
@@ -178,7 +265,7 @@ export function RoleHistoryDashboard({
             </Button>
           )}
           
-          {enableExport && canExportHistory && (
+          {enableExport && permissions.canExportHistory && (
             <Button
               variant="outline"
               size="sm"
@@ -299,10 +386,10 @@ export function RoleHistoryDashboard({
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="bulk">Bulk Operations</TabsTrigger>
-          {canViewAdminActivity && (
+          {permissions.canViewAdminActivity && (
             <TabsTrigger value="admin">Admin Activity</TabsTrigger>
           )}
-          {showAnalytics && canViewAnalytics && (
+          {showAnalytics && permissions.canViewAnalytics && (
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           )}
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
@@ -335,7 +422,7 @@ export function RoleHistoryDashboard({
           />
         </TabsContent>
 
-        {canViewAdminActivity && (
+        {permissions.canViewAdminActivity && (
           <TabsContent value="admin" className="space-y-4">
             <AdminActivityHistory
               showImpactMetrics={true}
@@ -344,7 +431,7 @@ export function RoleHistoryDashboard({
           </TabsContent>
         )}
 
-        {showAnalytics && canViewAnalytics && (
+        {showAnalytics && permissions.canViewAnalytics && (
           <TabsContent value="analytics" className="space-y-4">
             <HistoryAnalytics
               analytics={analytics}

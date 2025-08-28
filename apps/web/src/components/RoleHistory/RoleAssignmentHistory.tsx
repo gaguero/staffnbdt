@@ -1,6 +1,32 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+// React import not needed for this component
+
+// Inline UI components
+const Card = ({ children, className = '' }: any) => (
+  <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>{children}</div>
+);
+const CardHeader = ({ children, className = '' }: any) => (
+  <div className={`px-6 py-4 border-b border-gray-200 ${className}`}>{children}</div>
+);
+const CardTitle = ({ children, className = '' }: any) => (
+  <h3 className={`text-lg font-semibold text-gray-900 ${className}`}>{children}</h3>
+);
+const CardContent = ({ children, className = '' }: any) => (
+  <div className={`px-6 py-4 ${className}`}>{children}</div>
+);
+
+const Badge = ({ children, variant = 'default', className = '' }: any) => {
+  const variants = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/80',
+    secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-100/80',
+    outline: 'text-slate-950 border border-slate-200 bg-transparent hover:bg-slate-100'
+  };
+  return (
+    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${variants[variant]} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
 import { Shield, Clock } from 'lucide-react';
 import { RoleAssignmentHistoryProps } from '../../types/roleHistory';
 

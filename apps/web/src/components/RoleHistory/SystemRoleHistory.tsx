@@ -1,9 +1,99 @@
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
+import { useState, useEffect } from 'react';
+
+// Inline UI components
+const Card = ({ children, className = '' }: any) => (
+  <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>{children}</div>
+);
+const CardContent = ({ children, className = '' }: any) => (
+  <div className={`px-6 py-4 ${className}`}>{children}</div>
+);
+
+const Button = ({ children, onClick, className = '', variant = 'default', size = 'default', disabled = false, ...props }: any) => {
+  const baseClasses = 'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+  const variants = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/90',
+    outline: 'border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900',
+    ghost: 'hover:bg-slate-100 hover:text-slate-900'
+  };
+  const sizes = {
+    default: 'h-10 px-4 py-2',
+    sm: 'h-9 rounded-md px-3',
+    lg: 'h-11 rounded-md px-8'
+  };
+  return (
+    <button 
+      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Badge = ({ children, variant = 'default', className = '' }: any) => {
+  const variants = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/80',
+    secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-100/80',
+    outline: 'text-slate-950 border border-slate-200 bg-transparent hover:bg-slate-100'
+  };
+  return (
+    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${variants[variant]} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+// Simple Avatar component
+const Avatar = ({ children, className = '' }: any) => (
+  <div className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${className}`}>
+    {children}
+  </div>
+);
+const AvatarFallback = ({ children, className = '' }: any) => (
+  <div className={`flex h-full w-full items-center justify-center rounded-full bg-slate-100 ${className}`}>
+    {children}
+  </div>
+);
+const AvatarImage = ({ src, className = '' }: any) => (
+  src ? <img src={src} className={`aspect-square h-full w-full ${className}`} alt="Avatar" /> : null
+);
+
+// Simple Separator component
+const Separator = ({ className = '' }: any) => (
+  <hr className={`shrink-0 bg-slate-200 h-[1px] w-full ${className}`} />
+);
+
+// Simple Tooltip components
+const TooltipProvider = ({ children }: any) => <div>{children}</div>;
+const Tooltip = ({ children }: any) => <div className="relative group">{children}</div>;
+const TooltipTrigger = ({ children }: any) => <div>{children}</div>;
+const TooltipContent = ({ children, className = '' }: any) => (
+  <div className={`absolute z-50 hidden group-hover:block bg-slate-900 text-slate-50 px-3 py-1.5 text-sm rounded-md shadow-md -translate-y-full -translate-x-1/2 left-1/2 bottom-full mb-1 ${className}`}>
+    {children}
+  </div>
+);
+
+// Simple Dropdown components
+const DropdownMenu = ({ children }: any) => <div className="relative">{children}</div>;
+const DropdownMenuTrigger = ({ children, asChild, ...props }: any) => (
+  <div {...props}>{children}</div>
+);
+const DropdownMenuContent = ({ children, align = 'start', className = '' }: any) => (
+  <div className={`hidden group-hover:block absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-white p-1 shadow-md ${align === 'end' ? 'right-0' : 'left-0'} ${className}`}>
+    {children}
+  </div>
+);
+const DropdownMenuItem = ({ children, onClick, className = '' }: any) => (
+  <div className={`relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-slate-100 focus:bg-slate-100 ${className}`} onClick={onClick}>
+    {children}
+  </div>
+);
+const DropdownMenuSeparator = ({ className = '' }: any) => (
+  <div className={`-mx-1 my-1 h-px bg-slate-100 ${className}`} />
+);
+
 import { 
   ChevronLeft, 
   ChevronRight,
@@ -22,19 +112,6 @@ import {
 } from 'lucide-react';
 import { RoleAssignmentHistoryEntry } from '../../types/roleHistory';
 import { formatDistanceToNow, format } from 'date-fns';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { usePermissions } from '../../hooks/usePermissions';
 
 interface SystemRoleHistoryProps {
@@ -98,15 +175,27 @@ export function SystemRoleHistory({
   totalPages,
   isLoading,
   onPageChange,
-  onPageSizeChange,
+  onPageSizeChange: _onPageSizeChange,
   onViewDetails,
   onRollback,
 }: SystemRoleHistoryProps) {
   const { hasPermission } = usePermissions();
   const [hoveredEntry, setHoveredEntry] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState({
+    canRollback: false,
+    canViewDetails: false
+  });
 
-  const canRollback = hasPermission('role.rollback');
-  const canViewDetails = hasPermission('role.read.history');
+  useEffect(() => {
+    const checkPermissions = async () => {
+      const [canRollback, canViewDetails] = await Promise.all([
+        hasPermission('role', 'rollback'),
+        hasPermission('role', 'read', 'history')
+      ]);
+      setPermissions({ canRollback, canViewDetails });
+    };
+    checkPermissions();
+  }, [hasPermission]);
 
   const getActionConfig = (action: RoleAssignmentHistoryEntry['action']) => {
     return ACTION_CONFIG[action] || {
@@ -278,14 +367,14 @@ export function SystemRoleHistory({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {canViewDetails && onViewDetails && (
+          {permissions.canViewDetails && onViewDetails && (
             <DropdownMenuItem onClick={() => onViewDetails(entry)}>
               <Eye className="mr-2 h-4 w-4" />
               View Details
             </DropdownMenuItem>
           )}
           
-          {canRollback && onRollback && (entry.action === 'ASSIGNED' || entry.action === 'REMOVED') && (
+          {permissions.canRollback && onRollback && (entry.action === 'ASSIGNED' || entry.action === 'REMOVED') && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem 

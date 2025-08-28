@@ -1,8 +1,92 @@
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+// Inline UI components
+const Card = ({ children, className = '' }: any) => (
+  <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>{children}</div>
+);
+const CardHeader = ({ children, className = '' }: any) => (
+  <div className={`px-6 py-4 border-b border-gray-200 ${className}`}>{children}</div>
+);
+const CardTitle = ({ children, className = '' }: any) => (
+  <h3 className={`text-lg font-semibold text-gray-900 ${className}`}>{children}</h3>
+);
+const CardContent = ({ children, className = '' }: any) => (
+  <div className={`px-6 py-4 ${className}`}>{children}</div>
+);
+
+const Button = ({ children, onClick, className = '', variant = 'default', size = 'default', disabled = false, ...props }: any) => {
+  const baseClasses = 'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+  const variants = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/90',
+    outline: 'border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900',
+    ghost: 'hover:bg-slate-100 hover:text-slate-900'
+  };
+  const sizes = {
+    default: 'h-10 px-4 py-2',
+    sm: 'h-9 rounded-md px-3',
+    lg: 'h-11 rounded-md px-8'
+  };
+  return (
+    <button 
+      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Badge = ({ children, variant = 'default', className = '' }: any) => {
+  const variants = {
+    default: 'bg-slate-900 text-slate-50 hover:bg-slate-900/80',
+    secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-100/80',
+    outline: 'text-slate-950 border border-slate-200 bg-transparent hover:bg-slate-100'
+  };
+  return (
+    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 ${variants[variant]} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+// Simple Avatar component
+const Avatar = ({ children, className = '' }: any) => (
+  <div className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${className}`}>
+    {children}
+  </div>
+);
+const AvatarFallback = ({ children, className = '' }: any) => (
+  <div className={`flex h-full w-full items-center justify-center rounded-full bg-slate-100 ${className}`}>
+    {children}
+  </div>
+);
+const AvatarImage = ({ src, className = '' }: any) => (
+  src ? <img src={src} className={`aspect-square h-full w-full ${className}`} alt="Avatar" /> : null
+);
+
+// Simple Collapsible components
+const Collapsible = ({ children, open, onOpenChange }: any) => (
+  <div className="w-full">
+    {React.Children.map(children, (child) =>
+      React.isValidElement(child)
+        ? React.cloneElement(child, { open, onOpenChange })
+        : child
+    )}
+  </div>
+);
+const CollapsibleTrigger = ({ children, asChild, onClick }: any) => (
+  <div onClick={onClick} className="cursor-pointer">
+    {children}
+  </div>
+);
+const CollapsibleContent = ({ children, open }: any) => (
+  <div className={`overflow-hidden transition-all ${open ? 'block' : 'hidden'}`}>
+    {children}
+  </div>
+);
+
 import { 
   ChevronDown, 
   ChevronUp,
@@ -14,16 +98,10 @@ import {
   XCircle,
   Zap,
   Calendar,
-  ArrowRight,
   MoreHorizontal
 } from 'lucide-react';
-import { format, isSameDay, startOfDay, subDays } from 'date-fns';
+import { format, startOfDay, subDays } from 'date-fns';
 import { RoleAssignmentHistoryEntry, TimelineEntry, TimelineGroup } from '../../types/roleHistory';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 
 interface HistoryTimelineProps {
   entries: RoleAssignmentHistoryEntry[];
@@ -55,7 +133,6 @@ const ACTION_ICONS = {
 export function HistoryTimeline({
   entries,
   groupBy = 'day',
-  showDetails = true,
   enableFiltering = true,
   onEntryClick,
   maxGroups = 50,
@@ -286,7 +363,7 @@ export function HistoryTimeline({
       <Card key={group.groupKey} className="mb-6">
         <Collapsible open={isExpanded} onOpenChange={() => toggleGroupExpansion(group.groupKey)}>
           <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+            <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => toggleGroupExpansion(group.groupKey)}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${getActionColor(group.summary.action)}`}>
@@ -318,7 +395,7 @@ export function HistoryTimeline({
             </CardHeader>
           </CollapsibleTrigger>
 
-          <CollapsibleContent>
+          <CollapsibleContent open={isExpanded}>
             <CardContent className="pt-0">
               <div className="space-y-2">
                 {group.entries.map(entry => renderTimelineEntry(entry))}

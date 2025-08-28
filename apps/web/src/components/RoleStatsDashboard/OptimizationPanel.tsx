@@ -7,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ScatterChart,
   Scatter,
   Cell
@@ -34,7 +33,10 @@ interface OptimizationPanelProps {
 const OptimizationPanel: React.FC<OptimizationPanelProps> = ({
   data,
   analytics,
-  isLoading
+  isLoading,
+  filters: _filters,
+  onFiltersChange: _onFiltersChange,
+  optimizationData: _optimizationData
 }) => {
   const [viewType, setViewType] = useState<'recommendations' | 'impact' | 'roadmap'>('recommendations');
   const [filterType, setFilterType] = useState<string>('all');
@@ -55,10 +57,10 @@ const OptimizationPanel: React.FC<OptimizationPanelProps> = ({
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'impact':
-          const impactOrder = { high: 3, medium: 2, low: 1 };
+          const impactOrder: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
           return impactOrder[b.impact] - impactOrder[a.impact];
         case 'effort':
-          const effortOrder = { low: 3, medium: 2, high: 1 };
+          const effortOrder: { [key: string]: number } = { low: 3, medium: 2, high: 1 };
           return effortOrder[b.effort] - effortOrder[a.effort];
         case 'affectedUsers':
           return b.affectedUsers - a.affectedUsers;
@@ -421,7 +423,7 @@ const OptimizationPanel: React.FC<OptimizationPanelProps> = ({
                     label={{ value: 'Impact', angle: -90, position: 'insideLeft' }}
                   />
                   <Tooltip 
-                    formatter={(value, name, props) => [
+                    formatter={(value: any, name: any) => [
                       name === 'effort' ? 
                         (value === 1 ? 'Low' : value === 2 ? 'Medium' : 'High') :
                         (value === 1 ? 'Low' : value === 2 ? 'Medium' : 'High'),
@@ -477,7 +479,7 @@ const OptimizationPanel: React.FC<OptimizationPanelProps> = ({
                     tick={{ fontSize: 12 }}
                   />
                   <Tooltip 
-                    formatter={(value) => [Math.round(value as number), 'ROI Score']}
+                    formatter={(value: any) => [Math.round(value as number), 'ROI Score']}
                   />
                   <Bar dataKey="roi" fill="#10B981" />
                 </BarChart>

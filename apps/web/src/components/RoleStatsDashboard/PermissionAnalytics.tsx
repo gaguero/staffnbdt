@@ -11,7 +11,7 @@ import {
   Cell,
   PieChart,
   Pie,
-  TreeMap
+  Treemap
 } from 'recharts';
 import {
   Shield as ShieldCheckIcon,
@@ -35,7 +35,10 @@ interface PermissionAnalyticsProps {
 
 const PermissionAnalytics: React.FC<PermissionAnalyticsProps> = ({
   data,
-  isLoading
+  isLoading,
+  filters: _filters,
+  onFiltersChange: _onFiltersChange,
+  permissionData: _permissionData
 }) => {
   const [viewType, setViewType] = useState<'usage' | 'coverage' | 'gaps'>('usage');
   const [resourceFilter, setResourceFilter] = useState<string>('all');
@@ -321,47 +324,12 @@ const PermissionAnalytics: React.FC<PermissionAnalyticsProps> = ({
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Permission Coverage Heatmap</h3>
           <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
-              <TreeMap
+              <Treemap
                 data={heatmapData}
                 dataKey="value"
                 ratio={4/3}
                 stroke="#fff"
                 fill="#8884d8"
-                content={(props) => {
-                  if (props.depth !== 1) return null;
-                  
-                  const { x, y, width, height, resource, scope, value, color } = props;
-                  
-                  return (
-                    <g>
-                      <rect
-                        x={x}
-                        y={y}
-                        width={width}
-                        height={height}
-                        style={{
-                          fill: color,
-                          stroke: '#fff',
-                          strokeWidth: 2
-                        }}
-                      />
-                      {width > 60 && height > 40 && (
-                        <text
-                          x={x + width / 2}
-                          y={y + height / 2}
-                          textAnchor="middle"
-                          fill="#fff"
-                          fontSize={12}
-                          fontWeight="bold"
-                        >
-                          <tspan x={x + width / 2} dy={-5}>{resource}</tspan>
-                          <tspan x={x + width / 2} dy={15}>{scope}</tspan>
-                          <tspan x={x + width / 2} dy={15}>{value}%</tspan>
-                        </text>
-                      )}
-                    </g>
-                  );
-                }}
               />
             </ResponsiveContainer>
           </div>

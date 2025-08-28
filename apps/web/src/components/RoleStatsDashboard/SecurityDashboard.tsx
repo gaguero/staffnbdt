@@ -36,7 +36,10 @@ interface SecurityDashboardProps {
 const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
   data,
   analytics: _analytics,
-  isLoading
+  isLoading,
+  filters: _filters,
+  onFiltersChange: _onFiltersChange,
+  securityData: _securityData
 }) => {
   const [viewType, setViewType] = useState<'overview' | 'risks' | 'compliance'>('overview');
 
@@ -80,7 +83,8 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
     ];
   }, [data]);
 
-  // Compliance score data for radial chart
+  // Compliance score data for radial chart (unused but kept for future use)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _complianceData = useMemo(() => {
     if (!data) return [];
     
@@ -306,7 +310,7 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis domain={[0, 100]} />
-                  <Tooltip formatter={(value) => [`${value}%`, 'Risk Score']} />
+                  <Tooltip formatter={(value: any) => [`${value}%`, 'Risk Score']} />
                   <Line 
                     type="monotone" 
                     dataKey="score" 
