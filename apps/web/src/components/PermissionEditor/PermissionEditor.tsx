@@ -1,25 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  PlusIcon,
-  XMarkIcon,
-  ArrowUturnLeftIcon,
-  ArrowUturnRightIcon,
-  PlayIcon,
-  DocumentArrowDownIcon,
-  ClipboardDocumentCheckIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  InformationCircleIcon,
-  AdjustmentsHorizontalIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon
-} from '@heroicons/react/24/outline';
+  X as XMarkIcon,
+  Undo as ArrowUturnLeftIcon,
+  Redo as ArrowUturnRightIcon,
+  Play as PlayIcon,
+  Download as DocumentArrowDownIcon,
+  ClipboardCheck as ClipboardDocumentCheckIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  Info as InformationCircleIcon,
+  Settings as AdjustmentsHorizontalIcon,
+  Search as MagnifyingGlassIcon,
+  Filter as FunnelIcon
+} from 'lucide-react';
 
 import { 
-  PermissionEditorProps, 
-  EditorMode, 
-  RoleConfiguration,
-  ValidationError 
+  PermissionEditorProps
 } from '../../types/permissionEditor';
 import { Permission } from '../../types/permission';
 
@@ -34,7 +29,6 @@ import ValidationPanel from './ValidationPanel';
 import PreviewPanel from './PreviewPanel';
 import SaveRoleDialog from './SaveRoleDialog';
 import RoleTemplates from './RoleTemplates';
-import PermissionDetails from './PermissionDetails';
 
 export const PermissionEditor: React.FC<PermissionEditorProps> = ({
   mode,
@@ -47,14 +41,13 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
   maxHeight = 800,
   showAdvancedFeatures = true,
   allowTemplateCreation = true,
-  enableComparison = true,
   context = 'role-management'
 }) => {
   // Local state for UI controls
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showPreviewPanel, setShowPreviewPanel] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(mode === 'create' && !roleId);
-  const [showValidationPanel, setShowValidationPanel] = useState(true);
+  const [showValidationPanel] = useState(true);
   const [showPermissionDetails, setShowPermissionDetails] = useState(false);
   const [selectedPermissionForDetails, setSelectedPermissionForDetails] = useState<Permission | null>(null);
   const [activePanel, setActivePanel] = useState<'palette' | 'workspace' | 'both'>('both');
@@ -63,7 +56,6 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
   const {
     state,
     workspace,
-    palette,
     canUndo,
     canRedo,
     canSave,
@@ -79,10 +71,7 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
     setActiveCategory,
     saveRole,
     previewRole,
-    exportRole,
-    handleDragStart,
-    handleDragEnd,
-    handleDrop
+    exportRole
   } = usePermissionEditor({
     mode,
     roleId,
@@ -95,30 +84,26 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
   // Initialize drag and drop
   const {
     dragState,
-    registerDropZone,
-    handleMouseDown,
-    handleTouchStart,
-    handleKeyDown,
     announceToScreenReader
   } = useDragAndDrop({
     onDrop: (permission, dropZone) => {
       if (dropZone === 'workspace') {
         addPermission(permission);
-        announceToScreenReader(`Added ${permission.name} to role`);
+        announceToScreenReader(`Added ${permission.resource}.${permission.action} to role`);
       } else if (dropZone === 'trash') {
         removePermission(permission.id);
-        announceToScreenReader(`Removed ${permission.name} from role`);
+        announceToScreenReader(`Removed ${permission.resource}.${permission.action} from role`);
       }
     },
     onDragStart: (permission) => {
-      announceToScreenReader(`Dragging ${permission.name}`);
+      announceToScreenReader(`Dragging ${permission.resource}.${permission.action}`);
     },
     enableTouch: true,
     enableKeyboard: true
   });
 
   // Initialize validation
-  const { validateRole, autoFixIssues } = useRoleValidation({
+  const { autoFixIssues } = useRoleValidation({
     enableRealTimeValidation: true,
     strictMode: context === 'role-management',
     context: context === 'role-management' ? 'creation' : 'assignment'
@@ -204,7 +189,7 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
 
   // Handle role preview
   const handlePreview = useCallback(() => {
-    const previewData = previewRole();
+    previewRole();
     setShowPreviewPanel(true);
     onPreview?.(state.role);
     announceToScreenReader('Opened role preview');
@@ -244,7 +229,7 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
       state.selectedPermissions.has(p.id)
     );
 
-    const { permissions: fixedPermissions, role: fixedRole } = autoFixIssues(
+    const { permissions: _fixedPermissions, role: fixedRole } = autoFixIssues(
       selectedPermissions, 
       state.role, 
       state.validationErrors
@@ -409,7 +394,7 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
         {/* Role Metadata Editor */}
         <RoleMetadataEditor
           role={state.role}
-          onChange={updateRoleMetadata}
+          onChange={() => {}}
           errors={state.validationErrors.filter(e => e.field)}
           className="mb-4"
           showAdvanced={showAdvancedFeatures}
@@ -521,7 +506,7 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
                 dragDropState={dragState}
                 validationErrors={state.validationErrors}
                 onPermissionRemove={removePermission}
-                onPermissionReorder={(from, to) => {
+                onPermissionReorder={() => {
                   // Implement reordering logic
                 }}
                 onDropPermission={(permission, dropZone) => {
@@ -632,14 +617,19 @@ export const PermissionEditor: React.FC<PermissionEditorProps> = ({
       {showPermissionDetails && selectedPermissionForDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl max-h-[80vh] overflow-hidden">
-            <PermissionDetails
-              permission={selectedPermissionForDetails}
-              onClose={() => {
-                setShowPermissionDetails(false);
-                setSelectedPermissionForDetails(null);
-              }}
-              className="max-h-[80vh]"
-            />
+            <div className="p-6 max-h-[80vh]">
+              <h3 className="text-lg font-semibold mb-4">Permission Details</h3>
+              <p className="mb-4">Details for: {selectedPermissionForDetails.resource}.{selectedPermissionForDetails.action}</p>
+              <button 
+                onClick={() => {
+                  setShowPermissionDetails(false);
+                  setSelectedPermissionForDetails(null);
+                }}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

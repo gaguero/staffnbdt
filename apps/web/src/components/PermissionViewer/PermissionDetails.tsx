@@ -1,13 +1,13 @@
 import React from 'react';
 import {
-  XMarkIcon,
-  ClockIcon,
-  ShieldCheckIcon,
-  TagIcon,
-  InformationCircleIcon,
-  UserGroupIcon,
-  ChartBarIcon,
-} from '@heroicons/react/24/outline';
+  X,
+  Clock,
+  Shield,
+  Tag,
+  Info,
+  Users,
+  BarChart3,
+} from 'lucide-react';
 import { 
   PermissionDetailsProps,
   RESOURCE_ICONS,
@@ -26,7 +26,7 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
     return (
       <div className={`bg-white border border-gray-200 rounded-lg p-6 ${className}`}>
         <div className="text-center text-gray-500">
-          <InformationCircleIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+          <Info className="h-12 w-12 mx-auto mb-3 text-gray-300" />
           <p>Select a permission to view details</p>
         </div>
       </div>
@@ -73,7 +73,7 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0">
               <span className="text-2xl" title={`${permission.resource} permission`}>
-                {RESOURCE_ICONS[permission.resource] || '📝'}
+                {RESOURCE_ICONS[permission.resource as keyof typeof RESOURCE_ICONS] || '📝'}
               </span>
             </div>
             <div>
@@ -87,7 +87,7 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
             onClick={onClose}
             className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
           >
-            <XMarkIcon className="h-5 w-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
       </div>
@@ -97,13 +97,13 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
         {/* Basic Information */}
         <div>
           <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-            <TagIcon className="h-4 w-4 mr-2" />
+            <Tag className="h-4 w-4 mr-2" />
             Permission Details
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex items-center space-x-3">
               <span className="text-lg" title="Resource">
-                {RESOURCE_ICONS[permission.resource] || '📝'}
+                {RESOURCE_ICONS[permission.resource as keyof typeof RESOURCE_ICONS] || '📝'}
               </span>
               <div>
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Resource</div>
@@ -113,7 +113,7 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
 
             <div className="flex items-center space-x-3">
               <span className="text-lg" title="Action">
-                {ACTION_ICONS[permission.action] || '⚡'}
+                {ACTION_ICONS[permission.action as keyof typeof ACTION_ICONS] || '⚡'}
               </span>
               <div>
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Action</div>
@@ -123,7 +123,7 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
 
             <div className="flex items-center space-x-3">
               <span className="text-lg" title="Scope">
-                {SCOPE_ICONS[permission.scope] || '🔒'}
+                {SCOPE_ICONS[permission.scope as keyof typeof SCOPE_ICONS] || '🔒'}
               </span>
               <div>
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Scope</div>
@@ -134,7 +134,7 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
             </div>
 
             <div className="flex items-center space-x-3">
-              <ShieldCheckIcon className="h-5 w-5 text-gray-400" />
+              <Shield className="h-5 w-5 text-gray-400" />
               <div>
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Permission ID</div>
                 <div className="text-sm font-mono text-gray-900 break-all">{permission.id}</div>
@@ -146,7 +146,7 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
         {/* Metadata */}
         <div>
           <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-            <ClockIcon className="h-4 w-4 mr-2" />
+            <Clock className="h-4 w-4 mr-2" />
             Metadata
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -165,7 +165,7 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
         {permission.conditions && (
           <div>
             <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-              <InformationCircleIcon className="h-4 w-4 mr-2" />
+              <Info className="h-4 w-4 mr-2" />
               Conditions
             </h4>
             <div className="bg-gray-50 rounded-lg p-3">
@@ -180,7 +180,7 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
         {usageStats && (
           <div>
             <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-              <ChartBarIcon className="h-4 w-4 mr-2" />
+              <BarChart3 className="h-4 w-4 mr-2" />
               Usage Statistics
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -225,7 +225,7 @@ export const PermissionDetails: React.FC<PermissionDetailsProps> = ({
         {relationships && (
           <div>
             <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-              <UserGroupIcon className="h-4 w-4 mr-2" />
+              <Users className="h-4 w-4 mr-2" />
               Related Permissions
             </h4>
             

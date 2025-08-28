@@ -1,9 +1,9 @@
 import React, { memo } from 'react';
 import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  InformationCircleIcon,
-} from '@heroicons/react/24/outline';
+  ChevronRight,
+  ChevronDown,
+  Info,
+} from 'lucide-react';
 import { 
   PermissionTreeNodeProps,
   RESOURCE_ICONS,
@@ -31,12 +31,12 @@ export const PermissionTreeNode: React.FC<PermissionTreeNodeProps> = memo(({
   const getNodeIcon = () => {
     switch (node.type) {
       case 'resource':
-        return RESOURCE_ICONS[node.name] || PERMISSION_VIEWER_ICONS.RESOURCE;
+        return RESOURCE_ICONS[node.name as keyof typeof RESOURCE_ICONS] || PERMISSION_VIEWER_ICONS.RESOURCE;
       case 'action':
-        return ACTION_ICONS[node.name] || PERMISSION_VIEWER_ICONS.ACTION;
+        return ACTION_ICONS[node.name as keyof typeof ACTION_ICONS] || PERMISSION_VIEWER_ICONS.ACTION;
       case 'permission':
         if (node.permission) {
-          return SCOPE_ICONS[node.permission.scope] || PERMISSION_VIEWER_ICONS.PERMISSION;
+          return SCOPE_ICONS[node.permission.scope as keyof typeof SCOPE_ICONS] || PERMISSION_VIEWER_ICONS.PERMISSION;
         }
         return PERMISSION_VIEWER_ICONS.PERMISSION;
       default:
@@ -110,9 +110,9 @@ export const PermissionTreeNode: React.FC<PermissionTreeNodeProps> = memo(({
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
           >
             {isExpanded ? (
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-gray-500" />
             ) : (
-              <ChevronRightIcon className="h-4 w-4 text-gray-500" />
+              <ChevronRight className="h-4 w-4 text-gray-500" />
             )}
           </button>
         )}
@@ -167,7 +167,7 @@ export const PermissionTreeNode: React.FC<PermissionTreeNodeProps> = memo(({
 
         {/* Description Info Icon */}
         {showDescriptions && node.description && (
-          <InformationCircleIcon 
+          <Info 
             className="flex-shrink-0 h-4 w-4 text-gray-400 hover:text-gray-600" 
             title={node.description}
           />

@@ -1,18 +1,14 @@
 import React from 'react';
 import {
-  FireIcon,
-  CheckIcon,
-  UserGroupIcon,
-  DocumentTextIcon,
-  AcademicCapIcon,
-  ShieldCheckIcon,
-  CogIcon,
-  BuildingOfficeIcon,
-} from '@heroicons/react/24/outline';
-import {
-  FireIcon as FireSolidIcon,
-  CheckIcon as CheckSolidIcon,
-} from '@heroicons/react/24/solid';
+  Flame,
+  Check,
+  Users,
+  File,
+  GraduationCap,
+  Shield,
+  Settings,
+  Building,
+} from 'lucide-react';
 import { PermissionSearchIndex } from '../../types/permissionSearch';
 
 interface PopularPermissionsProps {
@@ -25,14 +21,14 @@ interface PopularPermissionsProps {
 }
 
 const RESOURCE_ICONS: Record<string, React.ComponentType<any>> = {
-  user: UserGroupIcon,
-  document: DocumentTextIcon,
-  training: AcademicCapIcon,
-  permission: ShieldCheckIcon,
-  role: ShieldCheckIcon,
-  organization: BuildingOfficeIcon,
-  property: BuildingOfficeIcon,
-  default: CogIcon,
+  user: Users,
+  document: File,
+  training: GraduationCap,
+  permission: Shield,
+  role: Shield,
+  organization: Building,
+  property: Building,
+  default: Settings,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -75,7 +71,7 @@ export const PopularPermissions: React.FC<PopularPermissionsProps> = ({
     return (
       <div className={`bg-white border border-gray-200 rounded-lg ${className}`}>
         <div className="p-8 text-center">
-          <FireIcon className="h-12 w-12 text-gray-400 mx-auto" />
+          <Flame className="h-12 w-12 text-gray-400 mx-auto" />
           <h3 className="text-lg font-medium text-gray-900 mt-4">No popular permissions</h3>
           <p className="text-sm text-gray-600 mt-2">
             Popular permissions will appear here based on usage patterns
@@ -90,7 +86,7 @@ export const PopularPermissions: React.FC<PopularPermissionsProps> = ({
       {/* Header */}
       <div className="p-4 border-b border-gray-100 bg-orange-50">
         <div className="flex items-center space-x-2">
-          <FireSolidIcon className="h-5 w-5 text-orange-600" />
+          <Flame className="h-5 w-5 text-orange-600" />
           <h3 className="text-lg font-semibold text-orange-900">
             Popular Permissions
           </h3>
@@ -137,7 +133,7 @@ export const PopularPermissions: React.FC<PopularPermissionsProps> = ({
                       : 'border-gray-300'
                     }
                   `}>
-                    {isSelected && <CheckSolidIcon className="h-3 w-3" />}
+                    {isSelected && <Check className="h-3 w-3" />}
                   </div>
                 )}
 
@@ -160,7 +156,7 @@ export const PopularPermissions: React.FC<PopularPermissionsProps> = ({
                       {/* Popularity Flames */}
                       <div className="flex items-center space-x-0.5">
                         {Array.from({ length: 3 }, (_, i) => (
-                          <FireSolidIcon
+                          <Flame
                             key={i}
                             className={`h-3 w-3 ${
                               i < popularityInfo.flames 

@@ -13,13 +13,13 @@ import {
   Cell
 } from 'recharts';
 import {
-  CogIcon,
-  LightBulbIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  ArrowTrendingUpIcon,
-  ClockIcon
-} from '@heroicons/react/24/outline';
+  Settings as CogIcon,
+  Lightbulb as LightBulbIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  CheckCircle as CheckCircleIcon,
+  TrendingUp as ArrowTrendingUpIcon,
+  Clock as ClockIcon
+} from 'lucide-react';
 import { OptimizationRecommendation, DashboardFilters } from '../../types/roleStats';
 
 interface OptimizationPanelProps {

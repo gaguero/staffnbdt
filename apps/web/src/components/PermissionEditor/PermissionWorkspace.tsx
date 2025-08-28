@@ -1,23 +1,21 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  TrashIcon,
-  Squares2X2Icon,
-  ListBulletIcon,
-  Bars3Icon,
-  ArrowsUpDownIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  XMarkIcon,
-  EyeIcon,
-  LinkIcon,
-  ArrowPathIcon
-} from '@heroicons/react/24/outline';
+  Trash2 as TrashIcon,
+  Grid3x3 as Squares2X2Icon,
+  List as ListBulletIcon,
+  Menu as Bars3Icon,
+  ArrowUpDown as ArrowsUpDownIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  Info as InformationCircleIcon,
+  X as XMarkIcon,
+  Eye as EyeIcon,
+  Link as LinkIcon,
+} from 'lucide-react';
 
 import { 
   PermissionWorkspaceProps, 
   PermissionCard as PermissionCardType, 
-  PermissionCardSize,
-  DragDropState 
+ 
 } from '../../types/permissionEditor';
 import { Permission } from '../../types/permission';
 import PermissionCard from './PermissionCard';
@@ -58,7 +56,7 @@ const PermissionWorkspace: React.FC<PermissionWorkspaceProps> = ({
       .sort()
       .forEach(key => {
         sortedGroups[key] = groups[key].sort((a, b) => 
-          (a.permission.name || '').localeCompare(b.permission.name || '')
+          `${a.permission.resource}.${a.permission.action}`.localeCompare(`${b.permission.resource}.${b.permission.action}`)
         );
       });
 
@@ -159,8 +157,7 @@ const PermissionWorkspace: React.FC<PermissionWorkspaceProps> = ({
           <div className="flex items-start justify-between mb-2">
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-medium text-gray-900 truncate">
-                {permissionCard.permission.name || 
-                 `${permissionCard.permission.resource}.${permissionCard.permission.action}`}
+                {`${permissionCard.permission.resource}.${permissionCard.permission.action}`}
               </h4>
               <div className="flex items-center space-x-1 mt-1">
                 <span className="inline-block px-1.5 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
@@ -253,7 +250,7 @@ const PermissionWorkspace: React.FC<PermissionWorkspaceProps> = ({
                       const conflictPermission = permissions.find(p => p.permission.id === conflictId)?.permission;
                       return (
                         <div key={idx} className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
-                          {conflictPermission?.name || conflictId}
+                          {conflictPermission ? `${conflictPermission.resource}.${conflictPermission.action}.${conflictPermission.scope}` : conflictId}
                         </div>
                       );
                     })}
@@ -274,7 +271,7 @@ const PermissionWorkspace: React.FC<PermissionWorkspaceProps> = ({
                       const depPermission = permissions.find(p => p.permission.id === depId)?.permission;
                       return (
                         <div key={idx} className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                          {depPermission?.name || depId}
+                          {depPermission ? `${depPermission.resource}.${depPermission.action}.${depPermission.scope}` : depId}
                         </div>
                       );
                     })}

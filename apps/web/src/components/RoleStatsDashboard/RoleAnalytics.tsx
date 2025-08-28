@@ -17,12 +17,12 @@ import {
   AreaChart
 } from 'recharts';
 import {
-  ChartBarIcon,
-  UserGroupIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
-  EyeIcon
-} from '@heroicons/react/24/outline';
+  BarChart3 as ChartBarIcon,
+  Users as UserGroupIcon,
+  TrendingUp as TrendingUpIcon,
+  TrendingDown as TrendingDownIcon,
+  Eye as EyeIcon
+} from 'lucide-react';
 import { RoleUsageData, AssignmentTrendData, DashboardFilters } from '../../types/roleStats';
 
 interface RoleAnalyticsProps {

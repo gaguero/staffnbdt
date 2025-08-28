@@ -1,10 +1,10 @@
 import React from 'react';
 import {
-  ClockIcon,
-  XMarkIcon,
-  MagnifyingGlassIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline';
+  Clock,
+  X,
+  Search,
+  Trash,
+} from 'lucide-react';
 import { SearchHistory as SearchHistoryType } from '../../types/permissionSearch';
 
 interface SearchHistoryProps {
@@ -23,7 +23,7 @@ export const SearchHistory: React.FC<SearchHistoryProps> = ({
   if (history.length === 0) {
     return (
       <div className={`text-center py-8 ${className}`}>
-        <ClockIcon className="h-8 w-8 text-gray-400 mx-auto" />
+        <Clock className="h-8 w-8 text-gray-400 mx-auto" />
         <h3 className="text-sm font-medium text-gray-900 mt-2">No search history</h3>
         <p className="text-sm text-gray-500 mt-1">
           Your recent searches will appear here
@@ -50,7 +50,7 @@ export const SearchHistory: React.FC<SearchHistoryProps> = ({
     <div className={className}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-900 flex items-center">
-          <ClockIcon className="h-4 w-4 mr-2" />
+          <Clock className="h-4 w-4 mr-2" />
           Search History
         </h3>
         
@@ -59,7 +59,7 @@ export const SearchHistory: React.FC<SearchHistoryProps> = ({
           className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
           title="Clear all history"
         >
-          <TrashIcon className="h-3 w-3" />
+          <Trash className="h-3 w-3" />
           <span>Clear</span>
         </button>
       </div>
@@ -74,7 +74,7 @@ export const SearchHistory: React.FC<SearchHistoryProps> = ({
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2">
-                  <MagnifyingGlassIcon className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                  <Search className="h-3 w-3 text-gray-400 flex-shrink-0" />
                   <span className="text-sm text-gray-900 truncate font-medium">
                     {item.query}
                   </span>
@@ -99,7 +99,7 @@ export const SearchHistory: React.FC<SearchHistoryProps> = ({
               </div>
               
               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <XMarkIcon className="h-3 w-3 text-gray-400" />
+                <X className="h-3 w-3 text-gray-400" />
               </div>
             </div>
           </button>

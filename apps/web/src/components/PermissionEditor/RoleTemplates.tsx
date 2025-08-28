@@ -1,20 +1,16 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  SparklesIcon,
-  MagnifyingGlassIcon,
-  TagIcon,
-  UserGroupIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  StarIcon,
-  FunnelIcon,
-  PlusIcon,
-  EyeIcon
-} from '@heroicons/react/24/outline';
-import {
-  StarIcon as StarSolidIcon,
-  SparklesIcon as SparklesSolidIcon
-} from '@heroicons/react/24/solid';
+  Sparkles as SparklesIcon,
+  Search as MagnifyingGlassIcon,
+  Tag as TagIcon,
+  Users as UserGroupIcon,
+  Clock as ClockIcon,
+  CheckCircle as CheckCircleIcon,
+  Star as StarIcon,
+  Filter as FunnelIcon,
+  Plus as PlusIcon,
+  Eye as EyeIcon
+} from 'lucide-react';
 
 import { 
   PermissionTemplate, 

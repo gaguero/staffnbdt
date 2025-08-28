@@ -1,21 +1,19 @@
 import React, { useState, useCallback } from 'react';
 import {
-  EyeIcon,
-  XMarkIcon,
-  ExclamationTriangleIcon,
-  LinkIcon,
-  InformationCircleIcon,
-  ClockIcon,
-  TagIcon,
-  ArrowsUpDownIcon,
-  SparklesIcon
-} from '@heroicons/react/24/outline';
+  Eye as EyeIcon,
+  X as XMarkIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  Link as LinkIcon,
+  Info as InformationCircleIcon,
+  Clock as ClockIcon,
+  ArrowUpDown as ArrowsUpDownIcon,
+  Sparkles as SparklesIcon
+} from 'lucide-react';
 
 import { 
   PermissionCardProps, 
   PermissionCardSize 
 } from '../../types/permissionEditor';
-import { Permission } from '../../types/permission';
 
 // Resource icons mapping
 const RESOURCE_ICONS: Record<string, string> = {
@@ -132,8 +130,8 @@ const PermissionCard: React.FC<PermissionCardProps> = ({
 
   // Format permission name
   const getDisplayName = useCallback(() => {
-    return permission.name || `${permission.resource}.${permission.action}`;
-  }, [permission.name, permission.resource, permission.action]);
+    return `${permission.resource}.${permission.action}`;
+  }, [permission.resource, permission.action]);
 
   // Handle card click
   const handleCardClick = useCallback(() => {

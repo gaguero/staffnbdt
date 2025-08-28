@@ -1,14 +1,14 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  ListBulletIcon,
-  Squares2X2Icon,
-  Bars3Icon,
-  ArrowsPointingOutIcon,
-  ArrowsPointingInIcon,
-  AdjustmentsHorizontalIcon,
-} from '@heroicons/react/24/outline';
+  ChevronRight,
+  ChevronDown,
+  List,
+  Grid2X2,
+  Menu,
+  Maximize,
+  Minimize,
+  Settings,
+} from 'lucide-react';
 import { PermissionViewerProps } from '../../types/permissionViewer';
 import { usePermissionViewer } from '../../hooks/usePermissionViewer';
 import PermissionSearch from './PermissionSearch';
@@ -206,21 +206,21 @@ export const PermissionViewer: React.FC<PermissionViewerProps> = ({
                   className={`p-1 rounded ${currentView === 'tree' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'}`}
                   title="Tree View"
                 >
-                  <Bars3Icon className="h-4 w-4" />
+                  <Menu className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => {/* setCurrentView('list') */}}
                   className={`p-1 rounded ${currentView === 'list' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'}`}
                   title="List View"
                 >
-                  <ListBulletIcon className="h-4 w-4" />
+                  <List className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => {/* setCurrentView('cards') */}}
                   className={`p-1 rounded ${currentView === 'cards' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'}`}
                   title="Card View"
                 >
-                  <Squares2X2Icon className="h-4 w-4" />
+                  <Grid2X2 className="h-4 w-4" />
                 </button>
               </div>
 
@@ -231,14 +231,14 @@ export const PermissionViewer: React.FC<PermissionViewerProps> = ({
                   className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                   title="Expand All"
                 >
-                  <ArrowsPointingOutIcon className="h-4 w-4" />
+                  <Maximize className="h-4 w-4" />
                 </button>
                 <button
                   onClick={collapseAll}
                   className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                   title="Collapse All"
                 >
-                  <ArrowsPointingInIcon className="h-4 w-4" />
+                  <Minimize className="h-4 w-4" />
                 </button>
               </div>
 

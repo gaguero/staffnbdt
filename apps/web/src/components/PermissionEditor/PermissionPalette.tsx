@@ -1,21 +1,15 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  MagnifyingGlassIcon,
-  PlusCircleIcon,
-  StarIcon,
-  ClockIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  FunnelIcon,
-  SparklesIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon
-} from '@heroicons/react/24/outline';
-import {
-  StarIcon as StarSolidIcon,
-  ClockIcon as ClockSolidIcon,
-  SparklesIcon as SparklesSolidIcon
-} from '@heroicons/react/24/solid';
+  Search as MagnifyingGlassIcon,
+  PlusCircle as PlusCircleIcon,
+  Star as StarIcon,
+  Clock as ClockIcon,
+  ChevronDown as ChevronDownIcon,
+  ChevronRight as ChevronRightIcon,
+  Filter as FunnelIcon,
+  Sparkles as SparklesIcon,
+  Info as InformationCircleIcon
+} from 'lucide-react';
 
 import { 
   PermissionPaletteProps, 
@@ -23,7 +17,6 @@ import {
   PERMISSION_CATEGORIES 
 } from '../../types/permissionEditor';
 import { Permission } from '../../types/permission';
-import PermissionCard from './PermissionCard';
 
 const PermissionPalette: React.FC<PermissionPaletteProps> = ({
   permissions,
@@ -31,11 +24,8 @@ const PermissionPalette: React.FC<PermissionPaletteProps> = ({
   searchQuery,
   activeCategory,
   onPermissionSelect,
-  onCategoryChange,
-  onSearchChange,
   className = '',
   showCategories = true,
-  showSearch = true,
   showRecommendations = true
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
@@ -107,7 +97,7 @@ const PermissionPalette: React.FC<PermissionPaletteProps> = ({
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(permission =>
-        permission.name?.toLowerCase().includes(query) ||
+        `${permission.resource}.${permission.action}`.toLowerCase().includes(query) ||
         permission.description?.toLowerCase().includes(query) ||
         permission.resource?.toLowerCase().includes(query) ||
         permission.action?.toLowerCase().includes(query) ||
@@ -119,13 +109,13 @@ const PermissionPalette: React.FC<PermissionPaletteProps> = ({
     // Sort permissions
     switch (sortBy) {
       case 'name':
-        filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        filtered.sort((a, b) => `${a.resource}.${a.action}`.localeCompare(`${b.resource}.${b.action}`));
         break;
       case 'category':
         filtered.sort((a, b) => {
           const categoryCompare = (a.resource || '').localeCompare(b.resource || '');
           if (categoryCompare !== 0) return categoryCompare;
-          return (a.name || '').localeCompare(b.name || '');
+          return `${a.resource}.${a.action}`.localeCompare(`${b.resource}.${b.action}`);
         });
         break;
       case 'usage':
@@ -224,7 +214,7 @@ const PermissionPalette: React.FC<PermissionPaletteProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-1">
                     <span className="text-sm font-medium text-gray-900 truncate">
-                      {permission.name || `${permission.resource}.${permission.action}`}
+                      {`${permission.resource}.${permission.action}`}
                     </span>
                     {selectedPermissions.has(permission.id) && (
                       <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">
@@ -316,7 +306,7 @@ const PermissionPalette: React.FC<PermissionPaletteProps> = ({
                 {renderPermissionList(
                   category.permissions.filter(p => 
                     !searchQuery || 
-                    p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    `${p.resource}.${p.action}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     p.description?.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                 )}
@@ -371,7 +361,7 @@ const PermissionPalette: React.FC<PermissionPaletteProps> = ({
               }`}
             >
               {activeTab === 'recommended' ? (
-                <SparklesSolidIcon className="h-3 w-3" />
+                <SparklesIcon className="h-3 w-3" />
               ) : (
                 <SparklesIcon className="h-3 w-3" />
               )}
@@ -391,7 +381,7 @@ const PermissionPalette: React.FC<PermissionPaletteProps> = ({
             }`}
           >
             {activeTab === 'popular' ? (
-              <StarSolidIcon className="h-3 w-3" />
+              <StarIcon className="h-3 w-3" />
             ) : (
               <StarIcon className="h-3 w-3" />
             )}
@@ -407,7 +397,7 @@ const PermissionPalette: React.FC<PermissionPaletteProps> = ({
             }`}
           >
             {activeTab === 'recent' ? (
-              <ClockSolidIcon className="h-3 w-3" />
+              <ClockIcon className="h-3 w-3" />
             ) : (
               <ClockIcon className="h-3 w-3" />
             )}

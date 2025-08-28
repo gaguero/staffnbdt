@@ -1,21 +1,21 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  PlayIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  DocumentArrowDownIcon,
-  ClipboardDocumentCheckIcon,
-  UserIcon,
-  BuildingOfficeIcon,
-  CogIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
-  StarIcon,
-  ClockIcon,
-  BoltIcon
-} from '@heroicons/react/24/outline';
+  Play as PlayIcon,
+  CheckCircle as CheckCircleIcon,
+  XCircle as XCircleIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  Info as InformationCircleIcon,
+  Download as DocumentArrowDownIcon,
+  ClipboardCheck as ClipboardDocumentCheckIcon,
+  User as UserIcon,
+  Building2 as BuildingOfficeIcon,
+  Settings as CogIcon,
+  ChevronRight as ChevronRightIcon,
+  ChevronDown as ChevronDownIcon,
+  Star as StarIcon,
+  Clock as ClockIcon,
+  Zap as BoltIcon
+} from 'lucide-react';
 
 import { 
   PreviewPanelProps, 

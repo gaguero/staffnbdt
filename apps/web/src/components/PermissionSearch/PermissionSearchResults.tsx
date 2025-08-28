@@ -1,18 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import {
-  CheckIcon,
-  ShieldCheckIcon,
-  UserGroupIcon,
-  BuildingOfficeIcon,
-  DocumentTextIcon,
-  AcademicCapIcon,
-  CogIcon,
-  ExclamationCircleIcon,
-  MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
-import {
-  CheckIcon as CheckSolidIcon,
-} from '@heroicons/react/24/solid';
+  Check,
+  Shield,
+  Users,
+  Building,
+  File,
+  GraduationCap,
+  Settings,
+  AlertCircle,
+  Search,
+} from 'lucide-react';
 import { SearchResult, PermissionSearchIndex } from '../../types/permissionSearch';
 
 interface PermissionSearchResultsProps {
@@ -29,14 +26,14 @@ interface PermissionSearchResultsProps {
 }
 
 const RESOURCE_ICONS: Record<string, React.ComponentType<any>> = {
-  user: UserGroupIcon,
-  document: DocumentTextIcon,
-  training: AcademicCapIcon,
-  permission: ShieldCheckIcon,
-  role: ShieldCheckIcon,
-  organization: BuildingOfficeIcon,
-  property: BuildingOfficeIcon,
-  default: CogIcon,
+  user: Users,
+  document: File,
+  training: GraduationCap,
+  permission: Shield,
+  role: Shield,
+  organization: Building,
+  property: Building,
+  default: Settings,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -132,7 +129,7 @@ export const PermissionSearchResults: React.FC<PermissionSearchResultsProps> = (
                 : 'border-gray-300'
               }
             `}>
-              {isSelected && <CheckSolidIcon className="h-3 w-3" />}
+              {isSelected && <Check className="h-3 w-3" />}
             </div>
           )}
 
@@ -190,7 +187,7 @@ export const PermissionSearchResults: React.FC<PermissionSearchResultsProps> = (
               
               {permission.isConditional && (
                 <span className="inline-flex items-center text-xs text-amber-600">
-                  <ExclamationCircleIcon className="h-3 w-3 mr-1" />
+                  <AlertCircle className="h-3 w-3 mr-1" />
                   Conditional
                 </span>
               )}
@@ -231,7 +228,7 @@ export const PermissionSearchResults: React.FC<PermissionSearchResultsProps> = (
           >
             <div className="flex items-center space-x-3">
               <div className={`p-1.5 rounded bg-${categoryColor}-200 text-${categoryColor}-700`}>
-                <CogIcon className="h-4 w-4" />
+                <Settings className="h-4 w-4" />
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-900">{category}</h3>
@@ -274,7 +271,7 @@ export const PermissionSearchResults: React.FC<PermissionSearchResultsProps> = (
     return (
       <div className={`bg-white border border-gray-200 rounded-lg ${className}`} style={{ maxHeight }}>
         <div className="p-8 text-center">
-          <MagnifyingGlassIcon className="h-12 w-12 text-gray-400 mx-auto" />
+          <Search className="h-12 w-12 text-gray-400 mx-auto" />
           <h3 className="text-lg font-medium text-gray-900 mt-4">Search for permissions</h3>
           <p className="text-sm text-gray-600 mt-2">
             Start typing to search through available permissions
@@ -293,7 +290,7 @@ export const PermissionSearchResults: React.FC<PermissionSearchResultsProps> = (
     return (
       <div className={`bg-white border border-gray-200 rounded-lg ${className}`} style={{ maxHeight }}>
         <div className="p-8 text-center">
-          <ExclamationCircleIcon className="h-12 w-12 text-gray-400 mx-auto" />
+          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto" />
           <h3 className="text-lg font-medium text-gray-900 mt-4">No permissions found</h3>
           <p className="text-sm text-gray-600 mt-2">
             No permissions match your search for <strong>"{query}"</strong>

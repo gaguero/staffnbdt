@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { 
-  FunnelIcon, 
-  ChevronDownIcon,
-  XMarkIcon,
-  CheckIcon
-} from '@heroicons/react/24/outline';
+  Filter, 
+  ChevronDown,
+  X,
+  Check
+} from 'lucide-react';
 import { PermissionFiltersProps } from '../../types/permissionViewer';
 import { RESOURCE_ICONS, ACTION_ICONS, SCOPE_ICONS } from '../../types/permissionViewer';
 
@@ -100,7 +100,7 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
             </span>
           )}
         </div>
-        <ChevronDownIcon 
+        <ChevronDown 
           className={`h-4 w-4 transform transition-transform ${
             expandedSections[sectionKey] ? 'rotate-180' : ''
           }`} 
@@ -121,7 +121,7 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <span className="text-lg" title={option}>
-                {icons[option] || '📝'}
+                {icons[option as keyof typeof icons] || '📝'}
               </span>
               <span className="flex-1 text-gray-700 capitalize">{option}</span>
               <span className="text-xs text-gray-400">
@@ -152,14 +152,14 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
             : 'bg-white text-gray-700 hover:bg-gray-50'
         }`}
       >
-        <FunnelIcon className="h-4 w-4" />
+        <Filter className="h-4 w-4" />
         <span>Filters</span>
         {activeFilterCount > 0 && (
           <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
             {activeFilterCount}
           </span>
         )}
-        <ChevronDownIcon 
+        <ChevronDown 
           className={`h-4 w-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} 
         />
       </button>
@@ -183,7 +183,7 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
                 onClick={() => setShowFilters(false)}
                 className="p-1 hover:bg-gray-100 rounded"
               >
-                <XMarkIcon className="h-4 w-4 text-gray-500" />
+                <X className="h-4 w-4 text-gray-500" />
               </button>
             </div>
           </div>
@@ -222,7 +222,7 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
               className="flex items-center justify-between w-full text-left font-medium text-gray-900 hover:text-gray-700"
             >
               <span>Options</span>
-              <ChevronDownIcon 
+              <ChevronDown 
                 className={`h-4 w-4 transform transition-transform ${
                   expandedSections.options ? 'rotate-180' : ''
                 }`} 
@@ -264,13 +264,13 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
                     key={`resource-${resource}`}
                     className="inline-flex items-center space-x-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
                   >
-                    <span>{RESOURCE_ICONS[resource] || '📝'}</span>
+                    <span>{RESOURCE_ICONS[resource as keyof typeof RESOURCE_ICONS] || '📝'}</span>
                     <span>{resource}</span>
                     <button
                       onClick={() => handleMultiSelectChange('selectedResources', resource, false)}
                       className="hover:bg-blue-200 rounded-full p-0.5"
                     >
-                      <XMarkIcon className="h-3 w-3" />
+                      <X className="h-3 w-3" />
                     </button>
                   </span>
                 ))}
@@ -280,13 +280,13 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
                     key={`action-${action}`}
                     className="inline-flex items-center space-x-1 bg-green-100 text-green-800 text-xs px-2 py-1 rounded"
                   >
-                    <span>{ACTION_ICONS[action] || '⚡'}</span>
+                    <span>{ACTION_ICONS[action as keyof typeof ACTION_ICONS] || '⚡'}</span>
                     <span>{action}</span>
                     <button
                       onClick={() => handleMultiSelectChange('selectedActions', action, false)}
                       className="hover:bg-green-200 rounded-full p-0.5"
                     >
-                      <XMarkIcon className="h-3 w-3" />
+                      <X className="h-3 w-3" />
                     </button>
                   </span>
                 ))}
@@ -296,13 +296,13 @@ export const PermissionFilters: React.FC<PermissionFiltersProps> = ({
                     key={`scope-${scope}`}
                     className="inline-flex items-center space-x-1 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded"
                   >
-                    <span>{SCOPE_ICONS[scope] || '🔒'}</span>
+                    <span>{SCOPE_ICONS[scope as keyof typeof SCOPE_ICONS] || '🔒'}</span>
                     <span>{scope}</span>
                     <button
                       onClick={() => handleMultiSelectChange('selectedScopes', scope, false)}
                       className="hover:bg-purple-200 rounded-full p-0.5"
                     >
-                      <XMarkIcon className="h-3 w-3" />
+                      <X className="h-3 w-3" />
                     </button>
                   </span>
                 ))}

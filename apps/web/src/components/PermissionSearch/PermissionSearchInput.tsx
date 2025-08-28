@@ -1,9 +1,9 @@
 import React, { useRef, useEffect } from 'react';
 import {
-  MagnifyingGlassIcon,
-  XMarkIcon,
-  ExclamationTriangleIcon,
-} from '@heroicons/react/24/outline';
+  Search as MagnifyingGlassIcon,
+  X as XMarkIcon,
+  AlertTriangle as ExclamationTriangleIcon
+} from 'lucide-react';
 
 interface PermissionSearchInputProps {
   query: string;

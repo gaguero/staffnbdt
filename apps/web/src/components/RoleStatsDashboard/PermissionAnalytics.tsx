@@ -14,11 +14,11 @@ import {
   TreeMap
 } from 'recharts';
 import {
-  ShieldCheckIcon,
-  ExclamationCircleIcon,
-  CheckCircleIcon,
-  ClockIcon
-} from '@heroicons/react/24/outline';
+  Shield as ShieldCheckIcon,
+  AlertCircle as ExclamationCircleIcon,
+  CheckCircle as CheckCircleIcon,
+  Clock as ClockIcon
+} from 'lucide-react';
 import { PermissionUsageData, HeatmapData, DashboardFilters } from '../../types/roleStats';
 
 interface PermissionAnalyticsProps {

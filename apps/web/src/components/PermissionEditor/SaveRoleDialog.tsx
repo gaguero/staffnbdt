@@ -1,15 +1,15 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  XMarkIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  ClipboardDocumentCheckIcon,
-  DocumentDuplicateIcon,
-  SparklesIcon,
-  InformationCircleIcon,
-  UserGroupIcon,
-  TagIcon
-} from '@heroicons/react/24/outline';
+  X as XMarkIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  CheckCircle as CheckCircleIcon,
+  ClipboardCheck as ClipboardDocumentCheckIcon,
+  Copy as DocumentDuplicateIcon,
+  Sparkles as SparklesIcon,
+  Info as InformationCircleIcon,
+  Users as UserGroupIcon,
+  Tag as TagIcon
+} from 'lucide-react';
 
 import { 
   SaveRoleDialogProps, 

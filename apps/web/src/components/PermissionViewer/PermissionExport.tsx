@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-  ArrowDownTrayIcon,
-  DocumentTextIcon,
-  TableCellsIcon,
-  CodeBracketIcon,
-  DocumentIcon,
-  CheckIcon,
-} from '@heroicons/react/24/outline';
+  Download,
+  FileText,
+  Table,
+  Code,
+  File,
+  Check,
+} from 'lucide-react';
 import { PermissionExportProps, PermissionExportOptions } from '../../types/permissionViewer';
 
 export const PermissionExport: React.FC<PermissionExportProps> = ({
@@ -30,28 +30,28 @@ export const PermissionExport: React.FC<PermissionExportProps> = ({
       value: 'json' as const,
       label: 'JSON',
       description: 'JavaScript Object Notation - structured data format',
-      icon: CodeBracketIcon,
+      icon: Code,
       extension: '.json',
     },
     {
       value: 'csv' as const,
       label: 'CSV',
       description: 'Comma-Separated Values - spreadsheet compatible',
-      icon: TableCellsIcon,
+      icon: Table,
       extension: '.csv',
     },
     {
       value: 'yaml' as const,
       label: 'YAML',
       description: 'YAML Ain\'t Markup Language - human-readable format',
-      icon: DocumentTextIcon,
+      icon: FileText,
       extension: '.yaml',
     },
     {
       value: 'markdown' as const,
       label: 'Markdown',
       description: 'Markdown format - documentation friendly',
-      icon: DocumentIcon,
+      icon: File,
       extension: '.md',
     },
   ];
@@ -88,7 +88,7 @@ export const PermissionExport: React.FC<PermissionExportProps> = ({
         disabled={permissions.length === 0}
         className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        <ArrowDownTrayIcon className="h-4 w-4" />
+        <Download className="h-4 w-4" />
         <span>Export</span>
         {permissions.length > 0 && (
           <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
@@ -149,7 +149,7 @@ export const PermissionExport: React.FC<PermissionExportProps> = ({
                                 <div className="text-xs text-gray-500 mt-1">{format.description}</div>
                               </div>
                               {exportOptions.format === format.value && (
-                                <CheckIcon className="h-4 w-4 text-blue-600" />
+                                <Check className="h-4 w-4 text-blue-600" />
                               )}
                             </div>
                           </button>
@@ -270,7 +270,7 @@ export const PermissionExport: React.FC<PermissionExportProps> = ({
                     </>
                   ) : (
                     <>
-                      <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                      <Download className="h-4 w-4 mr-2" />
                       Export {getExportCount()} Permissions
                     </>
                   )}

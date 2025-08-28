@@ -1,11 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import {
-  FunnelIcon,
-  XMarkIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  AdjustmentsHorizontalIcon,
-} from '@heroicons/react/24/outline';
+  Filter,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Settings,
+} from 'lucide-react';
 import { SearchFilters, PERMISSION_CATEGORIES } from '../../types/permissionSearch';
 
 interface PermissionSearchFiltersProps {
@@ -78,7 +78,7 @@ export const PermissionSearchFilters: React.FC<PermissionSearchFiltersProps> = (
       <div className={`bg-white border border-gray-200 rounded-lg p-4 ${className}`}>
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-medium text-gray-900 flex items-center">
-            <FunnelIcon className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4 mr-2" />
             Filters
             {hasActiveFilters && (
               <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -152,7 +152,7 @@ export const PermissionSearchFilters: React.FC<PermissionSearchFiltersProps> = (
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-gray-900 flex items-center">
-            <AdjustmentsHorizontalIcon className="h-5 w-5 mr-2" />
+            <Settings className="h-5 w-5 mr-2" />
             Advanced Filters
             {hasActiveFilters && (
               <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
@@ -171,7 +171,7 @@ export const PermissionSearchFilters: React.FC<PermissionSearchFiltersProps> = (
               onClick={onReset}
               className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
             >
-              <XMarkIcon className="h-4 w-4" />
+              <X className="h-4 w-4" />
               <span>Reset All</span>
             </button>
           )}
@@ -187,9 +187,9 @@ export const PermissionSearchFilters: React.FC<PermissionSearchFiltersProps> = (
           >
             <h4 className="text-sm font-medium text-gray-900">Basic Filters</h4>
             {expandedSections.has('basic') ? (
-              <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+              <ChevronUp className="h-4 w-4 text-gray-500" />
             ) : (
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
 
@@ -280,9 +280,9 @@ export const PermissionSearchFilters: React.FC<PermissionSearchFiltersProps> = (
               )}
             </h4>
             {expandedSections.has('categories') ? (
-              <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+              <ChevronUp className="h-4 w-4 text-gray-500" />
             ) : (
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
 
@@ -323,9 +323,9 @@ export const PermissionSearchFilters: React.FC<PermissionSearchFiltersProps> = (
           >
             <h4 className="text-sm font-medium text-gray-900">Advanced Options</h4>
             {expandedSections.has('advanced') ? (
-              <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+              <ChevronUp className="h-4 w-4 text-gray-500" />
             ) : (
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
 

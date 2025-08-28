@@ -1,28 +1,20 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  MagnifyingGlassIcon,
-  XMarkIcon,
-  FunnelIcon,
-  BookmarkIcon,
-  ClockIcon,
-  FireIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  CheckIcon,
-  DocumentArrowDownIcon,
-  ClipboardDocumentIcon,
-  AdjustmentsHorizontalIcon,
-} from '@heroicons/react/24/outline';
-import {
-  MagnifyingGlassIcon as MagnifyingGlassSolidIcon,
-  BookmarkIcon as BookmarkSolidIcon,
-  FireIcon as FireSolidIcon,
-} from '@heroicons/react/24/solid';
+  Search as MagnifyingGlassIcon,
+  Filter as FunnelIcon,
+  Bookmark as BookmarkIcon,
+  Clock as ClockIcon,
+  Flame as FireIcon,
+  ChevronDown as ChevronDownIcon,
+  ChevronUp as ChevronUpIcon,
+  Download as DocumentArrowDownIcon,
+  FileText as ClipboardDocumentIcon,
+  Settings as AdjustmentsHorizontalIcon
+} from 'lucide-react';
 
 import {
   PermissionSearchProps,
   PermissionSearchIndex,
-  SearchResult,
   PERMISSION_CATEGORIES,
 } from '../../types/permissionSearch';
 import { usePermissionSearch } from '../../hooks/usePermissionSearch';

@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
 import {
-  BookmarkIcon,
-  PlusIcon,
-  XMarkIcon,
-  TrashIcon,
-  MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
-import {
-  BookmarkIcon as BookmarkSolidIcon,
-} from '@heroicons/react/24/solid';
+  Bookmark,
+  Plus,
+  X,
+  Trash,
+  Search,
+} from 'lucide-react';
 import { SavedSearch, SearchFilters } from '../../types/permissionSearch';
 
 interface SavedSearchesProps {
@@ -66,7 +63,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
     <div className={className}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-900 flex items-center">
-          <BookmarkIcon className="h-4 w-4 mr-2" />
+          <Bookmark className="h-4 w-4 mr-2" />
           Saved Searches
         </h3>
         
@@ -76,7 +73,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
             className="flex items-center space-x-1 px-2 py-1 text-xs text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
             title="Save current search"
           >
-            <PlusIcon className="h-3 w-3" />
+            <Plus className="h-3 w-3" />
             <span>Save Current</span>
           </button>
         )}
@@ -160,7 +157,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
       {/* Saved Searches List */}
       {savedSearches.length === 0 ? (
         <div className="text-center py-8">
-          <BookmarkIcon className="h-8 w-8 text-gray-400 mx-auto" />
+          <Bookmark className="h-8 w-8 text-gray-400 mx-auto" />
           <h3 className="text-sm font-medium text-gray-900 mt-2">No saved searches</h3>
           <p className="text-sm text-gray-500 mt-1">
             Save frequently used searches for quick access
@@ -198,7 +195,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
                     className="flex-1 text-left"
                   >
                     <div className="flex items-center space-x-2">
-                      <BookmarkSolidIcon className="h-3 w-3 text-green-600 flex-shrink-0" />
+                      <Bookmark className="h-3 w-3 text-green-600 flex-shrink-0" />
                       <h4 className="text-sm font-medium text-gray-900 truncate">
                         {search.name}
                       </h4>
@@ -212,7 +209,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
                     
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center space-x-2">
-                        <MagnifyingGlassIcon className="h-3 w-3 text-gray-400" />
+                        <Search className="h-3 w-3 text-gray-400" />
                         <code className="text-xs bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded truncate max-w-48">
                           {search.query || '(no query)'}
                         </code>
@@ -246,7 +243,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
                     className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-600 transition-all"
                     title="Delete saved search"
                   >
-                    <TrashIcon className="h-3 w-3" />
+                    <Trash className="h-3 w-3" />
                   </button>
                 </div>
               );

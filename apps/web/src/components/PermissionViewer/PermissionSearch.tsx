@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Search, X } from 'lucide-react';
 import { PermissionSearchProps } from '../../types/permissionViewer';
 
 export const PermissionSearch: React.FC<PermissionSearchProps> = ({
@@ -100,7 +100,7 @@ export const PermissionSearch: React.FC<PermissionSearchProps> = ({
     <div className={`relative ${className}`}>
       <div className="relative">
         {/* Search Icon */}
-        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         
         {/* Search Input */}
         <input
@@ -128,7 +128,7 @@ export const PermissionSearch: React.FC<PermissionSearchProps> = ({
             className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
             title="Clear search"
           >
-            <XMarkIcon className="h-3 w-3 text-gray-400 hover:text-gray-600" />
+            <X className="h-3 w-3 text-gray-400 hover:text-gray-600" />
           </button>
         )}
       </div>
@@ -148,7 +148,7 @@ export const PermissionSearch: React.FC<PermissionSearchProps> = ({
               }`}
             >
               <div className="flex items-center space-x-2">
-                <MagnifyingGlassIcon className="h-3 w-3 text-gray-400" />
+                <Search className="h-3 w-3 text-gray-400" />
                 <span>{suggestion}</span>
               </div>
             </button>

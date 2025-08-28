@@ -1,18 +1,14 @@
 import React from 'react';
 import {
-  ClockIcon,
-  CheckIcon,
-  UserGroupIcon,
-  DocumentTextIcon,
-  AcademicCapIcon,
-  ShieldCheckIcon,
-  CogIcon,
-  BuildingOfficeIcon,
-} from '@heroicons/react/24/outline';
-import {
-  ClockIcon as ClockSolidIcon,
-  CheckIcon as CheckSolidIcon,
-} from '@heroicons/react/24/solid';
+  Clock,
+  Check,
+  Users,
+  File,
+  GraduationCap,
+  Shield,
+  Settings,
+  Building,
+} from 'lucide-react';
 import { PermissionSearchIndex } from '../../types/permissionSearch';
 
 interface RecentPermissionsProps {
@@ -25,14 +21,14 @@ interface RecentPermissionsProps {
 }
 
 const RESOURCE_ICONS: Record<string, React.ComponentType<any>> = {
-  user: UserGroupIcon,
-  document: DocumentTextIcon,
-  training: AcademicCapIcon,
-  permission: ShieldCheckIcon,
-  role: ShieldCheckIcon,
-  organization: BuildingOfficeIcon,
-  property: BuildingOfficeIcon,
-  default: CogIcon,
+  user: Users,
+  document: File,
+  training: GraduationCap,
+  permission: Shield,
+  role: Shield,
+  organization: Building,
+  property: Building,
+  default: Settings,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -89,7 +85,7 @@ export const RecentPermissions: React.FC<RecentPermissionsProps> = ({
     return (
       <div className={`bg-white border border-gray-200 rounded-lg ${className}`}>
         <div className="p-8 text-center">
-          <ClockIcon className="h-12 w-12 text-gray-400 mx-auto" />
+          <Clock className="h-12 w-12 text-gray-400 mx-auto" />
           <h3 className="text-lg font-medium text-gray-900 mt-4">No recent permissions</h3>
           <p className="text-sm text-gray-600 mt-2">
             Recently accessed permissions will appear here
@@ -104,7 +100,7 @@ export const RecentPermissions: React.FC<RecentPermissionsProps> = ({
       {/* Header */}
       <div className="p-4 border-b border-gray-100 bg-green-50">
         <div className="flex items-center space-x-2">
-          <ClockSolidIcon className="h-5 w-5 text-green-600" />
+          <Clock className="h-5 w-5 text-green-600" />
           <h3 className="text-lg font-semibold text-green-900">
             Recent Permissions
           </h3>
@@ -160,7 +156,7 @@ export const RecentPermissions: React.FC<RecentPermissionsProps> = ({
                       : 'border-gray-300'
                     }
                   `}>
-                    {isSelected && <CheckSolidIcon className="h-3 w-3" />}
+                    {isSelected && <Check className="h-3 w-3" />}
                   </div>
                 )}
 

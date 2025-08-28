@@ -1,14 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
-  InformationCircleIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  TagIcon,
-  SwatchIcon,
-  AdjustmentsHorizontalIcon,
-  ExclamationTriangleIcon,
-  UserGroupIcon
-} from '@heroicons/react/24/outline';
+  Info as InformationCircleIcon,
+  ChevronDown as ChevronDownIcon,
+  ChevronUp as ChevronUpIcon,
+  Tag as TagIcon,
+  Palette as SwatchIcon,
+  Settings as AdjustmentsHorizontalIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  Users as UserGroupIcon
+} from 'lucide-react';
 
 import { 
   RoleMetadataEditorProps, 

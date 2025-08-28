@@ -1,13 +1,13 @@
 import React from 'react';
 import {
-  ChartBarIcon,
-  UserGroupIcon,
-  ShieldCheckIcon,
-  ExclamationTriangleIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
-  CheckCircleIcon
-} from '@heroicons/react/24/outline';
+  BarChart3 as ChartBarIcon,
+  Users as UserGroupIcon,
+  Shield as ShieldCheckIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  TrendingUp as TrendingUpIcon,
+  TrendingDown as TrendingDownIcon,
+  CheckCircle as CheckCircleIcon
+} from 'lucide-react';
 import { AnalyticsMetrics, DashboardFilters } from '../../types/roleStats';
 
 interface ExecutiveSummaryProps {

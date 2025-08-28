@@ -1,17 +1,17 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  CheckCircleIcon,
-  XMarkIcon,
-  WrenchScrewdriverIcon,
-  LightBulbIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  ArrowPathIcon,
-  ShieldExclamationIcon,
-  BoltIcon
-} from '@heroicons/react/24/outline';
+  AlertTriangle as ExclamationTriangleIcon,
+  Info as InformationCircleIcon,
+  CheckCircle as CheckCircleIcon,
+  X as XMarkIcon,
+  Wrench as WrenchScrewdriverIcon,
+  Lightbulb as LightBulbIcon,
+  ChevronDown as ChevronDownIcon,
+  ChevronRight as ChevronRightIcon,
+  RotateCcw as ArrowPathIcon,
+  ShieldAlert as ShieldExclamationIcon,
+  Zap as BoltIcon
+} from 'lucide-react';
 
 import { 
   ValidationPanelProps, 
