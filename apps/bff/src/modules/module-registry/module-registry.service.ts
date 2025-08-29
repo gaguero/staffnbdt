@@ -85,8 +85,8 @@ export class ModuleRegistryService {
           description: manifest.description,
           internalPermissions: internalPermissions,
           externalPermissions: externalPermissions,
-          internalNavigation: manifest.internalNavigation,
-          externalNavigation: manifest.externalNavigation,
+          internalNavigation: manifest.internalNavigation as any,
+          externalNavigation: manifest.externalNavigation as any,
           dependencies: manifest.dependencies || [],
           isSystemModule: manifest.isSystemModule || false,
           isActive: true,
@@ -97,8 +97,8 @@ export class ModuleRegistryService {
           description: manifest.description,
           internalPermissions: internalPermissions,
           externalPermissions: externalPermissions,
-          internalNavigation: manifest.internalNavigation,
-          externalNavigation: manifest.externalNavigation,
+          internalNavigation: manifest.internalNavigation as any,
+          externalNavigation: manifest.externalNavigation as any,
           dependencies: manifest.dependencies || [],
         },
       });
@@ -355,7 +355,7 @@ export class ModuleRegistryService {
 
       // Convert stored permissions to Permission objects
       if (Array.isArray(permissionsData)) {
-        return permissionsData as Permission[];
+        return permissionsData as unknown as Permission[];
       }
 
       return [];

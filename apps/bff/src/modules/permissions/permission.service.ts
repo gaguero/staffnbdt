@@ -991,9 +991,12 @@ export class PermissionService implements OnModuleInit {
       select: {
         id: true,
         role: true,
+        userType: true,
         organizationId: true,
         propertyId: true,
         departmentId: true,
+        externalOrganization: true,
+        accessPortal: true,
         userCustomRoles: {
           where: { isActive: true },
           include: {
@@ -1073,8 +1076,8 @@ export class PermissionService implements OnModuleInit {
         if (!manifest) continue;
         
         const modulePermissions = userType === UserType.INTERNAL 
-          ? manifest.internalPermissions as Permission[]
-          : manifest.externalPermissions as Permission[];
+          ? manifest.internalPermissions as unknown as Permission[]
+          : manifest.externalPermissions as unknown as Permission[];
           
         if (Array.isArray(modulePermissions)) {
           permissions.push(...modulePermissions);
@@ -1139,8 +1142,8 @@ export class PermissionService implements OnModuleInit {
       }
       
       const permissions = userType === UserType.INTERNAL
-        ? manifest.internalPermissions as Permission[]
-        : manifest.externalPermissions as Permission[];
+        ? manifest.internalPermissions as unknown as Permission[]
+        : manifest.externalPermissions as unknown as Permission[];
         
       return Array.isArray(permissions) ? permissions : [];
     } catch (error) {

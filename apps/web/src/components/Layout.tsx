@@ -8,7 +8,6 @@ import { Toaster } from 'react-hot-toast';
 import PropertySelector from './PropertySelector';
 import Breadcrumb from './Breadcrumb';
 import DynamicNavigation from './DynamicNavigation';
-import { isInternalUser } from '../types/auth';
 
 interface LayoutProps {
   children: React.ReactNode;

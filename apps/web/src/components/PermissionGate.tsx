@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, ReactNode } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import { useModules } from '../hooks/useModules';
 import {
   PermissionSpec,
   PermissionContext,
@@ -103,6 +104,7 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
 }) => {
   const { isAuthenticated, user } = useAuth();
   const { hasPermission, hasAnyPermission, hasAllPermissions, isLoading, error } = usePermissions();
+  const { isLoadingModules } = useModules();
 
   // Memoize permissions to check for optimization
   const permissionsToCheck = useMemo((): PermissionSpec[] => {
@@ -187,9 +189,6 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
-    hasUserTypeAccess,
-    hasRoleAccess,
-    isModuleEnabled,
     debug,
   ]);
 

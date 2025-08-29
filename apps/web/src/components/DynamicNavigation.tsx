@@ -66,7 +66,6 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
 const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemClick }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const location = useLocation();
   const { hasPermission } = usePermissions();
   
   const { navigationItems, isLoading, error } = useModuleNavigation(userType);

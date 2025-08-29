@@ -1799,6 +1799,27 @@ export class RolesService {
   }
 
   /**
+   * Find a role by ID
+   */
+  async findRoleById(roleId: string): Promise<CustomRole | null> {
+    try {
+      return await this.prisma.customRole.findUnique({
+        where: { id: roleId },
+        include: {
+          permissions: {
+            include: {
+              permission: true
+            }
+          }
+        }
+      });
+    } catch (error) {
+      this.logger.error(`Error finding role by ID ${roleId}: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
    * Clone a role with modifications
    */
   async cloneRoleWithOptions(roleId: string, options: CloneRoleOptionsDto, clonedBy: string): Promise<CustomRole> {

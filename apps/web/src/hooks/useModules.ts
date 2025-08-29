@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { moduleRegistryService, ModuleManifest, NavItem, PermissionDefinition } from '../services/moduleRegistryService';
+import { moduleRegistryService } from '../services/moduleRegistryService';
 import { UserType } from '@prisma/client';
 import { usePermissions } from './usePermissions';
 import { useMemo } from 'react';

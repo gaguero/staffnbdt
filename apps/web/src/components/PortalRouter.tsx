@@ -155,7 +155,8 @@ const PortalRouter: React.FC = () => {
   if (isInternalUser(user)) {
     return <InternalPortal />;
   } else if (isExternalUser(user)) {
-    switch (user.userType) {
+    const userType = user.userType || 'CLIENT';
+    switch (userType) {
       case 'CLIENT':
         return <ClientPortal />;
       case 'VENDOR':

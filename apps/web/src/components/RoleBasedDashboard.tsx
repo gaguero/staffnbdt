@@ -3,8 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useModules } from '../hooks/useModules';
 import { usePermissions } from '../hooks/usePermissions';
 import { useLanguage } from '../contexts/LanguageContext';
-import { isInternalUser, isExternalUser } from '../types/auth';
-import { UserType } from '@prisma/client';
+import { isInternalUser, isExternalUser, UserType } from '../types/auth';
 import LoadingSpinner from './LoadingSpinner';
 
 interface DashboardWidget {
@@ -140,7 +139,8 @@ const RoleBasedDashboard: React.FC = () => {
       }
     } else if (isExternalUser(user)) {
       // External user widgets
-      if (user.userType === 'CLIENT') {
+      const userType = user.userType || 'CLIENT';
+      if (userType === 'CLIENT') {
         widgets.push(
           {
             id: 'reservations',
@@ -161,7 +161,7 @@ const RoleBasedDashboard: React.FC = () => {
             userTypes: ['CLIENT'],
           }
         );
-      } else if (user.userType === 'VENDOR') {
+      } else if (userType === 'VENDOR') {
         widgets.push(
           {
             id: 'vendor-orders',
@@ -182,7 +182,7 @@ const RoleBasedDashboard: React.FC = () => {
             userTypes: ['VENDOR'],
           }
         );
-      } else if (user.userType === 'PARTNER') {
+      } else if (userType === 'PARTNER') {
         widgets.push(
           {
             id: 'partner-properties',
@@ -218,7 +218,8 @@ const RoleBasedDashboard: React.FC = () => {
     enabledModules.forEach(module => {
       // Extract dashboard widgets from module configuration
       // This would typically be defined in the module manifest
-      const dashboardConfig = user.userType === 'INTERNAL' 
+      const userType = user.userType || (isInternalUser(user) ? 'INTERNAL' : 'CLIENT');
+      const dashboardConfig = userType === 'INTERNAL' 
         ? (module as any).internalDashboard 
         : (module as any).externalDashboard;
 
@@ -238,7 +239,8 @@ const RoleBasedDashboard: React.FC = () => {
 
     return allWidgets.filter(widget => {
       // Check user type compatibility
-      if (!widget.userTypes.includes(user.userType)) {
+      const userType = user.userType || (isInternalUser(user) ? 'INTERNAL' : 'CLIENT');
+      if (!widget.userTypes.includes(userType)) {
         return false;
       }
 
@@ -311,8 +313,8 @@ const RoleBasedDashboard: React.FC = () => {
         </h1>
         <p className="text-gray-600">
           {isInternalUser(user) 
-            ? t('dashboard.internalWelcome', { role: user.role.replace('_', ' ') })
-            : t('dashboard.externalWelcome', { type: user.userType.toLowerCase() })
+            ? t('dashboard.internalWelcome', { role: user.role?.replace('_', ' ') || 'User' })
+            : t('dashboard.externalWelcome', { type: (user.userType || 'Client').toLowerCase() })
           }
         </p>
       </div>
@@ -387,7 +389,7 @@ const DashboardWidget: React.FC<{ widget: DashboardWidget }> = ({ widget }) => {
       {/* Placeholder for actual widget component */}
       <div className="bg-gray-50 rounded p-4 text-center text-gray-500 text-sm">
         <div className="text-2xl mb-2">⚡</div>
-        {t('dashboard.widgetPlaceholder', { component: widget.component })}
+        {t('dashboard.widgetPlaceholder') || `Loading ${widget.component}...`}
       </div>
     </div>
   );
