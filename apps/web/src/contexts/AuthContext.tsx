@@ -3,6 +3,7 @@ import api from '../services/api';
 import { TOKEN_STORAGE_KEY, USER_STORAGE_KEY, TENANT_STORAGE_KEY } from '../utils/constants';
 import permissionService from '../services/permissionService';
 import { Permission, UserPermissionSummary } from '../types/permission';
+import { UserType } from '@prisma/client';
 
 interface Organization {
   id: string;
@@ -37,12 +38,17 @@ interface User {
   firstName: string;
   lastName: string;
   role: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF';
+  userType: UserType;
   departmentId?: string;
   profilePhoto?: string;
   phoneNumber?: string;
   organizationId?: string;
   propertyId?: string;
   properties?: Property[];
+  // External user specific fields
+  externalOrganizationId?: string;
+  accessPortal?: string;
+  externalReference?: string;
 }
 
 interface AuthContextType {

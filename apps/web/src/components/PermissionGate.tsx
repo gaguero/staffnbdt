@@ -187,6 +187,9 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
+    hasUserTypeAccess,
+    hasRoleAccess,
+    isModuleEnabled,
     debug,
   ]);
 
@@ -200,7 +203,7 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
 
   // Loading state with conservative fallback
   // In optimized version, we prefer to show nothing or cached data rather than loading states
-  if (isLoading && showLoading && permissionsToCheck.length > 0) {
+  if ((isLoading || isLoadingModules) && showLoading && permissionsToCheck.length > 0) {
     // For critical permissions, show loading; for UI elements, hide during loading
     const showLoadingState = permissionsToCheck.some(p => 
       ['create', 'delete', 'admin'].includes(p.action || '')

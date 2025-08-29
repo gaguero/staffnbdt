@@ -7,6 +7,9 @@ export enum UserRole {
   STAFF = 'STAFF',                             // Regular employees
 }
 
+// Re-export auth types
+export * from './auth';
+
 export type date = Date | string;
 
 export interface User {
@@ -158,3 +161,10 @@ export { SYSTEM_ROLES, ROLE_HIERARCHY, isSystemRole, getSystemRoleInfo, getRoleL
 
 // Re-export role history types
 export * from './roleHistory';
+
+// Re-export module registry types
+export type {
+  ModuleManifest,
+  PermissionDefinition as ModulePermissionDefinition,
+  NavItem as ModuleNavItem,
+} from '../services/moduleRegistryService';
