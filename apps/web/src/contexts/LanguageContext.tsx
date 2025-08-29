@@ -33,6 +33,28 @@ const translations = {
     
     // Admin
     'nav.roles': 'Roles',
+    'nav.roleStats': 'Role Statistics',
+    
+    // External Users
+    'nav.myReservations': 'My Reservations',
+    'nav.serviceRequests': 'Service Requests',
+    'nav.orders': 'Orders',
+    'nav.invoices': 'Invoices',
+    'nav.analytics': 'Analytics',
+    'nav.integration': 'Integration',
+    
+    // Common Navigation
+    'nav.errorLoading': 'Error loading navigation',
+    
+    // Navigation Categories
+    'nav.hr': 'HR Tools',
+    'nav.admin': 'Administration',
+    'nav.hotel': 'Hotel Operations',
+    'nav.services': 'Employee Services',
+    'nav.reports': 'Reports & Analytics',
+    'nav.guest': 'Guest Services',
+    'nav.vendor': 'Vendor Tools',
+    'nav.partner': 'Partner Portal',
     
     // Dashboard
     'dashboard.welcome': 'Welcome',
@@ -200,6 +222,28 @@ const translations = {
     
     // Admin
     'nav.roles': 'Roles',
+    'nav.roleStats': 'Estadísticas de Roles',
+    
+    // External Users
+    'nav.myReservations': 'Mis Reservaciones',
+    'nav.serviceRequests': 'Solicitudes de Servicio',
+    'nav.orders': 'Órdenes',
+    'nav.invoices': 'Facturas',
+    'nav.analytics': 'Analíticas',
+    'nav.integration': 'Integración',
+    
+    // Common Navigation
+    'nav.errorLoading': 'Error cargando navegación',
+    
+    // Navigation Categories
+    'nav.hr': 'Herramientas de RH',
+    'nav.admin': 'Administración',
+    'nav.hotel': 'Operaciones Hoteleras',
+    'nav.services': 'Servicios para Empleados',
+    'nav.reports': 'Reportes y Analíticas',
+    'nav.guest': 'Servicios para Huéspedes',
+    'nav.vendor': 'Herramientas de Proveedores',
+    'nav.partner': 'Portal de Socios',
     
     // Dashboard
     'dashboard.welcome': 'Bienvenido',

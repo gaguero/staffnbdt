@@ -19,10 +19,11 @@ interface DynamicNavigationProps {
   onItemClick?: () => void;
 }
 
-// Default navigation sections for different user types
+// Enhanced navigation sections for different user types with role-based visibility
 const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
   const dashboardSection: NavigationSection = {
     title: 'Dashboard',
+    category: 'dashboard',
     items: [
       {
         id: 'dashboard',
@@ -30,12 +31,26 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
         path: '/dashboard',
         icon: '📊',
         requiredPermissions: [],
-      },
+      }
+    ]
+  };
+
+  const profileSection: NavigationSection = {
+    title: 'Profile Management',
+    category: 'profile',
+    items: [
       {
         id: 'profile',
         label: 'nav.profile',
         path: '/profile',
         icon: '👤',
+        requiredPermissions: [],
+      },
+      {
+        id: 'notifications',
+        label: 'nav.notifications',
+        path: '/notifications',
+        icon: '🔔',
         requiredPermissions: [],
       }
     ]
@@ -44,14 +59,219 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
   if (userType === UserType.INTERNAL) {
     return [
       dashboardSection,
+      profileSection,
       {
-        title: 'System',
+        title: 'HR Tools',
+        category: 'hr',
         items: [
           {
-            id: 'notifications',
-            label: 'nav.notifications',
-            path: '/notifications',
-            icon: '🔔',
+            id: 'users',
+            label: 'nav.users',
+            path: '/users',
+            icon: '👥',
+            requiredPermissions: ['user.read.department'],
+          },
+          {
+            id: 'payroll',
+            label: 'nav.payroll',
+            path: '/payroll',
+            icon: '💰',
+            requiredPermissions: ['payroll.read.own'],
+          },
+          {
+            id: 'vacation',
+            label: 'nav.vacation',
+            path: '/vacation',
+            icon: '🏖️',
+            requiredPermissions: ['vacation.read.own'],
+          },
+          {
+            id: 'training',
+            label: 'nav.training',
+            path: '/training',
+            icon: '🎓',
+            requiredPermissions: [],
+          }
+        ]
+      },
+      {
+        title: 'Administrative Tools',
+        category: 'admin',
+        items: [
+          {
+            id: 'departments',
+            label: 'nav.departments',
+            path: '/departments',
+            icon: '🏢',
+            requiredPermissions: ['system.manage.departments'],
+          },
+          {
+            id: 'organizations',
+            label: 'nav.organizations',
+            path: '/organizations',
+            icon: '🏛️',
+            requiredPermissions: ['system.manage.organizations'],
+          },
+          {
+            id: 'properties',
+            label: 'nav.properties',
+            path: '/properties',
+            icon: '🏨',
+            requiredPermissions: ['system.manage.properties'],
+          },
+          {
+            id: 'roles',
+            label: 'nav.roles',
+            path: '/admin/roles',
+            icon: '🔐',
+            requiredPermissions: ['system.manage.roles'],
+          },
+          {
+            id: 'brand-studio',
+            label: 'nav.brandStudio',
+            path: '/brand-studio',
+            icon: '🎨',
+            requiredPermissions: ['system.manage.organizations'],
+          }
+        ]
+      },
+      {
+        title: 'Hotel Operations',
+        category: 'hotel',
+        items: [
+          {
+            id: 'rooms',
+            label: 'nav.rooms',
+            path: '/hotel/rooms',
+            icon: '🛏️',
+            requiredPermissions: ['user.read.department'],
+          },
+          {
+            id: 'guests',
+            label: 'nav.guests',
+            path: '/hotel/guests',
+            icon: '👨‍👩‍👧‍👦',
+            requiredPermissions: ['user.read.department'],
+          },
+          {
+            id: 'reservations',
+            label: 'nav.reservations',
+            path: '/hotel/reservations',
+            icon: '📅',
+            requiredPermissions: ['user.read.department'],
+          }
+        ]
+      },
+      {
+        title: 'Employee Services',
+        category: 'services',
+        items: [
+          {
+            id: 'documents',
+            label: 'nav.documents',
+            path: '/documents',
+            icon: '📄',
+            requiredPermissions: ['document.read.own'],
+          },
+          {
+            id: 'benefits',
+            label: 'nav.benefits',
+            path: '/benefits',
+            icon: '🎁',
+            requiredPermissions: [],
+          }
+        ]
+      },
+      {
+        title: 'Reports & Analytics',
+        category: 'reports',
+        items: [
+          {
+            id: 'role-stats',
+            label: 'nav.roleStats',
+            path: '/admin/role-stats',
+            icon: '📊',
+            requiredPermissions: ['analytics.view.department'],
+          }
+        ]
+      }
+    ];
+  }
+
+  if (userType === UserType.CLIENT) {
+    return [
+      dashboardSection,
+      profileSection,
+      {
+        title: 'Guest Services',
+        category: 'guest',
+        items: [
+          {
+            id: 'reservations',
+            label: 'nav.myReservations',
+            path: '/guest/reservations',
+            icon: '📅',
+            requiredPermissions: [],
+          },
+          {
+            id: 'requests',
+            label: 'nav.serviceRequests',
+            path: '/guest/requests',
+            icon: '🛎️',
+            requiredPermissions: [],
+          }
+        ]
+      }
+    ];
+  }
+
+  if (userType === UserType.VENDOR) {
+    return [
+      dashboardSection,
+      profileSection,
+      {
+        title: 'Vendor Tools',
+        category: 'vendor',
+        items: [
+          {
+            id: 'orders',
+            label: 'nav.orders',
+            path: '/vendor/orders',
+            icon: '📦',
+            requiredPermissions: [],
+          },
+          {
+            id: 'invoices',
+            label: 'nav.invoices',
+            path: '/vendor/invoices',
+            icon: '📋',
+            requiredPermissions: [],
+          }
+        ]
+      }
+    ];
+  }
+
+  if (userType === UserType.PARTNER) {
+    return [
+      dashboardSection,
+      profileSection,
+      {
+        title: 'Partner Portal',
+        category: 'partner',
+        items: [
+          {
+            id: 'analytics',
+            label: 'nav.analytics',
+            path: '/partner/analytics',
+            icon: '📈',
+            requiredPermissions: [],
+          },
+          {
+            id: 'integration',
+            label: 'nav.integration',
+            path: '/partner/integration',
+            icon: '🔗',
             requiredPermissions: [],
           }
         ]
@@ -60,7 +280,7 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
   }
 
   // External users get minimal default navigation
-  return [dashboardSection];
+  return [dashboardSection, profileSection];
 };
 
 const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemClick }) => {
@@ -124,29 +344,33 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
     return [...defaultSections, ...sections];
   }, [navigationItems, userType, hasPermission, isLoading, error]);
 
-  // Filter sections based on user role for internal users
+  // Filter sections based on user permissions for all users
   const filteredNavSections = useMemo(() => {
     if (!user) return navigationSections;
 
-    if (isInternalUser(user)) {
-      // For internal users, filter by role
-      return navigationSections.map(section => ({
-        ...section,
-        items: section.items.filter(item => {
-          // Check if item has role restrictions
-          if (item.requiredPermissions && item.requiredPermissions.length > 0) {
-            return item.requiredPermissions.every(permission => {
-              const [resource, action, scope] = permission.split('.');
-              return hasPermission(resource, action, scope || 'own');
-            });
-          }
+    // Filter navigation sections by permissions for all user types
+    const filtered = navigationSections.map(section => ({
+      ...section,
+      items: section.items.filter(item => {
+        // If no permissions required, always show
+        if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
           return true;
-        })
-      })).filter(section => section.items.length > 0);
-    }
+        }
+        
+        // Special handling for PLATFORM_ADMIN - show all admin tools
+        if (user.role === 'PLATFORM_ADMIN') {
+          return true;
+        }
+        
+        // Check if user has required permissions (OR logic - any permission grants access)
+        return item.requiredPermissions.some(permission => {
+          const [resource, action, scope] = permission.split('.');
+          return hasPermission(resource, action, scope || 'own');
+        });
+      })
+    })).filter(section => section.items.length > 0);
 
-    // For external users, return all sections (already filtered by module permissions)
-    return navigationSections;
+    return filtered;
   }, [navigationSections, user, hasPermission]);
 
   if (isLoading) {
@@ -222,11 +446,12 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
 function getCategoryTitle(category: string): string {
   const categoryTitles: Record<string, string> = {
     dashboard: 'Dashboard',
+    profile: 'Profile Management',
     hotel: 'Hotel Operations',
     staff: 'Staff Management',
-    admin: 'Administration',
+    admin: 'Administrative Tools',
     system: 'System',
-    hr: 'Human Resources',
+    hr: 'HR Tools',
     inventory: 'Inventory',
     maintenance: 'Maintenance',
     frontdesk: 'Front Desk',
@@ -234,9 +459,12 @@ function getCategoryTitle(category: string): string {
     food: 'Food & Beverage',
     finance: 'Finance',
     reporting: 'Reporting',
+    reports: 'Reports & Analytics',
+    services: 'Employee Services',
     crm: 'Customer Relations',
-    vendor: 'Vendor Portal',
-    client: 'Client Portal',
+    vendor: 'Vendor Tools',
+    client: 'Guest Services',
+    guest: 'Guest Services',
     partner: 'Partner Portal',
   };
 

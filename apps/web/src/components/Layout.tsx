@@ -23,6 +23,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // Get user type for dynamic navigation
   const userType = user?.userType || UserType.INTERNAL;
+  
+  // Helper function to format role display
+  const formatRoleName = (role: string) => {
+    const roleMap: Record<string, string> = {
+      PLATFORM_ADMIN: 'Platform Admin',
+      ORGANIZATION_OWNER: 'Organization Owner',
+      ORGANIZATION_ADMIN: 'Organization Admin',
+      PROPERTY_MANAGER: 'Property Manager',
+      DEPARTMENT_ADMIN: 'Department Admin',
+      STAFF: 'Staff Member',
+      CLIENT: 'Guest',
+      VENDOR: 'Vendor',
+      PARTNER: 'Partner',
+    };
+    return roleMap[role] || role.replace('_', ' ');
+  };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -123,7 +139,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {user?.firstName} {user?.lastName}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                {user?.role.replace('_', ' ')}
+                {user?.role ? formatRoleName(user.role) : 'User'}
               </p>
             </div>
           </div>
@@ -227,7 +243,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       {user?.firstName} {user?.lastName}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {user?.role.replace('_', ' ')}
+                      {user?.role ? formatRoleName(user.role) : 'User'}
                     </p>
                   </div>
                   <button
