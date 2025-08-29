@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { PERMISSION_QUERY_KEYS } from './usePermissions';
@@ -6,8 +6,6 @@ import permissionService from '../services/permissionService';
 import {
   PermissionSpec,
   PermissionEvaluationResult,
-  PermissionContext,
-  BulkPermissionResult,
 } from '../types/permission';
 
 interface BatchPermissionResult {
@@ -29,12 +27,6 @@ interface UsePermissionBatchOptions {
   maxBatchSize?: number; // Maximum batch size (default: 20)
 }
 
-interface BatchedRequest {
-  permission: PermissionSpec;
-  resolve: (result: PermissionEvaluationResult) => void;
-  reject: (error: Error) => void;
-  timestamp: number;
-}
 
 /**
  * Optimized hook for batch permission checking
@@ -75,25 +67,16 @@ export function usePermissionBatch(
     staleTime = 15 * 60 * 1000, // 15 minutes (optimized)
     gcTime = 30 * 60 * 1000, // 30 minutes (optimized)
     useBulkAPI = true,
-    batchDelay = 50,
-    maxBatchSize = 20,
   } = options;
 
   // Advanced batching state
-  const [batchQueue, setBatchQueue] = useState<BatchedRequest[]>([]);
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
-  const batchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Memoize permission specs to prevent unnecessary re-queries
   const memoizedPermissions = useMemo(() => permissions, [
     JSON.stringify(permissions) // Deep comparison for permissions array
   ]);
 
-  // Create normalized permission keys for deduplication
-  const createPermissionKey = useCallback((permission: PermissionSpec): string => {
-    const context = permission.context ? JSON.stringify(permission.context) : '';
-    return `${permission.resource}:${permission.action}:${permission.scope || 'own'}:${context}`;
-  }, []);
 
   // Generate queries for each permission
   const queries = useMemo(() => 
@@ -121,13 +104,17 @@ export function usePermissionBatch(
 
   // Advanced bulk processing function
   const processBulkBatch = useCallback(async (batchedPermissions: PermissionSpec[]): Promise<void> => {
-    if (!isAuthenticated || batchedPermissions.length === 0) return;
+    if (!isAuthenticated || batchedPermissions.length === 0) {
+      return;
+    }
 
     try {
       setIsProcessingBatch(true);
       console.debug(`Processing bulk batch of ${batchedPermissions.length} permissions`);
       
-      const result = await permissionService.checkBulkPermissions(batchedPermissions);
+      const result = await permissionService.checkBulkPermissions(
+        batchedPermissions.map(p => ({ ...p, scope: p.scope || 'own' }))
+      );
       
       // Cache all results individually for future single queries
       batchedPermissions.forEach((permission) => {
@@ -164,6 +151,7 @@ export function usePermissionBatch(
       }, 100);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [memoizedPermissions, isAuthenticated, enabled, useBulkAPI, processBulkBatch]);
 
   // Execute all queries in parallel (fallback method)

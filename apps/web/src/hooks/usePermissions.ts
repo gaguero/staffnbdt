@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import permissionService from '../services/permissionService';
 import {
@@ -21,24 +21,6 @@ export const PERMISSION_QUERY_KEYS = {
     [...PERMISSION_QUERY_KEYS.all, 'bulk', { permissions, globalContext }] as const,
 };
 
-/**
- * Create a normalized permission key for better cache deduplication
- */
-function createNormalizedPermissionKey(
-  resource: string, 
-  action: string, 
-  scope: string, 
-  context?: PermissionContext
-): string {
-  // Sort context keys for consistent hashing
-  const normalizedContext = context ? 
-    Object.keys(context).sort().reduce((acc, key) => {
-      acc[key] = context[key];
-      return acc;
-    }, {} as Record<string, any>) : undefined;
-  
-  return `${resource}:${action}:${scope}:${normalizedContext ? JSON.stringify(normalizedContext) : ''}`;
-}
 
 interface UsePermissionsState {
   permissions: Permission[];
@@ -120,7 +102,6 @@ export function usePermissions(): UsePermissionsReturn {
     }
 
     // Create normalized cache key for better cache hits
-    const normalizedKey = createNormalizedPermissionKey(resource, action, scope, context);
     const queryKey = PERMISSION_QUERY_KEYS.check(resource, action, scope, context);
     
     // Check React Query cache first for instant response

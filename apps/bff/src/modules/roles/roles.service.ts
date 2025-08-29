@@ -60,6 +60,21 @@ interface RoleWithPermissions extends CustomRole {
   };
 }
 
+// Extended type for roles with full relations loaded
+interface RoleWithFullRelations extends CustomRole {
+  permissions: (RolePermission & {
+    permission: {
+      id: string;
+      resource: string;
+      action: string;
+      scope: string;
+      name?: string;
+      description?: string;
+    };
+  })[];
+  uiRestrictions: UIRestriction[];
+}
+
 interface UserRoleWithRelations extends UserCustomRole {
   user: {
     id: string;
@@ -1801,19 +1816,28 @@ export class RolesService {
   /**
    * Find a role by ID
    */
-  async findRoleById(roleId: string): Promise<CustomRole | null> {
+  async findRoleById(roleId: string): Promise<RoleWithFullRelations | null> {
     try {
       return await this.prisma.customRole.findUnique({
         where: { id: roleId },
         include: {
           permissions: {
             include: {
-              permission: true
+              permission: {
+                select: {
+                  id: true,
+                  resource: true,
+                  action: true,
+                  scope: true,
+                  name: true,
+                  description: true,
+                }
+              }
             }
           },
           uiRestrictions: true
         }
-      });
+      }) as RoleWithFullRelations | null;
     } catch (error) {
       this.logger.error(`Error finding role by ID ${roleId}: ${error.message}`);
       return null;
@@ -1975,7 +1999,7 @@ export class RolesService {
     }
     
     // Remove duplicates
-    return [...new Set(result)];
+    return Array.from(new Set(result));
   }
 
   /**
@@ -1997,6 +2021,6 @@ export class RolesService {
     }
     
     // Remove duplicates
-    return [...new Set(result)];
+    return Array.from(new Set(result));
   }
 }

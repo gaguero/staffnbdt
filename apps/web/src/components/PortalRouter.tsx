@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { isInternalUser, isExternalUser } from '../types/auth';
+import { isInternalUser, isExternalUser, UserType } from '../types/auth';
 import Layout from './Layout';
 import RoleBasedDashboard from './RoleBasedDashboard';
 import LoadingSpinner from './LoadingSpinner';
@@ -154,17 +154,33 @@ const PortalRouter: React.FC = () => {
   // Route users to appropriate portal based on userType
   if (isInternalUser(user)) {
     return <InternalPortal />;
-  } else if (isExternalUser(user)) {
-    const userType = user.userType || 'CLIENT';
+  }
+  
+  if (isExternalUser(user)) {
+    const userType = user.userType;
     switch (userType) {
-      case 'CLIENT':
+      case UserType.CLIENT:
         return <ClientPortal />;
-      case 'VENDOR':
+      case UserType.VENDOR:
         return <VendorPortal />;
-      case 'PARTNER':
+      case UserType.PARTNER:
         return <PartnerPortal />;
       default:
         return <DefaultPortal />;
+    }
+  }
+  
+  // Handle any other user types
+  if (user.userType) {
+    switch (user.userType) {
+      case UserType.CLIENT:
+        return <ClientPortal />;
+      case UserType.VENDOR:
+        return <VendorPortal />;
+      case UserType.PARTNER:
+        return <PartnerPortal />;
+      default:
+        break;
     }
   }
   

@@ -3,7 +3,7 @@ import api from '../services/api';
 import { TOKEN_STORAGE_KEY, USER_STORAGE_KEY, TENANT_STORAGE_KEY } from '../utils/constants';
 import permissionService from '../services/permissionService';
 import { Permission, UserPermissionSummary } from '../types/permission';
-import { UserType } from '@prisma/client';
+import { UserType } from '../types/auth';
 
 interface Organization {
   id: string;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode, useEffect, useCallback, useState } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
 import { PERMISSION_QUERY_KEYS } from '../hooks/usePermissions';
@@ -7,8 +7,6 @@ import {
   Permission,
   UserPermissionSummary,
   PermissionSpec,
-  PermissionContext as PermissionContextType,
-  BulkPermissionResult,
 } from '../types/permission';
 
 interface PermissionProviderProps {
@@ -211,6 +209,7 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
       
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isAuthenticated, userPermissionSummary, preloadCommonPermissions]);
 
   const value: PermissionContextValue = {

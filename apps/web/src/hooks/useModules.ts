@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { moduleRegistryService } from '../services/moduleRegistryService';
-import { UserType } from '@prisma/client';
+import { UserType } from '../types/auth';
 import { usePermissions } from './usePermissions';
 import { useMemo } from 'react';
 
@@ -71,10 +71,10 @@ export function useModules() {
       });
       // Also invalidate navigation and permissions caches
       queryClient.invalidateQueries({ 
-        queryKey: MODULE_QUERY_KEYS.navigation(variables.organizationId, user?.userType || 'INTERNAL') 
+        queryKey: MODULE_QUERY_KEYS.navigation(variables.organizationId, user?.userType || UserType.INTERNAL) 
       });
       queryClient.invalidateQueries({ 
-        queryKey: MODULE_QUERY_KEYS.modulePermissions(variables.organizationId, user?.userType || 'INTERNAL') 
+        queryKey: MODULE_QUERY_KEYS.modulePermissions(variables.organizationId, user?.userType || UserType.INTERNAL) 
       });
     },
   });
@@ -90,10 +90,10 @@ export function useModules() {
       });
       // Also invalidate navigation and permissions caches
       queryClient.invalidateQueries({ 
-        queryKey: MODULE_QUERY_KEYS.navigation(variables.organizationId, user?.userType || 'INTERNAL') 
+        queryKey: MODULE_QUERY_KEYS.navigation(variables.organizationId, user?.userType || UserType.INTERNAL) 
       });
       queryClient.invalidateQueries({ 
-        queryKey: MODULE_QUERY_KEYS.modulePermissions(variables.organizationId, user?.userType || 'INTERNAL') 
+        queryKey: MODULE_QUERY_KEYS.modulePermissions(variables.organizationId, user?.userType || UserType.INTERNAL) 
       });
     },
   });
@@ -132,7 +132,7 @@ export function useModules() {
 export function useModuleNavigation(userType?: UserType) {
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
-  const effectiveUserType = userType || user?.userType || 'INTERNAL';
+  const effectiveUserType = userType || user?.userType || UserType.INTERNAL;
   
   const {
     data: navigationItems = [],
@@ -191,7 +191,7 @@ export function useModuleManifest(moduleId: string | undefined) {
  */
 export function useModulePermissions(moduleId: string | undefined, userType?: UserType) {
   const { user } = useAuth();
-  const effectiveUserType = userType || user?.userType || 'INTERNAL';
+  const effectiveUserType = userType || user?.userType || UserType.INTERNAL;
   
   return useQuery({
     queryKey: MODULE_QUERY_KEYS.permissions(moduleId || '', effectiveUserType),
@@ -207,7 +207,7 @@ export function useModulePermissions(moduleId: string | undefined, userType?: Us
  */
 export function useAllModulePermissions(userType?: UserType) {
   const { user } = useAuth();
-  const effectiveUserType = userType || user?.userType || 'INTERNAL';
+  const effectiveUserType = userType || user?.userType || UserType.INTERNAL;
   
   return useQuery({
     queryKey: MODULE_QUERY_KEYS.modulePermissions(user?.organizationId || '', effectiveUserType),

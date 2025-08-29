@@ -41,7 +41,7 @@ const RoleBasedDashboard: React.FC = () => {
         component: 'ProfileSummaryWidget',
         size: 'medium',
         requiredPermissions: [],
-        userTypes: ['INTERNAL', 'CLIENT', 'VENDOR', 'PARTNER'],
+        userTypes: [UserType.INTERNAL, UserType.CLIENT, UserType.VENDOR, UserType.PARTNER],
       },
     ];
 
@@ -55,7 +55,7 @@ const RoleBasedDashboard: React.FC = () => {
           component: 'NotificationWidget',
           size: 'medium',
           requiredPermissions: [],
-          userTypes: ['INTERNAL'],
+          userTypes: [UserType.INTERNAL],
         },
         {
           id: 'quick-actions',
@@ -64,12 +64,12 @@ const RoleBasedDashboard: React.FC = () => {
           component: 'QuickActionsWidget',
           size: 'large',
           requiredPermissions: [],
-          userTypes: ['INTERNAL'],
+          userTypes: [UserType.INTERNAL],
         }
       );
 
       // Role-specific widgets for internal users
-      if (['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN'].includes(user.role)) {
+      if (user.role && ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN'].includes(user.role)) {
         widgets.push(
           {
             id: 'organization-overview',
@@ -78,7 +78,7 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'OrganizationOverviewWidget',
             size: 'large',
             requiredPermissions: ['organization.read.organization'],
-            userTypes: ['INTERNAL'],
+            userTypes: [UserType.INTERNAL],
           },
           {
             id: 'system-health',
@@ -87,12 +87,12 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'SystemHealthWidget',
             size: 'medium',
             requiredPermissions: ['system.read.organization'],
-            userTypes: ['INTERNAL'],
+            userTypes: [UserType.INTERNAL],
           }
         );
       }
 
-      if (['PROPERTY_MANAGER', 'DEPARTMENT_ADMIN'].includes(user.role)) {
+      if (user.role && ['PROPERTY_MANAGER', 'DEPARTMENT_ADMIN'].includes(user.role)) {
         widgets.push(
           {
             id: 'property-status',
@@ -101,7 +101,7 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'PropertyStatusWidget',
             size: 'large',
             requiredPermissions: ['property.read.property'],
-            userTypes: ['INTERNAL'],
+            userTypes: [UserType.INTERNAL],
           },
           {
             id: 'staff-overview',
@@ -110,7 +110,7 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'StaffOverviewWidget',
             size: 'medium',
             requiredPermissions: ['user.read.department'],
-            userTypes: ['INTERNAL'],
+            userTypes: [UserType.INTERNAL],
           }
         );
       }
@@ -124,7 +124,7 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'ScheduleWidget',
             size: 'medium',
             requiredPermissions: [],
-            userTypes: ['INTERNAL'],
+            userTypes: [UserType.INTERNAL],
           },
           {
             id: 'my-requests',
@@ -133,14 +133,14 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'RequestsWidget',
             size: 'medium',
             requiredPermissions: [],
-            userTypes: ['INTERNAL'],
+            userTypes: [UserType.INTERNAL],
           }
         );
       }
     } else if (isExternalUser(user)) {
       // External user widgets
-      const userType = user.userType || 'CLIENT';
-      if (userType === 'CLIENT') {
+      const userType = user.userType;
+      if (userType === UserType.CLIENT) {
         widgets.push(
           {
             id: 'reservations',
@@ -149,7 +149,7 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'ReservationsWidget',
             size: 'large',
             requiredPermissions: ['reservation.read.own'],
-            userTypes: ['CLIENT'],
+            userTypes: [UserType.CLIENT],
           },
           {
             id: 'guest-services',
@@ -158,10 +158,10 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'GuestServicesWidget',
             size: 'medium',
             requiredPermissions: [],
-            userTypes: ['CLIENT'],
+            userTypes: [UserType.CLIENT],
           }
         );
-      } else if (userType === 'VENDOR') {
+      } else if (userType === UserType.VENDOR) {
         widgets.push(
           {
             id: 'vendor-orders',
@@ -170,7 +170,7 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'VendorOrdersWidget',
             size: 'large',
             requiredPermissions: ['order.read.own'],
-            userTypes: ['VENDOR'],
+            userTypes: [UserType.VENDOR],
           },
           {
             id: 'vendor-invoices',
@@ -179,10 +179,10 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'VendorInvoicesWidget',
             size: 'medium',
             requiredPermissions: ['invoice.read.own'],
-            userTypes: ['VENDOR'],
+            userTypes: [UserType.VENDOR],
           }
         );
-      } else if (userType === 'PARTNER') {
+      } else if (userType === UserType.PARTNER) {
         widgets.push(
           {
             id: 'partner-properties',
@@ -191,7 +191,7 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'PartnerPropertiesWidget',
             size: 'large',
             requiredPermissions: ['property.read.partner'],
-            userTypes: ['PARTNER'],
+            userTypes: [UserType.PARTNER],
           },
           {
             id: 'partner-analytics',
@@ -200,7 +200,7 @@ const RoleBasedDashboard: React.FC = () => {
             component: 'PartnerAnalyticsWidget',
             size: 'medium',
             requiredPermissions: ['analytics.read.partner'],
-            userTypes: ['PARTNER'],
+            userTypes: [UserType.PARTNER],
           }
         );
       }
@@ -218,8 +218,8 @@ const RoleBasedDashboard: React.FC = () => {
     enabledModules.forEach(module => {
       // Extract dashboard widgets from module configuration
       // This would typically be defined in the module manifest
-      const userType = user.userType || (isInternalUser(user) ? 'INTERNAL' : 'CLIENT');
-      const dashboardConfig = userType === 'INTERNAL' 
+      const userType = user.userType || (isInternalUser(user) ? UserType.INTERNAL : UserType.CLIENT);
+      const dashboardConfig = userType === UserType.INTERNAL 
         ? (module as any).internalDashboard 
         : (module as any).externalDashboard;
 
@@ -239,7 +239,7 @@ const RoleBasedDashboard: React.FC = () => {
 
     return allWidgets.filter(widget => {
       // Check user type compatibility
-      const userType = user.userType || (isInternalUser(user) ? 'INTERNAL' : 'CLIENT');
+      const userType = user.userType || (isInternalUser(user) ? UserType.INTERNAL : UserType.CLIENT);
       if (!widget.userTypes.includes(userType)) {
         return false;
       }
@@ -313,8 +313,8 @@ const RoleBasedDashboard: React.FC = () => {
         </h1>
         <p className="text-gray-600">
           {isInternalUser(user) 
-            ? t('dashboard.internalWelcome', { role: user.role?.replace('_', ' ') || 'User' })
-            : t('dashboard.externalWelcome', { type: (user.userType || 'Client').toLowerCase() })
+            ? t('dashboard.internalWelcome')
+            : t('dashboard.externalWelcome')
           }
         </p>
       </div>

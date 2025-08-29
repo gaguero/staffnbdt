@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useModuleNavigation } from '../hooks/useModules';
 import { usePermissions } from '../hooks/usePermissions';
-import { UserType } from '@prisma/client';
+import { UserType } from '../types/auth';
 import { NavItem } from '../services/moduleRegistryService';
 import { isInternalUser } from '../types/auth';
 
@@ -41,7 +41,7 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
     ]
   };
 
-  if (userType === 'INTERNAL') {
+  if (userType === UserType.INTERNAL) {
     return [
       dashboardSection,
       {

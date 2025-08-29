@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { BrandLogo } from '../contexts/ThemeContext';
 import { useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { UserType } from '../types/auth';
 import PropertySelector from './PropertySelector';
 import Breadcrumb from './Breadcrumb';
 import DynamicNavigation from './DynamicNavigation';
@@ -21,7 +22,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Get user type for dynamic navigation
-  const userType = user?.userType || 'INTERNAL';
+  const userType = user?.userType || UserType.INTERNAL;
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);

@@ -1,14 +1,17 @@
-import { UserType } from '@prisma/client';
-
-// Re-export UserType from Prisma
-export { UserType };
+// Define UserType enum for frontend use (matches backend Prisma schema)
+export enum UserType {
+  INTERNAL = 'INTERNAL',
+  CLIENT = 'CLIENT',
+  VENDOR = 'VENDOR',
+  PARTNER = 'PARTNER'
+}
 
 export interface ExternalUser {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
-  userType: UserType;
+  userType: UserType.CLIENT | UserType.VENDOR | UserType.PARTNER;
   externalOrganizationId: string;
   accessPortal: string;
   externalReference?: string;
@@ -22,7 +25,7 @@ export interface InternalUser {
   firstName: string;
   lastName: string;
   role: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF';
-  userType: UserType;
+  userType: UserType.INTERNAL;
   departmentId?: string;
   profilePhoto?: string;
   phoneNumber?: string;
@@ -41,7 +44,15 @@ export interface Property {
 
 export type User = InternalUser | ExternalUser;
 
-export interface AuthUser extends User {
+export interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  userType: UserType;
+  profilePhoto?: string;
+  phoneNumber?: string;
+  
   // Union of all possible user properties for backwards compatibility
   role?: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF';
   departmentId?: string;
@@ -80,43 +91,43 @@ export interface TenantInfo {
   availableProperties?: Property[];
 }
 
-// User type predicates
-export function isInternalUser(user: User): user is InternalUser {
-  return user.userType === 'INTERNAL' && 'role' in user;
+// User type predicates with proper type narrowing
+export function isInternalUser(user: AuthUser | User | null | undefined): user is InternalUser {
+  return !!user && user.userType === UserType.INTERNAL && 'role' in user;
 }
 
-export function isExternalUser(user: User): user is ExternalUser {
-  return user.userType !== 'INTERNAL' && 'externalOrganizationId' in user;
+export function isExternalUser(user: AuthUser | User | null | undefined): user is ExternalUser {
+  return !!user && user.userType !== UserType.INTERNAL && 'externalOrganizationId' in user;
 }
 
-export function isClientUser(user: User): user is ExternalUser {
-  return user.userType === 'CLIENT';
+export function isClientUser(user: AuthUser | User | null | undefined): user is ExternalUser {
+  return !!user && user.userType === UserType.CLIENT;
 }
 
-export function isVendorUser(user: User): user is ExternalUser {
-  return user.userType === 'VENDOR';
+export function isVendorUser(user: AuthUser | User | null | undefined): user is ExternalUser {
+  return !!user && user.userType === UserType.VENDOR;
 }
 
-export function isPartnerUser(user: User): user is ExternalUser {
-  return user.userType === 'PARTNER';
+export function isPartnerUser(user: AuthUser | User | null | undefined): user is ExternalUser {
+  return !!user && user.userType === UserType.PARTNER;
 }
 
 // Role-based access helpers
-export function hasAdminAccess(user: User): boolean {
+export function hasAdminAccess(user: AuthUser | User | null | undefined): boolean {
   if (isInternalUser(user)) {
     return ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN'].includes(user.role);
   }
   return false;
 }
 
-export function canManageModules(user: User): boolean {
+export function canManageModules(user: AuthUser | User | null | undefined): boolean {
   if (isInternalUser(user)) {
     return ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER'].includes(user.role);
   }
   return false;
 }
 
-export function canViewAllOrganizations(user: User): boolean {
+export function canViewAllOrganizations(user: AuthUser | User | null | undefined): boolean {
   if (isInternalUser(user)) {
     return user.role === 'PLATFORM_ADMIN';
   }

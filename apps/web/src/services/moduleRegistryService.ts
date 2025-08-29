@@ -1,5 +1,5 @@
 import api from './api';
-import { UserType } from '@prisma/client';
+import { UserType } from '../types/auth';
 
 export interface PermissionDefinition {
   resource: string;
@@ -94,7 +94,7 @@ class ModuleRegistryService {
   /**
    * Get permissions for a specific module
    */
-  async getModulePermissions(moduleId: string, userType: UserType = 'INTERNAL'): Promise<PermissionDefinition[]> {
+  async getModulePermissions(moduleId: string, userType: UserType = UserType.INTERNAL): Promise<PermissionDefinition[]> {
     try {
       const response = await api.get<ModuleRegistryResponse<PermissionDefinition[]>>(
         `${this.baseUrl}/${moduleId}/permissions`,
@@ -166,7 +166,7 @@ class ModuleRegistryService {
       const navigationItems: NavItem[] = [];
       
       modules.forEach(module => {
-        const navItems = userType === 'INTERNAL' 
+        const navItems = userType === UserType.INTERNAL 
           ? module.internalNavigation 
           : module.externalNavigation;
           
@@ -192,7 +192,7 @@ class ModuleRegistryService {
       const permissions: PermissionDefinition[] = [];
       
       modules.forEach(module => {
-        const modulePermissions = userType === 'INTERNAL'
+        const modulePermissions = userType === UserType.INTERNAL
           ? module.internalPermissions
           : module.externalPermissions;
           
