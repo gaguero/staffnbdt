@@ -1810,7 +1810,8 @@ export class RolesService {
             include: {
               permission: true
             }
-          }
+          },
+          uiRestrictions: true
         }
       });
     } catch (error) {
