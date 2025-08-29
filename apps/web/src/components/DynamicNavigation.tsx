@@ -6,7 +6,6 @@ import { useModuleNavigation } from '../hooks/useModules';
 import { usePermissions } from '../hooks/usePermissions';
 import { UserType } from '../types/auth';
 import { NavItem } from '../services/moduleRegistryService';
-import { isInternalUser } from '../types/auth';
 
 interface NavigationSection {
   title: string;
