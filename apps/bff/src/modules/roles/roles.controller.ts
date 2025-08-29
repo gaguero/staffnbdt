@@ -31,7 +31,13 @@ import {
   BulkCloneRoleDto,
   ClonePreviewDto
 } from './dto';
-import { User, Role } from '@prisma/client';
+import {
+  CustomRoleBuilderDto,
+  RoleTemplateDto,
+  CloneRoleOptionsDto,
+  UIRestrictionDto
+} from './dto/custom-role-builder.dto';
+import { User, Role, UserType } from '@prisma/client';
 
 @ApiTags('Roles')
 @Controller('roles')
@@ -311,5 +317,57 @@ export class UserRolesController {
   ) {
     const savedTemplate = await this.rolesService.saveCloneTemplate(template, user);
     return CustomApiResponse.success(savedTemplate, 'Clone template saved successfully');
+  }
+
+  /**
+   * Build a custom role using the role builder
+   */
+  @Post('builder')
+  @Roles(Role.PLATFORM_ADMIN, Role.ORGANIZATION_OWNER, Role.ORGANIZATION_ADMIN)
+  @RequirePermission('role.create.organization', 'role.create.property')
+  @Audit({ action: 'CREATE', entity: 'CustomRole' })
+  @ApiOperation({ summary: 'Build a custom role with module and permission specifications' })
+  @ApiResponse({ status: 201, description: 'Custom role built successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid modules or permissions' })
+  async buildRole(
+    @Body() roleData: CustomRoleBuilderDto,
+    @CurrentUser() user: User,
+  ) {
+    const role = await this.rolesService.buildRole(roleData, user.id);
+    return CustomApiResponse.success(role, 'Custom role built successfully');
+  }
+
+  /**
+   * Get role templates by user type
+   */
+  @Get('templates/:userType')
+  @Roles(Role.PLATFORM_ADMIN, Role.ORGANIZATION_OWNER, Role.ORGANIZATION_ADMIN)
+  @RequirePermission('role.read.organization', 'role.read.property')
+  @ApiOperation({ summary: 'Get role templates for a specific user type' })
+  @ApiResponse({ status: 200, description: 'Role templates retrieved successfully' })
+  async getRoleTemplates(
+    @Param('userType') userType: UserType,
+  ) {
+    const templates = await this.rolesService.getRoleTemplates(userType);
+    return CustomApiResponse.success(templates, 'Role templates retrieved successfully');
+  }
+
+  /**
+   * Clone a role with custom options
+   */
+  @Post(':id/clone-advanced')
+  @Roles(Role.PLATFORM_ADMIN, Role.ORGANIZATION_OWNER, Role.ORGANIZATION_ADMIN)
+  @RequirePermission('role.create.organization', 'role.create.property')
+  @Audit({ action: 'CREATE', entity: 'CustomRole' })
+  @ApiOperation({ summary: 'Clone a role with advanced customization options' })
+  @ApiResponse({ status: 201, description: 'Role cloned successfully' })
+  @ApiResponse({ status: 404, description: 'Source role not found' })
+  async cloneRoleAdvanced(
+    @Param('id') id: string,
+    @Body() options: CloneRoleOptionsDto,
+    @CurrentUser() user: User,
+  ) {
+    const clonedRole = await this.rolesService.cloneRoleWithOptions(id, options, user.id);
+    return CustomApiResponse.success(clonedRole, 'Role cloned successfully');
   }
 }

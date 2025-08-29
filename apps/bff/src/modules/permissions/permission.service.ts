@@ -17,6 +17,8 @@ import {
   PermissionCondition,
   PermissionCache,
   Role,
+  UserType,
+  ModuleManifest,
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../../shared/database/prisma.service';
@@ -42,6 +44,9 @@ interface PermissionWithRelations extends Permission {
 interface UserWithRoles {
   id: string;
   role: Role;
+  userType: UserType;
+  externalOrganization: string | null;
+  accessPortal: string | null;
   organizationId: string | null;
   propertyId: string | null;
   departmentId: string | null;
@@ -166,7 +171,7 @@ export class PermissionService implements OnModuleInit {
       const permissions = new Map<string, Permission>();
 
       // Get permissions from legacy role
-      const legacyRolePermissions = await this.getLegacyRolePermissions(user.role);
+      const legacyRolePermissions = await this.getLegacyRolePermissions(user.role, user.userType);
       this.logger.log(`User ${userId} with legacy role ${user.role} gets ${legacyRolePermissions.length} permissions from legacy system`);
       
       legacyRolePermissions.forEach(permission => {
@@ -174,6 +179,21 @@ export class PermissionService implements OnModuleInit {
       });
       
       this.logger.debug(`After legacy role permissions: user has ${permissions.size} total permissions`);
+      
+      // Get permissions from enabled modules for this user type
+      if (user.organizationId) {
+        const enabledModules = await this.getEnabledModulesForOrganization(user.organizationId);
+        const modulePermissions = await this.getUserTypePermissions(
+          user.userType, 
+          enabledModules.map(m => m.moduleId)
+        );
+        
+        modulePermissions.forEach(permission => {
+          permissions.set(permission.id, permission);
+        });
+        
+        this.logger.debug(`After module permissions: user has ${permissions.size} total permissions`);
+      }
 
       // Get permissions from custom roles
       for (const userRole of user.userCustomRoles) {
@@ -264,6 +284,19 @@ export class PermissionService implements OnModuleInit {
         // Cache the result for performance
         await this.cachePermissionResult(this.generatePermissionCacheKey(userId, resource, action, scope, context), result, evaluationContext, resource, action, scope);
         return result;
+      }
+      
+      // For external users, validate cross-organization access
+      if (user.userType !== UserType.INTERNAL && evaluationContext.organizationId && 
+          evaluationContext.organizationId !== user.organizationId) {
+        const crossOrgAllowed = await this.validateCrossOrganizationAccess(userId, evaluationContext.organizationId);
+        if (!crossOrgAllowed) {
+          return { 
+            allowed: false, 
+            reason: 'Cross-organization access denied for external user', 
+            source: 'validation' 
+          };
+        }
       }
 
       // Check cache first
@@ -1022,6 +1055,144 @@ export class PermissionService implements OnModuleInit {
     }
   }
 
+  /**
+   * Get permissions for user based on their type and enabled modules
+   */
+  async getUserTypePermissions(userType: UserType, moduleIds: string[]): Promise<Permission[]> {
+    if (!this.permissionTablesExist) {
+      this.logger.debug('Permission tables not available, returning empty permissions array');
+      return [];
+    }
+
+    try {
+      const permissions: Permission[] = [];
+      
+      // Get permissions from enabled module manifests
+      for (const moduleId of moduleIds) {
+        const manifest = await this.getModuleManifest(moduleId);
+        if (!manifest) continue;
+        
+        const modulePermissions = userType === UserType.INTERNAL 
+          ? manifest.internalPermissions as Permission[]
+          : manifest.externalPermissions as Permission[];
+          
+        if (Array.isArray(modulePermissions)) {
+          permissions.push(...modulePermissions);
+        }
+      }
+      
+      this.logger.debug(`Retrieved ${permissions.length} permissions for userType ${userType} with modules: ${moduleIds.join(', ')}`);
+      return permissions;
+    } catch (error) {
+      this.logger.error(`Error getting permissions for userType ${userType}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Validate cross-organization access for external users
+   */
+  async validateCrossOrganizationAccess(userId: string, targetOrgId: string): Promise<boolean> {
+    try {
+      const user = await this.getUserWithRoles(userId);
+      if (!user) return false;
+      
+      // Internal users can access based on their role hierarchy
+      if (user.userType === UserType.INTERNAL) {
+        return user.organizationId === targetOrgId || user.role === Role.PLATFORM_ADMIN;
+      }
+      
+      // External users can only access their own organization's data by default
+      // unless they have specific cross-org permissions
+      if (user.organizationId !== targetOrgId) {
+        // Check for explicit cross-org permissions
+        const crossOrgPermission = await this.hasPermission(
+          userId, 
+          'organization', 
+          'access', 
+          'external',
+          { targetOrganizationId: targetOrgId }
+        );
+        return crossOrgPermission;
+      }
+      
+      return true;
+    } catch (error) {
+      this.logger.error(`Error validating cross-org access for user ${userId} to org ${targetOrgId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Get all permissions for a specific module
+   */
+  async getModulePermissions(moduleId: string, userType: UserType): Promise<Permission[]> {
+    if (!this.permissionTablesExist) {
+      return [];
+    }
+    
+    try {
+      const manifest = await this.getModuleManifest(moduleId);
+      if (!manifest) {
+        this.logger.warn(`Module manifest not found for moduleId: ${moduleId}`);
+        return [];
+      }
+      
+      const permissions = userType === UserType.INTERNAL
+        ? manifest.internalPermissions as Permission[]
+        : manifest.externalPermissions as Permission[];
+        
+      return Array.isArray(permissions) ? permissions : [];
+    } catch (error) {
+      this.logger.error(`Error getting module permissions for ${moduleId}, userType ${userType}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get module manifest by ID
+   */
+  async getModuleManifest(moduleId: string): Promise<ModuleManifest | null> {
+    if (!this.permissionTablesExist) {
+      return null;
+    }
+    
+    try {
+      return await this.prisma.moduleManifest.findUnique({
+        where: { moduleId }
+      });
+    } catch (error) {
+      this.logger.error(`Error getting module manifest for ${moduleId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get enabled modules for an organization
+   */
+  private async getEnabledModulesForOrganization(organizationId: string): Promise<{ moduleId: string }[]> {
+    if (!this.permissionTablesExist) {
+      return [];
+    }
+    
+    try {
+      const moduleSubscriptions = await this.prisma.moduleSubscription.findMany({
+        where: {
+          organizationId,
+          isEnabled: true
+        },
+        select: {
+          moduleName: true
+        }
+      });
+      
+      return moduleSubscriptions.map(sub => ({ moduleId: sub.moduleName }));
+    } catch (error) {
+      this.logger.error(`Error getting enabled modules for organization ${organizationId}:`, error);
+      return [];
+    }
+  }
+
   private async findPermission(resource: string, action: string, scope: string): Promise<PermissionWithRelations | null> {
     if (!this.permissionTablesExist) {
       return null;
@@ -1038,13 +1209,18 @@ export class PermissionService implements OnModuleInit {
     });
   }
 
-  private async getLegacyRolePermissions(role: Role): Promise<Permission[]> {
+  private async getLegacyRolePermissions(role: Role, userType: UserType = UserType.INTERNAL): Promise<Permission[]> {
     // Return empty array when permission tables don't exist
     if (!this.permissionTablesExist) {
       return [];
     }
     
-    this.logger.debug(`Getting legacy role permissions for role: ${role}`);
+    this.logger.debug(`Getting legacy role permissions for role: ${role}, userType: ${userType}`);
+    
+    // External users have different permission patterns
+    if (userType !== UserType.INTERNAL) {
+      return await this.getExternalUserLegacyPermissions(role, userType);
+    }
     
     // This would map legacy roles to permissions
     // Implementation depends on how you want to handle backwards compatibility
@@ -1075,7 +1251,7 @@ export class PermissionService implements OnModuleInit {
       }
     }
 
-    // For other roles, implement pattern matching based on scope
+    // For internal users, implement pattern matching based on scope
     try {
       const scopePermissions: Permission[] = [];
       
@@ -1100,6 +1276,38 @@ export class PermissionService implements OnModuleInit {
       return uniquePermissions;
     } catch (error) {
       this.logger.error(`Error fetching permissions for role ${role}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get legacy permissions for external users
+   */
+  private async getExternalUserLegacyPermissions(role: Role, userType: UserType): Promise<Permission[]> {
+    try {
+      // External users typically have more restricted permissions
+      const externalPermissionPatterns: Record<UserType, string[]> = {
+        [UserType.INTERNAL]: [], // Not used here
+        [UserType.CLIENT]: ['reservation.read.own', 'guest.read.own', 'document.read.own'],
+        [UserType.VENDOR]: ['task.read.assigned', 'document.read.department', 'unit.read.property'],
+        [UserType.PARTNER]: ['property.read.organization', 'reservation.read.property', 'user.read.property'],
+      };
+      
+      const patterns = externalPermissionPatterns[userType] || [];
+      const permissions: Permission[] = [];
+      
+      for (const pattern of patterns) {
+        const [resource, action, scope] = pattern.split('.');
+        const matchingPermissions = await this.prisma.permission.findMany({
+          where: { resource, action, scope }
+        });
+        permissions.push(...matchingPermissions);
+      }
+      
+      this.logger.debug(`External user ${userType}: Retrieved ${permissions.length} permissions`);
+      return permissions;
+    } catch (error) {
+      this.logger.error(`Error getting external user permissions for ${userType}:`, error);
       return [];
     }
   }
@@ -1192,7 +1400,9 @@ export class PermissionService implements OnModuleInit {
     context?: Partial<PermissionEvaluationContext>,
   ): string {
     const contextStr = context ? JSON.stringify(context) : '';
-    return `perm:${userId}:${resource}:${action}:${scope}:${Buffer.from(contextStr).toString('base64')}`;
+    // Include enabled modules in cache key to invalidate when modules change
+    const moduleContext = context?.enabledModules ? `modules:${context.enabledModules.join(',')}` : '';
+    return `perm:${userId}:${resource}:${action}:${scope}:${moduleContext}:${Buffer.from(contextStr).toString('base64')}`;
   }
 
   private generateUserPermissionsCacheKey(
@@ -1200,7 +1410,8 @@ export class PermissionService implements OnModuleInit {
     context?: Partial<PermissionEvaluationContext>,
   ): string {
     const contextStr = context ? JSON.stringify(context) : '';
-    return `user_perms:${userId}:${Buffer.from(contextStr).toString('base64')}`;
+    const moduleContext = context?.enabledModules ? `modules:${context.enabledModules.join(',')}` : '';
+    return `user_perms:${userId}:${moduleContext}:${Buffer.from(contextStr).toString('base64')}`;
   }
 
   private async getCachedPermission(cacheKey: string): Promise<CachedPermission | null> {

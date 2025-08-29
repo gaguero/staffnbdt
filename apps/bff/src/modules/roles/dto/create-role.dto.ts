@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsInt, IsArray, IsBoolean, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsArray, IsBoolean, IsEnum, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { UserType } from '@prisma/client';
 
 export class CreateRoleDto {
   @ApiProperty({ example: 'Guest Services Manager' })
@@ -34,7 +35,32 @@ export class CreateRoleDto {
   @IsString()
   propertyId?: string;
 
-  @ApiPropertyOptional({ example: { category: 'management', department: 'housekeeping' } })
+  @ApiPropertyOptional({ 
+    enum: UserType, 
+    example: UserType.INTERNAL, 
+    description: 'Type of users this role applies to' 
+  })
+  @IsOptional()
+  @IsEnum(UserType)
+  userType?: UserType;
+
+  @ApiPropertyOptional({ 
+    example: ['hr', 'inventory', 'maintenance'], 
+    description: 'Array of module IDs this role can access' 
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowedModules?: string[];
+
+  @ApiPropertyOptional({ 
+    example: { 
+      category: 'management', 
+      department: 'housekeeping',
+      externalAccess: true,
+      crossOrgAccess: false
+    } 
+  })
   @IsOptional()
   metadata?: Record<string, any>;
 

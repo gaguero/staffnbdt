@@ -14,6 +14,8 @@ import {
   RolePermission, 
   User,
   Role,
+  UserType,
+  UIRestriction,
   Prisma 
 } from '@prisma/client';
 import { PrismaService } from '../../shared/database/prisma.service';
@@ -33,6 +35,12 @@ import {
   BulkCloneRoleDto,
   ClonePreviewDto
 } from './dto';
+import {
+  CustomRoleBuilderDto,
+  RoleTemplateDto,
+  CloneRoleOptionsDto,
+  UIRestrictionDto
+} from './dto/custom-role-builder.dto';
 
 interface RoleWithPermissions extends CustomRole {
   permissions: (RolePermission & {
@@ -46,6 +54,7 @@ interface RoleWithPermissions extends CustomRole {
     };
   })[];
   userRoles?: UserCustomRole[];
+  uiRestrictions?: UIRestriction[];
   _count?: {
     userRoles: number;
   };
@@ -1605,5 +1614,367 @@ export class RolesService {
     } catch (error) {
       this.logger.error(`Error clearing permission caches for role ${roleId}:`, error);
     }
+  }
+
+  /**
+   * Build a custom role using the role builder
+   */
+  async buildRole(roleData: CustomRoleBuilderDto, createdBy: string): Promise<CustomRole> {
+    try {
+      this.logger.log(`Building custom role: ${roleData.name}`);
+
+      // Validate allowed modules exist
+      if (roleData.allowedModules && roleData.allowedModules.length > 0) {
+        const validModules = await this.validateModules(roleData.allowedModules);
+        if (!validModules) {
+          throw new BadRequestException('Some specified modules do not exist or are inactive');
+        }
+      }
+
+      // Validate permissions exist
+      if (roleData.permissions && roleData.permissions.length > 0) {
+        const validPermissions = await this.validatePermissions(roleData.permissions);
+        if (!validPermissions) {
+          throw new BadRequestException('Some specified permissions do not exist');
+        }
+      }
+
+      // Create the role using transaction
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Create the custom role
+        const role = await tx.customRole.create({
+          data: {
+            name: roleData.name,
+            description: roleData.description,
+            userType: roleData.userType,
+            allowedModules: roleData.allowedModules,
+            organizationId: roleData.organizationId,
+            propertyId: roleData.propertyId,
+            priority: roleData.priority || 0,
+            metadata: roleData.metadata,
+            isActive: roleData.isActive ?? true,
+          },
+        });
+
+        // Add permissions to the role
+        if (roleData.permissions && roleData.permissions.length > 0) {
+          await this.addPermissionsToRole(role.id, roleData.permissions, tx);
+        }
+
+        // Create UI restrictions if provided
+        if (roleData.uiRestrictions) {
+          await tx.uIRestriction.create({
+            data: {
+              roleId: role.id,
+              hiddenModules: roleData.uiRestrictions.hiddenModules,
+              hiddenFeatures: roleData.uiRestrictions.hiddenFeatures,
+              readOnlyFields: roleData.uiRestrictions.readOnlyFields,
+            },
+          });
+        }
+
+        return role;
+      });
+
+      // Log the creation
+      await this.auditService.logCreate(
+        createdBy,
+        'CustomRole',
+        result.id,
+        {
+          name: roleData.name,
+          userType: roleData.userType,
+          allowedModules: roleData.allowedModules,
+          permissions: roleData.permissions,
+        }
+      );
+
+      this.logger.log(`Custom role built successfully: ${result.id}`);
+      return result;
+
+    } catch (error) {
+      this.logger.error(`Error building custom role:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get role templates by user type
+   */
+  async getRoleTemplates(userType: UserType): Promise<RoleTemplateDto[]> {
+    // Define role templates based on user type
+    const templates: Record<UserType, RoleTemplateDto[]> = {
+      [UserType.INTERNAL]: [
+        {
+          name: 'Front Desk Manager',
+          description: 'Manages front desk operations, guest check-ins/outs, and reservations',
+          userType: UserType.INTERNAL,
+          recommendedModules: ['front-desk', 'reservations', 'guest-services', 'units'],
+          basePermissions: [
+            'guest.create.property',
+            'guest.read.property',
+            'guest.update.property',
+            'reservation.create.property',
+            'reservation.read.property',
+            'reservation.update.property',
+            'unit.read.property',
+            'unit.update.property',
+          ],
+          defaultPriority: 700,
+        },
+        {
+          name: 'Housekeeping Supervisor',
+          description: 'Supervises housekeeping staff and manages room cleaning tasks',
+          userType: UserType.INTERNAL,
+          recommendedModules: ['housekeeping', 'maintenance', 'units', 'tasks'],
+          basePermissions: [
+            'task.create.department',
+            'task.read.department',
+            'task.update.department',
+            'unit.read.property',
+            'unit.update.property',
+            'user.read.department',
+          ],
+          defaultPriority: 600,
+        },
+      ],
+      [UserType.CLIENT]: [
+        {
+          name: 'Guest Portal User',
+          description: 'Standard guest access to view reservations and services',
+          userType: UserType.CLIENT,
+          recommendedModules: ['guest-portal', 'services'],
+          basePermissions: [
+            'reservation.read.own',
+            'guest.read.own',
+            'guest.update.own',
+            'service.request.own',
+          ],
+          defaultPriority: 100,
+          defaultRestrictions: {
+            hiddenModules: ['admin', 'hr', 'finance'],
+            readOnlyFields: ['guest.email', 'reservation.dates'],
+          },
+        },
+      ],
+      [UserType.VENDOR]: [
+        {
+          name: 'Maintenance Contractor',
+          description: 'External maintenance contractor access',
+          userType: UserType.VENDOR,
+          recommendedModules: ['maintenance', 'tasks'],
+          basePermissions: [
+            'task.read.assigned',
+            'task.update.assigned',
+            'unit.read.property',
+          ],
+          defaultPriority: 200,
+          defaultRestrictions: {
+            hiddenModules: ['hr', 'finance', 'admin'],
+            hiddenFeatures: ['user.personal-info', 'guest.personal-info'],
+          },
+        },
+      ],
+      [UserType.PARTNER]: [
+        {
+          name: 'Business Partner',
+          description: 'External business partner with limited property access',
+          userType: UserType.PARTNER,
+          recommendedModules: ['reports', 'analytics'],
+          basePermissions: [
+            'reservation.read.property',
+            'unit.read.property',
+            'report.read.property',
+          ],
+          defaultPriority: 300,
+          defaultRestrictions: {
+            hiddenModules: ['hr', 'finance'],
+            readOnlyFields: ['guest.personal-info', 'user.salary'],
+          },
+        },
+      ],
+    };
+
+    return templates[userType] || [];
+  }
+
+  /**
+   * Clone a role with modifications
+   */
+  async cloneRoleWithOptions(roleId: string, options: CloneRoleOptionsDto, clonedBy: string): Promise<CustomRole> {
+    try {
+      this.logger.log(`Cloning role: ${roleId}`);
+
+      const originalRole = await this.findRoleById(roleId);
+      if (!originalRole) {
+        throw new NotFoundException(`Role with ID ${roleId} not found`);
+      }
+
+      // Create cloned role with modifications
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Create the cloned role
+        const clonedRole = await tx.customRole.create({
+          data: {
+            name: options.newName,
+            description: options.newDescription || originalRole.description,
+            userType: originalRole.userType,
+            allowedModules: this.mergeModules(
+              (originalRole.allowedModules as string[]) || [],
+              options.additionalModules,
+              options.removeModules
+            ),
+            organizationId: options.targetOrganizationId || originalRole.organizationId,
+            propertyId: options.targetPropertyId || originalRole.propertyId,
+            priority: originalRole.priority,
+            metadata: originalRole.metadata,
+            isActive: true,
+          },
+        });
+
+        // Clone permissions with modifications
+        const originalPermissions = originalRole.permissions.map(rp => rp.permission.id);
+        const finalPermissions = this.mergePermissions(
+          originalPermissions,
+          options.additionalPermissions,
+          options.removePermissions
+        );
+
+        if (finalPermissions.length > 0) {
+          await this.addPermissionsToRole(clonedRole.id, finalPermissions, tx);
+        }
+
+        // Clone UI restrictions if they exist
+        if (originalRole.uiRestrictions && originalRole.uiRestrictions.length > 0) {
+          const originalRestriction = originalRole.uiRestrictions[0];
+          await tx.uIRestriction.create({
+            data: {
+              roleId: clonedRole.id,
+              hiddenModules: originalRestriction.hiddenModules,
+              hiddenFeatures: originalRestriction.hiddenFeatures,
+              readOnlyFields: originalRestriction.readOnlyFields,
+            },
+          });
+        }
+
+        return clonedRole;
+      });
+
+      // Log the creation
+      await this.auditService.logCreate(
+        clonedBy,
+        'CustomRole',
+        result.id,
+        {
+          originalRoleId: roleId,
+          originalRoleName: originalRole.name,
+          newRoleName: options.newName,
+          cloneOptions: options,
+        }
+      );
+
+      this.logger.log(`Role cloned successfully: ${result.id}`);
+      return result;
+
+    } catch (error) {
+      this.logger.error(`Error cloning role ${roleId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate that modules exist and are active
+   */
+  private async validateModules(moduleIds: string[]): Promise<boolean> {
+    try {
+      const validModules = await this.prisma.moduleManifest.count({
+        where: {
+          moduleId: { in: moduleIds },
+          isActive: true,
+        },
+      });
+      return validModules === moduleIds.length;
+    } catch (error) {
+      this.logger.error('Error validating modules:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Validate that permissions exist
+   */
+  private async validatePermissions(permissionIds: string[]): Promise<boolean> {
+    try {
+      const validPermissions = await this.prisma.permission.count({
+        where: {
+          id: { in: permissionIds },
+        },
+      });
+      return validPermissions === permissionIds.length;
+    } catch (error) {
+      this.logger.error('Error validating permissions:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Add permissions to a role within a transaction
+   */
+  private async addPermissionsToRole(roleId: string, permissionIds: string[], tx?: any): Promise<void> {
+    const client = tx || this.prisma;
+    
+    const rolePermissions = permissionIds.map(permissionId => ({
+      roleId,
+      permissionId,
+      granted: true,
+    }));
+
+    await client.rolePermission.createMany({
+      data: rolePermissions,
+      skipDuplicates: true,
+    });
+  }
+
+  /**
+   * Merge modules with additions and removals
+   */
+  private mergeModules(
+    original: string[],
+    additions?: string[],
+    removals?: string[]
+  ): string[] {
+    let result = [...original];
+    
+    if (additions && additions.length > 0) {
+      result = [...result, ...additions];
+    }
+    
+    if (removals && removals.length > 0) {
+      result = result.filter(module => !removals.includes(module));
+    }
+    
+    // Remove duplicates
+    return [...new Set(result)];
+  }
+
+  /**
+   * Merge permissions with additions and removals
+   */
+  private mergePermissions(
+    original: string[],
+    additions?: string[],
+    removals?: string[]
+  ): string[] {
+    let result = [...original];
+    
+    if (additions && additions.length > 0) {
+      result = [...result, ...additions];
+    }
+    
+    if (removals && removals.length > 0) {
+      result = result.filter(permission => !removals.includes(permission));
+    }
+    
+    // Remove duplicates
+    return [...new Set(result)];
   }
 }
