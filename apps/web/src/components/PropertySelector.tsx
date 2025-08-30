@@ -47,12 +47,15 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
     }
   }, [error, isLoading]);
 
-  // Filter properties based on search
-  const filteredProperties = availableProperties.filter(property =>
-    searchTerm === '' ||
-    property.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Normalize and filter properties based on search with defensive guards
+  const safeProperties = (availableProperties || []).filter((property: any) => property && typeof property === 'object');
+  const filteredProperties = safeProperties.filter((property: any) => {
+    if (searchTerm === '') return true;
+    const q = searchTerm.toLowerCase();
+    const name = (property?.name || '').toString().toLowerCase();
+    const code = (property?.code || '').toString().toLowerCase();
+    return name.includes(q) || code.includes(q);
+  });
 
   // Keyboard navigation handler
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -198,7 +201,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
           title={`${getCurrentOrganizationName()} - ${getCurrentPropertyName()}`}
         >
           <div className={`${currentSize.avatar} text-white rounded-full flex items-center justify-center font-medium`} style={{ backgroundColor: 'var(--brand-primary)' }}>
-            {getCurrentPropertyName()[0]?.toUpperCase() || 'P'}
+            {getCurrentPropertyName()?.[0]?.toUpperCase() || 'P'}
           </div>
           <span className={`text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
         </button>
@@ -233,8 +236,8 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
                   }
                 }}
               >
-                <div className="text-xs font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>{property.name}</div>
-                <div className="text-xs text-gray-500 truncate">{property.code}</div>
+                <div className="text-xs font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>{property?.name || 'Unnamed Property'}</div>
+                <div className="text-xs text-gray-500 truncate">{property?.code || '-'}</div>
               </button>
             ))}
           </div>
@@ -391,11 +394,11 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
                     >
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 text-white rounded-full flex items-center justify-center text-sm font-medium" style={{ backgroundColor: 'var(--brand-primary)' }}>
-                          {property.name[0]?.toUpperCase() || 'P'}
+                          {property?.name?.[0]?.toUpperCase() || 'P'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>{property.name}</div>
-                          <div className="text-sm text-gray-500 truncate">{property.code}</div>
+                          <div className="font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>{property?.name || 'Unnamed Property'}</div>
+                          <div className="text-sm text-gray-500 truncate">{property?.code || '-'}</div>
                           {property.address && (
                             <div className="text-xs text-gray-400 mt-1 truncate">{formatAddress(property.address)}</div>
                           )}
@@ -536,11 +539,11 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
               >
                 <div className="flex items-center space-x-2">
                   <div className="w-6 h-6 text-white rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'var(--brand-primary)' }}>
-                    {property.name[0]?.toUpperCase() || 'P'}
+                    {property?.name?.[0]?.toUpperCase() || 'P'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>{property.name}</div>
-                    <div className="text-sm text-gray-500 truncate">{property.code}</div>
+                    <div className="font-medium truncate" style={{ color: 'var(--brand-text-primary)' }}>{property?.name || 'Unnamed Property'}</div>
+                    <div className="text-sm text-gray-500 truncate">{property?.code || '-'}</div>
                     {property.address && (
                       <div className="text-xs text-gray-400 mt-1 truncate">{formatAddress(property.address)}</div>
                     )}
