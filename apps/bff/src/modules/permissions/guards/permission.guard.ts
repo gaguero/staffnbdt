@@ -2,6 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, SetMetadata } from '@nestjs/
 import { Reflector } from '@nestjs/core';
 import { PermissionService } from '../permission.service';
 import { Role } from '@prisma/client';
+import { Permission, PermissionObject, normalizePermission } from '../../shared/decorators/require-permission.decorator';
 
 export const PERMISSIONS_KEY = 'permissions';
 export const Permissions = (...permissions: string[]) => SetMetadata(PERMISSIONS_KEY, permissions);
@@ -32,12 +33,12 @@ export class PermissionGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPermissions = this.reflector.getAllAndOverride<PermissionRequirement[]>(
+    const rawPermissions = this.reflector.getAllAndOverride(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    if (!requiredPermissions) {
+    if (!rawPermissions) {
       return true; // No permissions required
     }
 
@@ -65,6 +66,35 @@ export class PermissionGuard implements CanActivate {
       ipAddress: request.ip,
     };
 
+    // Detect permission format and normalize to PermissionRequirement[]
+    let requiredPermissions: PermissionRequirement[];
+
+    // Check if it's string array (Permission[] from @RequirePermission)
+    if (Array.isArray(rawPermissions) && typeof rawPermissions[0] === 'string') {
+      requiredPermissions = (rawPermissions as string[]).map(permission => {
+        const normalizedPermission = normalizePermission(permission);
+        return {
+          resource: normalizedPermission.resource,
+          action: normalizedPermission.action,
+          scope: normalizedPermission.scope,
+          operator: 'AND' as const
+        };
+      });
+    }
+    // Check if it's PermissionObject array
+    else if (Array.isArray(rawPermissions) && typeof rawPermissions[0] === 'object' && 'resource' in rawPermissions[0]) {
+      requiredPermissions = (rawPermissions as PermissionObject[]).map(permission => ({
+        resource: permission.resource,
+        action: permission.action,
+        scope: permission.scope,
+        operator: 'AND' as const
+      }));
+    }
+    // Already PermissionRequirement[]
+    else {
+      requiredPermissions = rawPermissions as PermissionRequirement[];
+    }
+
     // Check permissions
     const results = await Promise.all(
       requiredPermissions.map(async (permission) => {
@@ -85,7 +115,7 @@ export class PermissionGuard implements CanActivate {
     if (hasAnyAnd && !hasAnyOr) {
       // All must be true (AND logic)
       return results.every(result => result.allowed);
-    } else if (hasAnyOr && !hasAnyAnd) {
+    } else if (hasAnyOr && !hasAnyOr) {
       // At least one must be true (OR logic)
       return results.some(result => result.allowed);
     } else {
