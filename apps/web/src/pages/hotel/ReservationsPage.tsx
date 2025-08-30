@@ -20,6 +20,17 @@ const ReservationsPage: React.FC = () => {
   const { data: todayDepartures } = useTodayDepartures();
 
   const reservations = reservationsResponse?.data || [];
+  const normalizedReservations = useMemo(() => {
+    return (reservations || []).map((r: any) => {
+      const raw = r?.specialRequests;
+      const specialRequests: string[] = Array.isArray(raw)
+        ? raw.filter((s: any) => typeof s === 'string' && s.trim().length > 0)
+        : typeof raw === 'string'
+          ? raw.split(/\r?\n|,|;/).map((s: string) => s.trim()).filter(Boolean)
+          : [];
+      return { ...r, specialRequests };
+    });
+  }, [reservations]);
   const total = reservationsResponse?.total || 0;
 
   const safeNumber = (value: any, fallback = 0) => {
@@ -381,7 +392,7 @@ const ReservationsPage: React.FC = () => {
       </div>
 
       {/* Reservations Grid/List */}
-      {reservations.length === 0 ? (
+      {normalizedReservations.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-gray-400 text-6xl mb-4">📅</div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No reservations found</h3>
@@ -405,7 +416,7 @@ const ReservationsPage: React.FC = () => {
             ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
             : 'space-y-4'
         }>
-          {reservations.map(reservation => (
+          {normalizedReservations.map(reservation => (
             <ReservationCard
               key={reservation.id}
               reservation={reservation}
