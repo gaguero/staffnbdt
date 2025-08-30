@@ -226,6 +226,15 @@ export class PermissionService implements OnModuleInit {
       if (!user) {
         return { allowed: false, reason: 'User not found', source: 'default' };
       }
+
+      // PLATFORM_ADMIN users have unrestricted access to all resources
+      if (user.role === Role.PLATFORM_ADMIN) {
+        return { 
+          allowed: true, 
+          reason: 'PLATFORM_ADMIN has unrestricted access', 
+          source: 'platform_admin_bypass' 
+        };
+      }
       
       // For external users, validate cross-organization access
       if (user.userType !== UserType.INTERNAL && evaluationContext.organizationId && 

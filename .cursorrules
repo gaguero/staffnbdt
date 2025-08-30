@@ -58,11 +58,24 @@ Hotel Operations Hub is a **multi-tenant, white-labeled ERP platform** specifica
 
 ### API Patterns
 ```typescript
-// ALWAYS use tenant context in API endpoints
-@Get('users')
-async getUsers(@Req() req: TenantRequest) {
-  const { organizationId, propertyId } = req.tenantContext;
-  return this.userService.findByTenant(organizationId, propertyId);
+// ALWAYS use tenant context and permission guards in API endpoints
+@Controller('users')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+export class UsersController {
+  
+  @Post()
+  @RequirePermission('user.create.department')
+  async createUser(@Body() createUserDto: CreateUserDto) {
+    // Only users with user.create.department permission can access
+  }
+
+  @Get()
+  @RequirePermission(['user.read.department', 'user.read.property'])
+  @PermissionScope('department') // Automatic filtering by department
+  async getUsers(@Request() req) {
+    const filters = getPermissionFilters(req);
+    return this.usersService.findAll(filters);
+  }
 }
 ```
 
@@ -129,10 +142,25 @@ async getUsers(@Req() req: TenantRequest) {
 ### Testing Protocol (MANDATORY)
 1. **Push changes** to trigger Railway deployment
 2. **Wait for deployment** completion
-3. **Use Playwright/Puppeteer** to navigate live application
-4. **Take screenshots** of working features
-5. **Check console** for any errors (none allowed)
-6. **Test mobile** and desktop responsive views
+3. **Use Playwright/Puppeteer** to navigate the live application on Railway URLs.
+4. **Take screenshots** of each step to provide visual proof of working features.
+5. **Check the browser console** for any JavaScript errors. None are allowed.
+6. **Test responsive design** by checking mobile, tablet, and desktop views.
+7. **Verify API responses** by checking the network tab for successful API calls.
+
+#### Example Testing Workflow:
+```bash
+# 1. Push changes to trigger deployment
+git add . && git commit -m "Feature/fix description" && git push
+
+# 2. Wait for Railway deployment to complete
+
+# 3. Test with browser automation on the appropriate Railway URL
+# Example using Playwright:
+playwright.navigate("https://frontend-copy-production-f1da.up.railway.app") # DEV Environment
+playwright.screenshot("feature-verified.png")
+playwright.checkConsole() # Must return no errors
+```
 
 ## Module Development Guidelines
 
@@ -203,7 +231,8 @@ npm run test:e2e
 ```
 
 ### Railway URLs
-- **Frontend**: https://frontend-production-55d3.up.railway.app
+- **Production Frontend**: https://frontend-production-55d3.up.railway.app (main branch)
+- **Development Frontend**: https://frontend-copy-production-f1da.up.railway.app (dev branch)
 - **Backend API**: Auto-configured via Railway internal networking
 
 This project intelligence grows as we discover new patterns and make decisions. Always reference this file alongside the memory bank for complete context.

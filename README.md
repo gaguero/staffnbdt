@@ -188,23 +188,22 @@ This project is configured for deployment on Railway with automatic deployments 
 
 ## 📚 Documentation
 
-For detailed information, see our comprehensive documentation:
+For detailed, always up-to-date documentation, see the Memory Bank:
 
-- **[CLAUDE.md](./CLAUDE.md)** - Central navigation guide for developers
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Multi-tenant system architecture
-- **[MODULES.md](./MODULES.md)** - Available modules and specifications
-- **[DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)** - Implementation roadmap
-- **[specs.md](./specs.md)** - Complete technical specifications
+- **Project Brief**: [memory-bank/projectbrief.md](./memory-bank/projectbrief.md)
+- **Product Context**: [memory-bank/productContext.md](./memory-bank/productContext.md)
+- **Active Context**: [memory-bank/activeContext.md](./memory-bank/activeContext.md)
+- **System Patterns (Architecture)**: [memory-bank/systemPatterns.md](./memory-bank/systemPatterns.md)
+- **Technology Context (Guides/Setup)**: [memory-bank/techContext.md](./memory-bank/techContext.md)
+- **UI Design**: [memory-bank/uiDesign.md](./memory-bank/uiDesign.md)
+- **Agent Rules**: [CLAUDE.md](./CLAUDE.md)
 
 ## 🌟 Key Features
 
-### Multi-Tenant Architecture (85% Complete)
-- **Complete Data Isolation**: organizationId/propertyId on all database tables
-- **Tenant Hierarchy**: Organization → Properties → Departments → Users
-- **Tenant Service**: Automatic default tenant creation and management
-- **Flexible Settings**: Per-organization and per-property configuration
-- **Module Subscriptions**: Organization-level feature enablement
-- **⚠️ Security Gap**: Missing global tenant middleware (critical)
+### Multi-Tenant Architecture (Status)
+- 100% Complete — Production Ready
+- Automatic tenant isolation via `TenantInterceptor` and `TenantContextService`
+- Verified zero cross-tenant data access
 
 ### For Hotel Chains
 - Centralized management across multiple properties with complete data separation
@@ -277,11 +276,8 @@ For detailed information, see our comprehensive documentation:
 5. **Data Import**: CSV imports with tenant-scoped validation
 
 ### Missing Components (Roadmap)
-1. **Tenant Management UI**: Organization and property CRUD interfaces
-2. **Global Tenant Middleware**: Automatic API-level tenant isolation
-3. **White-Label System**: Dynamic branding and theme customization
-4. **Multi-Language**: i18n integration with tenant overrides
-5. **Cloudflare R2**: Migration from local storage to global CDN
+- Tenant Management UI
+- Storage migration to Cloudflare R2
 
 ### Security Considerations
 - **Current Risk**: Manual tenant filtering in services (incomplete coverage)

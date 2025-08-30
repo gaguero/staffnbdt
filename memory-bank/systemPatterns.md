@@ -2,37 +2,23 @@
 
 ## Core Architectural Patterns
 
-### 1. Multi-Tenant Shared Database Pattern
+### 1. Multi-Tenant Architecture
 
-**Pattern**: Single database with tenant isolation via foreign keys
-**Implementation**: All tenant-scoped tables include `organization_id` and `property_id`
+**Pattern**: Single database with tenant isolation via foreign keys, enforced by a global middleware.
+**Implementation**: All tenant-scoped tables include `organization_id` and `property_id`. API requests are processed by a `TenantInterceptor` that injects and validates tenant context, which is then used by a `TenantContextService` to automatically apply filters to all database queries.
 
-```sql
--- Example tenant-scoped table
-users (
-  id UUID PRIMARY KEY,
-  organization_id UUID REFERENCES organizations(id), -- Tenant isolation
-  property_id UUID REFERENCES properties(id),       -- Property scoping
-  email CITEXT UNIQUE NOT NULL,
-  -- other fields...
-)
+**Tenant Hierarchy**:
 ```
-
-**Tenant Context Middleware**:
-```typescript
-@Injectable()
-export class TenantContextMiddleware {
-  use(req: Request, res: Response, next: NextFunction) {
-    const user = req.user; // From JWT
-    req.tenantContext = {
-      organizationId: user.organizationId,
-      propertyId: req.headers['x-property-id'] || user.primaryPropertyId,
-      userId: user.id,
-      role: user.globalRole,
-    };
-    next();
-  }
-}
+Platform Level (Super Admin)
+├── Organizations (Hotel Chains/Groups)
+│   ├── Branding Configuration
+│   ├── Module Subscriptions
+│   └── Properties (Individual Hotels)
+│       ├── Property-Specific Settings
+│       ├── Module Configurations
+│       └── Departments
+│           ├── Users (Staff, Managers)
+│           └── Department-Specific Data
 ```
 
 **Benefits**:
@@ -42,10 +28,10 @@ export class TenantContextMiddleware {
 - Query optimization across tenants
 
 **Security**:
-- API-level tenant validation on every request
-- Database queries automatically filtered by tenant context
-- No direct database access from frontend
-- Audit logging for all tenant operations
+- **API-level tenant validation** on every request via `TenantInterceptor`.
+- **Database queries automatically filtered** by `TenantContextService`.
+- No direct database access from the frontend.
+- Audit logging for all sensitive tenant operations.
 
 ### 2. Backend-for-Frontend (BFF) Pattern
 
@@ -274,6 +260,92 @@ export class FileStorageService {
 }
 ```
 
+### 3. Enhanced Modal Implementation Pattern
+
+The system follows a standardized approach for modal components with real-time validation, consistent error handling, and enhanced user feedback.
+
+#### Key Features:
+- **Real-time Validation**: Zod schemas with react-hook-form for immediate feedback
+- **Consistent Error Handling**: Centralized toastService for all user notifications
+- **Loading States**: Skeleton loaders and progress indicators for better UX
+- **Visual Feedback**: Success/error icons and validation states
+- **Form State Management**: react-hook-form with automatic validation
+
+#### Example Implementation:
+```typescript
+const EnhancedModal: React.FC<ModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    reset,
+    formState: { errors, isValid, isValidating },
+  } = useForm<FormData>({
+    resolver: zodResolver(validationSchema),
+    mode: 'onChange', // Real-time validation
+  });
+
+  const onSubmit = async (data: FormData) => {
+    const loadingToast = toastService.loading('Processing...');
+
+    try {
+      await apiService.submit(data);
+      toastService.dismiss(loadingToast);
+      toastService.success('Operation completed successfully');
+      onSuccess?.();
+      handleClose();
+    } catch (error: any) {
+      toastService.dismiss(loadingToast);
+      toastService.actions.operationFailed('operation', error.response?.data?.message);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
+        <div className="p-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              label="Field Name"
+              type="text"
+              register={register('fieldName')}
+              error={errors.fieldName}
+              success={!!watch('fieldName') && !errors.fieldName}
+              validating={isValidating}
+            />
+
+            <div className="flex space-x-4 pt-4 border-t">
+              <button
+                type="submit"
+                disabled={!isValid || loading}
+                className="btn btn-primary flex-1"
+              >
+                {loading ? <LoadingSpinner size="sm" /> : 'Submit'}
+              </button>
+              <button type="button" onClick={onClose} className="btn btn-secondary flex-1">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+#### Migration Checklist for Existing Modals:
+- [ ] Add validation schema with Zod
+- [ ] Convert to react-hook-form
+- [ ] Replace manual inputs with FormField components
+- [ ] Update error handling to use toastService
+- [ ] Add skeleton loaders for async content
+- [ ] Implement visual feedback indicators
+- [ ] Test real-time validation
+- [ ] Verify toast notifications
+- [ ] Check mobile responsiveness
+
 ## Security Patterns
 
 ### 1. Role-Based Access Control (RBAC)
@@ -453,4 +525,262 @@ export class UserCreatedHandler {
 }
 ```
 
+## Hotel Operations Module Patterns
+
+This section outlines the specific architectural and implementation patterns for the core hotel operations modules, including Guests, Units (Rooms), and Reservations. These patterns extend the core multi-tenant architecture with domain-specific logic.
+
+### 1. API Endpoint Specifications (Example: GuestsController)
+
+Controllers for hotel modules should be fully protected by permission guards and automatically handle tenant context. They should also include audit logging for sensitive operations.
+
+```typescript
+@Controller('guests')
+@UseGuards(JwtAuthGuard, PermissionGuard, TenantInterceptor)
+@ApiBearerAuth()
+export class GuestsController {
+
+  @Post()
+  @RequirePermission('guest.create.property')
+  @Audit({ action: 'CREATE', entity: 'Guest' })
+  async create(@Body() createGuestDto: CreateGuestDto, @CurrentUser() currentUser: User) {
+    // ...
+  }
+
+  @Get()
+  @RequirePermission('guest.read.property')
+  @PermissionScope('property')
+  async findAll(@Query() filterDto: GuestFilterDto, @CurrentUser() currentUser: User) {
+    // ...
+  }
+
+  @Patch(':id')
+  @RequirePermission('guest.update.property')
+  @Audit({ action: 'UPDATE', entity: 'Guest' })
+  async update(@Param('id') id: string, @Body() updateGuestDto: UpdateGuestDto, @CurrentUser() currentUser: User) {
+    // ...
+  }
+
+  @Delete(':id')
+  @RequirePermission('guest.delete.property')
+  @Audit({ action: 'DELETE', entity: 'Guest' })
+  async remove(@Param('id') id: string, @CurrentUser() currentUser: User) {
+    // ...
+  }
+}
+```
+
+### 2. Service Layer Business Logic (Example: Availability Checking)
+
+Service layers should contain the core business logic, including complex operations like checking unit availability, which involves filtering by multiple criteria and checking for reservation conflicts.
+
+```typescript
+@Injectable()
+export class UnitService {
+  async checkAvailability(availabilityDto: CheckAvailabilityDto, currentUser: User): Promise<AvailabilityResult> {
+    const tenantContext = this.tenantContextService.getTenantContext();
+    const { checkInDate, checkOutDate, adults, children } = availabilityDto;
+
+    // 1. Build a Prisma query to filter units based on criteria (occupancy, type, amenities, etc.)
+    const potentialUnits = await this.prisma.unit.findMany({
+      where: {
+        propertyId: tenantContext.propertyId,
+        isActive: true,
+        maxOccupancy: { gte: (adults || 1) + (children || 0) },
+        // ... other filters
+      },
+      include: {
+        reservations: { // Include potentially conflicting reservations
+          where: {
+            status: { in: [ReservationStatus.CONFIRMED, ReservationStatus.CHECKED_IN] },
+            AND: [
+              { checkInDate: { lte: checkOutDate } },
+              { checkOutDate: { gte: checkInDate } }
+            ],
+          },
+        },
+      },
+    });
+
+    // 2. Filter out units that have conflicting reservations
+    const availableUnits = potentialUnits.filter(unit => unit.reservations.length === 0);
+
+    // 3. Format and return the results
+    return {
+      totalAvailableUnits: availableUnits.length,
+      availabilityByType: this.groupAvailabilityByType(availableUnits),
+      // ... other result data
+    };
+  }
+}
+```
+
+### 3. State Transition Logic
+
+For entities with status fields (like Reservations), business logic must enforce valid state transitions to maintain data integrity.
+
+```typescript
+// Example for Reservation status transitions
+const VALID_TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
+  [ReservationStatus.CONFIRMED]: [ReservationStatus.CHECKED_IN, ReservationStatus.CANCELLED, ReservationStatus.NO_SHOW],
+  [ReservationStatus.CHECKED_IN]: [ReservationStatus.CHECKED_OUT],
+  [ReservationStatus.CHECKED_OUT]: [], // Terminal state
+  [ReservationStatus.CANCELLED]: [], // Terminal state
+  [ReservationStatus.NO_SHOW]: [ReservationStatus.CHECKED_IN], // Can still check in late
+};
+
+private validateStatusTransition(from: ReservationStatus, to: ReservationStatus): void {
+  if (!VALID_TRANSITIONS[from].includes(to)) {
+    throw new BadRequestException(`Cannot change status from ${from} to ${to}`);
+  }
+}
+```
+
+### 4. Hotel-Specific Permissions
+
+New modules require new sets of granular permissions that follow the established `resource.action.scope` pattern.
+
+```typescript
+// Example Guest Management Permissions
+export const HOTEL_PERMISSIONS = {
+  GUEST: {
+    CREATE_PROPERTY: 'guest.create.property',
+    READ_PROPERTY: 'guest.read.property',
+    UPDATE_PROPERTY: 'guest.update.property',
+    DELETE_PROPERTY: 'guest.delete.property',
+    BLACKLIST_PROPERTY: 'guest.blacklist.property',
+    MERGE_PROPERTY: 'guest.merge.property',
+  },
+  // ... permissions for UNIT, RESERVATION, etc.
+} as const;
+```
+
+### 5. Frontend Component Hierarchy
+
+Frontend modules should be built with a clear hierarchy of components, including pages, specialized components for hotel operations (e.g., `RoomStatusGrid`, `ReservationCalendar`), and extensions of shared components (e.g., `DataTable`, `FilterBar`).
+
+```typescript
+// Example Component Structure
+├── pages/
+│   ├── FrontDeskDashboard.tsx
+│   └── RoomManagementPage.tsx
+├── components/
+│   ├── hotel/
+│   │   ├── RoomStatusGrid/
+│   │   │   ├── RoomStatusGrid.tsx
+│   │   │   └── RoomCard.tsx
+│   │   └── ReservationCalendar/
+│   │       ├── ReservationCalendar.tsx
+│   │       └── ReservationBlock.tsx
+│   └── shared/
+│       └── DataTable/
+│           └── ReservationTable.tsx
+```
+
+### 6. Frontend State Management (TanStack Query)
+
+Server state for hotel modules should be managed with TanStack Query, using structured query keys for caching and invalidation. Real-time updates can be handled via polling or WebSockets.
+
+```typescript
+// Hotel-specific query keys
+export const hotelQueryKeys = {
+  rooms: {
+    all: ['rooms'] as const,
+    lists: () => [...hotelQueryKeys.rooms.all, 'list'] as const,
+    status: () => [...hotelQueryKeys.rooms.all, 'status'] as const,
+  },
+  reservations: {
+    all: ['reservations'] as const,
+    calendar: (date: string) => [...hotelQueryKeys.reservations.all, 'calendar', date] as const,
+  },
+};
+
+// Custom hook for real-time room status
+export const useRoomStatus = () => {
+  return useQuery({
+    queryKey: hotelQueryKeys.rooms.status(),
+    queryFn: () => roomService.getRoomStatus(),
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+  });
+};
+```
+
+### 7. Mobile-First and Responsive Design
+
+Components must be designed with a mobile-first approach to support operational staff on tablets and phones. Layouts should be responsive, and interactions should be touch-friendly.
+
+```typescript
+// Responsive room status grid that switches to a list on mobile
+const ResponsiveRoomGrid: React.FC = () => {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const viewMode = isMobile ? 'list' : 'grid';
+
+  return (
+    <div className={viewMode === 'grid' ? 'grid grid-cols-12 gap-2' : 'space-y-2'}>
+      {/* ... render rooms as cards or list items based on viewMode ... */}
+    </div>
+  );
+};
+```
+
 These patterns form the foundation of Hotel Operations Hub's architecture, ensuring scalability, security, and maintainability while supporting the complex requirements of multi-tenant hotel operations.
+
+## Role System UI & Management Patterns
+
+### Role Badges and Role Display
+
+Reusable UI components standardize how system and custom roles are displayed throughout the app.
+
+- Components: `RoleBadge`, `RoleBadgeGroup`, enhanced `UserCard`
+- Accessibility: ARIA labels, keyboard navigation, contrast-safe colors
+- Theming: Tailwind classes driven by CSS variables for white-label compatibility
+
+Example usage:
+```tsx
+<RoleBadge role={Role.PROPERTY_MANAGER} size="sm" showTooltip />
+<RoleBadgeGroup systemRole={Role.DEPARTMENT_ADMIN} customRoles={[nightManager]} maxVisible={2} />
+```
+
+### Role Duplication (Clone) System
+
+End-to-end cloning for roles with single and batch operations, previews, and lineage tracking.
+
+- Frontend: `RoleDuplicator`, `CloneOptionsDialog`, `BulkCloneDialog`, `RoleLineageTree`
+- Backend endpoints:
+```http
+POST /api/roles/clone
+POST /api/roles/batch-clone
+POST /api/roles/clone-preview
+GET  /api/roles/:id/lineage
+```
+- Smart features: name suggestions, level adjustments, permission optimization, conflict detection
+- Security: requires `role.create.*` permissions; multi-tenant scoping enforced
+
+### Role Assignment History
+
+Comprehensive audit of role assignments leveraging the existing `AuditLog` with tenant scoping.
+
+- Service/Controller: `roles-history.service.ts`, `roles-history.controller.ts`
+- Views: Dashboard, Timeline, Admin Activity, Analytics
+- Capabilities: export (CSV/PDF/Excel/JSON), rollback with impact analysis
+- Permissions: `role.read.history`, `role.rollback`, `export.create`
+
+### Role Analytics Dashboard
+
+Visual analytics for roles, permissions, and assignment trends.
+
+- Components: `RoleStatsDashboard` with ExecutiveSummary, Role/Permission/User analytics, Security dashboard
+- Expected backend endpoints:
+```http
+GET /roles/analytics
+GET /permissions/analytics
+GET /roles/trends
+GET /roles/security-metrics
+GET /roles/optimization
+```
+- Performance: cached aggregations, lazy-loaded charts, memoized calculations
+
+### Integration Notes
+
+- All role features respect tenant isolation and permission gates
+- UI uses brand-aware CSS variables (white-labeling) and mobile-first layouts
+- Testing: unit, integration, and E2E coverage with Playwright where applicable

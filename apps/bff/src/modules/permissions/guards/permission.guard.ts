@@ -1,6 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, SetMetadata } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PermissionService } from '../permission.service';
+import { Role } from '@prisma/client';
 
 export const PERMISSIONS_KEY = 'permissions';
 export const Permissions = (...permissions: string[]) => SetMetadata(PERMISSIONS_KEY, permissions);
@@ -45,6 +46,11 @@ export class PermissionGuard implements CanActivate {
 
     if (!user) {
       return false; // No authenticated user
+    }
+
+    // PLATFORM_ADMIN users have unrestricted access to all resources
+    if (user.role === Role.PLATFORM_ADMIN) {
+      return true;
     }
 
     // Build evaluation context from request
