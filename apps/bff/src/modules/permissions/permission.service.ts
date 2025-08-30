@@ -1005,11 +1005,27 @@ export class PermissionService implements OnModuleInit {
    */
   private async getRolePermissionsFromDatabase(role: Role, userType: UserType = UserType.INTERNAL): Promise<Permission[]> {
     try {
-      // Find role-permission mappings for this role
+      // First find the custom role by name (assuming role enum maps to role name)
+      const customRoles = await this.prisma.customRole.findMany({
+        where: {
+          name: role,
+          isActive: true,
+          userType: userType,
+        },
+      });
+
+      if (customRoles.length === 0) {
+        this.logger.debug(`No custom roles found for role ${role} and userType ${userType}`);
+        return [];
+      }
+
+      const roleIds = customRoles.map(cr => cr.id);
+
+      // Find role-permission mappings for these roles
       const rolePermissions = await this.prisma.rolePermission.findMany({
         where: {
-          role: {
-            equals: role
+          roleId: {
+            in: roleIds
           },
           granted: true,
         },
@@ -1035,10 +1051,25 @@ export class PermissionService implements OnModuleInit {
    */
   private async checkRolePermissionFromDatabase(role: Role, permissionId: string): Promise<boolean> {
     try {
+      // First find the custom role by name (assuming role enum maps to role name)
+      const customRoles = await this.prisma.customRole.findMany({
+        where: {
+          name: role,
+          isActive: true,
+        },
+      });
+
+      if (customRoles.length === 0) {
+        this.logger.debug(`No custom roles found for role ${role}`);
+        return false;
+      }
+
+      const roleIds = customRoles.map(cr => cr.id);
+
       const rolePermission = await this.prisma.rolePermission.findFirst({
         where: {
-          role: {
-            equals: role
+          roleId: {
+            in: roleIds
           },
           permissionId: permissionId,
           granted: true,
