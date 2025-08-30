@@ -84,7 +84,7 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({
 
         // Notes (handle both string and array formats)
         const notes = Array.isArray(guest.notes) 
-          ? guest.notes.join(', ') 
+          ? guest.notes.join('\n') 
           : guest.notes || '';
         setValue('notes', notes);
       } else {
@@ -136,7 +136,7 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({
           zipCode: data.address.zipCode || ''
         } : undefined,
         preferences: data.preferences,
-        notes: data.notes ? (data.notes.trim() ? [data.notes.trim()] : []) : []
+        notes: data.notes ? (data.notes.trim() ? data.notes.trim().split('\n').map(note => note.trim()).filter(note => note.length > 0) : []) : []
       };
       
       if (mode === 'edit' && guest) {

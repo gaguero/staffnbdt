@@ -209,8 +209,8 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
         rate: data.rate,
         source: data.source,
         paymentMethod: data.paymentMethod,
-        specialRequests: data.specialRequests ? (data.specialRequests.trim() ? [data.specialRequests.trim()] : []) : [],
-        notes: data.notes ? (data.notes.trim() ? [data.notes.trim()] : []) : []
+        specialRequests: data.specialRequests ? (data.specialRequests.trim() ? data.specialRequests.trim().split('\n').map(req => req.trim()).filter(req => req.length > 0) : []) : [],
+        notes: data.notes ? (data.notes.trim() ? data.notes.trim().split('\n').map(note => note.trim()).filter(note => note.length > 0) : []) : []
       };
 
       if (mode === 'edit' && reservation) {
