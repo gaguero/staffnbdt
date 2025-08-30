@@ -1008,7 +1008,9 @@ export class PermissionService implements OnModuleInit {
       // Find role-permission mappings for this role
       const rolePermissions = await this.prisma.rolePermission.findMany({
         where: {
-          role: role,
+          role: {
+            equals: role
+          },
           granted: true,
         },
         include: {
@@ -1035,7 +1037,9 @@ export class PermissionService implements OnModuleInit {
     try {
       const rolePermission = await this.prisma.rolePermission.findFirst({
         where: {
-          role: role,
+          role: {
+            equals: role
+          },
           permissionId: permissionId,
           granted: true,
         },
