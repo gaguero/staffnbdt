@@ -84,11 +84,11 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
-              {reservation.guest.firstName[0]}{reservation.guest.lastName[0]}
+              {(reservation.guest?.firstName?.[0] || '?')}{(reservation.guest?.lastName?.[0] || '')}
             </div>
             <div>
               <div className="font-medium text-gray-900">
-                {reservation.guest.firstName} {reservation.guest.lastName}
+                {reservation.guest?.firstName || 'Guest'} {reservation.guest?.lastName || ''}
               </div>
               <div className="text-sm text-gray-600">
                 {reservation.confirmationNumber}
@@ -121,11 +121,11 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-              {reservation.guest.firstName[0]}{reservation.guest.lastName[0]}
+              {(reservation.guest?.firstName?.[0] || '?')}{(reservation.guest?.lastName?.[0] || '')}
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                {reservation.guest.firstName} {reservation.guest.lastName}
+                {reservation.guest?.firstName || 'Guest'} {reservation.guest?.lastName || ''}
               </h3>
               <p className="text-sm text-gray-600">
                 {reservation.confirmationNumber}
@@ -164,7 +164,7 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
           <div>
             <div className="text-sm font-medium text-gray-700">Room</div>
             <div className="font-semibold text-gray-900">
-              {reservation.room?.number || 'TBD'} ({reservation.roomType.name})
+              {reservation.room?.number || 'TBD'} ({reservation.roomType?.name || 'Unknown Type'})
             </div>
           </div>
           <div>
@@ -180,7 +180,7 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
           <div>
             <div className="text-sm font-medium text-gray-700">Total Amount</div>
             <div className="text-xl font-bold text-green-600">
-              ${reservation.totalAmount.toLocaleString()}
+              ${Number(reservation.totalAmount ?? 0).toLocaleString()}
             </div>
             <div className="text-xs text-gray-500">
               ${reservation.rate}/night × {getDuration()} nights
@@ -189,10 +189,10 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
           <div>
             <div className="text-sm font-medium text-gray-700">Payment Status</div>
             <div className={`font-semibold ${paymentColors[reservation.paymentStatus]}`}>
-              {reservation.paymentStatus}
+              {reservation.paymentStatus || 'UNKNOWN'}
             </div>
             <div className="text-xs text-gray-500">
-              Paid: ${reservation.paidAmount.toLocaleString()}
+              Paid: ${Number(reservation.paidAmount ?? 0).toLocaleString()}
             </div>
           </div>
         </div>
@@ -200,9 +200,9 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
         {/* Source and Special Requests */}
         <div className="flex flex-wrap gap-2 mb-4">
           <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-            {reservation.source.replace('_', ' ')}
+            {(reservation.source || 'UNKNOWN').replace('_', ' ')}
           </span>
-          {reservation.specialRequests.slice(0, 2).map((request, index) => (
+          {(reservation.specialRequests || []).slice(0, 2).map((request, index) => (
             <span
               key={index}
               className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
@@ -210,17 +210,17 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
               {request}
             </span>
           ))}
-          {reservation.specialRequests.length > 2 && (
+          {(reservation.specialRequests || []).length > 2 && (
             <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-              +{reservation.specialRequests.length - 2} more
+              +{(reservation.specialRequests || []).length - 2} more
             </span>
           )}
         </div>
 
         {/* Contact Info */}
         <div className="text-sm text-gray-600">
-          <div>📧 {reservation.guest.email}</div>
-          <div>📱 {reservation.guest.phone}</div>
+          <div>📧 {reservation.guest?.email || '-'}</div>
+          <div>📱 {reservation.guest?.phone || '-'}</div>
         </div>
       </div>
 
