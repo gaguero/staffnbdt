@@ -1,8 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { CreateReservationInput, Reservation } from '../../types/hotel';
+import { CreateReservationInput, Reservation, ReservationSource } from '../../types/hotel';
 import { useCreateReservation, useUpdateReservation } from '../../hooks/useHotel';
 import { hotelService } from '../../services/hotelService';
+
+// Form data type that matches HTML form inputs
+interface ReservationFormData {
+  guestId?: string;
+  guest?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  };
+  roomTypeId: string;
+  roomId?: string;
+  checkInDate: string; // HTML date input returns string
+  checkOutDate: string; // HTML date input returns string
+  adults: number;
+  children?: number;
+  rate: number;
+  source: ReservationSource;
+  paymentMethod?: string;
+  specialRequests?: string; // Form handles as string, will convert to array
+  notes?: string; // Form handles as string, will convert to array
+}
 
 interface CreateReservationModalProps {
   isOpen: boolean;
@@ -35,7 +57,7 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
     reset,
     setValue,
     watch
-  } = useForm<CreateReservationInput>();
+  } = useForm<ReservationFormData>();
 
   const watchedCheckIn = watch('checkInDate');
   const watchedCheckOut = watch('checkOutDate');
@@ -53,8 +75,8 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
         // If editing, load guest data
         if (mode === 'edit' && reservation) {
           // Set form values for editing
-          setValue('checkInDate', reservation.checkInDate);
-          setValue('checkOutDate', reservation.checkOutDate);
+          setValue('checkInDate', new Date(reservation.checkInDate).toISOString().split('T')[0]);
+          setValue('checkOutDate', new Date(reservation.checkOutDate).toISOString().split('T')[0]);
           setValue('roomTypeId', reservation.roomType?.id || '');
           setValue('roomId', reservation.room?.id || '');
           setValue('adults', reservation.adults);
@@ -157,16 +179,38 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
     return nights * calculatedRate;
   };
 
-  const onSubmit = async (data: CreateReservationInput) => {
+  const onSubmit = async (data: ReservationFormData) => {
     try {
-      const submissionData = {
-        ...data,
+      const submissionData: CreateReservationInput = {
+        guestId: data.guestId,
+        guest: data.guest && data.guest.firstName ? {
+          firstName: data.guest.firstName,
+          lastName: data.guest.lastName || '',
+          email: data.guest.email || '',
+          phone: data.guest.phone || '',
+          preferences: {
+            smoking: false,
+            specialRequests: [],
+            dietaryRestrictions: [],
+            communicationPreferences: {
+              email: true,
+              sms: false,
+              phone: false
+            }
+          }
+        } : undefined,
+        roomTypeId: data.roomTypeId,
+        roomId: data.roomId,
         checkInDate: new Date(data.checkInDate),
         checkOutDate: new Date(data.checkOutDate),
-        totalAmount: calculateTotal(),
         numberOfGuests: (data.adults || 1) + (data.children || 0),
-        // Transform specialRequests string to array if provided
-        specialRequests: data.specialRequests ? [data.specialRequests] : [],
+        adults: data.adults,
+        children: data.children || 0,
+        rate: data.rate,
+        source: data.source,
+        paymentMethod: data.paymentMethod,
+        specialRequests: data.specialRequests ? (data.specialRequests.trim() ? [data.specialRequests.trim()] : []) : [],
+        notes: data.notes ? (data.notes.trim() ? [data.notes.trim()] : []) : []
       };
 
       if (mode === 'edit' && reservation) {
@@ -425,7 +469,7 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                   <input
                     type="date"
                     {...register('checkOutDate', { required: 'Check-out date is required' })}
-                    min={watchedCheckIn instanceof Date ? watchedCheckIn.toISOString().split('T')[0] : watchedCheckIn}
+                    min={watchedCheckIn ? (typeof watchedCheckIn === 'string' ? watchedCheckIn : new Date(watchedCheckIn).toISOString().split('T')[0]) : ''}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {errors.checkOutDate && (

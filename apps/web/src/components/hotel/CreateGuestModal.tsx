@@ -3,6 +3,39 @@ import { useForm } from 'react-hook-form';
 import { CreateGuestInput, Guest } from '../../types/hotel';
 import { useCreateGuest, useUpdateGuest } from '../../hooks/useHotel';
 
+// Form data type that matches HTML form inputs
+interface GuestFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth?: string; // HTML date input returns string
+  nationality?: string;
+  idType?: string;
+  idNumber?: string;
+  notes?: string; // Form handles as string, will convert to array
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
+  preferences: {
+    smoking: boolean;
+    roomType?: string;
+    floor?: string;
+    bedType?: string;
+    communicationPreferences: {
+      email: boolean;
+      sms: boolean;
+      phone: boolean;
+    };
+    specialRequests: string[];
+    dietaryRestrictions: string[];
+  };
+}
+
 interface CreateGuestModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,7 +60,7 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({
     formState: { errors },
     reset,
     setValue
-  } = useForm<CreateGuestInput>();
+  } = useForm<GuestFormData>();
 
   useEffect(() => {
     if (isOpen) {
@@ -36,7 +69,7 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({
         setValue('lastName', guest.lastName);
         setValue('email', guest.email);
         setValue('phone', guest.phone);
-        setValue('dateOfBirth', guest.dateOfBirth);
+        setValue('dateOfBirth', guest.dateOfBirth ? new Date(guest.dateOfBirth).toISOString().split('T')[0] : '');
         setValue('nationality', guest.nationality || '');
         setValue('idType', guest.idType || '');
         setValue('idNumber', guest.idNumber || '');
@@ -83,12 +116,27 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({
     }
   }, [isOpen, mode, guest, setValue, reset]);
 
-  const onSubmit = async (data: CreateGuestInput) => {
+  const onSubmit = async (data: GuestFormData) => {
     try {
-      // Transform notes string to array format expected by API
-      const submitData = {
-        ...data,
-        notes: data.notes ? [data.notes] : []
+      // Transform form data to match API expectations
+      const submitData: CreateGuestInput = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+        nationality: data.nationality,
+        idType: data.idType,
+        idNumber: data.idNumber,
+        address: data.address && data.address.street ? {
+          street: data.address.street,
+          city: data.address.city || '',
+          state: data.address.state || '',
+          country: data.address.country || '',
+          zipCode: data.address.zipCode || ''
+        } : undefined,
+        preferences: data.preferences,
+        notes: data.notes ? (data.notes.trim() ? [data.notes.trim()] : []) : []
       };
       
       if (mode === 'edit' && guest) {
