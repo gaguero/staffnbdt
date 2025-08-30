@@ -191,7 +191,7 @@ const ReservationsPage: React.FC = () => {
               <div className="text-sm text-gray-600">Check-outs Today</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-indigo-600">${hotelStats.revenue.today.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-indigo-600">${Number(hotelStats?.revenue?.today ?? 0).toLocaleString()}</div>
               <div className="text-sm text-gray-600">Today Revenue</div>
             </div>
             <div className="text-center">
@@ -226,7 +226,7 @@ const ReservationsPage: React.FC = () => {
             <div className="text-sm text-gray-600">Cancelled</div>
           </div>
           <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-2xl font-bold text-green-600">${stats.totalRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-600">${Number(stats.totalRevenue || 0).toLocaleString()}</div>
             <div className="text-sm text-gray-600">Revenue</div>
           </div>
           <div className="bg-white p-4 rounded-lg border border-gray-200">
