@@ -61,17 +61,17 @@ const ReservationsPage: React.FC = () => {
 
     const totalRevenue = reservations
       .filter(r => !['CANCELLED', 'NO_SHOW'].includes(r.status))
-      .reduce((sum, r) => sum + r.totalAmount, 0);
+      .reduce((sum, r) => sum + Number(r.totalAmount || 0), 0);
 
     return {
-      total: reservations.length,
-      confirmed: statusCounts.CONFIRMED || 0,
-      checkedIn: statusCounts.CHECKED_IN || 0,
-      checkedOut: statusCounts.CHECKED_OUT || 0,
-      cancelled: statusCounts.CANCELLED || 0,
-      totalRevenue,
-      arrivalsToday: todayArrivals?.length || 0,
-      departuresToday: todayDepartures?.length || 0,
+      total: Number(reservations.length || 0),
+      confirmed: Number(statusCounts.CONFIRMED || 0),
+      checkedIn: Number(statusCounts.CHECKED_IN || 0),
+      checkedOut: Number(statusCounts.CHECKED_OUT || 0),
+      cancelled: Number(statusCounts.CANCELLED || 0),
+      totalRevenue: Number.isFinite(totalRevenue) ? totalRevenue : 0,
+      arrivalsToday: Number(todayArrivals?.length || 0),
+      departuresToday: Number(todayDepartures?.length || 0),
     };
   }, [reservations, todayArrivals, todayDepartures]);
 

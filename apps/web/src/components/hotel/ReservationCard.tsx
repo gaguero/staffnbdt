@@ -75,6 +75,17 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
     return nights;
   };
 
+  // Normalize special requests to a string array
+  const rawSpecialRequests: any = (reservation as any).specialRequests;
+  const specialRequestsList: string[] = Array.isArray(rawSpecialRequests)
+    ? rawSpecialRequests.filter((s: any) => typeof s === 'string' && s.trim().length > 0)
+    : typeof rawSpecialRequests === 'string'
+      ? rawSpecialRequests
+          .split(/\r?\n|,|;/)
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      : [];
+
   if (compact) {
     return (
       <div
@@ -202,7 +213,7 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
           <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
             {(reservation.source || 'UNKNOWN').replace('_', ' ')}
           </span>
-          {(reservation.specialRequests || []).slice(0, 2).map((request, index) => (
+          {specialRequestsList.slice(0, 2).map((request, index) => (
             <span
               key={index}
               className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
@@ -210,9 +221,9 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
               {request}
             </span>
           ))}
-          {(reservation.specialRequests || []).length > 2 && (
+          {specialRequestsList.length > 2 && (
             <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-              +{(reservation.specialRequests || []).length - 2} more
+              +{specialRequestsList.length - 2} more
             </span>
           )}
         </div>
