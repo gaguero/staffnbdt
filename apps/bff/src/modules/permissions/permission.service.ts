@@ -232,7 +232,7 @@ export class PermissionService implements OnModuleInit {
         return { 
           allowed: true, 
           reason: 'PLATFORM_ADMIN has unrestricted access', 
-          source: 'platform_admin_bypass' 
+          source: 'default' 
         };
       }
       
