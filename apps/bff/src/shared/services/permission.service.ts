@@ -235,7 +235,7 @@ export class PermissionService {
     const permissionString = `${permission.resource}.${permission.action}.${permission.scope}`;
 
     return rolePermissions.some(rolePermission => {
-      const matches = matchesPermissionPattern(permissionString, rolePermission);
+      const matches = this.matchesPermissionPattern(permissionString, rolePermission);
       
       if (matches) {
         this.logger.debug(`Legacy permission match: ${permissionString} matches ${rolePermission}`);
