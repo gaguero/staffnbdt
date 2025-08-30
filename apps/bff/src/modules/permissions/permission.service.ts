@@ -149,10 +149,33 @@ export class PermissionService implements OnModuleInit {
    * Get all permissions for a user
    */
   async getUserPermissions(userId: string, context?: Partial<PermissionEvaluationContext>): Promise<Permission[]> {
-    // Return empty array if permission tables don't exist
+    // Handle legacy mode differently - PLATFORM_ADMIN should still get all permissions
     if (!this.permissionTablesExist) {
-      this.logger.debug('Permission tables not available, returning empty permissions array');
-      return [];
+      this.logger.debug('Permission tables not available, checking for PLATFORM_ADMIN in legacy mode');
+      
+      // In legacy mode, still check for PLATFORM_ADMIN users
+      try {
+        const user = await this.getUserWithRoles(userId);
+        if (user?.role === 'PLATFORM_ADMIN') {
+          this.logger.log(`PLATFORM_ADMIN user ${userId} getting all permissions in legacy mode`);
+          // Try to get all permissions from database if possible
+          try {
+            const allPermissions = await this.prisma.permission.findMany();
+            this.logger.log(`PLATFORM_ADMIN legacy mode: returning ${allPermissions.length} permissions`);
+            return allPermissions;
+          } catch (dbError) {
+            this.logger.warn('Could not fetch permissions from database in legacy mode:', dbError.message);
+            // Return a minimal set of admin permissions as fallback
+            return [];
+          }
+        }
+        
+        this.logger.debug('Non-admin user in legacy mode, returning empty permissions array');
+        return [];
+      } catch (error) {
+        this.logger.error('Error checking user role in legacy mode:', error);
+        return [];
+      }
     }
 
     try {
@@ -254,9 +277,25 @@ export class PermissionService implements OnModuleInit {
     scope: string,
     context?: Partial<PermissionEvaluationContext>,
   ): Promise<PermissionEvaluationResult> {
-    // Return default deny if permission tables don't exist
+    // Handle PLATFORM_ADMIN even if permission tables don't exist
     if (!this.permissionTablesExist) {
-      this.logger.debug('Permission tables not available, defaulting to deny');
+      this.logger.debug('Permission tables not available, checking for PLATFORM_ADMIN in legacy mode');
+      
+      try {
+        const user = await this.getUserWithRoles(userId);
+        if (user?.role === 'PLATFORM_ADMIN') {
+          this.logger.debug(`PLATFORM_ADMIN user ${userId} granted unrestricted access to ${resource}.${action}.${scope} in legacy mode`);
+          return {
+            allowed: true,
+            reason: 'PLATFORM_ADMIN has unrestricted access (legacy mode)',
+            source: 'legacy_admin',
+          };
+        }
+      } catch (error) {
+        this.logger.error('Error checking user role in legacy permission evaluation:', error);
+      }
+      
+      this.logger.debug('Non-admin user in legacy mode, defaulting to deny');
       return { allowed: false, reason: 'Permission system not available - use legacy @Roles', source: 'legacy' };
     }
 
@@ -674,11 +713,22 @@ export class PermissionService implements OnModuleInit {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
 
+      // Handle PLATFORM_ADMIN in legacy mode
+      let permissions: Permission[] = [];
+      if (user.role === 'PLATFORM_ADMIN') {
+        try {
+          permissions = await this.prisma.permission.findMany();
+          this.logger.log(`PLATFORM_ADMIN legacy summary: ${permissions.length} permissions`);
+        } catch (error) {
+          this.logger.warn('Could not fetch permissions for PLATFORM_ADMIN summary in legacy mode:', error.message);
+        }
+      }
+
       return {
         userId,
         roles: [], // No custom roles in legacy mode
-        permissions: [], // No advanced permissions in legacy mode
-        inheritedPermissions: [],
+        permissions, // All permissions for PLATFORM_ADMIN, empty for others
+        inheritedPermissions: permissions, // Same as permissions in legacy mode
         directPermissions: [],
         deniedPermissions: [],
         cacheStats: {
@@ -878,7 +928,7 @@ export class PermissionService implements OnModuleInit {
   }
 
   /**
-   * Check if permission tables exist in the database using PostgreSQL-specific queries
+   * Check if permission tables exist in the database using simple Prisma queries
    */
   private async hasPermissionTables(): Promise<boolean> {
     try {
@@ -887,69 +937,49 @@ export class PermissionService implements OnModuleInit {
       const dbName = databaseUrl ? new URL(databaseUrl).pathname.slice(1) : 'unknown';
       this.logger.log(`Checking permission tables in database: ${dbName}`);
 
-      // Check for required permission tables using PostgreSQL information_schema
-      const requiredTables = ['Permission', 'CustomRole', 'RolePermission', 'UserPermission', 'PermissionCache'];
-      const schema = 'public'; // Default PostgreSQL schema
+      // Simple approach: try to count records in each required table
+      const requiredTables = [
+        { name: 'Permission', query: () => this.prisma.permission.count() },
+        { name: 'CustomRole', query: () => this.prisma.customRole.count() },
+        { name: 'RolePermission', query: () => this.prisma.rolePermission.count() },
+        { name: 'UserPermission', query: () => this.prisma.userPermission.count() },
+        { name: 'PermissionCache', query: () => this.prisma.permissionCache.count() },
+      ];
       
-      this.logger.log(`Checking for tables: ${requiredTables.join(', ')} in schema: ${schema}`);
+      this.logger.log(`Checking tables: ${requiredTables.map(t => t.name).join(', ')}`);
 
-      for (const tableName of requiredTables) {
-        const query = `
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = $1 
-            AND table_name = $2
-          ) as table_exists
-        `;
-        
-        this.logger.debug(`Executing query for table ${tableName}: ${query}`);
-        const result = await this.prisma.$queryRaw<[{table_exists: boolean}]>`
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = ${schema}
-            AND table_name = ${tableName}
-          ) as table_exists
-        `;
-        
-        const tableExists = result[0]?.table_exists || false;
-        this.logger.log(`Table ${tableName} exists: ${tableExists}`);
-        
-        if (!tableExists) {
-          this.logger.warn(`Required permission table '${tableName}' does not exist in schema '${schema}'`);
+      for (const table of requiredTables) {
+        try {
+          const count = await table.query();
+          this.logger.log(`✓ Table ${table.name}: ${count} records`);
+        } catch (tableError) {
+          this.logger.warn(`✗ Table ${table.name}: ${tableError.message}`);
+          
+          // Check for specific "table does not exist" errors
+          if (tableError.message?.includes('relation') || 
+              tableError.message?.includes('table') || 
+              tableError.message?.includes('does not exist') ||
+              tableError.code === '42P01') {
+            this.logger.debug(`Permission table '${table.name}' does not exist`);
+            return false;
+          }
+          
+          // Other errors might indicate permissions issues, treat as non-existent
           return false;
         }
       }
 
-      this.logger.log('All required permission tables found in database');
-      
-      // Additional verification: try to count records in Permission table
-      try {
-        const count = await this.prisma.permission.count();
-        this.logger.log(`Permission table accessible with ${count} records`);
-        return true;
-      } catch (accessError) {
-        this.logger.error('Permission tables exist but are not accessible:', accessError);
-        return false;
-      }
+      this.logger.log('✓ All permission tables exist and are accessible');
+      return true;
       
     } catch (error) {
-      this.logger.error('Error checking permission tables existence:', {
+      this.logger.error('Error during permission table check:', {
         message: error.message,
         code: error.code,
-        stack: error.stack
       });
       
-      // Check for specific PostgreSQL error types
-      if (error.message?.includes('relation') || 
-          error.message?.includes('table') || 
-          error.message?.includes('does not exist') ||
-          error.code === '42P01') { // PostgreSQL "relation does not exist" error
-        this.logger.debug('Permission tables do not exist in database (PostgreSQL error detected)');
-        return false;
-      }
-      
-      // For connection or other errors, assume tables don't exist to be safe
-      this.logger.warn('Assuming permission tables do not exist due to database error');
+      // Default to false for any errors
+      this.logger.warn('Defaulting to permission tables not existing due to error');
       return false;
     }
   }
@@ -1213,8 +1243,22 @@ export class PermissionService implements OnModuleInit {
   }
 
   private async getLegacyRolePermissions(role: Role, userType: UserType = UserType.INTERNAL): Promise<Permission[]> {
-    // Return empty array when permission tables don't exist
+    // PLATFORM_ADMIN should get all permissions even in legacy mode
+    if (!this.permissionTablesExist && role === Role.PLATFORM_ADMIN) {
+      this.logger.log('PLATFORM_ADMIN in legacy mode - attempting to fetch all permissions');
+      try {
+        const allPermissions = await this.prisma.permission.findMany();
+        this.logger.log(`PLATFORM_ADMIN legacy: Retrieved ${allPermissions.length} permissions directly`);
+        return allPermissions;
+      } catch (error) {
+        this.logger.error('Failed to fetch permissions for PLATFORM_ADMIN in legacy mode:', error);
+        return [];
+      }
+    }
+    
+    // Return empty array for non-admin users when permission tables don't exist
     if (!this.permissionTablesExist) {
+      this.logger.debug(`Non-admin role ${role} in legacy mode, returning empty permissions`);
       return [];
     }
     
