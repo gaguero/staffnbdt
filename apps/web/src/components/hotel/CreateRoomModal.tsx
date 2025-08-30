@@ -37,13 +37,32 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       if (mode === 'edit' && room) {
-        setValue('number', room.number);
+        // Handle room number - use backend field (unitNumber) first, then frontend field (number)
+        const roomNumber = room.number || room.unitNumber || '';
+        setValue('number', roomNumber);
+        
+        // Handle room type ID
         setValue('typeId', room.type?.id || '');
-        setValue('floor', room.floor);
-        setValue('capacity', room.capacity);
+        
+        // Handle floor - ensure we have a number, default to 1
+        const floor = room.floor ?? 1;
+        setValue('floor', floor);
+        
+        // Handle capacity - use frontend field first, then backend field (maxOccupancy), default to 1
+        const capacity = room.capacity ?? room.maxOccupancy ?? 1;
+        setValue('capacity', capacity);
+        
+        // Handle amenities array
         setValue('amenities', room.amenities || []);
+        
+        // Handle description
         setValue('description', room.description || '');
-        setValue('rate', room.rate);
+        
+        // Handle rate - use frontend field first, then backend field (dailyRate), default to 0
+        const rate = room.rate ?? room.dailyRate ?? 0;
+        setValue('rate', rate);
+        
+        // Set amenities input string
         setAmenitiesInput((room.amenities || []).join(', '));
       } else {
         reset();
