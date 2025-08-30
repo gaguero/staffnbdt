@@ -41,19 +41,53 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
   const watchedCheckOut = watch('checkOutDate');
   const watchedRoomTypeId = watch('roomTypeId');
 
-  // Load room types on mount
+  // Load room types on mount and handle availability checks
   useEffect(() => {
-    if (isOpen) {
-      loadRoomTypes();
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+
+    const loadData = async () => {
+      try {
+        // Always load room types when modal opens
+        await loadRoomTypes();
+        
+        // If editing, load guest data
+        if (mode === 'edit' && reservation) {
+          // Set form values for editing
+          setValue('checkInDate', reservation.checkInDate);
+          setValue('checkOutDate', reservation.checkOutDate);
+          setValue('roomTypeId', reservation.roomType?.id || '');
+          setValue('roomId', reservation.room?.id || '');
+          setValue('adults', reservation.adults);
+          setValue('children', reservation.children || 0);
+          setValue('source', reservation.source);
+          setValue('rate', reservation.rate);
+          
+          if (reservation.guest) {
+            setSelectedGuestId(reservation.guest.id);
+            setUseExistingGuest(true);
+            setValue('guestId', reservation.guest.id);
+          }
+        } else {
+          // Reset form for new reservation
+          reset();
+          setStep('guest');
+          setUseExistingGuest(false);
+          setSelectedGuestId('');
+        }
+      } catch (error) {
+        console.error('Failed to load initial data:', error);
+      }
+    };
+
+    loadData();
+  }, [isOpen, mode, reservation, setValue, reset]);
 
   // Calculate rate and available rooms when dates/room type change
   useEffect(() => {
-    if (watchedCheckIn && watchedCheckOut && watchedRoomTypeId) {
+    if (isOpen && watchedCheckIn && watchedCheckOut && watchedRoomTypeId) {
       loadAvailableRooms();
     }
-  }, [watchedCheckIn, watchedCheckOut, watchedRoomTypeId]);
+  }, [isOpen, watchedCheckIn, watchedCheckOut, watchedRoomTypeId]);
 
   const loadRoomTypes = async () => {
     try {
@@ -61,11 +95,13 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
       setRoomTypes(response.data || []);
     } catch (error) {
       console.error('Failed to load room types:', error);
+      setRoomTypes([]); // Ensure we always have a fallback
+      // Could add toast notification here for better user feedback
     }
   };
 
   const loadAvailableRooms = async () => {
-    if (!watchedCheckIn || !watchedCheckOut) return;
+    if (!watchedCheckIn || !watchedCheckOut || !watchedRoomTypeId) return;
 
     try {
       const response = await hotelService.searchRooms(
@@ -84,6 +120,8 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
     } catch (error) {
       console.error('Failed to load available rooms:', error);
       setAvailableRooms([]);
+      setCalculatedRate(0);
+      // Could add toast notification here for better user feedback
     }
   };
 
@@ -99,6 +137,7 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
     } catch (error) {
       console.error('Failed to search guests:', error);
       setGuestSearchResults([]);
+      // Could add toast notification here for better user feedback
     }
   };
 
@@ -125,6 +164,9 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
         checkInDate: new Date(data.checkInDate),
         checkOutDate: new Date(data.checkOutDate),
         totalAmount: calculateTotal(),
+        numberOfGuests: (data.adults || 1) + (data.children || 0),
+        // Transform specialRequests string to array if provided
+        specialRequests: data.specialRequests ? [data.specialRequests] : [],
       };
 
       if (mode === 'edit' && reservation) {
@@ -137,12 +179,19 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
       }
       
       onClose();
+      // Reset all form and component state
       reset();
       setStep('guest');
       setUseExistingGuest(false);
       setSelectedGuestId('');
+      setGuestSearchResults([]);
+      setRoomTypes([]);
+      setAvailableRooms([]);
+      setCalculatedRate(0);
     } catch (error) {
       console.error('Error saving reservation:', error);
+      // Could add toast notification here for better user feedback
+      // toastService.error('Failed to save reservation. Please try again.');
     }
   };
 
@@ -261,9 +310,14 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                     </label>
                     <input
                       type="text"
-                      {...register('guest.firstName', { required: !useExistingGuest })}
+                      {...register('guest.firstName', { 
+                        required: !useExistingGuest ? 'First name is required' : false 
+                      })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    {!useExistingGuest && errors.guest?.firstName && (
+                      <p className="mt-1 text-sm text-red-600">{errors.guest.firstName.message}</p>
+                    )}
                   </div>
 
                   <div>
@@ -272,9 +326,14 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                     </label>
                     <input
                       type="text"
-                      {...register('guest.lastName', { required: !useExistingGuest })}
+                      {...register('guest.lastName', { 
+                        required: !useExistingGuest ? 'Last name is required' : false 
+                      })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    {!useExistingGuest && errors.guest?.lastName && (
+                      <p className="mt-1 text-sm text-red-600">{errors.guest.lastName.message}</p>
+                    )}
                   </div>
 
                   <div>
@@ -283,9 +342,18 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                     </label>
                     <input
                       type="email"
-                      {...register('guest.email', { required: !useExistingGuest })}
+                      {...register('guest.email', { 
+                        required: !useExistingGuest ? 'Email is required' : false,
+                        pattern: !useExistingGuest ? {
+                          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                          message: 'Please enter a valid email address'
+                        } : undefined
+                      })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    {!useExistingGuest && errors.guest?.email && (
+                      <p className="mt-1 text-sm text-red-600">{errors.guest.email.message}</p>
+                    )}
                   </div>
 
                   <div>
@@ -294,9 +362,14 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                     </label>
                     <input
                       type="tel"
-                      {...register('guest.phone', { required: !useExistingGuest })}
+                      {...register('guest.phone', { 
+                        required: !useExistingGuest ? 'Phone number is required' : false 
+                      })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    {!useExistingGuest && errors.guest?.phone && (
+                      <p className="mt-1 text-sm text-red-600">{errors.guest.phone.message}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -305,10 +378,10 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setStep('booking')}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  disabled={useExistingGuest && !selectedGuestId}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={(useExistingGuest && !selectedGuestId) || isLoading}
                 >
-                  Next: Booking Details
+                  {isLoading ? 'Loading...' : 'Next: Booking Details'}
                 </button>
               </div>
             </div>
@@ -485,6 +558,7 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                   Special Requests
                 </label>
                 <textarea
+                  {...register('specialRequests')}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Any special requests or notes..."
@@ -520,17 +594,27 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50"
                   disabled={isLoading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isLoading || totalAmount === 0}
                 >
-                  {isLoading ? 'Saving...' : mode === 'edit' ? 'Update Reservation' : 'Create Reservation'}
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    mode === 'edit' ? 'Update Reservation' : 'Create Reservation'
+                  )}
                 </button>
               </div>
             </div>

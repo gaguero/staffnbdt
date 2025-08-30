@@ -49,12 +49,27 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({
         // Preferences
         setValue('preferences', guest.preferences);
 
-        // Notes
-        setValue('notes', guest.notes || []);
+        // Notes (handle both string and array formats)
+        const notes = Array.isArray(guest.notes) 
+          ? guest.notes.join(', ') 
+          : guest.notes || '';
+        setValue('notes', notes);
       } else {
         reset({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          dateOfBirth: '',
+          nationality: '',
+          idType: '',
+          idNumber: '',
+          notes: '',
           preferences: {
             smoking: false,
+            roomType: '',
+            floor: '',
+            bedType: '',
             communicationPreferences: {
               email: true,
               sms: false,
@@ -70,18 +85,49 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({
 
   const onSubmit = async (data: CreateGuestInput) => {
     try {
+      // Transform notes string to array format expected by API
+      const submitData = {
+        ...data,
+        notes: data.notes ? [data.notes] : []
+      };
+      
       if (mode === 'edit' && guest) {
         await updateGuest.mutateAsync({
           id: guest.id,
-          guest: data
+          guest: submitData
         });
       } else {
-        await createGuest.mutateAsync(data);
+        await createGuest.mutateAsync(submitData);
       }
       onClose();
-      reset();
+      reset({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        dateOfBirth: '',
+        nationality: '',
+        idType: '',
+        idNumber: '',
+        notes: '',
+        preferences: {
+          smoking: false,
+          roomType: '',
+          floor: '',
+          bedType: '',
+          communicationPreferences: {
+            email: true,
+            sms: false,
+            phone: false,
+          },
+          specialRequests: [],
+          dietaryRestrictions: [],
+        }
+      });
     } catch (error) {
       console.error('Error saving guest:', error);
+      // Could add toast notification here for better user feedback
+      // toastService.error('Failed to save guest. Please try again.');
     }
   };
 
@@ -390,6 +436,7 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({
               Notes
             </label>
             <textarea
+              {...register('notes')}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Any special notes about the guest..."
@@ -401,17 +448,27 @@ const CreateGuestModal: React.FC<CreateGuestModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50"
               disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
-              {isLoading ? 'Saving...' : mode === 'edit' ? 'Update Guest' : 'Create Guest'}
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                mode === 'edit' ? 'Update Guest' : 'Create Guest'
+              )}
             </button>
           </div>
         </form>
