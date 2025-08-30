@@ -72,7 +72,7 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
     const checkIn = new Date(reservation.checkInDate);
     const checkOut = new Date(reservation.checkOutDate);
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-    return nights;
+    return Number.isFinite(nights) ? nights : 0;
   };
 
   // Normalize special requests to a string array
@@ -194,7 +194,7 @@ const ReservationCard: React.FC<ReservationCardProps> = ({ reservation, onClick,
               ${Number(reservation.totalAmount ?? 0).toLocaleString()}
             </div>
             <div className="text-xs text-gray-500">
-              ${reservation.rate}/night × {getDuration()} nights
+              ${Number(reservation.rate ?? 0).toLocaleString()}/night × {getDuration()} nights
             </div>
           </div>
           <div>
