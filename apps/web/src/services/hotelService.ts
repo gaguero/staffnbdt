@@ -30,6 +30,19 @@ export interface PaginatedResponse<T> {
 }
 
 class HotelService {
+  // Helper function to transform backend Unit to frontend Room
+  private transformUnitToRoom(unit: any): Room {
+    return {
+      ...unit,
+      number: unit.unitNumber || unit.number, // Map unitNumber to number
+      capacity: unit.maxOccupancy || unit.capacity, // Map maxOccupancy to capacity
+      rate: unit.dailyRate || unit.rate || 0, // Map dailyRate to rate
+      type: unit.type || (unit.unitType ? { name: unit.unitType } : undefined), // Handle type mapping
+      housekeepingStatus: unit.housekeepingStatus || 'CLEAN', // Default housekeeping status
+      maintenanceIssues: unit.maintenanceIssues || [], // Default to empty array
+    };
+  }
+
   // Room Management (Units)
   async getRooms(filter?: RoomFilter): Promise<ApiResponse<PaginatedResponse<Room>>> {
     const params = new URLSearchParams();
@@ -45,22 +58,53 @@ class HotelService {
     }
 
     const response = await api.get(`/units?${params.toString()}`);
-    return response.data;
+    
+    // Transform the backend units data to match frontend Room interface
+    const transformedData = {
+      ...response.data,
+      data: {
+        ...response.data.data,
+        data: response.data.data.data.map((unit: any) => this.transformUnitToRoom(unit))
+      }
+    };
+    
+    return transformedData;
   }
 
   async getRoom(id: string): Promise<ApiResponse<Room>> {
     const response = await api.get(`/units/${id}`);
-    return response.data;
+    
+    // Transform the backend unit data to match frontend Room interface
+    const transformedData = {
+      ...response.data,
+      data: this.transformUnitToRoom(response.data.data)
+    };
+    
+    return transformedData;
   }
 
   async createRoom(room: CreateRoomInput): Promise<ApiResponse<Room>> {
     const response = await api.post('/units', room);
-    return response.data;
+    
+    // Transform the backend unit data to match frontend Room interface
+    const transformedData = {
+      ...response.data,
+      data: this.transformUnitToRoom(response.data.data)
+    };
+    
+    return transformedData;
   }
 
   async updateRoom(id: string, room: UpdateRoomInput): Promise<ApiResponse<Room>> {
     const response = await api.patch(`/units/${id}`, room);
-    return response.data;
+    
+    // Transform the backend unit data to match frontend Room interface
+    const transformedData = {
+      ...response.data,
+      data: this.transformUnitToRoom(response.data.data)
+    };
+    
+    return transformedData;
   }
 
   async deleteRoom(id: string): Promise<ApiResponse<void>> {
@@ -70,7 +114,14 @@ class HotelService {
 
   async updateRoomStatus(id: string, status: string): Promise<ApiResponse<Room>> {
     const response = await api.patch(`/units/${id}/status`, { status });
-    return response.data;
+    
+    // Transform the backend unit data to match frontend Room interface
+    const transformedData = {
+      ...response.data,
+      data: this.transformUnitToRoom(response.data.data)
+    };
+    
+    return transformedData;
   }
 
   async getRoomTypes(): Promise<ApiResponse<RoomType[]>> {

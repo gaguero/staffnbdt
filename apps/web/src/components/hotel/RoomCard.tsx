@@ -57,8 +57,8 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onClick, compact = false }) =
       >
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-semibold text-lg">{room.number}</div>
-            <div className="text-sm opacity-75">Floor {room.floor}</div>
+            <div className="font-semibold text-lg">{room.number || room.unitNumber}</div>
+            <div className="text-sm opacity-75">Floor {room.floor || 'N/A'}</div>
           </div>
           <div className="text-right">
             <div className="text-2xl mb-1">{getStatusIcon(room.status)}</div>
@@ -77,41 +77,43 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onClick, compact = false }) =
       {/* Header */}
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xl font-semibold text-gray-900">Room {room.number}</h3>
+          <h3 className="text-xl font-semibold text-gray-900">Room {room.number || room.unitNumber}</h3>
           <span className={`
             px-3 py-1 rounded-full text-xs font-medium border
             ${statusColors[room.status]}
           `}>
-            {getStatusIcon(room.status)} {room.status.replace('_', ' ')}
+            {getStatusIcon(room.status)} {room.status ? room.status.replace('_', ' ') : 'Unknown'}
           </span>
         </div>
         <div className="flex items-center gap-4 text-sm text-gray-600">
-          <span>Floor {room.floor}</span>
+          <span>Floor {room.floor || 'N/A'}</span>
           <span>•</span>
-          <span>{room.type?.name || 'Standard'}</span>
+          <span>{room.type?.name || room.unitType || 'Standard'}</span>
           <span>•</span>
-          <span>Capacity: {room.capacity}</span>
+          <span>Capacity: {room.capacity || room.maxOccupancy}</span>
         </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
         {/* Housekeeping Status */}
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-gray-700">Housekeeping:</span>
-          <span className={`
-            px-2 py-1 rounded text-xs font-medium
-            ${housekeepingColors[room.housekeepingStatus]}
-          `}>
-            {room.housekeepingStatus.replace('_', ' ')}
-          </span>
-        </div>
+        {room.housekeepingStatus && (
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-gray-700">Housekeeping:</span>
+            <span className={`
+              px-2 py-1 rounded text-xs font-medium
+              ${housekeepingColors[room.housekeepingStatus] || 'bg-gray-50 text-gray-700'}
+            `}>
+              {room.housekeepingStatus.replace('_', ' ')}
+            </span>
+          </div>
+        )}
 
         {/* Rate */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-gray-700">Rate:</span>
           <span className="text-lg font-semibold text-green-600">
-            ${room.rate}/night
+            ${room.rate || room.dailyRate || 0}/night
           </span>
         </div>
 

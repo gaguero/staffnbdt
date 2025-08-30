@@ -42,7 +42,9 @@ const RoomsPage: React.FC = () => {
     if (!rooms.length) return null;
 
     const statusCounts = rooms.reduce((acc, room) => {
-      acc[room.status] = (acc[room.status] || 0) + 1;
+      if (room.status) {
+        acc[room.status] = (acc[room.status] || 0) + 1;
+      }
       return acc;
     }, {} as Record<RoomStatus, number>);
 

@@ -2,19 +2,30 @@
 
 export interface Room {
   id: string;
-  number: string;
-  type: RoomType;
-  floor: number;
-  status: RoomStatus;
-  capacity: number;
+  unitNumber: string; // Backend field name
+  number?: string; // For backward compatibility
+  unitType?: string; // Backend field name
+  type?: RoomType; // For backward compatibility  
+  building?: string;
+  floor?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  maxOccupancy: number; // Backend field name
+  capacity?: number; // For backward compatibility
+  size?: number;
   amenities: string[];
+  status: RoomStatus;
+  isActive: boolean;
   description?: string;
-  rate: number;
-  housekeepingStatus: HousekeepingStatus;
+  notes?: string;
+  dailyRate?: number; // Backend field name
+  rate?: number; // For backward compatibility
+  housekeepingStatus?: HousekeepingStatus; // Optional since backend doesn't have this
   lastCleaned?: Date;
-  maintenanceIssues: MaintenanceIssue[];
+  maintenanceIssues?: MaintenanceIssue[]; // Optional since backend might not include this
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
   propertyId: string;
 }
 
