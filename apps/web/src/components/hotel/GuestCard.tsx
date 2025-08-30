@@ -33,6 +33,17 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, onClick, compact = false }
     return null;
   };
 
+  // Normalize special requests to a string array for safe rendering
+  const rawSpecialRequests: any = guest.preferences?.specialRequests as any;
+  const specialRequestsList: string[] = Array.isArray(rawSpecialRequests)
+    ? rawSpecialRequests.filter((s: any) => typeof s === 'string' && s.trim().length > 0)
+    : typeof rawSpecialRequests === 'string'
+      ? rawSpecialRequests
+          .split(/\r?\n|,|;/)
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      : [];
+
   if (compact) {
     return (
       <div
@@ -145,7 +156,7 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, onClick, compact = false }
                   Smoking
                 </span>
               )}
-              {guest.preferences.specialRequests?.slice(0, 2).map((request, index) => (
+              {specialRequestsList.slice(0, 2).map((request, index) => (
                 <span
                   key={index}
                   className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
@@ -153,9 +164,9 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, onClick, compact = false }
                   {request}
                 </span>
               ))}
-              {(guest.preferences.specialRequests?.length || 0) > 2 && (
+              {(specialRequestsList.length || 0) > 2 && (
                 <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                  +{(guest.preferences.specialRequests?.length || 0) - 2} more
+                  +{(specialRequestsList.length || 0) - 2} more
                 </span>
               )}
             </div>

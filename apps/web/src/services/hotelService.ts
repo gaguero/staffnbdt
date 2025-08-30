@@ -43,6 +43,43 @@ class HotelService {
     };
   }
 
+  // Normalize Reservation shape and fields for frontend
+  private transformReservation = (reservation: any): Reservation => {
+    const rawSpecial = reservation?.specialRequests;
+    const specialRequests: string[] = Array.isArray(rawSpecial)
+      ? rawSpecial.filter((s: any) => typeof s === 'string' && s.trim().length > 0)
+      : typeof rawSpecial === 'string'
+        ? rawSpecial
+            .split(/\r?\n|,|;/)
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        : [];
+
+    const rawNotes = reservation?.notes;
+    const notes: string[] = Array.isArray(rawNotes)
+      ? rawNotes.filter((n: any) => typeof n === 'string' && n.trim().length > 0)
+      : typeof rawNotes === 'string'
+        ? rawNotes
+            .split(/\r?\n|,|;/)
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        : [];
+
+    return {
+      ...reservation,
+      specialRequests,
+      notes,
+      rate: Number(reservation?.rate ?? 0),
+      totalAmount: Number(reservation?.totalAmount ?? 0),
+      paidAmount: Number(reservation?.paidAmount ?? 0),
+      adults: Number(reservation?.adults ?? 0),
+      children: Number(reservation?.children ?? 0),
+      numberOfGuests: Number(
+        reservation?.numberOfGuests ?? (Number(reservation?.adults ?? 0) + Number(reservation?.children ?? 0))
+      ),
+    } as Reservation;
+  };
+
   // Room Management (Units)
   async getRooms(filter?: RoomFilter): Promise<ApiResponse<PaginatedResponse<Room>>> {
     const params = new URLSearchParams();
@@ -203,43 +240,72 @@ class HotelService {
     }
 
     const response = await api.get(`/reservations?${params.toString()}`);
-    return response.data;
+    const data = response.data?.data;
+    const normalized = {
+      ...response.data,
+      data: {
+        ...data,
+        data: (data?.data || []).map((r: any) => this.transformReservation(r))
+      }
+    };
+    return normalized;
   }
 
   async getReservation(id: string): Promise<ApiResponse<Reservation>> {
     const response = await api.get(`/reservations/${id}`);
-    return response.data;
+    return {
+      ...response.data,
+      data: this.transformReservation(response.data?.data)
+    };
   }
 
   async createReservation(reservation: CreateReservationInput): Promise<ApiResponse<Reservation>> {
     const response = await api.post('/reservations', reservation);
-    return response.data;
+    return {
+      ...response.data,
+      data: this.transformReservation(response.data?.data)
+    };
   }
 
   async updateReservation(id: string, reservation: Partial<CreateReservationInput>): Promise<ApiResponse<Reservation>> {
     const response = await api.patch(`/reservations/${id}`, reservation);
-    return response.data;
+    return {
+      ...response.data,
+      data: this.transformReservation(response.data?.data)
+    };
   }
 
   async cancelReservation(id: string, reason: string): Promise<ApiResponse<Reservation>> {
     const response = await api.post(`/reservations/${id}/cancel`, { reason });
-    return response.data;
+    return {
+      ...response.data,
+      data: this.transformReservation(response.data?.data)
+    };
   }
 
   async checkIn(id: string, roomId?: string): Promise<ApiResponse<Reservation>> {
     const response = await api.post(`/reservations/${id}/check-in`, roomId ? { unitId: roomId } : {});
-    return response.data;
+    return {
+      ...response.data,
+      data: this.transformReservation(response.data?.data)
+    };
   }
 
   async checkOut(id: string): Promise<ApiResponse<Reservation>> {
     const response = await api.post(`/reservations/${id}/check-out`);
-    return response.data;
+    return {
+      ...response.data,
+      data: this.transformReservation(response.data?.data)
+    };
   }
 
   async noShow(id: string): Promise<ApiResponse<Reservation>> {
     // No-show functionality may need to be implemented or handled through status updates
     const response = await api.patch(`/reservations/${id}`, { status: 'NO_SHOW' });
-    return response.data;
+    return {
+      ...response.data,
+      data: this.transformReservation(response.data?.data)
+    };
   }
 
   // Dashboard Stats - Aggregate from individual controllers
