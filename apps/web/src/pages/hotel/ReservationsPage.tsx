@@ -22,6 +22,11 @@ const ReservationsPage: React.FC = () => {
   const reservations = reservationsResponse?.data || [];
   const total = reservationsResponse?.total || 0;
 
+  const safeNumber = (value: any, fallback = 0) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  };
+
   // Filter options
   const statusOptions: { value: ReservationStatus; label: string; color: string }[] = [
     { value: 'CONFIRMED', label: 'Confirmed', color: 'text-green-600' },
@@ -175,19 +180,19 @@ const ReservationsPage: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-4">Hotel Overview</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{hotelStats.occupancyRate}%</div>
+              <div className="text-2xl font-bold text-blue-600">{safeNumber(hotelStats?.occupancyRate)}%</div>
               <div className="text-sm text-gray-600">Occupancy</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{hotelStats.availableRooms}</div>
+              <div className="text-2xl font-bold text-green-600">{safeNumber(hotelStats?.availableRooms)}</div>
               <div className="text-sm text-gray-600">Available</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{hotelStats.checkInsToday}</div>
+              <div className="text-2xl font-bold text-orange-600">{safeNumber(hotelStats?.checkInsToday)}</div>
               <div className="text-sm text-gray-600">Check-ins Today</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{hotelStats.checkOutsToday}</div>
+              <div className="text-2xl font-bold text-purple-600">{safeNumber(hotelStats?.checkOutsToday)}</div>
               <div className="text-sm text-gray-600">Check-outs Today</div>
             </div>
             <div className="text-center">
@@ -195,7 +200,7 @@ const ReservationsPage: React.FC = () => {
               <div className="text-sm text-gray-600">Today Revenue</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">${hotelStats.averageRate}</div>
+              <div className="text-2xl font-bold text-gray-900">${safeNumber(hotelStats?.averageRate).toLocaleString()}</div>
               <div className="text-sm text-gray-600">Avg. Rate</div>
             </div>
           </div>
