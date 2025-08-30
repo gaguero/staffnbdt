@@ -249,12 +249,49 @@ export async function seedPermissions() {
     },
   ];
 
+  // Module Management Permissions
+  const modulePermissions = [
+    {
+      resource: 'module',
+      action: 'create',
+      scope: 'platform',
+      name: 'Create Platform Modules',
+      description: 'Register new modules on the platform',
+      category: 'Module Management',
+    },
+    {
+      resource: 'module',
+      action: 'delete',
+      scope: 'platform',
+      name: 'Delete Platform Modules',
+      description: 'Unregister modules from the platform',
+      category: 'Module Management',
+    },
+    {
+      resource: 'module',
+      action: 'read',
+      scope: 'organization',
+      name: 'View Organization Modules',
+      description: 'View available and enabled modules for organization',
+      category: 'Module Management',
+    },
+    {
+      resource: 'module',
+      action: 'manage',
+      scope: 'organization',
+      name: 'Manage Organization Modules',
+      description: 'Enable/disable modules for organization',
+      category: 'Module Management',
+    },
+  ];
+
   const allPermissions = [
     ...hrPermissions,
     ...trainingPermissions,
     ...documentPermissions,
     ...operationsPermissions,
     ...adminPermissions,
+    ...modulePermissions,
   ];
 
   // Create permissions

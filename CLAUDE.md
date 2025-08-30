@@ -1,425 +1,516 @@
-# CLAUDE.md - Hotel Operations Hub Navigation Guide
+# CLAUDE.md - Hotel Operations Hub Development Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with the Hotel Operations Hub codebase.
+This file provides guidance to Claude Code when working with the Hotel Operations Hub codebase.
 
-## 📚 Memory Bank Navigation Index
+See @README.md for project overview and @package.json for available commands.
 
-**CRITICAL**: Always consult the memory bank for comprehensive context. The memory bank contains the complete system knowledge organized into focused files:
+## 📚 Memory Bank Navigation
 
-### Memory Bank Quick Reference
-- **[projectbrief.md](memory-bank/projectbrief.md)** → Complete project vision, requirements, and business context
-- **[progress.md](memory-bank/progress.md)** → Current status, what's working, known issues, immediate next steps
-- **[activeContext.md](memory-bank/activeContext.md)** → Current work focus, recent decisions, implementation priorities
-- **[techContext.md](memory-bank/techContext.md)** → Complete technology stack, infrastructure, and deployment details
-- **[systemPatterns.md](memory-bank/systemPatterns.md)** → Architectural patterns, code examples, best practices
-- **[productContext.md](memory-bank/productContext.md)** → Market context, user problems, business case
+**CRITICAL**: Always consult the memory bank for comprehensive context:
 
-### Documentation Suite (Detailed Specifications)
-- **README.md** → Project overview, quick start, tech stack, deployment info
-- **ARCHITECTURE.md** → Multi-tenant system design, data models, API architecture
-- **specs.md** → Complete technical specifications, detailed requirements
-- **MODULES.md** → All available modules (HR, Inventory, Maintenance, Front Desk, etc.)
-- **mvp.md** → MVP features organized by modules, implementation priorities
-- **MULTI_TENANT.md** → Multi-tenancy implementation, tenant isolation, hierarchy
-- **WHITE_LABEL.md** → White-labeling system, theming, branding customization
-- **I18N.md** → Internationalization setup, translation management, AI integration
-- **PERMISSION_SYSTEM.md** → Advanced RBAC + ABAC permission system documentation
-- **DEVELOPMENT_PLAN.md** → Implementation phases, current status, roadmap
-- **RAILWAY_DEPLOYMENT.md** → Railway-specific deployment configuration
-- **ui.md** → Design system, component guidelines, responsive design
-- **LOGIN_CREDENTIALS.md** → Test accounts and authentication details
+- **@memory-bank/projectbrief.md** → Complete project vision and business requirements
+- **@memory-bank/progress.md** → Current status, achievements, and immediate priorities
+- **@memory-bank/activeContext.md** → Recent work focus and implementation decisions
+- **@memory-bank/techContext.md** → Technology stack and deployment configuration
+- **@memory-bank/systemPatterns.md** → Architectural patterns and code examples
+- **@memory-bank/uiDesign.md** → UI/UX patterns and design system
 
-## 🏨 Project Quick Context
+## 🏨 Project Context
 
-**Hotel Operations Hub** is a comprehensive, **multi-tenant, white-labeled, multi-language ERP platform** for hotel operations management.
+**Hotel Operations Hub** is a **multi-tenant, white-labeled, multi-language ERP platform** for hotel operations management.
 
-**Current Phase**: Multi-tenant foundation implementation (60% complete)
-**Focus**: Transforming from single-tenant HR portal to multi-tenant hotel ERP
-**Status**: See [progress.md](memory-bank/progress.md) for detailed status
+**Current Phase**: Permission System Optimization & Hotel Operations Integration Complete ✅  
+**Status**: Production-ready multi-tenant platform operational on Railway  
+**Focus**: System stability achieved, ready for next development phase
 
-## Railway-First Development Workflow
+## 🚀 Development Workflow
 
-### NO LOCAL DEVELOPMENT - WE TEST ON RAILWAY
+### Railway-First Deployment Strategy
 
-This project uses a **deploy-and-test approach directly on Railway**. We do NOT run local development servers.
+This project uses **deploy-and-test directly on Railway** - no local development servers.
 
-#### Railway Service URLs:
-- **Frontend**: https://frontend-production-55d3.up.railway.app
-- **Backend API**: Automatically configured via Railway internal networking
+#### Testing Environments
+- **Dev**: https://frontend-copy-production-f1da.up.railway.app (dev branch)
+- **Production**: https://frontend-production-55d3.up.railway.app (main branch)
 
-#### Testing Process:
+#### Deployment Process
 ```bash
-# 1. Push changes to trigger deployment
-git add . && git commit -m "Feature/fix description" && git push
+# 1. Deploy changes to dev
+git add . && git commit -m "Feature description" && git push origin dev
 
 # 2. Wait for Railway deployment
 
-# 3. Test with browser automation on Railway URLs
-playwright.navigate("https://frontend-production-55d3.up.railway.app")
-playwright.screenshot("railway-deployment.png")
-playwright.checkConsole() # Must have no errors
+# 3. Ask user to test on dev environment
+# 4. Get user confirmation before marking complete
 ```
 
-## CRITICAL INSTRUCTIONS FOR ALL AGENTS
+## 🔧 Development Methodology
 
-### MANDATORY: Documentation Research with Context7
-**ALWAYS** use Context7 MCP server to search for updated documentation before attempting to fix any issues:
-- When encountering errors → First search Context7 for related error messages and solutions
-- Before implementing features → Search Context7 for best practices and examples
-- When debugging → Look up the latest framework/library documentation
-- For deployment issues → Check for recent platform updates and changes
+### Claude's Role: Orchestrator, Not Implementer
 
-Example workflow:
-1. Error occurs: "Module not found" or "CORS issue"
-2. IMMEDIATELY use Context7 to search: "Railway deployment module not found" or "CORS NestJS React"
-3. Review updated documentation and community solutions
-4. Apply fixes based on latest information
-5. Verify with browser automation
+Claude **NEVER** writes code directly. Instead:
 
-### MANDATORY: Automated Testing with Browser Automation
-**ALWAYS** use Playwright or Puppeteer MCP servers to verify success of any changes:
+1. **RESEARCH** - Use Context7 for best practices and solutions
+2. **DISCUSS** - Understand requirements and explore options
+3. **DELEGATE** - Deploy specialized subagents for ALL implementation
+4. **DEPLOY** - Push subagent results to dev branch
+5. **TEST** - Request user verification on dev environment
 
-#### When to Use Browser Automation:
-- After ANY frontend changes → Take screenshots, check console for errors
-- After backend API changes → Test the full flow from UI
-- After fixing bugs → Automate the reproduction steps and verify fix
-- Before marking tasks complete → Run automated UI tests
-- For deployment verification → Navigate to deployed URLs and test functionality
+### Specialized Agent Catalog
 
-#### Required Testing Steps:
-1. **Navigate with Playwright/Puppeteer**: Open the application in automated browser
-2. **Check console for errors**: Monitor browser console for any JavaScript errors
-3. **Take screenshots**: Capture visual proof of working features
-4. **Test user flows**: Automate clicking, form filling, navigation
-5. **Verify API responses**: Check network tab for successful API calls
-6. **Test responsive design**: Check mobile and desktop views
+**CRITICAL**: For ALL code implementation, use specialized agents from `@.claude/agents/README.md`. Each agent has expert-level knowledge and detailed system prompts.
 
-#### Railway Deployment Structure:
-- **Dev Environment**: `https://frontend-copy-production-f1da.up.railway.app` (dev branch)
-- **Production Environment**: `https://frontend-production-55d3.up.railway.app` (main branch)
+#### 🔧 Engineering Department
+- **@.claude/agents/engineering/backend-architect.md** - API design, database architecture, scalable server systems
+- **@.claude/agents/engineering/frontend-developer.md** - React/Vue components, responsive design, performance optimization
+- **@.claude/agents/engineering/devops-automator.md** - CI/CD pipelines, cloud infrastructure, deployment automation
+- **@.claude/agents/engineering/rapid-prototyper.md** - MVPs, proof-of-concepts, 6-day sprint implementations
+- **@.claude/agents/engineering/ai-engineer.md** - AI/ML features, LLM integration, intelligent automation
+- **@.claude/agents/engineering/mobile-app-builder.md** - Native iOS/Android, React Native experiences
+- **@.claude/agents/engineering/test-writer-fixer.md** - Unit tests, integration tests, test maintenance
 
-#### Example Testing Commands:
-```javascript
-// Test on Dev Environment (dev branch)
-playwright.navigate("https://frontend-production-55d3.up.railway.app")
-playwright.screenshot("dev-homepage-loaded.png")
-playwright.checkConsole() // Should return no errors
-playwright.click("button[data-testid='login']")
-playwright.fill("input[name='email']", "test@example.com")
-playwright.screenshot("dev-login-form-filled.png")
+#### 📊 Product Department
+- **@.claude/agents/product/trend-researcher.md** - Market opportunities, viral content analysis, user behavior insights
+- **@.claude/agents/product/sprint-prioritizer.md** - 6-day development cycles, feature prioritization, trade-off decisions
+- **@.claude/agents/product/feedback-synthesizer.md** - User feedback analysis, review patterns, feature prioritization
 
-// Test on Production Environment (main branch)
-puppeteer.goto("https://backend-copy-production-328d.up.railway.app")
-puppeteer.evaluate(() => console.error) // Check for console errors
-puppeteer.screenshot({ path: "app-state.png", fullPage: true })
+#### 📈 Marketing Department
+- **@.claude/agents/marketing/tiktok-strategist.md** - TikTok marketing, viral content creation, platform optimization
+- **@.claude/agents/marketing/app-store-optimizer.md** - App store listings, keyword research, conversion optimization
+- **@.claude/agents/marketing/growth-hacker.md** - Viral growth loops, user acquisition, retention strategies
+- **@.claude/agents/marketing/content-creator.md** - Cross-platform content, brand messaging, engagement
+- **@.claude/agents/marketing/instagram-curator.md** - Visual content strategy, Instagram optimization
+- **@.claude/agents/marketing/twitter-engager.md** - Twitter strategy, trending engagement, community building
+- **@.claude/agents/marketing/reddit-community-builder.md** - Reddit marketing, community engagement
+
+#### 🎨 Design Department
+- **@.claude/agents/design/ui-designer.md** - User interface design, component systems, visual aesthetics
+- **@.claude/agents/design/ux-researcher.md** - User research, journey mapping, usability validation
+- **@.claude/agents/design/brand-guardian.md** - Visual identity, brand consistency, asset management
+- **@.claude/agents/design/visual-storyteller.md** - Infographics, presentations, visual narratives
+- **@.claude/agents/design/whimsy-injector.md** - Delightful interactions, personality, user engagement
+
+#### 🚀 Project Management
+- **@.claude/agents/project-management/studio-producer.md** - Cross-team coordination, resource allocation, workflow optimization
+- **@.claude/agents/project-management/project-shipper.md** - Launch coordination, release management, go-to-market
+- **@.claude/agents/project-management/experiment-tracker.md** - A/B testing, feature experiments, data-driven decisions
+
+#### 🏢 Studio Operations
+- **@.claude/agents/studio-operations/infrastructure-maintainer.md** - System monitoring, performance optimization, scaling
+- **@.claude/agents/studio-operations/analytics-reporter.md** - Data analysis, performance reports, insights generation
+- **@.claude/agents/studio-operations/finance-tracker.md** - Budget management, cost optimization, revenue tracking
+- **@.claude/agents/studio-operations/legal-compliance-checker.md** - Terms of service, privacy policies, regulatory compliance
+- **@.claude/agents/studio-operations/support-responder.md** - Customer support, documentation, user assistance
+
+#### 🧪 Testing & Quality
+- **@.claude/agents/testing/api-tester.md** - API testing, load testing, contract validation
+- **@.claude/agents/testing/performance-benchmarker.md** - Speed testing, profiling, optimization recommendations
+- **@.claude/agents/testing/test-results-analyzer.md** - Test data analysis, trend identification, quality metrics
+- **@.claude/agents/testing/tool-evaluator.md** - Development tool assessment, framework evaluation
+- **@.claude/agents/testing/workflow-optimizer.md** - Process improvement, efficiency analysis
+
+#### 🎁 Special Purpose Agents
+- **@.claude/agents/bonus/studio-coach.md** - Multi-agent coordination, team motivation, performance coaching
+- **@.claude/agents/bonus/joker.md** - Humor injection, mood lightening, creative energy
+
+### Required User Testing Workflow
+
+**EVERY code change requires user confirmation:**
+
+1. Claude pushes to dev branch
+2. Claude asks user to test at dev URL
+3. User confirms "it's working" or reports issues
+4. **ONLY THEN** Claude marks task complete
+
+### Agent Delegation Protocol
+
+**When delegating to ANY specialized agent, you MUST:**
+
+#### 1. Include Full Agent Context
+```markdown
+**Agent**: [agent-name] from @.claude/agents/[department]/[agent].md
+**System Prompt**: [Copy the entire system prompt from the agent file]
+**Hotel Operations Context**: Multi-tenant ERP platform for hotel operations with:
+- Production-ready permission system (RBAC + ABAC)
+- Multi-tenant architecture (organizationId/propertyId isolation)
+- Railway-first deployment strategy
+- Advanced white-labeling capabilities
 ```
 
-### NEVER Mark Tasks Complete Without:
-1. ✅ Searching Context7 for relevant documentation
-2. ✅ Running automated browser tests
-3. ✅ Taking screenshots as proof of success
-4. ✅ Checking browser console for errors
-5. ✅ Testing the complete user flow
-6. ✅ Verifying both desktop and mobile views
+#### 2. Provide Complete Task Context
+- **Current Discussion**: Summary of user requirements and decisions
+- **Context7 Research**: Include any relevant documentation findings
+- **Memory Bank Context**: Reference relevant memory-bank files
+- **Project Status**: Current phase and implementation priorities
+- **Technical Constraints**: Railway deployment, tenant isolation requirements
 
-### Debugging Workflow
-1. **Identify Issue** → Error message or unexpected behavior
-2. **Search Context7** → Look for updated docs, known issues, solutions
-3. **Implement Fix** → Apply solution based on research
-4. **Test with Browser Automation** → Verify fix works
-5. **Document Success** → Screenshots and console logs as proof
+#### 3. Specify Clear Deliverables
+```markdown
+**Expected Deliverables**:
+- Complete implementation files with proper tenant context
+- Code that follows established patterns from memory-bank/systemPatterns.md
+- Integration with existing permission system
+- Proper error handling and validation
+- Summary of implementation approach and decisions made
+```
 
-## Architecture Quick Reference
+#### 4. Define Reporting Requirements
+```markdown
+**Reporting Format**:
+- Brief summary of approach taken
+- List of files created/modified
+- Any architectural decisions made
+- Testing recommendations
+- Potential follow-up tasks identified
+- Integration points with existing system
+```
 
-### System Design
-- **Frontend**: React SPA with TypeScript, Vite, Tailwind CSS, TanStack Query
-- **Backend**: NestJS BFF with Passport JWT and advanced permission system
-- **Worker**: Bull queue processor with Redis for background jobs
-- **Database**: PostgreSQL with Prisma ORM (multi-tenant schema)
-- **Storage**: Cloudflare R2 (NOT local filesystem) with CDN
-- **Deployment**: Railway services with auto-deployment
+#### 5. Agent Delegation Template
+Use this exact format when calling subagents:
 
-### Multi-Level Role Hierarchy
-1. **Platform Admin**: Manages entire platform, all tenants
-2. **Organization Owner**: Manages hotel chain/group
-3. **Organization Admin**: Manages organization settings  
-4. **Property Manager**: Manages individual hotel property
-5. **Department Admin**: Manages department within property
-6. **Staff**: Self-service access to own resources
+```markdown
+I'm delegating this task to the [agent-name] agent because [reason why this agent's expertise is needed].
 
-## Development Commands
+**Hotel Operations Hub Context**:
+This is a multi-tenant, white-labeled hotel ERP platform with:
+- Advanced permission system operational (82 permissions, 7 roles)
+- Complete tenant isolation via TenantInterceptor/TenantContextService
+- Railway-first deployment (no local development)
+- Production-ready status with user testing requirements
 
-### Essential Commands
+**Task Requirements**: [Detailed task description]
+**Context7 Research**: [Any relevant documentation found]
+**Memory Bank References**: [Relevant patterns/examples]
+**Expected Deliverables**: [Specific outputs needed]
+
+**Agent System Prompt**: 
+[Include the complete system prompt from the agent's .md file]
+
+Claude does not implement code directly - only delegates. Focus solely on implementation using the patterns established in our memory bank. Do NOT perform git operations or testing - Claude handles deployment and user testing coordination.
+```
+
+
+### Agent Selection Guidelines
+
+**Choose agents based on task type:**
+
+- **New Features**: rapid-prototyper → frontend-developer/backend-architect → test-writer-fixer → whimsy-injector
+- **Bug Fixes**: backend-architect/frontend-developer → test-writer-fixer
+- **UI/UX Work**: ui-designer → frontend-developer → whimsy-injector
+- **Infrastructure**: devops-automator → infrastructure-maintainer
+- **Complex Projects**: studio-coach → multiple specialists → project-shipper
+- **Research Tasks**: trend-researcher → feedback-synthesizer
+- **Performance Issues**: performance-benchmarker → backend-architect/frontend-developer
+
+## 🎯 Coding Standards
+
+### TypeScript/JavaScript
+- Use **2-space indentation** consistently
+- Prefer `const` over `let`, avoid `var`
+- Use descriptive function and variable names
+- **No commenting** unless explicitly requested
+- Implement proper error handling with try-catch
+
+### React Components
+- Use **function components** with hooks
+- Implement **TypeScript interfaces** for all props
+- Use **react-hook-form** with **Zod validation** for forms
+- Apply **Tailwind CSS** with CSS variables for theming
+
+### Backend Services
+- Apply **multi-tenant context** to ALL database operations
+- Use **@RequirePermission** decorators on endpoints
+- Implement **PermissionScope** for automatic filtering
+- Include **audit logging** for sensitive operations
+
+### Git Conventions
+- Commit format: `type(scope): description`
+- Branch naming: `feature/`, `fix/`, `chore/`
+- **Never commit** without user testing confirmation
+
+## 🏗️ Architecture Quick Reference
+
+### Technology Stack
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS + TanStack Query
+- **Backend**: NestJS + Prisma + PostgreSQL + Advanced Permission System
+- **Storage**: Cloudflare R2 with CDN (migration planned)
+- **Deployment**: Railway with auto-deployment
+- **Authentication**: JWT with tenant context
+
+### Multi-Tenant Architecture
+```
+Platform Admin
+├── Organizations (Hotel Chains)
+│   ├── Branding Configuration
+│   └── Properties (Hotels)
+│       ├── Department Scoping
+│       └── User Management
+```
+
+### Permission System (Production Ready)
+- **82 granular permissions** across 9 categories
+- **7 system roles** with inheritance hierarchy
+- **RBAC + ABAC hybrid** with conditional access
+- **Tenant-scoped caching** with performance optimization
+- **Hotel operations integration** complete
+
+## 🔑 Essential Commands
+
+### Development
 ```bash
-# Setup
-npm run install:all
-npm run db:generate
-npm run db:push
-
-# Development (Railway deployment preferred)
-npm run dev:bff    # Backend (port 3000)
-npm run dev:web    # Frontend (port 5173)
-
-# Database
-npm run db:studio  # Prisma Studio GUI
-npm run db:migrate # Create migration
-
-# Testing
-npm run test       # All tests
-npm run test:e2e   # End-to-end tests
+npm run install:all     # Install all dependencies
+npm run dev:bff        # Backend (port 3000)
+npm run dev:web        # Frontend (port 5173)
 ```
 
-## Advanced Permission System Integration
+### Database
+```bash
+npm run db:generate    # Generate Prisma client
+npm run db:push       # Push schema changes
+npm run db:studio     # Database GUI
+```
 
-The system includes a powerful RBAC + ABAC permission system. Key implementation patterns:
+### Testing
+```bash
+npm run test          # All tests
+npm run test:e2e      # End-to-end tests
+```
 
-### Controller with Permission Protection
+## 🔒 Security Patterns
+
+### Multi-Tenant Security
+All services automatically filter by tenant context via:
+- **TenantInterceptor**: Global tenant enforcement
+- **TenantContextService**: Automatic query isolation
+- **Permission Guards**: Role-based access control
+
+### Permission Implementation
 ```typescript
 @Controller('users')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class UsersController {
-  
   @Post()
   @RequirePermission('user.create.department')
-  async createUser(@Body() createUserDto: CreateUserDto) {
-    // Only users with user.create.department permission can access
-  }
-
-  @Get()
-  @RequirePermission(['user.read.department', 'user.read.property'])
-  @PermissionScope('department') // Automatic filtering by department
-  async getUsers(@Request() req) {
-    const filters = getPermissionFilters(req);
-    return this.usersService.findAll(filters);
+  async createUser(@Body() dto: CreateUserDto) {
+    // Implementation delegated to subagent
   }
 }
 ```
 
-### Frontend Permission Integration
+### Frontend Permission Gates
 ```typescript
-// Permission-based UI rendering
-import { usePermissions } from '../hooks/usePermissions';
-import { PermissionGate } from '../components/PermissionGate';
-
-export function UserManagementPage() {
-  const { hasPermission } = usePermissions();
-  
-  return (
-    <div>
-      <h1>User Management</h1>
-      
-      <PermissionGate permission="user.create.department">
-        <button>Create User</button>
-      </PermissionGate>
-      
-      {hasPermission('user.read.department') && (
-        <UserList showDepartmentUsers={true} />
-      )}
-    </div>
-  );
-}
+<PermissionGate permission="user.create.department">
+  <button>Create User</button>
+</PermissionGate>
 ```
 
-### Permission System Files
-- **Core Service**: `apps/bff/src/modules/permissions/permission.service.ts`
-- **Guards**: `apps/bff/src/modules/permissions/guards/permission.guard.ts`
-- **Decorators**: `apps/bff/src/shared/decorators/require-permission.decorator.ts`
-- **Frontend Integration**: `apps/web/src/hooks/usePermissions.ts`
+## 📝 Task Management Requirements
 
-## Common Development Tasks
+### Mandatory Todo Usage
+Use TodoWrite tool for ALL non-trivial tasks to:
+- Track implementation progress
+- Specify which subagents handle each task
+- Ensure user testing requirements
+- Mark completion only after user confirmation
 
-### Adding a New API Module
-1. Generate module: `cd apps/bff && nest g module modules/[name]`
-2. Generate service: `nest g service modules/[name]`
-3. Generate controller: `nest g controller modules/[name]`
-4. Create DTOs with class-validator decorators
-5. Add to app.module.ts imports
-6. Implement repository pattern with Prisma
-7. **Add Permission Protection**: Use `@UseGuards(JwtAuthGuard, PermissionGuard)`
-8. **Define Endpoint Permissions**: Add `@RequirePermission('resource.action.scope')`
-9. **Implement Scope Filtering**: Use `@PermissionScope` for automatic tenant/department filtering
-10. **Seed Module Permissions**: Add module permissions to permission seed script
+### Todo Format Examples
 
-### Implementing Permission-Based Operations
-1. Add `@UseGuards(JwtAuthGuard, PermissionGuard)` to controller
-2. Use `@RequirePermission('resource.action.scope')` decorator for endpoints
-3. Apply automatic scope filtering with `@PermissionScope('department|property|organization')`
-4. Use conditional permissions for complex business logic with `@ConditionalPermission`
-5. Implement owner-based access with `@OwnerOrPermission`
-6. Add audit log entry for sensitive operations
+**Hotel Operations Context**: Include hotel operations context in all todos:
 
-## Development Methodology - Using Subagents
+- "Research multi-tenant authentication patterns for hotel ERP [Claude with Context7]"
+- "Build guest management API with tenant isolation [backend-architect]"
+- "Create responsive hotel dashboard with brand theming [frontend-developer]"
+- "Implement room status tracking with real-time updates [backend-architect + frontend-developer]"
+- "Build reservation calendar with drag-drop functionality [frontend-developer]"
+- "Deploy hotel operations changes to dev [Claude]"
+- "Request user testing on hotel management features [Claude]"
 
-### IMPORTANT: Always Use Specialized Subagents
+**Agent Context Requirements**: Every todo must specify:
+- Which agent handles the task (from @.claude/agents catalog)
+- Hotel operations domain context (guests, rooms, reservations, etc.)
+- Multi-tenant requirements (organization/property scoping)
+- Integration points with existing permission system
 
-This project uses specialized engineering subagents. You MUST use these agents for complex tasks to ensure high-quality, efficient development.
+## ⚠️ Critical Rules
 
-### Available Subagents
-1. **backend-architect**: API design, database architecture, server-side logic
-2. **frontend-developer**: React components, UI/UX implementation, responsive design
-3. **test-writer-fixer**: Writing new tests, fixing failing tests, maintaining test coverage
-4. **devops-automator**: CI/CD setup, Docker configuration, deployment automation
-5. **rapid-prototyper**: Quick MVPs, proof-of-concepts, initial implementations
+### Never Mark Tasks Complete Without:
+1. ✅ Searching Context7 for relevant documentation
+2. ✅ Pushing changes to dev branch  
+3. ✅ Asking user to test on dev environment
+4. ✅ Getting explicit user confirmation
+5. ✅ User saying "it's working" or equivalent
 
-### Mandatory Subagent Usage
+### Forbidden Actions
+Claude is **NEVER** allowed to:
+- Write any code files directly
+- Create new files without delegation
+- Edit existing code files
+- Implement features directly
+- Fix bugs directly
 
-**ALWAYS use subagents for:**
-- Building complete feature modules → Use the relevant specialist agent
-- After ANY code changes → Use test-writer-fixer to ensure tests pass
-- Complex architectural decisions → Use backend-architect
-- UI component development → Use frontend-developer
-- Deployment and infrastructure → Use devops-automator
+### Required Actions
+Claude **MUST ALWAYS**:
+- Research with Context7 before delegating
+- Use specialized subagents for ALL code work
+- Deploy subagent results to dev branch
+- Request user testing before completion
+- Wait for user confirmation
 
-**CRITICAL: All subagents MUST:**
-1. Use Context7 to research solutions before implementing
-2. Use Playwright/Puppeteer to verify all changes work
-3. Take screenshots as proof of success
-4. Check browser console for errors
-5. Test both mobile and desktop views
-
-### Integration with Todo List
-
-When using TodoWrite, specify which subagent to use in brackets:
-- "Build user management module [backend-architect]"
-- "Create responsive navigation [frontend-developer]"
-- "Fix failing tests [test-writer-fixer]"
-- "Setup Railway deployment [devops-automator]"
-
-## Testing Strategy
-
-### Browser Automation Testing Requirements
-
-**Every code change MUST be verified with browser automation:**
-
-#### Frontend Changes Testing Checklist:
-```bash
-# 1. Deploy to Railway
-git add . && git commit -m "Frontend changes" && git push
-
-# 2. Wait for Railway deployment to complete
-
-# 3. Use Playwright/Puppeteer to:
-- Navigate to https://frontend-production-55d3.up.railway.app
-- Take initial screenshot
-- Check browser console for errors
-- Test the specific feature/fix
-- Take screenshots of each step
-- Verify responsive design (mobile/tablet/desktop)
-- Check network requests succeed
-```
-
-#### Required Test Evidence
-
-Before marking ANY task complete, you MUST have:
-1. **Screenshots** showing the working feature
-2. **Console logs** proving no errors
-3. **Network logs** showing successful API calls
-4. **Mobile/Desktop views** confirming responsive design
-5. **User flow automation** demonstrating the complete feature
-
-### Automated Test Patterns
-
-#### Pattern 1: Feature Verification
-```javascript
-// Always test new features end-to-end
-playwright.goto("/feature-page")
-playwright.screenshot("feature-initial.png")
-// Interact with feature
-playwright.click("[data-test='feature-button']")
-// Verify result
-playwright.waitForSelector("[data-test='success-message']")
-playwright.screenshot("feature-success.png")
-```
-
-#### Pattern 2: Bug Fix Verification
-```javascript
-// Reproduce the bug first
-playwright.goto("/problematic-page")
-// Try to trigger the bug
-playwright.click("#trigger-bug")
-// Verify bug is fixed
-const consoleErrors = playwright.getConsoleErrors()
-assert(consoleErrors.length === 0)
-playwright.screenshot("bug-fixed.png")
-```
-
-#### Pattern 3: Responsive Design Testing
-```javascript
-// Test mobile view
-playwright.setViewport(375, 667) // iPhone SE
-playwright.screenshot("mobile-view.png")
-
-// Test tablet view
-playwright.setViewport(768, 1024) // iPad
-playwright.screenshot("tablet-view.png")
-
-// Test desktop view
-playwright.setViewport(1920, 1080)
-playwright.screenshot("desktop-view.png")
-```
-
-## Environment Variables
+## 🌐 Environment Configuration
 
 ```bash
-# Common
+# Core Settings
 NODE_ENV=development|production
-DATABASE_URL=postgresql://...
-
-# BFF specific
-JWT_SECRET=
-JWT_EXPIRES_IN=7d
+DATABASE_URL=postgresql://user:password@host:port/database
+JWT_SECRET=generate-secure-256-bit-key
 PORT=3000
 
-# Cloudflare R2 Storage (NOT S3)
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-R2_BUCKET_NAME=
-R2_PUBLIC_URL=
-
-# Multi-Tenant Configuration
-DEFAULT_ORGANIZATION_ID=
-DEFAULT_PROPERTY_ID=
+# Multi-Tenant (Production Ready)
+DEFAULT_ORGANIZATION_ID=get-from-database-seed
+DEFAULT_PROPERTY_ID=get-from-database-seed
 TENANT_ISOLATION_MODE=strict
 
-# White-Label Configuration
+# Cloudflare R2 (Migration Planned)
+R2_ACCOUNT_ID=your-cloudflare-account
+R2_ACCESS_KEY_ID=your-r2-key
+R2_SECRET_ACCESS_KEY=your-r2-secret
+R2_BUCKET_NAME=hotel-ops-production
+
+# White-Label System (Operational)
 ALLOW_CUSTOM_BRANDING=true
 ALLOW_CUSTOM_DOMAINS=true
-ALLOW_CUSTOM_CSS=true
 
 # Internationalization
 DEFAULT_LANGUAGE=en
 SUPPORTED_LANGUAGES=en,es
 AI_TRANSLATION_ENABLED=false
-AI_TRANSLATION_PROVIDER=openai
 
-# Worker specific
-REDIS_URL=redis://...
-
-# Frontend specific
+# Frontend
 VITE_API_URL=http://localhost:3000
 ```
 
-## Current Implementation Focus
+## 🏨 Hotel Operations Context for Agents
 
-For current status, priorities, and next steps, always consult:
-- **[progress.md](memory-bank/progress.md)** - Complete current status and what needs to be done
-- **[activeContext.md](memory-bank/activeContext.md)** - Current work focus and immediate actions
+**CRITICAL**: All agents must understand they're working on a **multi-tenant hotel ERP platform**:
 
-## Deployment Notes
+### System Architecture Context
+- **Multi-Tenant**: Organization → Property → Department hierarchy with complete data isolation
+- **Permission System**: 82 granular permissions, 7 system roles, RBAC + ABAC hybrid
+- **Technology Stack**: NestJS + React + Prisma + PostgreSQL + Railway deployment
+- **Production Status**: Fully operational with advanced tenant isolation
 
-### Railway Deployment
-- Uses Nixpacks configuration (nixpacks.toml)
-- Monorepo support with workspace packages
-- Environment variables set in Railway dashboard
-- PostgreSQL and Redis provisioned as Railway services
+### Hotel Operations Domains
+When agents work on hotel features, they should understand these domains:
 
-### Build Process
-1. Install all dependencies (including dev for build)
-2. Generate Prisma client
-3. Build TypeScript applications
-4. Run production with compiled JavaScript
+#### 🏨 Front Desk Operations
+- **Guest Management**: Check-in/out, registration, guest profiles, preferences
+- **Reservations**: Booking management, availability, rates, modifications
+- **Room Assignment**: Status tracking, housekeeping coordination, upgrades
+- **Payments**: Billing, invoicing, payment processing, folios
+
+#### 🧹 Housekeeping & Maintenance
+- **Room Status**: Clean, dirty, out-of-order, maintenance required
+- **Cleaning Schedules**: Assignment, progress tracking, quality control
+- **Inventory Management**: Supplies, linen, amenities tracking
+- **Maintenance Orders**: Work requests, scheduling, asset management
+
+#### 📊 Property Management
+- **Revenue Management**: Dynamic pricing, forecasting, occupancy optimization
+- **Reporting & Analytics**: KPI dashboards, performance metrics, trends
+- **Staff Management**: Scheduling, roles, performance tracking
+- **Guest Services**: Concierge, requests, amenities, local recommendations
+
+### Multi-Tenant Implementation Requirements
+
+#### Database Operations
+```typescript
+// All queries MUST include tenant context
+await prisma.guest.findMany({
+  where: {
+    organizationId: context.organizationId,
+    propertyId: context.propertyId,
+    // ... other conditions
+  }
+});
+```
+
+#### API Controllers
+```typescript
+@Controller('guests')
+@UseGuards(JwtAuthGuard, PermissionGuard, TenantInterceptor)
+export class GuestsController {
+  @RequirePermission('guest.read.property')
+  @PermissionScope('property')
+  async findAll() { /* Implementation */ }
+}
+```
+
+#### Frontend Components
+```typescript
+<PermissionGate permission="guest.create.property">
+  <GuestRegistrationForm />
+</PermissionGate>
+```
+
+### Hotel-Specific Permission Patterns
+- **guest.create.property** - Register new guests
+- **room.update.property** - Change room status/assignments
+- **reservation.approve.property** - Confirm bookings
+- **housekeeping.assign.department** - Schedule cleaning tasks
+- **maintenance.create.property** - Submit work orders
+
+### White-Label Considerations
+- **Brand Studio Integration**: All UI must support tenant-specific theming
+- **CSS Variables**: Use tenant-aware color schemes and fonts
+- **Logo/Branding**: Support custom logos and brand elements per organization
+- **Multi-Language**: Support English/Spanish with AI translation capabilities
+
+### Performance & Scalability
+- **Tenant Isolation**: Zero cross-tenant data access (verified in production)
+- **Caching Strategy**: Redis-based with tenant-scoped cache keys
+- **Real-Time Updates**: WebSocket connections with tenant context
+- **Mobile-First**: Hotel staff use tablets and phones for operations
+
+## 📊 Current Implementation Status
+
+### Completed (Production Ready) ✅
+- Multi-tenant database schema with organizationId/propertyId
+- Advanced permission system (RBAC + ABAC) 
+- TenantInterceptor for automatic data isolation
+- White-label branding system with Brand Studio
+- JWT authentication with tenant context
+- Organization & Property management APIs
+- HR module with complete functionality
+
+### Next Phase Priorities
+1. **Cloudflare R2 Migration** - Scalable file storage
+2. **Multi-Language Support** - react-i18next integration
+3. **Hotel Operations Modules** - Front desk, housekeeping, maintenance
+
+## 🔍 Debugging Workflow
+
+1. **Identify Issue** → Error message or unexpected behavior
+2. **Search Context7** → Research solutions and best practices
+3. **Delegate Fix** → Use appropriate subagent for implementation
+4. **Deploy to Dev** → Push changes to dev environment
+5. **User Testing** → Request user verification
+6. **Mark Complete** → Only after user confirms fix works
+
+## 🎨 UI/UX Guidelines
+
+### Component Patterns
+- Use **Brand Studio** theming with CSS variables
+- Implement **PermissionGate** for conditional rendering
+- Apply **real-time validation** with react-hook-form + Zod
+- Include **loading states** and **error handling**
+- Ensure **mobile-first responsive** design
+
+### User Experience
+- **Skeleton loaders** for perceived performance
+- **Toast notifications** for user feedback
+- **Breadcrumb navigation** with tenant context
+- **Audit logging** for sensitive operations
 
 ---
 
-**Remember**: This CLAUDE.md serves as your navigation hub. Always reference the memory bank files for comprehensive context, and follow the mandatory testing and documentation research requirements for all development work.
+**Remember**: This CLAUDE.md serves as your navigation hub. Always reference memory bank files for comprehensive context and follow mandatory testing requirements for all development work.

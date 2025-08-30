@@ -112,24 +112,27 @@ model TenantSettings {
 }
 
 model User {
-  id                  String            @id @default(cuid())
-  email               String            @unique
-  firstName           String
-  lastName            String
-  role                Role
-  departmentId        String?
-  position            String?
-  hireDate            DateTime?
-  phoneNumber         String?
-  emergencyContact    Json?
-  idDocument          String?
-  profilePhoto        String?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  deletedAt           DateTime?
-  organizationId      String?
-  propertyId          String?
-  password            String?
+  id                    String            @id @default(cuid())
+  email                 String            @unique
+  firstName             String
+  lastName              String
+  role                  Role
+  userType              UserType          @default(INTERNAL)
+  externalOrganization  String?
+  accessPortal          String?           @default("staff")
+  departmentId          String?
+  position              String?
+  hireDate              DateTime?
+  phoneNumber           String?
+  emergencyContact      Json?
+  idDocument            String?
+  profilePhoto          String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  deletedAt             DateTime?
+  organizationId        String?
+  propertyId            String?
+  password              String?
   auditLogs           AuditLog[]
   managedDepartments  Department[]      @relation("DepartmentManager")
   documents           Document[]
@@ -570,6 +573,8 @@ model CustomRole {
   id             String           @id @default(cuid())
   name           String
   description    String?
+  userType       UserType         @default(INTERNAL)
+  allowedModules Json?
   organizationId String?
   propertyId     String?
   isActive       Boolean          @default(true)
@@ -589,6 +594,8 @@ model CustomRole {
   @@index([propertyId])
   @@index([isActive])
   @@index([priority])
+  @@index([userType])
+  uiRestrictions UIRestriction[]
 }
 
 model Permission {
@@ -750,6 +757,13 @@ enum Role {
   STAFF
 }
 
+enum UserType {
+  INTERNAL  // Staff, managers, admins
+  CLIENT    // Hotel guests, corporate clients  
+  VENDOR    // Suppliers, contractors, partners
+  PARTNER   // Business partners, franchisees
+}
+
 enum DocumentScope {
   GENERAL
   DEPARTMENT
@@ -857,4 +871,46 @@ enum TaskStatus {
   COMPLETED
   CANCELLED
   ON_HOLD
+}
+
+model ModuleManifest {
+  id          String   @id @default(cuid())
+  moduleId    String   @unique
+  name        String
+  version     String
+  category    String
+  description String?
+  
+  // Permission definitions stored as JSON
+  internalPermissions Json  // Permissions for internal users
+  externalPermissions Json  // Permissions for external users
+  
+  // UI definitions stored as JSON  
+  internalNavigation  Json  // Navigation for internal users
+  externalNavigation  Json  // Navigation for external users
+  
+  // Module metadata
+  dependencies        Json? // Array of required module IDs
+  isSystemModule      Boolean @default(false)
+  isActive            Boolean @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("module_manifests")
+}
+
+model UIRestriction {
+  id             String @id @default(cuid())
+  roleId         String
+  hiddenModules  Json?  // Array of module IDs to hide
+  hiddenFeatures Json?  // Array of feature IDs to hide  
+  readOnlyFields Json?  // Array of field paths that are read-only
+  
+  role           CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@map("ui_restrictions")
 }

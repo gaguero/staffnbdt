@@ -7,6 +7,9 @@ export interface PermissionEvaluationContext {
   departmentId?: string;
   resource?: string;
   resourceId?: string;
+  targetOrganizationId?: string; // For cross-org access validation
+  enabledModules?: string[]; // For module-aware permission checks
+  userType?: string; // For user type specific permissions
   currentTime?: Date;
   userAgent?: string;
   ipAddress?: string;
@@ -17,8 +20,10 @@ export interface PermissionEvaluationResult {
   allowed: boolean;
   reason?: string;
   conditions?: any;
-  source: 'role' | 'user' | 'cached' | 'default' | 'legacy';
+  source: 'role' | 'user' | 'cached' | 'default' | 'validation';
   ttl?: number; // Time to live for cache in seconds
+  moduleRestrictions?: string[]; // Modules that restrict this permission
+  crossOrgAccess?: boolean; // Whether cross-org access was required
 }
 
 export interface CachedPermission {

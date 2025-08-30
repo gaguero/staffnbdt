@@ -4,6 +4,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import UserDetailsModal from '../components/UserDetailsModal';
 import EditUserModal from '../components/EditUserModal';
 import InvitationModal from '../components/InvitationModal';
+import RoleBadge from '../components/RoleBadge';
 import PermissionGate from '../components/PermissionGate';
 import UserPropertyAccess from '../components/UserPropertyAccess';
 import { COMMON_PERMISSIONS } from '../types/permission';
@@ -333,17 +334,15 @@ const UsersPage: React.FC = () => {
     return <span className="badge badge-success">Active</span>;
   };
 
+  // Role badge component now handles all styling and logic
   const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'PROPERTY_MANAGER':
-        return <span className="badge" style={{ backgroundColor: 'var(--brand-primary-200)', color: 'var(--brand-primary-800)' }}>Super Admin</span>;
-      case 'DEPARTMENT_ADMIN':
-        return <span className="badge" style={{ backgroundColor: 'var(--brand-primary-100)', color: 'var(--brand-primary-700)' }}>Dept Admin</span>;
-      case 'STAFF':
-        return <span className="badge badge-neutral">Staff</span>;
-      default:
-        return <span className="badge badge-neutral">{role}</span>;
-    }
+    return (
+      <RoleBadge
+        role={role}
+        size="sm"
+        showTooltip={true}
+      />
+    );
   };
 
   const formatDate = (date?: string) => {

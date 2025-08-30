@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlusIcon, EditIcon, TrashIcon, UserPlusIcon, MoreHorizontalIcon } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
+import RoleBadge from './RoleBadge';
 import PermissionGate from './PermissionGate';
 import { COMMON_PERMISSIONS } from '../types/permission';
 import { organizationService, Organization } from '../services/organizationService';
@@ -188,23 +189,15 @@ const OrganizationDetailsModal: React.FC<OrganizationDetailsModalProps> = ({
       : <span className="badge badge-error">Inactive</span>;
   };
 
+  // Role badge component now handles all styling and logic
   const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'PLATFORM_ADMIN':
-        return <span className="badge bg-red-100 text-red-800">Platform Admin</span>;
-      case 'ORGANIZATION_OWNER':
-        return <span className="badge bg-purple-100 text-purple-800">Owner</span>;
-      case 'ORGANIZATION_ADMIN':
-        return <span className="badge bg-blue-100 text-blue-800">Admin</span>;
-      case 'PROPERTY_MANAGER':
-        return <span className="badge bg-green-100 text-green-800">Property Manager</span>;
-      case 'DEPARTMENT_ADMIN':
-        return <span className="badge bg-yellow-100 text-yellow-800">Dept Admin</span>;
-      case 'STAFF':
-        return <span className="badge badge-neutral">Staff</span>;
-      default:
-        return <span className="badge badge-neutral">{role}</span>;
-    }
+    return (
+      <RoleBadge
+        role={role}
+        size="sm"
+        showTooltip={true}
+      />
+    );
   };
 
   if (!isOpen) return null;

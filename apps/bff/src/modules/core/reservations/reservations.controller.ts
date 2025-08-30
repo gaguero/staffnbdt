@@ -11,55 +11,49 @@ import {
   Put,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../shared/guards/roles.guard';
-import { Roles } from '../../../shared/decorators/roles.decorator';
+import { PermissionGuard } from '../../permissions/guards/permission.guard';
+import { RequirePermission } from '../../../shared/decorators/require-permission.decorator';
 import { Role } from '@prisma/client';
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto, UpdateReservationDto, ReservationFilterDto } from './dto';
 
 @Controller('api/core/reservations')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
   @Post()
-  @Roles(
-    Role.PLATFORM_ADMIN,
-    Role.PROPERTY_MANAGER,
-    Role.ORGANIZATION_ADMIN,
-    Role.DEPARTMENT_ADMIN,
-  )
+  @RequirePermission('reservation.create.property')
   create(@Body() createReservationDto: CreateReservationDto) {
     return this.reservationsService.create(createReservationDto);
   }
 
   @Get()
+  @RequirePermission('reservation.read.property')
   findAll(@Query() filters: ReservationFilterDto) {
     return this.reservationsService.findAll(filters);
   }
 
   @Get('arrivals/today')
+  @RequirePermission('reservation.read.property')
   getTodaysArrivals(@Query('propertyId') propertyId: string) {
     return this.reservationsService.getTodaysArrivals(propertyId);
   }
 
   @Get('departures/today')
+  @RequirePermission('reservation.read.property')
   getTodaysDepartures(@Query('propertyId') propertyId: string) {
     return this.reservationsService.getTodaysDepartures(propertyId);
   }
 
   @Get(':id')
+  @RequirePermission('reservation.read.property')
   findOne(@Param('id') id: string) {
     return this.reservationsService.findOne(id);
   }
 
   @Patch(':id')
-  @Roles(
-    Role.PLATFORM_ADMIN,
-    Role.PROPERTY_MANAGER,
-    Role.ORGANIZATION_ADMIN,
-    Role.DEPARTMENT_ADMIN,
-  )
+  @RequirePermission('reservation.update.property')
   update(
     @Param('id') id: string,
     @Body() updateReservationDto: UpdateReservationDto,
@@ -68,12 +62,7 @@ export class ReservationsController {
   }
 
   @Put(':id/status')
-  @Roles(
-    Role.PLATFORM_ADMIN,
-    Role.PROPERTY_MANAGER,
-    Role.ORGANIZATION_ADMIN,
-    Role.DEPARTMENT_ADMIN,
-  )
+  @RequirePermission('reservation.update.property')
   updateStatus(
     @Param('id') id: string,
     @Body('status') status: string,
@@ -82,12 +71,7 @@ export class ReservationsController {
   }
 
   @Put(':id/check-in')
-  @Roles(
-    Role.PLATFORM_ADMIN,
-    Role.PROPERTY_MANAGER,
-    Role.ORGANIZATION_ADMIN,
-    Role.DEPARTMENT_ADMIN,
-  )
+  @RequirePermission('reservation.update.property')
   checkIn(
     @Param('id') id: string,
     @Body('checkedInBy') checkedInBy: string,
@@ -96,12 +80,7 @@ export class ReservationsController {
   }
 
   @Put(':id/check-out')
-  @Roles(
-    Role.PLATFORM_ADMIN,
-    Role.PROPERTY_MANAGER,
-    Role.ORGANIZATION_ADMIN,
-    Role.DEPARTMENT_ADMIN,
-  )
+  @RequirePermission('reservation.update.property')
   checkOut(
     @Param('id') id: string,
     @Body('checkedOutBy') checkedOutBy: string,
@@ -110,7 +89,7 @@ export class ReservationsController {
   }
 
   @Delete(':id')
-  @Roles(Role.PLATFORM_ADMIN, Role.PROPERTY_MANAGER, Role.ORGANIZATION_ADMIN)
+  @RequirePermission('reservation.delete.property')
   remove(@Param('id') id: string) {
     return this.reservationsService.remove(id);
   }

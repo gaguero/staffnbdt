@@ -7,9 +7,9 @@ Hotel Operations Hub is built on a modern, scalable technology stack optimized f
 ## Frontend Technology Stack
 
 ### Core Framework
-- **React 18.2+** with Concurrent Features
-- **TypeScript 5.0+** for type safety
-- **Vite 4.0+** for fast development and building
+- **React 18.3.1+** with Concurrent Features
+- **TypeScript 5.6.3+** for type safety
+- **Vite 5.4.11+** for fast development and building
 - **React Router v6** for routing
 
 ### Permission Integration
@@ -62,12 +62,18 @@ Hotel Operations Hub is built on a modern, scalable technology stack optimized f
 - **Express.js** as HTTP server (NestJS default)
 - **Helmet** for security headers
 
-### Permission Engine
-- **Hybrid RBAC/ABAC** permission system
+### Permission Engine - PRODUCTION OPTIMIZED (August 27, 2025)
+- **Hybrid RBAC/ABAC** permission system - FULLY OPERATIONAL
 - **Condition Evaluators** for time, department, ownership rules
 - **Permission Caching** with Redis-like performance
 - **Migration Tools** for role-to-permission transition
 - **Validation Suite** ensuring 100% coverage
+- **PLATFORM_ADMIN Optimization**: Unrestricted access to all system features
+- **TypeScript Enhancement**: Resolved source field mapping conflicts
+- **Hotel Operations Integration**: Complete permission set for hotel operations
+- **System Role API**: All roles properly exposed in management endpoints
+- **React Compliance**: Hooks order violations resolved
+- **Frontend Stability**: Bulletproof components preventing errors
 
 ### Database & ORM
 - **PostgreSQL 15+** on Railway
@@ -207,6 +213,10 @@ R2_SECRET_ACCESS_KEY=<r2-secret-key>
 R2_BUCKET_NAME=hotel-ops-hub-production
 R2_PUBLIC_URL=https://cdn.hotel-ops-hub.com
 
+# Storage Strategy
+STORAGE_USE_R2=false
+STORAGE_HYBRID_MODE=false
+
 # AI Translation
 OPENAI_API_KEY=<openai-key>
 DEEPL_API_KEY=<deepl-key>
@@ -312,163 +322,128 @@ npm run test:watch           # Watch mode
 # Production build
 npm run build                # Build all apps
 npm run start:prod           # Start production servers
+
+# Storage Migration (from root CLOUDFLARE_R2_MIGRATION.md)
+# Run these commands from the apps/bff directory
+npm run script:migrate-storage -- --health-check
+npm run script:migrate-storage -- --migrate --dry-run
+npm run script:migrate-storage -- --migrate
+npm run script:migrate-storage -- --verify
+
+### Database Migration Commands (Manual Railway Process)
+# Step 1: Backup Production Database
+# railway link --environment production
+# railway service (Select "Postgres")
+# railway shell
+# pg_dump $DATABASE_URL > /tmp/prod_backup_$(date +%Y%m%d_%H%M%S).sql
+# exit
+
+# Step 2: Export Dev Database
+# railway link --environment dev
+# railway service (Select "Postgres Copy")
+# railway shell
+# pg_dump --clean $DATABASE_URL > /tmp/dev_export_$(date +%Y%m%d_%H%M%S).sql
+# exit
+
+# Step 3: Copy Dev Export to Production and Import
+# Download the dev export file first, then upload to production
+# railway link --environment production
+# railway service (Select "Postgres")
+# railway shell
+# psql $DATABASE_URL < dev_export_file.sql
+# exit
+
+### Railway Deployment
+- Uses Nixpacks configuration (`nixpacks.toml`) for builds.
+- Monorepo support with workspace packages.
+- Environment variables are set in the Railway dashboard.
+- PostgreSQL and Redis are provisioned as Railway services.
+- A Railway Volume must be mounted at `/app/storage` for local file storage fallback.
+
+### Permission System Seeding (Development)
+- To seed the Railway database with initial permissions and roles, run the following command from the `packages/database` directory:
+- `DATABASE_URL="<your-railway-db-url>" npx tsx scripts/seed-remote-permissions.ts`
 ```
 
-## Performance Optimization
+### Railway URLs
+- **Production Frontend**: https://frontend-production-55d3.up.railway.app (main branch)
 
-### Frontend Optimization
-- **Code splitting** with React.lazy()
-- **Bundle analysis** with webpack-bundle-analyzer
-- **Service Worker** for caching (planned)
-- **Image optimization** with sharp
-- **CDN delivery** via Cloudflare
+## Quick Setup Guide (Consolidated)
 
-### Backend Optimization
-- **Database connection pooling**
-- **Redis caching** for frequent queries
-- **Response compression** with gzip
-- **API rate limiting** with Redis
-- **Horizontal scaling** capability
-
-### Database Optimization
-```sql
--- Performance monitoring
-SELECT * FROM pg_stat_statements 
-ORDER BY total_exec_time DESC 
-LIMIT 10;
-
--- Tenant-aware indexes (PRODUCTION IMPLEMENTED)
-CREATE INDEX CONCURRENTLY idx_users_org_property_active 
-ON users(organization_id, property_id) 
-WHERE deleted_at IS NULL;
-
--- Multi-tenant security verification (PRODUCTION VERIFIED)
--- TenantInterceptor ensures all queries include tenant context (100% operational)
--- TenantContextService automatically scopes database operations (zero data leakage)
--- Production testing complete: Multi-tenant system secure and operational
-
--- Partial indexes for better performance
-CREATE INDEX CONCURRENTLY idx_documents_recent 
-ON documents(created_at DESC) 
-WHERE created_at > NOW() - INTERVAL '6 months';
+1. Get Railway DATABASE_URL from your project's Postgres service Variables.
+2. Create `.env.local` in project root:
+```bash
+DATABASE_URL=<your Railway DATABASE_URL>
+JWT_SECRET=<change-me>
+PORT=3000
+NODE_ENV=development
+VITE_API_URL=http://localhost:3000
+```
+3. Install and initialize database:
+```bash
+cd packages/database && npm install
+cd ../.. && npm run db:generate && npm run db:push
+```
+4. Run backend:
+```bash
+cd apps/bff && npm install && npm run dev
+```
+5. Run frontend:
+```bash
+cd apps/web && npm install && npm run dev
 ```
 
-## Security Configuration
-
-### API Security
-- **CORS** configured for specific origins - PRODUCTION TESTED
-- **Rate limiting** via Redis
-- **Helmet** for security headers
-- **Input validation** on all endpoints
-- **SQL injection protection** via Prisma
-- **Multi-Tenant Isolation** - TenantInterceptor prevents cross-tenant access (production ready)
-- **Automatic Tenant Filtering** - All database queries scoped by tenant (100% operational)
-- **Production Security** - Zero data leakage verified on Railway deployment (comprehensive testing)
-- **Security Achievement** - Complete multi-tenant platform operational (August 19, 2025)
-
-### Authentication Security
-```typescript
-// JWT configuration
-@Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private configService: ConfigService) {
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      secretOrKey: configService.get('JWT_SECRET'),
-      algorithms: ['HS256']
-    });
-  }
-}
+### Alternative: Railway CLI
+```bash
+railway link
+# Select project/services, then
+railway run npm run db:push
 ```
 
-### File Upload Security
-- **Virus scanning** with ClamAV
-- **File type validation**
-- **Size limits** enforced
-- **Pre-signed URLs** with expiration
-- **Content-Type validation**
+## Test Accounts (Dev)
 
-## Monitoring & Observability
+Seeded example accounts for development/testing (password for all: `password123`):
+- Platform Admins (Superadmin):
+  - admin@nayararesorts.com
+  - admin@tasogroup.com
+- Department Admins:
+  - maria.gonzalez@nayararesorts.com (Front Office)
+  - ana.castro@nayararesorts.com (Housekeeping)
+  - pedro.sanchez@tasogroup.com (Front Desk)
+- Staff:
+  - juan.rodriguez@nayararesorts.com (Reception)
+  - sofia.martinez@nayararesorts.com (Room Service)
+  - laura.fernandez@tasogroup.com (Reception)
 
-### Application Monitoring
-- **Railway logs** for basic monitoring
-- **Custom metrics** via Prometheus (planned)
-- **Error tracking** with Sentry (planned)
-- **Performance monitoring** with APM tools
+## Permission System Fix Verification Checklist
 
-### Database Monitoring
-```sql
--- Monitor tenant data distribution (PRODUCTION MONITORING)
-SELECT 
-  organization_id,
-  COUNT(*) as user_count,
-  MAX(created_at) as latest_user
-FROM users 
-GROUP BY organization_id
-ORDER BY user_count DESC;
+Objective: Verify PostgreSQL permission table detection fix in Railway production.
 
--- Verify tenant isolation is working (PRODUCTION VERIFIED)
-SELECT COUNT(DISTINCT organization_id) as tenant_count,
-       COUNT(*) as total_users
-FROM users;
-
--- Confirm no cross-tenant data leakage (VERIFIED SECURE)
--- TenantInterceptor ensures this query is automatically scoped
--- Production testing confirms zero cross-tenant access possible
-
--- Check index usage
-SELECT 
-  schemaname,
-  tablename,
-  indexname,
-  idx_scan,
-  idx_tup_read,
-  idx_tup_fetch
-FROM pg_stat_user_indexes
-ORDER BY idx_scan DESC;
+1) Backend health:
+```bash
+curl -I https://bff-production-d034.up.railway.app/api
 ```
+2) Logs should include:
+```
+Permission service initialized with system permissions and roles
+All required permission tables found in database
+System permissions initialization completed successfully
+```
+3) Frontend login:
+- Open https://frontend-production-55d3.up.railway.app
+- Login as PLATFORM_ADMIN; browser console must have no permission errors
 
-## Third-Party Integrations
+4) Debug endpoints (with auth token):
+- /api/permissions/system/status should include `permissionTablesExist: true` and table counts
 
-### AI Services
-- **OpenAI GPT-4** for translations
-- **DeepL API** as translation fallback
-- **Future**: AI insights for hotel operations
+5) Verify functionality:
+- User management works
+- RBAC checks pass
+- No legacy mode warnings
 
-### Communication Services
-- **SendGrid** for transactional emails
-- **Twilio** for SMS notifications (planned)
-- **WhatsApp Business API** (planned)
+Troubleshooting:
+- Set `FORCE_PERMISSION_SYSTEM=true`, restart, call `/api/permissions/system/reinitialize`
+- Verify DATABASE_URL and service connectivity
 
-### Payment Processing
-- **Stripe** for subscription billing (planned)
-- **PayPal** as alternative payment method (planned)
-
-This technology context ensures Hotel Operations Hub is built on a solid, scalable foundation that can grow from single-property installations to international hotel chain deployments while maintaining performance and security.
-
-## ✅ MULTI-TENANT INFRASTRUCTURE STATUS - PRODUCTION READY
-
-**Date Completed**: August 19, 2025
-**Status**: 100% OPERATIONAL - MAJOR ACHIEVEMENT
-
-### Verified Production Capabilities
-- **✅ Complete Tenant Isolation**: TenantInterceptor and TenantContextService prevent all cross-tenant data access
-- **✅ Automatic Query Scoping**: All database operations automatically filtered by tenant context
-- **✅ JWT Tenant Integration**: Tokens include organizationId, propertyId, departmentId for complete context
-- **✅ Data Security Verification**: Zero cross-tenant data leakage confirmed through comprehensive testing
-- **✅ Railway Deployment**: Multi-tenant system operational in production environment
-- **✅ Technical Issues Resolved**: CORS configuration, TypeScript compilation, and dependency injection working
-- **✅ Security Verification**: Complete validation of tenant boundaries in production
-- **✅ Architectural Transformation**: Successfully converted from single-tenant to multi-tenant platform
-
-### Architecture Achievement - Transformation Complete
-- **Database Schema**: ALL tables have organizationId/propertyId columns (100% migration complete)
-- **Service Layer**: Complete tenant context enforcement across all services
-- **Security Layer**: TenantInterceptor provides global tenant validation (production operational)
-- **Data Layer**: TenantContextService ensures automatic tenant filtering (zero data leakage)
-- **Authentication**: JWT tokens carry complete tenant context (organizationId, propertyId, departmentId)
-- **Migration**: Safe transition from single-tenant to multi-tenant architecture (successful)
-- **Production Testing**: Comprehensive verification of all multi-tenant capabilities
-
-**MAJOR ACHIEVEMENT**: The multi-tenant hotel operations platform infrastructure is now production-ready and secure. Complete transformation from single-tenant HR portal to multi-tenant hotel ERP platform successful.
+Success criteria:
+- Backend starts cleanly; status shows `permissionTablesExist: true`; frontend works without warnings

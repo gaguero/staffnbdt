@@ -3,102 +3,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { BrandLogo } from '../contexts/ThemeContext';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { UserType } from '../types/auth';
 import PropertySelector from './PropertySelector';
 import Breadcrumb from './Breadcrumb';
+import DynamicNavigation from './DynamicNavigation';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
-
-interface NavItem {
-  label: string;
-  path: string;
-  icon: string;
-  roles: string[];
-}
-
-const navigationItems: NavItem[] = [
-  {
-    label: 'nav.dashboard',
-    path: '/dashboard',
-    icon: '📊',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.profile',
-    path: '/profile',
-    icon: '👤',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.documents',
-    path: '/documents',
-    icon: '📁',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.payroll',
-    path: '/payroll',
-    icon: '💰',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.vacation',
-    path: '/vacation',
-    icon: '🏖️',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.training',
-    path: '/training',
-    icon: '🎓',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.benefits',
-    path: '/benefits',
-    icon: '🎁',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.notifications',
-    path: '/notifications',
-    icon: '🔔',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN', 'STAFF']
-  },
-  {
-    label: 'nav.users',
-    path: '/users',
-    icon: '👥',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']
-  },
-  {
-    label: 'nav.departments',
-    path: '/departments',
-    icon: '🏢',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
-  },
-  {
-    label: 'nav.organizations',
-    path: '/organizations',
-    icon: '🏨',
-    roles: ['PLATFORM_ADMIN', 'PROPERTY_MANAGER']
-  },
-  {
-    label: 'nav.properties',
-    path: '/properties',
-    icon: '🏠',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
-  },
-  {
-    label: 'nav.brandStudio',
-    path: '/brand-studio',
-    icon: '🎨',
-    roles: ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']
-  }
-];
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
@@ -107,9 +21,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const filteredNavItems = navigationItems.filter(item => 
-    user?.role && item.roles.includes(user.role)
-  );
+  // Get user type for dynamic navigation
+  const userType = user?.userType || UserType.INTERNAL;
+  
+  // Helper function to format role display
+  const formatRoleName = (role: string) => {
+    const roleMap: Record<string, string> = {
+      PLATFORM_ADMIN: 'Platform Admin',
+      ORGANIZATION_OWNER: 'Organization Owner',
+      ORGANIZATION_ADMIN: 'Organization Admin',
+      PROPERTY_MANAGER: 'Property Manager',
+      DEPARTMENT_ADMIN: 'Department Admin',
+      STAFF: 'Staff Member',
+      CLIENT: 'Guest',
+      VENDOR: 'Vendor',
+      PARTNER: 'Partner',
+    };
+    return roleMap[role] || role.replace('_', ' ');
+  };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -117,6 +46,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const closeSidebar = () => {
     setSidebarOpen(false);
+  };
+
+  // Function to get page title based on current route
+  const getPageTitle = () => {
+    const path = location.pathname;
+    
+    // Route to title mapping
+    const routeTitles: Record<string, string> = {
+      '/dashboard': 'nav.dashboard',
+      '/profile': 'nav.profile',
+      '/users': 'nav.users',
+      '/roles': 'nav.roles',
+      '/admin/roles': 'nav.roles',
+      '/departments': 'nav.departments',
+      '/organizations': 'nav.organizations',
+      '/properties': 'nav.properties',
+      '/brand-studio': 'nav.brandStudio',
+      '/notifications': 'nav.notifications',
+      '/documents': 'nav.documents',
+      '/payroll': 'nav.payroll',
+      '/vacation': 'nav.vacation',
+      '/training': 'nav.training',
+      '/benefits': 'nav.benefits',
+      '/hotel/rooms': 'nav.rooms',
+      '/hotel/guests': 'nav.guests',
+      '/hotel/reservations': 'nav.reservations',
+    };
+    
+    return t(routeTitles[path] || 'nav.dashboard');
   };
 
   return (
@@ -154,41 +112,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {filteredNavItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={closeSidebar}
-              className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200"
-              style={({ isActive }) => isActive ? {
-                backgroundColor: 'var(--brand-primary)',
-                color: 'white',
-                boxShadow: 'var(--brand-shadow-soft)'
-              } : {
-                color: 'var(--brand-text-primary)'
-              }}
-              onMouseEnter={(e) => {
-                if (!e.currentTarget.classList.contains('active')) {
-                  e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
-                  e.currentTarget.style.color = 'var(--brand-primary)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!e.currentTarget.classList.contains('active')) {
-                  e.currentTarget.style.backgroundColor = '';
-                  e.currentTarget.style.color = 'var(--brand-text-primary)';
-                }
-              }}
-            >
-              <span className="mr-3 text-lg" role="img" aria-hidden="true">
-                {item.icon}
-              </span>
-              {t(item.label)}
-            </NavLink>
-          ))}
-        </nav>
+        {/* Dynamic Navigation */}
+        <DynamicNavigation 
+          userType={userType}
+          onItemClick={closeSidebar}
+        />
 
         {/* User info and property selector in sidebar */}
         <div className="border-t border-gray-200 p-4 space-y-3">
@@ -211,7 +139,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {user?.firstName} {user?.lastName}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                {user?.role.replace('_', ' ')}
+                {user?.role ? formatRoleName(user.role) : 'User'}
               </p>
             </div>
           </div>
@@ -255,7 +183,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Page title with tenant context */}
             <div className="flex-1 lg:ml-0 ml-4">
               <h1 className="text-2xl uppercase" style={{ fontFamily: 'var(--brand-font-heading)', color: 'var(--brand-text-primary)' }}>
-                {t(navigationItems.find(item => item.path === location.pathname)?.label || 'nav.dashboard')}
+                {getPageTitle()}
               </h1>
               <div className="text-xs text-gray-500 mt-1 lg:hidden">
                 {getCurrentOrganizationName()} • {getCurrentPropertyName()}
@@ -315,7 +243,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       {user?.firstName} {user?.lastName}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {user?.role.replace('_', ' ')}
+                      {user?.role ? formatRoleName(user.role) : 'User'}
                     </p>
                   </div>
                   <button

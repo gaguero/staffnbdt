@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import permissionService from '../services/permissionService';
 import {
@@ -10,6 +11,17 @@ import {
   BulkPermissionResult,
 } from '../types/permission';
 
+// Query keys for permission caching with normalization
+export const PERMISSION_QUERY_KEYS = {
+  all: ['permissions'] as const,
+  summary: () => [...PERMISSION_QUERY_KEYS.all, 'summary'] as const,
+  check: (resource: string, action: string, scope: string, context?: PermissionContext) => 
+    [...PERMISSION_QUERY_KEYS.all, 'check', { resource, action, scope, context }] as const,
+  bulk: (permissions: PermissionSpec[], globalContext?: PermissionContext) => 
+    [...PERMISSION_QUERY_KEYS.all, 'bulk', { permissions, globalContext }] as const,
+};
+
+
 interface UsePermissionsState {
   permissions: Permission[];
   userPermissionSummary: UserPermissionSummary | null;
@@ -18,15 +30,18 @@ interface UsePermissionsState {
 }
 
 interface UsePermissionsReturn extends UsePermissionsState {
-  // Permission checking methods
-  hasPermission: (resource: string, action: string, scope?: string, context?: PermissionContext) => Promise<boolean>;
-  hasAnyPermission: (permissions: PermissionSpec[]) => Promise<boolean>;
-  hasAllPermissions: (permissions: PermissionSpec[]) => Promise<boolean>;
-  checkPermission: (resource: string, action: string, scope?: string, context?: PermissionContext) => Promise<PermissionEvaluationResult>;
-  checkBulkPermissions: (permissions: PermissionSpec[], globalContext?: PermissionContext) => Promise<BulkPermissionResult>;
+  // Optimized permission checking methods with caching
+  hasPermission: (resource: string, action: string, scope?: string, context?: PermissionContext) => boolean;
+  hasAnyPermission: (permissions: PermissionSpec[]) => boolean;
+  hasAllPermissions: (permissions: PermissionSpec[]) => boolean;
+  checkPermission: (resource: string, action: string, scope?: string, context?: PermissionContext) => PermissionEvaluationResult | undefined;
+  
+  // Async methods for when fresh data is needed
+  checkPermissionAsync: (resource: string, action: string, scope?: string, context?: PermissionContext) => Promise<PermissionEvaluationResult>;
+  checkBulkPermissionsAsync: (permissions: PermissionSpec[], globalContext?: PermissionContext) => Promise<BulkPermissionResult>;
   
   // Data management methods
-  getUserPermissions: () => Promise<Permission[]>;
+  getUserPermissions: () => Permission[];
   refreshPermissions: () => Promise<void>;
   clearCache: () => Promise<void>;
   
@@ -35,140 +50,154 @@ interface UsePermissionsReturn extends UsePermissionsState {
 }
 
 /**
- * Custom hook for permission management and checking
+ * Optimized custom hook for permission management and checking
  * 
  * Features:
- * - Automatic permission loading based on auth state
- * - Caching with TTL support
- * - Bulk permission checking
- * - Error handling with graceful fallbacks
- * - Performance optimization
+ * - React Query integration for optimal caching and deduplication
+ * - Synchronous permission checking from cached data
+ * - Automatic request deduplication
+ * - Background refetching and cache invalidation
+ * - Performance optimization with minimal re-renders
  */
 export function usePermissions(): UsePermissionsReturn {
   const { user, isAuthenticated } = useAuth();
-  
-  const [state, setState] = useState<UsePermissionsState>({
-    permissions: [],
-    userPermissionSummary: null,
-    isLoading: false,
-    error: null,
+  const queryClient = useQueryClient();
+
+  // Main permissions query with React Query - OPTIMIZED
+  const {
+    data: userPermissionSummary,
+    isLoading,
+    error,
+    refetch: refreshPermissions,
+  } = useQuery({
+    queryKey: PERMISSION_QUERY_KEYS.summary(),
+    queryFn: () => permissionService.getMyPermissions(),
+    enabled: isAuthenticated && !!user,
+    staleTime: 15 * 60 * 1000, // Extended to 15 minutes
+    gcTime: 30 * 60 * 1000, // Extended to 30 minutes
+    refetchOnWindowFocus: false,
+    retry: 1,
+    // Background refetch for fresh data
+    refetchInterval: 15 * 60 * 1000, // Refresh every 15 minutes in background
   });
 
-  // Use ref to prevent infinite re-renders
-  const isLoadingRef = useRef(false);
+  // Extract permissions from summary with memoization
+  const permissions = useMemo(() => 
+    userPermissionSummary?.permissions || [], 
+    [userPermissionSummary?.permissions]
+  );
 
   /**
-   * Load user permissions on mount or auth change
+   * Synchronous permission check using cached data (HEAVILY OPTIMIZED)
+   * Uses normalized cache keys and aggressive caching strategies
    */
-  const loadPermissions = useCallback(async () => {
-    if (!isAuthenticated || !user || isLoadingRef.current) {
-      return;
-    }
-
-    isLoadingRef.current = true;
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-
-    try {
-      const summary = await permissionService.getMyPermissions();
-      setState(prev => ({
-        ...prev,
-        permissions: summary.permissions,
-        userPermissionSummary: summary,
-        isLoading: false,
-        error: null,
-      }));
-    } catch (error) {
-      console.error('Failed to load permissions:', error);
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to load permissions',
-      }));
-    } finally {
-      isLoadingRef.current = false;
-    }
-  }, [isAuthenticated, user]);
-
-  // Load permissions when auth state changes
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      loadPermissions();
-    } else {
-      // Clear permissions when user logs out
-      setState({
-        permissions: [],
-        userPermissionSummary: null,
-        isLoading: false,
-        error: null,
-      });
-    }
-  }, [isAuthenticated, user, loadPermissions]);
-
-  /**
-   * Check if user has a specific permission
-   */
-  const hasPermission = useCallback(async (
+  const hasPermission = useCallback((
     resource: string,
     action: string,
     scope: string = 'own',
     context?: PermissionContext
-  ): Promise<boolean> => {
+  ): boolean => {
+    if (!isAuthenticated || !userPermissionSummary) {
+      return false;
+    }
+
+    // Create normalized cache key for better cache hits
+    const queryKey = PERMISSION_QUERY_KEYS.check(resource, action, scope, context);
+    
+    // Check React Query cache first for instant response
+    const cachedResult = queryClient.getQueryData<PermissionEvaluationResult>(queryKey);
+    if (cachedResult) {
+      return cachedResult.allowed;
+    }
+
+    // Enhanced fallback: Check user permissions summary with scope hierarchy
+    const hasDirectPermission = permissions.some(permission => 
+      permission.resource === resource &&
+      permission.action === action &&
+      (permission.scope === scope || permission.scope === 'all')
+    );
+
+    if (hasDirectPermission) {
+      return true;
+    }
+
+    // Check scope hierarchy (department -> property -> organization)
+    const scopeHierarchy = ['department', 'property', 'organization', 'all'];
+    const currentScopeIndex = scopeHierarchy.indexOf(scope);
+    
+    if (currentScopeIndex !== -1) {
+      const higherScopes = scopeHierarchy.slice(currentScopeIndex + 1);
+      return permissions.some(permission => 
+        permission.resource === resource &&
+        permission.action === action &&
+        higherScopes.includes(permission.scope)
+      );
+    }
+
+    return false;
+  }, [isAuthenticated, userPermissionSummary, queryClient, permissions]);
+
+  /**
+   * Check if user has any of the specified permissions (OPTIMIZED)
+   */
+  const hasAnyPermission = useCallback((permissionsToCheck: PermissionSpec[]): boolean => {
+    if (!isAuthenticated || permissionsToCheck.length === 0) {
+      return false;
+    }
+
+    return permissionsToCheck.some(permission => 
+      hasPermission(
+        permission.resource,
+        permission.action,
+        permission.scope || 'own',
+        permission.context
+      )
+    );
+  }, [isAuthenticated, hasPermission]);
+
+  /**
+   * Check if user has all of the specified permissions (OPTIMIZED)
+   */
+  const hasAllPermissions = useCallback((permissionsToCheck: PermissionSpec[]): boolean => {
+    if (!isAuthenticated || permissionsToCheck.length === 0) {
+      return false;
+    }
+
+    return permissionsToCheck.every(permission => 
+      hasPermission(
+        permission.resource,
+        permission.action,
+        permission.scope || 'own',
+        permission.context
+      )
+    );
+  }, [isAuthenticated, hasPermission]);
+
+  /**
+   * Synchronous permission check returning detailed result from cache
+   */
+  const checkPermission = useCallback((
+    resource: string,
+    action: string,
+    scope: string = 'own',
+    context?: PermissionContext
+  ): PermissionEvaluationResult | undefined => {
     if (!isAuthenticated) {
-      return false;
+      return {
+        allowed: false,
+        reason: 'User not authenticated',
+        source: 'default',
+      };
     }
 
-    try {
-      return await permissionService.hasPermission(resource, action, scope, context);
-    } catch (error) {
-      console.error('Permission check failed:', error);
-      return false; // Fail closed for security
-    }
-  }, [isAuthenticated]);
-
-  /**
-   * Check if user has any of the specified permissions
-   */
-  const hasAnyPermission = useCallback(async (permissions: PermissionSpec[]): Promise<boolean> => {
-    if (!isAuthenticated || permissions.length === 0) {
-      return false;
-    }
-
-    try {
-      const permissionsWithScope = permissions.map(p => ({
-        ...p,
-        scope: p.scope || 'own'
-      }));
-      return await permissionService.hasAnyPermission(permissionsWithScope);
-    } catch (error) {
-      console.error('Any permission check failed:', error);
-      return false;
-    }
-  }, [isAuthenticated]);
+    const queryKey = PERMISSION_QUERY_KEYS.check(resource, action, scope, context);
+    return queryClient.getQueryData<PermissionEvaluationResult>(queryKey);
+  }, [isAuthenticated, queryClient]);
 
   /**
-   * Check if user has all of the specified permissions
+   * Async permission check for when fresh data is needed
    */
-  const hasAllPermissions = useCallback(async (permissions: PermissionSpec[]): Promise<boolean> => {
-    if (!isAuthenticated || permissions.length === 0) {
-      return false;
-    }
-
-    try {
-      const permissionsWithScope = permissions.map(p => ({
-        ...p,
-        scope: p.scope || 'own'
-      }));
-      return await permissionService.hasAllPermissions(permissionsWithScope);
-    } catch (error) {
-      console.error('All permissions check failed:', error);
-      return false;
-    }
-  }, [isAuthenticated]);
-
-  /**
-   * Check a specific permission and get detailed result
-   */
-  const checkPermission = useCallback(async (
+  const checkPermissionAsync = useCallback(async (
     resource: string,
     action: string,
     scope: string = 'own',
@@ -183,7 +212,13 @@ export function usePermissions(): UsePermissionsReturn {
     }
 
     try {
-      return await permissionService.checkPermission(resource, action, scope, context);
+      const queryKey = PERMISSION_QUERY_KEYS.check(resource, action, scope, context);
+      const result = await queryClient.fetchQuery({
+        queryKey,
+        queryFn: () => permissionService.checkPermission(resource, action, scope, context),
+        staleTime: 15 * 60 * 1000, // Extended to 15 minutes for stability
+      });
+      return result;
     } catch (error) {
       console.error('Permission check failed:', error);
       return {
@@ -192,18 +227,18 @@ export function usePermissions(): UsePermissionsReturn {
         source: 'default',
       };
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, queryClient]);
 
   /**
-   * Check multiple permissions at once
+   * Async bulk permission check with React Query optimization
    */
-  const checkBulkPermissions = useCallback(async (
-    permissions: PermissionSpec[],
+  const checkBulkPermissionsAsync = useCallback(async (
+    permissionsToCheck: PermissionSpec[],
     globalContext?: PermissionContext
   ): Promise<BulkPermissionResult> => {
     if (!isAuthenticated) {
       const defaultPermissions: Record<string, PermissionEvaluationResult> = {};
-      permissions.forEach(permission => {
+      permissionsToCheck.forEach(permission => {
         const key = `${permission.resource}_${permission.action}_${permission.scope || 'own'}`;
         defaultPermissions[key] = {
           allowed: false,
@@ -215,21 +250,29 @@ export function usePermissions(): UsePermissionsReturn {
       return {
         permissions: defaultPermissions,
         cached: 0,
-        evaluated: permissions.length,
+        evaluated: permissionsToCheck.length,
         errors: ['User not authenticated'],
       };
     }
 
     try {
-      const permissionsWithScope = permissions.map(p => ({
+      const permissionsWithScope = permissionsToCheck.map(p => ({
         ...p,
         scope: p.scope || 'own'
       }));
-      return await permissionService.checkBulkPermissions(permissionsWithScope, globalContext);
+      
+      const queryKey = PERMISSION_QUERY_KEYS.bulk(permissionsWithScope, globalContext);
+      const result = await queryClient.fetchQuery({
+        queryKey,
+        queryFn: () => permissionService.checkBulkPermissions(permissionsWithScope, globalContext),
+        staleTime: 15 * 60 * 1000, // Extended to 15 minutes for stability
+      });
+      
+      return result;
     } catch (error) {
       console.error('Bulk permission check failed:', error);
       const defaultPermissions: Record<string, PermissionEvaluationResult> = {};
-      permissions.forEach(permission => {
+      permissionsToCheck.forEach(permission => {
         const key = `${permission.resource}_${permission.action}_${permission.scope || 'own'}`;
         defaultPermissions[key] = {
           allowed: false,
@@ -241,46 +284,37 @@ export function usePermissions(): UsePermissionsReturn {
       return {
         permissions: defaultPermissions,
         cached: 0,
-        evaluated: permissions.length,
+        evaluated: permissionsToCheck.length,
         errors: ['Bulk permission check failed'],
       };
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, queryClient]);
 
   /**
-   * Get current user permissions
+   * Get current user permissions from cache
    */
-  const getUserPermissions = useCallback(async (): Promise<Permission[]> => {
-    if (!isAuthenticated) {
-      return [];
-    }
+  const getUserPermissions = useCallback((): Permission[] => {
+    return permissions;
+  }, [permissions]);
 
-    try {
-      const summary = await permissionService.getMyPermissions();
-      return summary.permissions;
-    } catch (error) {
-      console.error('Failed to get user permissions:', error);
-      return [];
-    }
-  }, [isAuthenticated]);
-
-  /**
-   * Refresh permissions from the server
-   */
-  const refreshPermissions = useCallback(async (): Promise<void> => {
+  // Refresh permissions is provided by the query
+  const refreshPermissionsCallback = useCallback(async (): Promise<void> => {
     if (!isAuthenticated) {
       return;
     }
 
-    // Clear cache first
+    // Clear React Query cache
+    await queryClient.invalidateQueries({ queryKey: PERMISSION_QUERY_KEYS.all });
+    
+    // Clear service cache
     permissionService.clearLocalCache();
     
-    // Reload permissions
-    await loadPermissions();
-  }, [isAuthenticated, loadPermissions]);
+    // Refetch fresh data
+    await refreshPermissions();
+  }, [isAuthenticated, queryClient, refreshPermissions]);
 
   /**
-   * Clear permission cache
+   * Clear permission cache (both React Query and service)
    */
   const clearCache = useCallback(async (): Promise<void> => {
     if (!isAuthenticated) {
@@ -288,14 +322,19 @@ export function usePermissions(): UsePermissionsReturn {
     }
 
     try {
+      // Clear React Query cache
+      await queryClient.invalidateQueries({ queryKey: PERMISSION_QUERY_KEYS.all });
+      
+      // Clear service cache
       await permissionService.clearMyCache();
-      // Reload permissions after clearing cache
-      await loadPermissions();
+      
+      // Refetch fresh data
+      await refreshPermissions();
     } catch (error) {
       console.error('Failed to clear cache:', error);
       throw error;
     }
-  }, [isAuthenticated, loadPermissions]);
+  }, [isAuthenticated, queryClient, refreshPermissions]);
 
   /**
    * Get cache statistics
@@ -306,21 +345,24 @@ export function usePermissions(): UsePermissionsReturn {
 
   return {
     // State
-    permissions: state.permissions,
-    userPermissionSummary: state.userPermissionSummary,
-    isLoading: state.isLoading,
-    error: state.error,
+    permissions,
+    userPermissionSummary: userPermissionSummary || null,
+    isLoading,
+    error: error?.message || null,
 
-    // Permission checking methods
+    // Optimized permission checking methods (synchronous)
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
     checkPermission,
-    checkBulkPermissions,
+
+    // Async methods for fresh data when needed
+    checkPermissionAsync,
+    checkBulkPermissionsAsync,
 
     // Data management methods
     getUserPermissions,
-    refreshPermissions,
+    refreshPermissions: refreshPermissionsCallback,
     clearCache,
 
     // Utility methods

@@ -8,3 +8,4 @@ export { default as BenefitsPage } from './BenefitsPage';
 export { default as NotificationsPage } from './NotificationsPage';
 export { default as UsersPage } from './UsersPage';
 export { default as DepartmentsPage } from './DepartmentsPage';
+export { default as PermissionViewerPage } from './PermissionViewerPage';

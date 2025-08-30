@@ -4,7 +4,7 @@ import { PrismaService } from '../../shared/database/prisma.service';
 import { AuditService } from '../../shared/audit/audit.service';
 import { StorageService } from '../../shared/storage/storage.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Role, UserType } from '@prisma/client';
 
 describe('ProfileService', () => {
   let service: ProfileService;
@@ -18,6 +18,9 @@ describe('ProfileService', () => {
     firstName: 'John',
     lastName: 'Doe',
     role: Role.STAFF,
+    userType: UserType.INTERNAL,
+    externalOrganization: null,
+    accessPortal: 'staff',
     departmentId: 'dept1',
     position: 'Developer',
     hireDate: new Date(),
@@ -28,6 +31,9 @@ describe('ProfileService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
+    organizationId: 'org1',
+    propertyId: 'prop1',
+    password: null,
   };
 
   const mockAdmin = {

@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { userService, User, UserFilter, BulkImportResult } from '../services/userService';
 import { departmentService, Department } from '../services/departmentService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import RoleBadge from '../components/RoleBadge';
 import { PermissionGate, RoleBasedComponent } from '../components';
 import { COMMON_PERMISSIONS } from '../types/permission';
 
@@ -235,16 +236,14 @@ const UserManagementPage: React.FC = () => {
     setShowEditUser(true);
   };
 
+  // Role badge component now handles all styling and logic
   const getRoleBadge = (role: string) => {
-    const colors = {
-      PROPERTY_MANAGER: 'bg-purple-100 text-purple-800',
-      DEPARTMENT_ADMIN: 'bg-blue-100 text-blue-800',
-      STAFF: 'bg-gray-100 text-gray-800',
-    };
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[role as keyof typeof colors]}`}>
-        {role.replace('_', ' ')}
-      </span>
+      <RoleBadge
+        role={role}
+        size="sm"
+        showTooltip={true}
+      />
     );
   };
 

@@ -8,6 +8,7 @@ import { EmailService } from './email.service';
 import { TenantService } from '../../shared/tenant/tenant.service';
 import { User, Role } from '@prisma/client';
 import { LoginDto, MagicLinkDto, RegisterDto, ResetPasswordDto } from './dto';
+import { PermissionService } from '../permissions/permission.service';
 
 export interface JwtPayload {
   sub: string;
@@ -16,6 +17,7 @@ export interface JwtPayload {
   departmentId?: string;
   organizationId?: string;
   propertyId?: string;
+  permissions?: string[]; // Array of permission strings
   // Standard JWT claims
   iat?: number;
   exp?: number;
@@ -42,6 +44,7 @@ export class AuthService {
     private readonly auditService: AuditService,
     private readonly emailService: EmailService,
     private readonly tenantService: TenantService,
+    private readonly permissionService: PermissionService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -77,6 +80,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Get user permissions
+    let permissions: string[] = [];
+    try {
+      const userPermissions = await this.permissionService.getUserPermissions(user.id);
+      permissions = userPermissions.map(p => `${p.resource}.${p.action}.${p.scope}`);
+    } catch (error) {
+      // Permission system not available, continue without permissions
+      console.warn('Permission system not available:', error.message);
+    }
+
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -84,6 +97,7 @@ export class AuthService {
       departmentId: user.departmentId,
       organizationId: user.organizationId,
       propertyId: user.propertyId,
+      permissions,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -148,6 +162,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        userType: user.userType || 'INTERNAL',
         departmentId: user.departmentId,
         organizationId: user.organizationId,
         propertyId: user.propertyId,
@@ -157,6 +172,8 @@ export class AuthService {
         emergencyContact: user.emergencyContact,
         idDocument: user.idDocument,
         profilePhoto: user.profilePhoto,
+        externalOrganization: user.externalOrganization,
+        accessPortal: user.accessPortal,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
@@ -283,6 +300,7 @@ export class AuthService {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          userType: user.userType || 'INTERNAL',
           departmentId: user.departmentId,
           organizationId: user.organizationId,
           propertyId: user.propertyId,
@@ -292,6 +310,8 @@ export class AuthService {
           emergencyContact: user.emergencyContact,
           idDocument: user.idDocument,
           profilePhoto: user.profilePhoto,
+          externalOrganization: user.externalOrganization,
+          accessPortal: user.accessPortal,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         },
@@ -351,6 +371,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        userType: user.userType || 'INTERNAL',
         departmentId: user.departmentId,
         organizationId: user.organizationId,
         propertyId: user.propertyId,
@@ -360,6 +381,8 @@ export class AuthService {
         emergencyContact: user.emergencyContact,
         idDocument: user.idDocument,
         profilePhoto: user.profilePhoto,
+        externalOrganization: user.externalOrganization,
+        accessPortal: user.accessPortal,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },

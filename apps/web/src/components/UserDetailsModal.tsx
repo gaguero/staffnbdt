@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User } from '../services/userService';
 import UserActivityLog from './UserActivityLog';
 import UserPropertyAssignment from './UserPropertyAssignment';
+import { UserRoleSection } from './UserRoleManagement';
 import { useTenantPermissions } from '../contexts/TenantContext';
 
 interface UserDetailsModalProps {
@@ -17,7 +18,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
   user,
   onEdit,
 }) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'activity' | 'properties'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'roles' | 'activity' | 'properties'>('details');
   const [showPropertyAssignment, setShowPropertyAssignment] = useState(false);
   const { canManageProperty } = useTenantPermissions();
 
@@ -96,6 +97,33 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               <span className="flex items-center space-x-2">
                 <span>👤</span>
                 <span>User Details</span>
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('roles')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'roles'
+                  ? 'border-transparent'
+                  : 'border-transparent hover:border-gray-300'
+              }`}
+              style={{
+                borderBottomColor: activeTab === 'roles' ? 'var(--brand-primary)' : 'transparent',
+                color: activeTab === 'roles' ? 'var(--brand-primary)' : 'var(--brand-text-secondary)'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== 'roles') {
+                  e.currentTarget.style.color = 'var(--brand-text-primary)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== 'roles') {
+                  e.currentTarget.style.color = 'var(--brand-text-secondary)';
+                }
+              }}
+            >
+              <span className="flex items-center space-x-2">
+                <span>🎭</span>
+                <span>Roles & Permissions</span>
               </span>
             </button>
             <button
@@ -359,6 +387,20 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Roles & Permissions Tab */}
+          {activeTab === 'roles' && (
+            <div className="p-6">
+              <UserRoleSection
+                user={user}
+                showHistory={true}
+                showPermissionPreview={true}
+                enableAdvancedManagement={true}
+                maxVisibleRoles={5}
+                compact={false}
+              />
             </div>
           )}
 

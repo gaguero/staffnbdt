@@ -45,14 +45,16 @@ export class PermissionService {
       // Check if user has the required permission from database custom roles
       let hasPermission = this.checkUserPermission(normalizedPermission, userPermissions, context);
 
-      // If no custom role permissions, fall back to legacy role permissions
-      if (!hasPermission && userPermissions.length === 0) {
-        this.logger.debug(`User ${user.id} has no custom role permissions, checking legacy role permissions`);
+      // For PLATFORM_ADMIN, always check legacy permissions if database permissions fail
+      // For other roles, only check legacy if no database permissions exist
+      if (!hasPermission && (user.role === Role.PLATFORM_ADMIN || userPermissions.length === 0)) {
+        const reason = user.role === Role.PLATFORM_ADMIN ? 'PLATFORM_ADMIN role' : 'no custom role permissions';
+        this.logger.debug(`User ${user.id} has ${reason}, checking legacy role permissions`);
         const legacyPermissions = this.getLegacyRolePermissions(user.role);
         hasPermission = this.checkRolePermission(normalizedPermission, legacyPermissions, context);
         
         if (hasPermission) {
-          this.logger.warn(`User ${user.id} granted access via legacy role permissions. Consider assigning custom roles.`);
+          this.logger.debug(`User ${user.id} granted access via legacy role permissions (${user.role}).`);
         }
       }
 
@@ -233,7 +235,7 @@ export class PermissionService {
     const permissionString = `${permission.resource}.${permission.action}.${permission.scope}`;
 
     return rolePermissions.some(rolePermission => {
-      const matches = matchesPermissionPattern(permissionString, rolePermission);
+      const matches = this.matchesPermissionPattern(permissionString, rolePermission);
       
       if (matches) {
         this.logger.debug(`Legacy permission match: ${permissionString} matches ${rolePermission}`);
