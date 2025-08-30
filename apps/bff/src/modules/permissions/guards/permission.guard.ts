@@ -2,7 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, SetMetadata } from '@nestjs/
 import { Reflector } from '@nestjs/core';
 import { PermissionService } from '../permission.service';
 import { Role } from '@prisma/client';
-import { Permission, PermissionObject, normalizePermission } from '../../shared/decorators/require-permission.decorator';
+import { Permission, PermissionObject, normalizePermission, PERMISSION_KEY } from '../../shared/decorators/require-permission.decorator';
 
 export const PERMISSIONS_KEY = 'permissions';
 export const Permissions = (...permissions: string[]) => SetMetadata(PERMISSIONS_KEY, permissions);
@@ -34,7 +34,7 @@ export class PermissionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const rawPermissions = this.reflector.getAllAndOverride(
-      PERMISSIONS_KEY,
+      PERMISSION_KEY,
       [context.getHandler(), context.getClass()],
     );
 
