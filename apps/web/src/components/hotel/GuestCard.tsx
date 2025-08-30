@@ -8,8 +8,11 @@ interface GuestCardProps {
 }
 
 const GuestCard: React.FC<GuestCardProps> = ({ guest, onClick, compact = false }) => {
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const getInitials = (firstName?: string, lastName?: string) => {
+    const firstInitial = (firstName || '').charAt(0);
+    const lastInitial = (lastName || '').charAt(0);
+    const initials = `${firstInitial}${lastInitial}`.toUpperCase();
+    return initials || '?';
   };
 
   const getStatusBadge = () => {
@@ -51,7 +54,7 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, onClick, compact = false }
           </div>
           <div className="text-right text-sm">
             <div className="font-medium text-gray-900">{guest.totalStays} stays</div>
-            <div className="text-gray-600">${guest.totalSpent.toLocaleString()}</div>
+            <div className="text-gray-600">${Number(guest.totalSpent ?? 0).toLocaleString()}</div>
           </div>
         </div>
       </div>
@@ -94,7 +97,7 @@ const GuestCard: React.FC<GuestCardProps> = ({ guest, onClick, compact = false }
           <div>
             <div className="text-sm font-medium text-gray-700">Total Spent</div>
             <div className="text-2xl font-bold text-green-600">
-              ${guest.totalSpent.toLocaleString()}
+              ${Number(guest.totalSpent ?? 0).toLocaleString()}
             </div>
           </div>
         </div>

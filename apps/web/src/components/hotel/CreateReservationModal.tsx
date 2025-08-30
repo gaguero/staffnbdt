@@ -335,11 +335,11 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                           className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
                         >
                           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm">
-                            {guest.firstName[0]}{guest.lastName[0]}
+                            {(guest?.firstName?.[0] || '?')}{guest?.lastName?.[0] || ''}
                           </div>
                           <div>
-                            <div className="font-medium">{guest.firstName} {guest.lastName}</div>
-                            <div className="text-sm text-gray-600">{guest.email}</div>
+                            <div className="font-medium">{guest?.firstName || 'Guest'} {guest?.lastName || ''}</div>
+                            <div className="text-sm text-gray-600">{guest?.email || '-'}</div>
                           </div>
                         </button>
                       ))}
@@ -488,8 +488,8 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                   >
                     <option value="">Select room type</option>
                     {roomTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name} - ${type.baseRate}/night
+                      <option key={type?.id || Math.random()} value={type?.id || ''}>
+                        {type?.name || 'Unknown Type'} - ${type?.baseRate || 0}/night
                       </option>
                     ))}
                   </select>
