@@ -20,7 +20,7 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Add tenant context headers
+    // Add tenant context headers (override path for PLATFORM_ADMIN)
     const tenantInfo = localStorage.getItem(TENANT_STORAGE_KEY);
     if (tenantInfo) {
       try {
@@ -30,6 +30,9 @@ api.interceptors.request.use(
         }
         if (parsedTenant.propertyId) {
           config.headers['X-Property-Id'] = parsedTenant.propertyId;
+        }
+        if (parsedTenant.actingAs) {
+          config.headers['X-Acting-As'] = parsedTenant.actingAs;
         }
       } catch (error) {
         // Silently handle invalid tenant info in production

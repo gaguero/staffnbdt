@@ -45,6 +45,7 @@ interface TenantContextType {
   
   // Actions
   switchProperty: (propertyId: string) => Promise<void>;
+  setAdminOverride: (orgId?: string, propertyId?: string, actingAsLabel?: string) => void;
   
   // Utilities
   canAccessProperty: (propertyId: string) => boolean;
@@ -75,6 +76,7 @@ interface TenantProviderProps {
 
 export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
   const { tenantInfo, switchProperty: authSwitchProperty } = useAuth();
+  const [override, setOverride] = useState<{ orgId?: string; propertyId?: string; actingAs?: string } | null>(null);
 
   const canAccessProperty = (propertyId: string): boolean => {
     return tenantInfo.availableProperties?.some(p => p.id === propertyId) || false;
@@ -112,6 +114,20 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
     property: tenantInfo.property,
     availableProperties: tenantInfo.availableProperties || [],
     switchProperty: authSwitchProperty,
+    setAdminOverride: (orgId?: string, propertyId?: string, actingAsLabel?: string) => {
+      setOverride({ orgId, propertyId, actingAs: actingAsLabel });
+      try {
+        const stored = localStorage.getItem('tenantInfo');
+        const current = stored ? JSON.parse(stored) : {};
+        const next = {
+          ...current,
+          organizationId: orgId || current.organizationId,
+          propertyId: propertyId || current.propertyId,
+          actingAs: actingAsLabel || current.actingAs,
+        };
+        localStorage.setItem('tenantInfo', JSON.stringify(next));
+      } catch {}
+    },
     canAccessProperty,
     isMultiProperty,
     hasOrganization,
