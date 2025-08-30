@@ -20,7 +20,7 @@ export interface PermissionEvaluationResult {
   allowed: boolean;
   reason?: string;
   conditions?: any;
-  source: 'role' | 'user' | 'cached' | 'default' | 'legacy' | 'validation';
+  source: 'role' | 'user' | 'cached' | 'default' | 'validation';
   ttl?: number; // Time to live for cache in seconds
   moduleRestrictions?: string[]; // Modules that restrict this permission
   crossOrgAccess?: boolean; // Whether cross-org access was required

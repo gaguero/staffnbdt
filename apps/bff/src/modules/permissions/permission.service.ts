@@ -68,7 +68,6 @@ export class PermissionService implements OnModuleInit {
   private readonly cacheDefaultTtl: number;
   private readonly maxCacheSize: number;
   private readonly conditionEvaluators = new Map<string, PermissionConditionEvaluator>();
-  private permissionTablesExist = false;
   private skipPermissionInit = false;
   private forcePermissionSystem = false;
 
@@ -92,42 +91,19 @@ export class PermissionService implements OnModuleInit {
     }
 
     try {
-      // Check force override first
-      if (this.forcePermissionSystem) {
-        this.logger.warn('FORCE_PERMISSION_SYSTEM=true - bypassing table existence check');
-        this.permissionTablesExist = true;
-      } else {
-        // Check if permission tables exist before attempting initialization with retry
-        this.permissionTablesExist = await this.hasPermissionTablesWithRetry();
-      }
+      const tablesExist = this.forcePermissionSystem || await this.hasPermissionTablesWithRetry();
       
-      if (!this.permissionTablesExist) {
-        this.logger.warn('Permission tables do not exist, running in legacy mode with @Roles decorators only');
-        
-        // Extra verification - try a direct count query to double-check
-        try {
-          const permissionCount = await this.prisma.permission.count();
-          if (permissionCount > 0) {
-            this.logger.warn(`Found ${permissionCount} permissions in database - tables DO exist! Enabling permission system.`);
-            this.permissionTablesExist = true;
-          }
-        } catch (countError) {
-          this.logger.debug('Direct permission count failed, tables likely do not exist:', countError.message);
-        }
-        
-        if (!this.permissionTablesExist) {
-          return;
-        }
+      if (!tablesExist) {
+        this.logger.error('Permission tables do not exist - application cannot start');
+        throw new Error('Permission system is required but tables do not exist');
       }
 
-      // Only initialize if tables exist
       await this.ensureSystemPermissions();
       await this.ensureSystemRoles();
       this.logger.log('Permission service initialized with system permissions and roles');
     } catch (error) {
-      this.logger.error('Failed to initialize permission system, falling back to legacy mode:', error);
-      this.permissionTablesExist = false;
-      // Don't throw - allow app to start with legacy @Roles system
+      this.logger.error('Failed to initialize permission system:', error);
+      throw error;
     }
   }
 
@@ -149,35 +125,6 @@ export class PermissionService implements OnModuleInit {
    * Get all permissions for a user
    */
   async getUserPermissions(userId: string, context?: Partial<PermissionEvaluationContext>): Promise<Permission[]> {
-    // Handle legacy mode differently - PLATFORM_ADMIN should still get all permissions
-    if (!this.permissionTablesExist) {
-      this.logger.debug('Permission tables not available, checking for PLATFORM_ADMIN in legacy mode');
-      
-      // In legacy mode, still check for PLATFORM_ADMIN users
-      try {
-        const user = await this.getUserWithRoles(userId);
-        if (user?.role === 'PLATFORM_ADMIN') {
-          this.logger.log(`PLATFORM_ADMIN user ${userId} getting all permissions in legacy mode`);
-          // Try to get all permissions from database if possible
-          try {
-            const allPermissions = await this.prisma.permission.findMany();
-            this.logger.log(`PLATFORM_ADMIN legacy mode: returning ${allPermissions.length} permissions`);
-            return allPermissions;
-          } catch (dbError) {
-            this.logger.warn('Could not fetch permissions from database in legacy mode:', dbError.message);
-            // Return a minimal set of admin permissions as fallback
-            return [];
-          }
-        }
-        
-        this.logger.debug('Non-admin user in legacy mode, returning empty permissions array');
-        return [];
-      } catch (error) {
-        this.logger.error('Error checking user role in legacy mode:', error);
-        return [];
-      }
-    }
-
     try {
       // Check cache first
       const cacheKey = this.generateUserPermissionsCacheKey(userId, context);
@@ -193,15 +140,13 @@ export class PermissionService implements OnModuleInit {
 
       const permissions = new Map<string, Permission>();
 
-      // Get permissions from legacy role
-      const legacyRolePermissions = await this.getLegacyRolePermissions(user.role, user.userType);
-      this.logger.log(`User ${userId} with legacy role ${user.role} gets ${legacyRolePermissions.length} permissions from legacy system`);
+      // Get permissions from role assignments in database
+      const rolePermissions = await this.getRolePermissionsFromDatabase(user.role, user.userType);
+      this.logger.log(`User ${userId} with role ${user.role} gets ${rolePermissions.length} permissions from role assignments`);
       
-      legacyRolePermissions.forEach(permission => {
+      rolePermissions.forEach(permission => {
         permissions.set(permission.id, permission);
       });
-      
-      this.logger.debug(`After legacy role permissions: user has ${permissions.size} total permissions`);
       
       // Get permissions from enabled modules for this user type
       if (user.organizationId) {
@@ -214,8 +159,6 @@ export class PermissionService implements OnModuleInit {
         modulePermissions.forEach(permission => {
           permissions.set(permission.id, permission);
         });
-        
-        this.logger.debug(`After module permissions: user has ${permissions.size} total permissions`);
       }
 
       // Get permissions from custom roles
@@ -233,8 +176,6 @@ export class PermissionService implements OnModuleInit {
           }
         }
       }
-      
-      this.logger.debug(`After custom role permissions: user has ${permissions.size} total permissions`);
 
       // Apply direct user permission overrides
       for (const userPermission of user.userPermissions) {
@@ -252,10 +193,7 @@ export class PermissionService implements OnModuleInit {
 
       const result = Array.from(permissions.values());
       
-      // Log final result for debugging
-      const rolePermissions = result.filter(p => p.resource === 'role');
-      this.logger.log(`User ${userId} final permissions: ${result.length} total, ${rolePermissions.length} role-related permissions`);
-      this.logger.debug(`Role permissions: ${rolePermissions.map(p => `${p.resource}.${p.action}.${p.scope}`).join(', ')}`);
+      this.logger.log(`User ${userId} final permissions: ${result.length} total`);
 
       // Cache the result
       await this.cacheUserPermissions(cacheKey, result);
@@ -277,28 +215,6 @@ export class PermissionService implements OnModuleInit {
     scope: string,
     context?: Partial<PermissionEvaluationContext>,
   ): Promise<PermissionEvaluationResult> {
-    // Handle PLATFORM_ADMIN even if permission tables don't exist
-    if (!this.permissionTablesExist) {
-      this.logger.debug('Permission tables not available, checking for PLATFORM_ADMIN in legacy mode');
-      
-      try {
-        const user = await this.getUserWithRoles(userId);
-        if (user?.role === 'PLATFORM_ADMIN') {
-          this.logger.debug(`PLATFORM_ADMIN user ${userId} granted unrestricted access to ${resource}.${action}.${scope} in legacy mode`);
-          return {
-            allowed: true,
-            reason: 'PLATFORM_ADMIN has unrestricted access (legacy mode)',
-            source: 'legacy_admin',
-          };
-        }
-      } catch (error) {
-        this.logger.error('Error checking user role in legacy permission evaluation:', error);
-      }
-      
-      this.logger.debug('Non-admin user in legacy mode, defaulting to deny');
-      return { allowed: false, reason: 'Permission system not available - use legacy @Roles', source: 'legacy' };
-    }
-
     try {
       const evaluationContext: PermissionEvaluationContext = {
         userId,
@@ -306,23 +222,9 @@ export class PermissionService implements OnModuleInit {
         ...context,
       };
 
-      // Get user with roles and permissions first to check for PLATFORM_ADMIN
       const user = await this.getUserWithRoles(userId);
       if (!user) {
         return { allowed: false, reason: 'User not found', source: 'default' };
-      }
-
-      // PLATFORM_ADMIN has unrestricted access - bypass all permission checks
-      if (user.role === 'PLATFORM_ADMIN') {
-        this.logger.debug(`PLATFORM_ADMIN user ${userId} granted unrestricted access to ${resource}.${action}.${scope}`);
-        const result: PermissionEvaluationResult = {
-          allowed: true,
-          reason: 'PLATFORM_ADMIN has unrestricted access',
-          source: 'role',
-        };
-        // Cache the result for performance
-        await this.cachePermissionResult(this.generatePermissionCacheKey(userId, resource, action, scope, context), result, evaluationContext, resource, action, scope);
-        return result;
       }
       
       // For external users, validate cross-organization access
@@ -356,9 +258,9 @@ export class PermissionService implements OnModuleInit {
         return { allowed: false, reason: 'Permission not found', source: 'default' };
       }
 
-      // Check legacy role permissions first
-      const hasLegacyPermission = await this.checkLegacyRolePermission(user.role, permission.id);
-      if (hasLegacyPermission) {
+      // Check role permissions from database
+      const hasRolePermission = await this.checkRolePermissionFromDatabase(user.role, permission.id);
+      if (hasRolePermission) {
         const result = await this.evaluatePermissionConditions(permission, evaluationContext);
         if (result.allowed) {
           await this.cachePermissionResult(cacheKey, result, evaluationContext, resource, action, scope);
@@ -432,7 +334,6 @@ export class PermissionService implements OnModuleInit {
         resource,
         action,
         scope,
-        permissionTablesExist: this.permissionTablesExist,
       });
       return { allowed: false, reason: `Evaluation error: ${error.message}`, source: 'default' };
     }
@@ -487,10 +388,6 @@ export class PermissionService implements OnModuleInit {
    * Grant a permission to a user
    */
   async grantPermission(request: PermissionGrantRequest): Promise<void> {
-    if (!this.permissionTablesExist) {
-      throw new ForbiddenException('Permission system not available - permission tables do not exist');
-    }
-
     try {
       // Validate permission exists
       const permission = await this.prisma.permission.findUnique({
@@ -568,10 +465,6 @@ export class PermissionService implements OnModuleInit {
    * Revoke a permission from a user
    */
   async revokePermission(request: PermissionRevokeRequest): Promise<void> {
-    if (!this.permissionTablesExist) {
-      throw new ForbiddenException('Permission system not available - permission tables do not exist');
-    }
-
     try {
       const userPermission = await this.prisma.userPermission.findUnique({
         where: {
@@ -625,10 +518,6 @@ export class PermissionService implements OnModuleInit {
    * Assign a role to a user
    */
   async assignRole(request: RoleAssignmentRequest): Promise<void> {
-    if (!this.permissionTablesExist) {
-      throw new ForbiddenException('Permission system not available - permission tables do not exist');
-    }
-
     try {
       // Validate role exists
       const role = await this.prisma.customRole.findUnique({
@@ -704,41 +593,6 @@ export class PermissionService implements OnModuleInit {
    * Get user permission summary
    */
   async getUserPermissionSummary(userId: string): Promise<UserPermissionSummary> {
-    if (!this.permissionTablesExist) {
-      this.logger.debug('Permission tables not available, returning legacy mode summary');
-      
-      // Return a basic summary for legacy mode
-      const user = await this.getUserWithRoles(userId);
-      if (!user) {
-        throw new NotFoundException(`User with ID ${userId} not found`);
-      }
-
-      // Handle PLATFORM_ADMIN in legacy mode
-      let permissions: Permission[] = [];
-      if (user.role === 'PLATFORM_ADMIN') {
-        try {
-          permissions = await this.prisma.permission.findMany();
-          this.logger.log(`PLATFORM_ADMIN legacy summary: ${permissions.length} permissions`);
-        } catch (error) {
-          this.logger.warn('Could not fetch permissions for PLATFORM_ADMIN summary in legacy mode:', error.message);
-        }
-      }
-
-      return {
-        userId,
-        roles: [], // No custom roles in legacy mode
-        permissions, // All permissions for PLATFORM_ADMIN, empty for others
-        inheritedPermissions: permissions, // Same as permissions in legacy mode
-        directPermissions: [],
-        deniedPermissions: [],
-        cacheStats: {
-          totalCached: 0,
-          expiredCached: 0,
-          validCached: 0,
-        },
-      };
-    }
-
     const user = await this.getUserWithRoles(userId);
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);
@@ -781,11 +635,6 @@ export class PermissionService implements OnModuleInit {
    * Only run in environments where crypto module is available
    */
   async cleanupExpiredCache(): Promise<void> {
-    if (!this.permissionTablesExist) {
-      this.logger.debug('Skipping cache cleanup - permission tables not available');
-      return;
-    }
-
     try {
       const deleted = await this.prisma.permissionCache.deleteMany({
         where: {
@@ -835,11 +684,6 @@ export class PermissionService implements OnModuleInit {
    * Clear all cache for a user
    */
   async clearUserPermissionCache(userId: string): Promise<void> {
-    if (!this.permissionTablesExist) {
-      this.logger.debug('Skipping cache clear - permission tables not available');
-      return;
-    }
-
     try {
       await this.prisma.permissionCache.deleteMany({
         where: { userId },
@@ -863,13 +707,9 @@ export class PermissionService implements OnModuleInit {
     this.logger.warn('Force reinitializing permission system...');
     
     try {
-      // Reset state
-      this.permissionTablesExist = false;
+      const tablesExist = await this.hasPermissionTablesWithRetry();
       
-      // Check tables again
-      this.permissionTablesExist = await this.hasPermissionTablesWithRetry();
-      
-      if (!this.permissionTablesExist) {
+      if (!tablesExist) {
         return {
           success: false,
           tablesExist: false,
@@ -877,7 +717,6 @@ export class PermissionService implements OnModuleInit {
         };
       }
       
-      // Try to initialize
       await this.ensureSystemPermissions();
       await this.ensureSystemRoles();
       
@@ -894,7 +733,7 @@ export class PermissionService implements OnModuleInit {
       this.logger.error('Force reinitialization failed:', error);
       return {
         success: false,
-        tablesExist: this.permissionTablesExist,
+        tablesExist: false,
         error: error.message,
       };
     }
@@ -932,12 +771,10 @@ export class PermissionService implements OnModuleInit {
    */
   private async hasPermissionTables(): Promise<boolean> {
     try {
-      // Get database connection details for logging
       const databaseUrl = this.configService.get<string>('DATABASE_URL');
       const dbName = databaseUrl ? new URL(databaseUrl).pathname.slice(1) : 'unknown';
       this.logger.log(`Checking permission tables in database: ${dbName}`);
 
-      // Simple approach: try to count records in each required table
       const requiredTables = [
         { name: 'Permission', query: () => this.prisma.permission.count() },
         { name: 'CustomRole', query: () => this.prisma.customRole.count() },
@@ -946,8 +783,6 @@ export class PermissionService implements OnModuleInit {
         { name: 'PermissionCache', query: () => this.prisma.permissionCache.count() },
       ];
       
-      this.logger.log(`Checking tables: ${requiredTables.map(t => t.name).join(', ')}`);
-
       for (const table of requiredTables) {
         try {
           const count = await table.query();
@@ -955,7 +790,6 @@ export class PermissionService implements OnModuleInit {
         } catch (tableError) {
           this.logger.warn(`✗ Table ${table.name}: ${tableError.message}`);
           
-          // Check for specific "table does not exist" errors
           if (tableError.message?.includes('relation') || 
               tableError.message?.includes('table') || 
               tableError.message?.includes('does not exist') ||
@@ -963,8 +797,6 @@ export class PermissionService implements OnModuleInit {
             this.logger.debug(`Permission table '${table.name}' does not exist`);
             return false;
           }
-          
-          // Other errors might indicate permissions issues, treat as non-existent
           return false;
         }
       }
@@ -977,67 +809,38 @@ export class PermissionService implements OnModuleInit {
         message: error.message,
         code: error.code,
       });
-      
-      // Default to false for any errors
-      this.logger.warn('Defaulting to permission tables not existing due to error');
       return false;
     }
   }
 
   private async getUserWithRoles(userId: string): Promise<UserWithRoles | null> {
-    if (!this.permissionTablesExist) {
-      // Return a basic user object without custom roles/permissions when tables don't exist
-      // In legacy mode, we simplify the query to avoid complex where clauses
-      try {
-        const user = await this.prisma.user.findUnique({
-          where: { id: userId },
-          select: {
-            id: true,
-            role: true,
-            organizationId: true,
-            propertyId: true,
-            departmentId: true,
-          },
-        });
-        
-        if (!user) return null;
-        
-        return {
-          ...user,
-          userCustomRoles: [],
-          userPermissions: [],
-        } as UserWithRoles;
-      } catch (error) {
-        this.logger.error(`Error fetching user in legacy mode: ${error.message}`);
-        return null;
-      }
-    }
     try {
       return await this.prisma.user.findUnique({
         where: { 
           id: userId,
           deletedAt: null 
         },
-      select: {
-        id: true,
-        role: true,
-        userType: true,
-        organizationId: true,
-        propertyId: true,
-        departmentId: true,
-        externalOrganization: true,
-        accessPortal: true,
-        userCustomRoles: {
-          where: { isActive: true },
-          include: {
-            role: {
-              include: {
-                permissions: {
-                  include: {
-                    permission: {
-                      include: {
-                        rolePermissions: true,
-                        conditions: true,
+        select: {
+          id: true,
+          role: true,
+          userType: true,
+          organizationId: true,
+          propertyId: true,
+          departmentId: true,
+          externalOrganization: true,
+          accessPortal: true,
+          userCustomRoles: {
+            where: { isActive: true },
+            include: {
+              role: {
+                include: {
+                  permissions: {
+                    include: {
+                      permission: {
+                        include: {
+                          rolePermissions: true,
+                          conditions: true,
+                        },
                       },
                     },
                   },
@@ -1045,46 +848,22 @@ export class PermissionService implements OnModuleInit {
               },
             },
           },
-        },
-        userPermissions: {
-          where: { isActive: true },
-          include: {
-            permission: {
-              include: {
-                rolePermissions: true,
-                conditions: true,
+          userPermissions: {
+            where: { isActive: true },
+            include: {
+              permission: {
+                include: {
+                  rolePermissions: true,
+                  conditions: true,
+                },
               },
             },
           },
         },
-      },
       });
     } catch (error) {
       this.logger.error(`Error fetching user with roles: ${error.message}`);
-      // Fall back to basic user query if full query fails
-      try {
-        const user = await this.prisma.user.findUnique({
-          where: { id: userId },
-          select: {
-            id: true,
-            role: true,
-            organizationId: true,
-            propertyId: true,
-            departmentId: true,
-          },
-        });
-        
-        if (!user) return null;
-        
-        return {
-          ...user,
-          userCustomRoles: [],
-          userPermissions: [],
-        } as UserWithRoles;
-      } catch (fallbackError) {
-        this.logger.error(`Error in fallback user query: ${fallbackError.message}`);
-        return null;
-      }
+      return null;
     }
   }
 
@@ -1092,11 +871,6 @@ export class PermissionService implements OnModuleInit {
    * Get permissions for user based on their type and enabled modules
    */
   async getUserTypePermissions(userType: UserType, moduleIds: string[]): Promise<Permission[]> {
-    if (!this.permissionTablesExist) {
-      this.logger.debug('Permission tables not available, returning empty permissions array');
-      return [];
-    }
-
     try {
       const permissions: Permission[] = [];
       
@@ -1160,10 +934,6 @@ export class PermissionService implements OnModuleInit {
    * Get all permissions for a specific module
    */
   async getModulePermissions(moduleId: string, userType: UserType): Promise<Permission[]> {
-    if (!this.permissionTablesExist) {
-      return [];
-    }
-    
     try {
       const manifest = await this.getModuleManifest(moduleId);
       if (!manifest) {
@@ -1186,10 +956,6 @@ export class PermissionService implements OnModuleInit {
    * Get module manifest by ID
    */
   async getModuleManifest(moduleId: string): Promise<ModuleManifest | null> {
-    if (!this.permissionTablesExist) {
-      return null;
-    }
-    
     try {
       return await this.prisma.moduleManifest.findUnique({
         where: { moduleId }
@@ -1204,10 +970,6 @@ export class PermissionService implements OnModuleInit {
    * Get enabled modules for an organization
    */
   private async getEnabledModulesForOrganization(organizationId: string): Promise<{ moduleId: string }[]> {
-    if (!this.permissionTablesExist) {
-      return [];
-    }
-    
     try {
       const moduleSubscriptions = await this.prisma.moduleSubscription.findMany({
         where: {
@@ -1227,10 +989,6 @@ export class PermissionService implements OnModuleInit {
   }
 
   private async findPermission(resource: string, action: string, scope: string): Promise<PermissionWithRelations | null> {
-    if (!this.permissionTablesExist) {
-      return null;
-    }
-    
     return this.prisma.permission.findUnique({
       where: {
         resource_action_scope: { resource, action, scope },
@@ -1242,85 +1000,28 @@ export class PermissionService implements OnModuleInit {
     });
   }
 
-  private async getLegacyRolePermissions(role: Role, userType: UserType = UserType.INTERNAL): Promise<Permission[]> {
-    // PLATFORM_ADMIN should get all permissions even in legacy mode
-    if (!this.permissionTablesExist && role === Role.PLATFORM_ADMIN) {
-      this.logger.log('PLATFORM_ADMIN in legacy mode - attempting to fetch all permissions');
-      try {
-        const allPermissions = await this.prisma.permission.findMany();
-        this.logger.log(`PLATFORM_ADMIN legacy: Retrieved ${allPermissions.length} permissions directly`);
-        return allPermissions;
-      } catch (error) {
-        this.logger.error('Failed to fetch permissions for PLATFORM_ADMIN in legacy mode:', error);
-        return [];
-      }
-    }
-    
-    // Return empty array for non-admin users when permission tables don't exist
-    if (!this.permissionTablesExist) {
-      this.logger.debug(`Non-admin role ${role} in legacy mode, returning empty permissions`);
-      return [];
-    }
-    
-    this.logger.debug(`Getting legacy role permissions for role: ${role}, userType: ${userType}`);
-    
-    // External users have different permission patterns
-    if (userType !== UserType.INTERNAL) {
-      return await this.getExternalUserLegacyPermissions(role, userType);
-    }
-    
-    // This would map legacy roles to permissions
-    // Implementation depends on how you want to handle backwards compatibility
-    const rolePermissionMapping: Record<Role, string[]> = {
-      [Role.PLATFORM_ADMIN]: ['*.*.*'], // All permissions
-      [Role.ORGANIZATION_OWNER]: ['*.*.organization', '*.*.property'],
-      [Role.ORGANIZATION_ADMIN]: ['*.*.organization'],
-      [Role.PROPERTY_MANAGER]: ['*.*.property', '*.*.department'],
-      [Role.DEPARTMENT_ADMIN]: ['*.*.department', '*.*.own'],
-      [Role.STAFF]: ['*.*.own'],
-    };
-
-    const permissionPatterns = rolePermissionMapping[role] || [];
-    if (permissionPatterns.includes('*.*.*')) {
-      try {
-        // FIXED: Return ALL permissions for PLATFORM_ADMIN, not just isSystem=true
-        const allPermissions = await this.prisma.permission.findMany();
-        this.logger.log(`PLATFORM_ADMIN: Retrieved ${allPermissions.length} permissions (all permissions in system)`);
-        
-        // Also log what permissions we're returning for debugging
-        const rolePermissions = allPermissions.filter(p => p.resource === 'role');
-        this.logger.debug(`PLATFORM_ADMIN role permissions: ${rolePermissions.map(p => `${p.resource}.${p.action}.${p.scope}`).join(', ')}`);
-        
-        return allPermissions;
-      } catch (error) {
-        this.logger.error('Error fetching permissions for PLATFORM_ADMIN:', error);
-        return [];
-      }
-    }
-
-    // For internal users, implement pattern matching based on scope
+  /**
+   * Get permissions from database role-permission mappings
+   */
+  private async getRolePermissionsFromDatabase(role: Role, userType: UserType = UserType.INTERNAL): Promise<Permission[]> {
     try {
-      const scopePermissions: Permission[] = [];
-      
-      for (const pattern of permissionPatterns) {
-        const [resource, action, scope] = pattern.split('.');
-        
-        let whereClause: any = {};
-        
-        // Handle wildcard patterns
-        if (resource !== '*') whereClause.resource = resource;
-        if (action !== '*') whereClause.action = action;
-        if (scope !== '*') whereClause.scope = scope;
-        
-        const permissions = await this.prisma.permission.findMany({ where: whereClause });
-        scopePermissions.push(...permissions);
-      }
-      
-      // Remove duplicates
-      const uniquePermissions = Array.from(new Map(scopePermissions.map(p => [p.id, p])).values());
-      this.logger.debug(`Role ${role}: Retrieved ${uniquePermissions.length} permissions`);
-      
-      return uniquePermissions;
+      // Find role-permission mappings for this role
+      const rolePermissions = await this.prisma.rolePermission.findMany({
+        where: {
+          role: role,
+          granted: true,
+        },
+        include: {
+          permission: true,
+        },
+      });
+
+      const permissions = rolePermissions
+        .map(rp => rp.permission)
+        .filter(p => p !== null);
+
+      this.logger.debug(`Role ${role}: Retrieved ${permissions.length} permissions from database`);
+      return permissions;
     } catch (error) {
       this.logger.error(`Error fetching permissions for role ${role}:`, error);
       return [];
@@ -1328,86 +1029,23 @@ export class PermissionService implements OnModuleInit {
   }
 
   /**
-   * Get legacy permissions for external users
+   * Check if role has permission based on database role-permission mappings
    */
-  private async getExternalUserLegacyPermissions(role: Role, userType: UserType): Promise<Permission[]> {
+  private async checkRolePermissionFromDatabase(role: Role, permissionId: string): Promise<boolean> {
     try {
-      // External users typically have more restricted permissions
-      const externalPermissionPatterns: Record<UserType, string[]> = {
-        [UserType.INTERNAL]: [], // Not used here
-        [UserType.CLIENT]: ['reservation.read.own', 'guest.read.own', 'document.read.own'],
-        [UserType.VENDOR]: ['task.read.assigned', 'document.read.department', 'unit.read.property'],
-        [UserType.PARTNER]: ['property.read.organization', 'reservation.read.property', 'user.read.property'],
-      };
-      
-      const patterns = externalPermissionPatterns[userType] || [];
-      const permissions: Permission[] = [];
-      
-      for (const pattern of patterns) {
-        const [resource, action, scope] = pattern.split('.');
-        const matchingPermissions = await this.prisma.permission.findMany({
-          where: { resource, action, scope }
-        });
-        permissions.push(...matchingPermissions);
-      }
-      
-      this.logger.debug(`External user ${userType}: Retrieved ${permissions.length} permissions`);
-      return permissions;
-    } catch (error) {
-      this.logger.error(`Error getting external user permissions for ${userType}:`, error);
-      return [];
-    }
-  }
-
-  private async checkLegacyRolePermission(role: Role, permissionId: string): Promise<boolean> {
-    this.logger.debug(`Checking legacy role permission: role=${role}, permissionId=${permissionId}`);
-    
-    // PLATFORM_ADMIN gets access to ALL permissions
-    if (role === Role.PLATFORM_ADMIN) {
-      this.logger.debug(`PLATFORM_ADMIN granted access to permission ${permissionId}`);
-      return true;
-    }
-    
-    // For other roles, check if they have the specific permission based on scope
-    try {
-      const permission = await this.prisma.permission.findUnique({
-        where: { id: permissionId }
+      const rolePermission = await this.prisma.rolePermission.findFirst({
+        where: {
+          role: role,
+          permissionId: permissionId,
+          granted: true,
+        },
       });
-      
-      if (!permission) {
-        this.logger.debug(`Permission ${permissionId} not found`);
-        return false;
-      }
-      
-      const rolePermissionMapping: Record<Role, string[]> = {
-        [Role.PLATFORM_ADMIN]: ['*.*.*'], // All permissions
-        [Role.ORGANIZATION_OWNER]: ['*.*.organization', '*.*.property'],
-        [Role.ORGANIZATION_ADMIN]: ['*.*.organization'],
-        [Role.PROPERTY_MANAGER]: ['*.*.property', '*.*.department'],
-        [Role.DEPARTMENT_ADMIN]: ['*.*.department', '*.*.own'],
-        [Role.STAFF]: ['*.*.own'],
-      };
-      
-      const permissionPatterns = rolePermissionMapping[role] || [];
-      
-      // Check if permission matches any of the role's patterns
-      for (const pattern of permissionPatterns) {
-        const [resourcePattern, actionPattern, scopePattern] = pattern.split('.');
-        
-        const resourceMatch = resourcePattern === '*' || resourcePattern === permission.resource;
-        const actionMatch = actionPattern === '*' || actionPattern === permission.action;
-        const scopeMatch = scopePattern === '*' || scopePattern === permission.scope;
-        
-        if (resourceMatch && actionMatch && scopeMatch) {
-          this.logger.debug(`Role ${role} granted access to ${permission.resource}.${permission.action}.${permission.scope} via pattern ${pattern}`);
-          return true;
-        }
-      }
-      
-      this.logger.debug(`Role ${role} denied access to ${permission.resource}.${permission.action}.${permission.scope}`);
-      return false;
+
+      const hasPermission = !!rolePermission;
+      this.logger.debug(`Role ${role} ${hasPermission ? 'granted' : 'denied'} access to permission ${permissionId}`);
+      return hasPermission;
     } catch (error) {
-      this.logger.error(`Error checking legacy role permission:`, error);
+      this.logger.error(`Error checking role permission:`, error);
       return false;
     }
   }
@@ -1462,10 +1100,6 @@ export class PermissionService implements OnModuleInit {
   }
 
   private async getCachedPermission(cacheKey: string): Promise<CachedPermission | null> {
-    if (!this.permissionTablesExist) {
-      return null;
-    }
-    
     try {
       const cached = await this.prisma.permissionCache.findUnique({
         where: { cacheKey },
@@ -1506,10 +1140,6 @@ export class PermissionService implements OnModuleInit {
     action: string,
     scope: string,
   ): Promise<void> {
-    if (!this.permissionTablesExist) {
-      return;
-    }
-    
     try {
       const expiresAt = new Date(Date.now() + this.cacheDefaultTtl * 1000);
       
@@ -1547,14 +1177,6 @@ export class PermissionService implements OnModuleInit {
   }
 
   private async getUserCacheStats(userId: string) {
-    if (!this.permissionTablesExist) {
-      return {
-        totalCached: 0,
-        expiredCached: 0,
-        validCached: 0,
-      };
-    }
-    
     const stats = await this.prisma.permissionCache.groupBy({
       by: ['userId'],
       where: { userId },
@@ -1664,7 +1286,7 @@ export class PermissionService implements OnModuleInit {
    * Get permission system status for debugging
    */
   async getSystemStatus(): Promise<{
-    permissionTablesExist: boolean;
+    tablesExist: boolean;
     tablesChecked: string[];
     databaseUrl: string;
     forceEnabled: boolean;
@@ -1673,22 +1295,23 @@ export class PermissionService implements OnModuleInit {
     lastError?: string;
   }> {
     const databaseUrl = this.configService.get<string>('DATABASE_URL', 'Not configured');
-    const maskedUrl = databaseUrl.replace(/\/\/[^@]+@/, '//***:***@'); // Mask credentials
+    const maskedUrl = databaseUrl.replace(/\/\/[^@]+@/, '//***:***@');
+    
+    const tablesExist = await this.hasPermissionTables();
     
     const status = {
-      permissionTablesExist: this.permissionTablesExist,
+      tablesExist,
       tablesChecked: ['Permission', 'CustomRole', 'RolePermission', 'UserPermission', 'PermissionCache'],
       databaseUrl: maskedUrl,
       forceEnabled: this.forcePermissionSystem,
       skipInit: this.skipPermissionInit,
     };
 
-    // If tables exist, get table stats
-    if (this.permissionTablesExist) {
+    if (tablesExist) {
       try {
         const tableStats = {
           permissions: await this.prisma.permission.count(),
-          userCustomRoles: await this.prisma.customRole.count(),
+          customRoles: await this.prisma.customRole.count(),
           rolePermissions: await this.prisma.rolePermission.count(),
           userPermissions: await this.prisma.userPermission.count(),
           permissionCache: await this.prisma.permissionCache.count(),
@@ -1699,22 +1322,10 @@ export class PermissionService implements OnModuleInit {
       }
     }
 
-    // If tables don't exist, try to check why
-    try {
-      await this.hasPermissionTables();
-    } catch (error) {
-      return { ...status, lastError: error.message };
-    }
-
     return status;
   }
 
   private async ensureSystemPermissions(): Promise<void> {
-    if (!this.permissionTablesExist) {
-      this.logger.warn('Skipping system permissions creation - tables do not exist');
-      return;
-    }
-    
     try {
       this.logger.log('Starting system permissions initialization...');
       
@@ -1768,11 +1379,6 @@ export class PermissionService implements OnModuleInit {
   }
 
   private async ensureSystemRoles(): Promise<void> {
-    if (!this.permissionTablesExist) {
-      this.logger.warn('Skipping system roles creation - tables do not exist');
-      return;
-    }
-    
     try {
       this.logger.log('Starting system roles initialization...');
       
