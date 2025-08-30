@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProfileController } from './profile.controller';
 import { ProfileService } from './profile.service';
-import { Role } from '@prisma/client';
+import { Role, UserType } from '@prisma/client';
 import { IdVerificationStatus } from './interfaces';
 
 describe('ProfileController', () => {
@@ -14,6 +14,9 @@ describe('ProfileController', () => {
     firstName: 'John',
     lastName: 'Doe',
     role: Role.STAFF,
+    userType: UserType.INTERNAL,
+    externalOrganization: null,
+    accessPortal: 'staff',
     departmentId: 'dept1',
     position: 'Developer',
     hireDate: new Date(),
@@ -24,6 +27,9 @@ describe('ProfileController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
+    organizationId: 'org1',
+    propertyId: 'prop1',
+    password: null,
   };
 
   const mockProfileResponse = {
@@ -63,6 +69,14 @@ describe('ProfileController', () => {
         {
           provide: ProfileService,
           useValue: mockProfileService,
+        },
+        {
+          provide: 'PermissionService',
+          useValue: {
+            hasPermission: jest.fn().mockReturnValue(true),
+            checkPermission: jest.fn().mockReturnValue(true),
+            getUserPermissions: jest.fn().mockReturnValue([]),
+          },
         },
       ],
     }).compile();
@@ -124,11 +138,17 @@ describe('ProfileController', () => {
       path: 'uploads/profiles/profile_123.jpg',
     } as Express.Multer.File;
 
+    const mockRequest = {
+      user: mockUser,
+      body: {},
+      headers: {},
+    } as any;
+
     it('should upload profile photo successfully', async () => {
       const uploadResult = { profilePhoto: 'profiles/profile_123.jpg' };
       profileService.uploadProfilePhoto.mockResolvedValue(uploadResult);
 
-      const result = await controller.uploadProfilePhoto(mockFile, mockUser);
+      const result = await controller.uploadProfilePhoto(mockFile, mockUser, mockRequest);
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual(uploadResult);

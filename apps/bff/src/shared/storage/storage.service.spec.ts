@@ -402,14 +402,16 @@ describe('StorageService', () => {
 
   describe('generatePresignedUploadUrl', () => {
     it('should return deprecated warning and mock response', async () => {
-      const options = { key: 'documents/test.pdf' };
+      const fileName = 'test.pdf';
+      const mimeType = 'application/pdf';
       
-      const result = await service.generatePresignedUploadUrl(options);
+      const result = await service.generatePresignedUploadUrl(fileName, mimeType);
 
       expect(result).toEqual({
         uploadUrl: '/api/documents/upload',
-        downloadUrl: '/api/files/serve/documents/test.pdf',
+        downloadUrl: '/api/files/serve/documents%2Ftest.pdf',
         key: 'documents/test.pdf',
+        expiresIn: 300,
       });
     });
   });

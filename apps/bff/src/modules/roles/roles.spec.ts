@@ -4,6 +4,7 @@ import { RolesController } from './roles.controller';
 import { PrismaService } from '../../shared/database/prisma.service';
 import { AuditService } from '../../shared/audit/audit.service';
 import { PermissionService } from '../permissions/permission.service';
+import { RolesHistoryService } from './roles-history.service';
 
 describe('RolesModule', () => {
   let service: RolesService;
@@ -50,6 +51,16 @@ describe('RolesModule', () => {
           provide: PermissionService,
           useValue: {
             clearUserPermissionCache: jest.fn(),
+            hasPermission: jest.fn().mockReturnValue(true),
+            checkPermission: jest.fn().mockReturnValue(true),
+            getUserPermissions: jest.fn().mockReturnValue([]),
+          },
+        },
+        {
+          provide: RolesHistoryService,
+          useValue: {
+            recordRoleEvent: jest.fn(),
+            getRoleHistory: jest.fn(),
           },
         },
       ],
