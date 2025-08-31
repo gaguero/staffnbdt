@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
 import { organizationService, Organization } from '../services/organizationService';
+import { propertyService } from '../services/propertyService';
 
 interface OrganizationSelectorProps {
   className?: string;
@@ -44,10 +45,18 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
     return found?.name || 'Select Organization';
   }, [organizations, organizationId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newOrgId = e.target.value || undefined;
-    setAdminOverride(newOrgId, undefined, 'platform-admin');
-    // Reload so data refetches under new organization context
+    let targetPropertyId: string | undefined = undefined;
+    try {
+      if (newOrgId) {
+        // Fetch properties for selected org and pick the first active one
+        const propsResp = await propertyService.getProperties({ organizationId: newOrgId, isActive: true, limit: 50 });
+        const props = Array.isArray((propsResp as any)?.data) ? (propsResp as any).data : [];
+        targetPropertyId = props[0]?.id;
+      }
+    } catch {}
+    setAdminOverride(newOrgId, targetPropertyId, 'platform-admin');
     window.location.reload();
   };
 
