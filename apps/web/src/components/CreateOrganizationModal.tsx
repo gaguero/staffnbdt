@@ -144,7 +144,7 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
                   label="Organization Name"
                   placeholder="e.g., Paradise Hotel Group"
                   required
-                  register={register('name')}
+                  register={register('name', { required: 'Organization name is required' })}
                   error={errors.name}
                   success={!!watchedName && !errors.name}
                   validating={isValidating}

@@ -53,7 +53,7 @@ const FormField: React.FC<FormFieldProps> = ({
   const showSuccess = success && !hasError && !validating;
 
   // Generate field ID for accessibility
-  const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`;
+  const fieldId = React.useMemo(() => `field-${label.toLowerCase().replace(/\s+/g, '-')}-${Math.random().toString(36).slice(2, 7)}`,[label]);
 
   const baseInputClasses = `
     form-input
