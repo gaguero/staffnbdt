@@ -59,6 +59,12 @@ export class PermissionGuard implements CanActivate {
         throw new ForbiddenException('Authentication required');
       }
 
+      // PLATFORM_ADMIN bypass: full access to all resources/actions/scopes
+      if (user.role === 'PLATFORM_ADMIN') {
+        this.logger.debug(`Platform Admin bypass granted for user ${user.id}`);
+        return true;
+      }
+
       // Create permission context
       const permissionContext: PermissionContext = this.permissionService.createPermissionContext(
         user,
