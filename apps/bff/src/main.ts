@@ -71,8 +71,10 @@ async function bootstrap() {
         'X-Requested-With',
         'X-Organization-Id',
         'X-Property-Id',
+        'X-Acting-As',
         'x-organization-id',
-        'x-property-id'
+        'x-property-id',
+        'x-acting-as'
       ],
     });
 
