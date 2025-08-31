@@ -99,7 +99,16 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
         throw new Error('Slug must be 2-100 characters long and contain only lowercase letters, numbers, and hyphens');
       }
 
-      await propertyService.createProperty(formData);
+      // Normalize payload for backend enum/JSON expectations
+      const payload: CreatePropertyData = {
+        ...formData,
+        propertyType: formData.propertyType ? (formData.propertyType as any).toString().toUpperCase() as any : undefined,
+        address: formData.address ? (formData.address as any) : undefined,
+        settings: formData.settings ? (formData.settings as any) : undefined,
+        branding: formData.branding ? (formData.branding as any) : undefined,
+      };
+
+      await propertyService.createProperty(payload);
       onSuccess();
     } catch (error: any) {
       console.error('Failed to create property:', error);
