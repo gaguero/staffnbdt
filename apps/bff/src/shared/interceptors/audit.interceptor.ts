@@ -56,11 +56,6 @@ export class AuditInterceptor implements NestInterceptor {
             newData: response,
             ipAddress,
             userAgent,
-            metadata: {
-              actingOrganizationId: actingOrg || null,
-              actingPropertyId: actingProp || null,
-              actingAs: actingAs || null,
-            },
           });
         });
       }),
