@@ -126,12 +126,21 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
       try {
         const stored = localStorage.getItem(TENANT_STORAGE_KEY);
         const current = stored ? JSON.parse(stored) : {};
-        const next = {
-          ...current,
-          organizationId: orgId || current.organizationId,
-          propertyId: propertyId || current.propertyId,
-          actingAs: actingAsLabel || current.actingAs,
-        };
+        const next: any = { ...current };
+
+        if (orgId !== undefined) {
+          next.organizationId = orgId;
+        }
+        // If switching org without a property, explicitly clear propertyId to avoid stale header
+        if (propertyId !== undefined) {
+          next.propertyId = propertyId ?? null;
+        } else if (orgId !== undefined) {
+          next.propertyId = null;
+        }
+        if (actingAsLabel !== undefined) {
+          next.actingAs = actingAsLabel;
+        }
+
         localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(next));
       } catch {}
     },

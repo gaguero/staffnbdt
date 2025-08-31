@@ -53,17 +53,13 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
       if (newOrgId) {
         // Fetch properties for selected org and pick the first active one
         const propsResp = await propertyService.getProperties({ organizationId: newOrgId, isActive: true, limit: 50 });
-        const props = Array.isArray((propsResp as any)?.data) ? (propsResp as any).data : [];
-        targetPropertyId = props[0]?.id;
+        const props = Array.isArray((propsResp as any)?.data) ? (props as any).data : [];
+        targetPropertyId = props[0]?.id; // may be undefined
       }
     } catch {}
+    // Persist override (this now clears propertyId if undefined)
     setAdminOverride(newOrgId, targetPropertyId, 'platform-admin');
-    try {
-      const stored = localStorage.getItem(TENANT_STORAGE_KEY);
-      const current = stored ? JSON.parse(stored) : {};
-      const next = { ...current, organizationId: newOrgId, propertyId: targetPropertyId, actingAs: 'platform-admin' };
-      localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(next));
-    } catch {}
+    // Single source of truth is setAdminOverride; avoid double localStorage writes
     window.location.reload();
   };
 
