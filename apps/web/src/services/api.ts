@@ -31,9 +31,7 @@ api.interceptors.request.use(
         if (parsedTenant.propertyId) {
           config.headers['X-Property-Id'] = parsedTenant.propertyId;
         }
-        if (parsedTenant.actingAs) {
-          config.headers['X-Acting-As'] = parsedTenant.actingAs;
-        }
+        // Omit X-Acting-As to avoid CORS preflight blocks from backend
       } catch (error) {
         // Silently handle invalid tenant info in production
         if (import.meta.env.DEV) {
