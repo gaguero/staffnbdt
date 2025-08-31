@@ -5,6 +5,7 @@ import DepartmentStats from '../components/DepartmentStats';
 import { departmentService } from '../services/departmentService';
 import { userService } from '../services/userService';
 import { useAuth } from '../contexts/AuthContext';
+import { useTenant } from '../contexts/TenantContext';
 
 interface Department {
   id: string;
@@ -47,6 +48,7 @@ interface Department {
 
 const DepartmentsPage: React.FC = () => {
   const { user: currentUser } = useAuth();
+  const { tenantKey } = useTenant();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [hierarchyDepartments, setHierarchyDepartments] = useState<Department[]>([]);
   const [availableManagers, setAvailableManagers] = useState<any[]>([]);
@@ -77,12 +79,13 @@ const DepartmentsPage: React.FC = () => {
     budget: ''
   });
 
-  // Load departments and users on component mount
+  // Load departments and users on tenant change
   useEffect(() => {
     loadDepartments();
     loadHierarchy();
     loadAvailableManagers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantKey]);
 
   const loadDepartments = async () => {
     setIsLoading(true);

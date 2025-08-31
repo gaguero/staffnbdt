@@ -43,6 +43,8 @@ interface TenantContextType {
   propertyId?: string;
   property?: Property;
   availableProperties: Property[];
+  // A stable key that changes whenever tenant context changes
+  tenantKey: string;
   
   // Actions
   switchProperty: (propertyId: string) => Promise<void>;
@@ -77,6 +79,11 @@ interface TenantProviderProps {
 
 export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
   const { tenantInfo, switchProperty: authSwitchProperty } = useAuth();
+  const tenantKey = useMemo(() => {
+    const org = tenantInfo.organizationId || 'no-org';
+    const prop = tenantInfo.propertyId || 'no-prop';
+    return `${org}:${prop}`;
+  }, [tenantInfo.organizationId, tenantInfo.propertyId]);
 
   const canAccessProperty = (propertyId: string): boolean => {
     return tenantInfo.availableProperties?.some(p => p.id === propertyId) || false;
@@ -113,6 +120,7 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
     propertyId: tenantInfo.propertyId,
     property: tenantInfo.property,
     availableProperties: tenantInfo.availableProperties || [],
+    tenantKey,
     switchProperty: authSwitchProperty,
     setAdminOverride: (orgId?: string, propertyId?: string, actingAsLabel?: string) => {
       try {

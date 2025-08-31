@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTenant } from '../contexts/TenantContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UserDetailsModal from '../components/UserDetailsModal';
 import EditUserModal from '../components/EditUserModal';
@@ -12,7 +13,8 @@ import { userService, User as UserType, UserFilter, BulkImportResult } from '../
 import { departmentService, Department } from '../services/departmentService';
 
 const UsersPage: React.FC = () => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, tenantInfo } = useAuth();
+  const { tenantKey } = useTenant();
   const [users, setUsers] = useState<UserType[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +75,7 @@ const UsersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, selectedRole, filter.departmentId]);
+  }, [searchTerm, selectedRole, filter.departmentId, tenantInfo?.organizationId, tenantInfo?.propertyId]);
 
   // Load departments with hierarchy
   const loadDepartments = useCallback(async () => {
@@ -84,7 +86,7 @@ const UsersPage: React.FC = () => {
       console.error('Failed to load departments:', error);
       setDepartments([]);
     }
-  }, []);
+  }, [tenantInfo?.organizationId, tenantInfo?.propertyId]);
 
   // Load stats
   const loadStats = useCallback(async () => {
@@ -106,7 +108,8 @@ const UsersPage: React.FC = () => {
     loadUsers();
     loadStats();
     loadDepartments();
-  }, [loadUsers, loadStats, loadDepartments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantKey]);
 
   // Bulk selection helper functions
   const handleSelectUser = (userId: string) => {
