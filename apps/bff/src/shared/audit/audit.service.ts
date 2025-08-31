@@ -10,6 +10,11 @@ export interface AuditLogData {
   newData?: any;
   ipAddress?: string;
   userAgent?: string;
+  metadata?: {
+    actingOrganizationId?: string | null;
+    actingPropertyId?: string | null;
+    actingAs?: string | null;
+  };
 }
 
 @Injectable()
