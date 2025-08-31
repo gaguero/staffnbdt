@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTenant, usePropertySelector } from '../contexts/TenantContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import { propertyService } from '../services/propertyService';
 
 interface PropertySelectorProps {
   variant?: 'dropdown' | 'modal' | 'compact';
@@ -22,6 +24,11 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
   const { isMultiProperty, getCurrentPropertyName, getCurrentOrganizationName } = useTenant();
   const { availableProperties, currentPropertyId, selectProperty, isLoading, error, clearError } = usePropertySelector();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const isPlatformAdmin = user?.role === 'PLATFORM_ADMIN';
+  const { organizationId, setAdminOverride } = useTenant();
+  const [adminProperties, setAdminProperties] = useState<any[]>([]);
+  const [loadingAdminProps, setLoadingAdminProps] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [retryCount, setRetryCount] = useState(0);
@@ -47,8 +54,29 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
     }
   }, [error, isLoading]);
 
+  // Load properties for Platform Admin by current organization
+  useEffect(() => {
+    let mounted = true;
+    async function loadAdminProps() {
+      if (!isPlatformAdmin || !organizationId) { if (mounted) setAdminProperties([]); return; }
+      try {
+        setLoadingAdminProps(true);
+        const resp = await propertyService.getProperties({ organizationId, isActive: true, limit: 200 });
+        const data = Array.isArray((resp as any)?.data) ? (resp as any).data : [];
+        if (mounted) setAdminProperties(data);
+      } catch {
+        if (mounted) setAdminProperties([]);
+      } finally {
+        if (mounted) setLoadingAdminProps(false);
+      }
+    }
+    loadAdminProps();
+    return () => { mounted = false; };
+  }, [isPlatformAdmin, organizationId]);
+
   // Normalize and filter properties based on search with defensive guards
-  const safeProperties = (availableProperties || []).filter((property: any) => property && typeof property === 'object');
+  const displayProperties = (isPlatformAdmin && adminProperties.length > 0 ? adminProperties : availableProperties) || [];
+  const safeProperties = displayProperties.filter((property: any) => property && typeof property === 'object');
   const filteredProperties = safeProperties.filter((property: any) => {
     if (searchTerm === '') return true;
     const q = searchTerm.toLowerCase();
@@ -144,23 +172,20 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
 
     try {
       setLastSwitchTime(now);
+      if (isPlatformAdmin) {
+        setAdminOverride(undefined, propertyId, 'platform-admin');
+        window.location.reload();
+        return;
+      }
       await selectProperty(propertyId);
       setIsOpen(false);
       setSearchTerm('');
       clearError();
-      
-      // Notify parent component
       onPropertyChange?.(propertyId);
-      
-      // Show success feedback
-      const property = availableProperties.find(p => p.id === propertyId);
-      if (property) {
-        // Could add toast notification here
-        console.log(`Switched to property: ${property.name}`);
-      }
+      const property = displayProperties.find((p: any) => p.id === propertyId);
+      if (property) console.log(`Switched to property: ${property.name}`);
     } catch (err) {
       console.error('Property switch failed:', err);
-      // Error is handled by the hook
     }
   };
 
@@ -170,7 +195,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
   };
 
   // Don't render if user only has access to one property
-  if (!isMultiProperty) {
+  if (!isMultiProperty && !isPlatformAdmin) {
     return showOrganization ? (
       <div className={`${currentSize.container} text-gray-600 ${className}`}>
         <div className="font-medium">{getCurrentOrganizationName()}</div>
@@ -286,10 +311,8 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
             </div>
           </div>
           <div className="text-gray-400">
-            {isLoading ? (
+            {(isLoading || loadingAdminProps) && (
               <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--brand-primary)', borderTopColor: 'transparent' }} />
-            ) : (
-              <span className="text-lg">🔄</span>
             )}
           </div>
         </button>
@@ -457,7 +480,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          {isLoading && (
+          {(isLoading || loadingAdminProps) && (
             <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--brand-primary)', borderTopColor: 'transparent' }} />
           )}
           <span className={`text-sm transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
@@ -468,11 +491,11 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
           {/* Search for dropdown variant */}
-          {availableProperties.length > 3 && (
+          {displayProperties.length > 3 && (
             <div className="p-2 border-b border-gray-100">
               <input
                 type="text"
-                placeholder={`Search ${availableProperties.length} properties...`}
+                placeholder={`Search ${displayProperties.length} properties...`}
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1"
@@ -569,7 +592,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
       )}
 
       {/* Loading overlay */}
-      {isLoading && (
+      {(isLoading || loadingAdminProps) && (
         <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50 rounded-lg">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--brand-primary)', borderTopColor: 'transparent' }}></div>
