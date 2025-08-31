@@ -23,7 +23,8 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
       setLoading(true);
       setError(null);
       try {
-        const resp = await organizationService.getOrganizations({ limit: 200 });
+        // Avoid backend 500s with unsupported params; fetch with default pagination
+        const resp = await organizationService.getOrganizations();
         const data = Array.isArray((resp as any)?.data) ? (resp as any).data : [];
         if (mounted) {
           setOrganizations(data);
