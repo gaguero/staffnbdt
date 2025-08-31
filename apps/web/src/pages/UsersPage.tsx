@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
+import PropertySelector from '../components/PropertySelector';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UserDetailsModal from '../components/UserDetailsModal';
 import EditUserModal from '../components/EditUserModal';
@@ -14,7 +15,7 @@ import { departmentService, Department } from '../services/departmentService';
 
 const UsersPage: React.FC = () => {
   const { user: currentUser, tenantInfo } = useAuth();
-  const { tenantKey } = useTenant();
+  const { propertyId } = useTenant();
   const [users, setUsers] = useState<UserType[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +110,7 @@ const UsersPage: React.FC = () => {
     loadStats();
     loadDepartments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantKey]);
+  }, [tenantInfo?.propertyId]);
 
   // Bulk selection helper functions
   const handleSelectUser = (userId: string) => {
@@ -451,42 +452,55 @@ const UsersPage: React.FC = () => {
             )}
           </p>
         </div>
-        
-        <div className="flex gap-2">
-          {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
-            <>
-              <button
-                onClick={() => setShowInvitationModal(true)}
-                className="btn btn-secondary"
-              >
-                📧 Send Invitation
-              </button>
-              <button
-                onClick={() => setShowBulkImport(true)}
-                className="btn btn-secondary"
-              >
-                📤 Import CSV
-              </button>
-              <button
-                onClick={handleExport}
-                className="btn btn-secondary"
-                disabled={loading}
-              >
-                📥 Export CSV
-              </button>
-            </>
+        <div className="flex items-center gap-2">
+          {currentUser?.role === 'PLATFORM_ADMIN' && (
+            <PropertySelector variant="compact" className="min-w-[180px]" showOrganization={false} size="sm" />
           )}
-          <PermissionGate commonPermission={COMMON_PERMISSIONS.CREATE_USER}>
-            <button
-              onClick={() => setShowAddUser(true)}
-              className="btn btn-primary"
-            >
-              <span className="mr-2">➕</span>
-              Add User
-            </button>
-          </PermissionGate>
+          <div className="flex gap-2">
+            {['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '') && (
+              <>
+                <button
+                  onClick={() => setShowInvitationModal(true)}
+                  className="btn btn-secondary"
+                >
+                  📧 Send Invitation
+                </button>
+                <button
+                  onClick={() => setShowBulkImport(true)}
+                  className="btn btn-secondary"
+                >
+                  📤 Import CSV
+                </button>
+                <button
+                  onClick={handleExport}
+                  className="btn btn-secondary"
+                  disabled={loading}
+                >
+                  📥 Export CSV
+                </button>
+              </>
+            )}
+            <PermissionGate commonPermission={COMMON_PERMISSIONS.CREATE_USER}>
+              <button
+                onClick={() => setShowAddUser(true)}
+                className="btn btn-primary"
+              >
+                <span className="mr-2">➕</span>
+                Add User
+              </button>
+            </PermissionGate>
+          </div>
         </div>
       </div>
+
+      {currentUser?.role === 'PLATFORM_ADMIN' && !propertyId && (
+        <div className="card p-4 bg-yellow-50 border border-yellow-200">
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-sm text-yellow-800">Select a property to view users for that property.</div>
+            <PropertySelector variant="compact" className="min-w-[200px]" showOrganization={false} size="sm" />
+          </div>
+        </div>
+      )}
 
       {/* User Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
