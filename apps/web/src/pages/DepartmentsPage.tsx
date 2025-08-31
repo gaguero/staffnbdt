@@ -7,7 +7,6 @@ import { userService } from '../services/userService';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
 import PropertySelector from '../components/PropertySelector';
-import { useTenant } from '../contexts/TenantContext';
 
 interface Department {
   id: string;
