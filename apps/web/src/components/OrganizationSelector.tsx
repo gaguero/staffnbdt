@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
-import { TENANT_STORAGE_KEY } from '../utils/constants';
 import { organizationService, Organization } from '../services/organizationService';
 import { propertyService } from '../services/propertyService';
 
@@ -53,8 +52,8 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
       if (newOrgId) {
         // Fetch properties for selected org and pick the first active one
         const propsResp = await propertyService.getProperties({ organizationId: newOrgId, isActive: true, limit: 50 });
-        const props = Array.isArray((propsResp as any)?.data) ? (props as any).data : [];
-        targetPropertyId = props[0]?.id; // may be undefined
+        const props = Array.isArray((propsResp as any)?.data) ? (propsResp as any).data : [];
+        targetPropertyId = (props as any[])[0]?.id; // may be undefined
       }
     } catch {}
     // Persist override (this now clears propertyId if undefined)
