@@ -10,7 +10,7 @@ interface OrganizationSelectorProps {
 
 const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, variant = 'dropdown' }) => {
   const { user } = useAuth();
-  const { organizationId } = useTenant();
+  const { organizationId, setAdminOverride } = useTenant();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,26 +43,11 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
     return found?.name || 'Select Organization';
   }, [organizations, organizationId]);
 
-  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newOrgId = e.target.value || undefined;
-    try {
-      // Persist override via TenantContext API (stored in localStorage by context)
-      // We import lazily to avoid circulars in some bundlers
-      const { useTenant } = await import('../contexts/TenantContext');
-      const tenant = useTenant();
-      tenant.setAdminOverride(newOrgId, undefined, 'platform-admin');
-      // Simple refresh of the current page to let queries refetch under new org context
-      window.location.reload();
-    } catch (err) {
-      // As a fallback (no hooks in handler), directly update localStorage
-      try {
-        const stored = localStorage.getItem('tenantInfo');
-        const current = stored ? JSON.parse(stored) : {};
-        const next = { ...current, organizationId: newOrgId, propertyId: undefined, actingAs: 'platform-admin' };
-        localStorage.setItem('tenantInfo', JSON.stringify(next));
-        window.location.reload();
-      } catch {}
-    }
+    setAdminOverride(newOrgId, undefined, 'platform-admin');
+    // Reload so data refetches under new organization context
+    window.location.reload();
   };
 
   if (!user || user.role !== 'PLATFORM_ADMIN') return null;
