@@ -125,7 +125,10 @@ export class DepartmentsService {
 
   async findAll(currentUser: User): Promise<Department[]> {
     // Department admins can only see their own department
-    let whereClause: any = { propertyId: currentUser.propertyId };
+    let whereClause: any = { organizationId: currentUser.organizationId };
+    if (currentUser.propertyId) {
+      whereClause.propertyId = currentUser.propertyId;
+    }
     if (currentUser.role === Role.DEPARTMENT_ADMIN) {
       whereClause.id = currentUser.departmentId;
     }
