@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
+import { TENANT_STORAGE_KEY } from '../utils/constants';
 import { organizationService, Organization } from '../services/organizationService';
 import { propertyService } from '../services/propertyService';
 
@@ -57,6 +58,12 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
       }
     } catch {}
     setAdminOverride(newOrgId, targetPropertyId, 'platform-admin');
+    try {
+      const stored = localStorage.getItem(TENANT_STORAGE_KEY);
+      const current = stored ? JSON.parse(stored) : {};
+      const next = { ...current, organizationId: newOrgId, propertyId: targetPropertyId, actingAs: 'platform-admin' };
+      localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(next));
+    } catch {}
     window.location.reload();
   };
 

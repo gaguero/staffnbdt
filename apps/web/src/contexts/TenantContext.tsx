@@ -1,5 +1,6 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo } from 'react';
 import { useAuth } from './AuthContext';
+import { TENANT_STORAGE_KEY } from '../utils/constants';
 
 interface Organization {
   id: string;
@@ -115,7 +116,7 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
     switchProperty: authSwitchProperty,
     setAdminOverride: (orgId?: string, propertyId?: string, actingAsLabel?: string) => {
       try {
-        const stored = localStorage.getItem('tenantInfo');
+        const stored = localStorage.getItem(TENANT_STORAGE_KEY);
         const current = stored ? JSON.parse(stored) : {};
         const next = {
           ...current,
@@ -123,7 +124,7 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
           propertyId: propertyId || current.propertyId,
           actingAs: actingAsLabel || current.actingAs,
         };
-        localStorage.setItem('tenantInfo', JSON.stringify(next));
+        localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(next));
       } catch {}
     },
     canAccessProperty,
