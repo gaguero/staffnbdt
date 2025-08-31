@@ -7,6 +7,7 @@ import { useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { UserType } from '../types/auth';
 import PropertySelector from './PropertySelector';
+import OrganizationSelector from './OrganizationSelector';
 import Breadcrumb from './Breadcrumb';
 import DynamicNavigation from './DynamicNavigation';
 
@@ -120,6 +121,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* User info and property selector in sidebar */}
         <div className="border-t border-gray-200 p-4 space-y-3">
+          {/* Organization Selector for platform admins */}
+          <OrganizationSelector className="w-full" />
           {/* Property Selector */}
           <div>
             <PropertySelector 
@@ -193,11 +196,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* User menu */}
             <div className="flex items-center space-x-4">
               {/* Property Selector for desktop header */}
-              <div className="hidden lg:block">
-                <div className="text-sm text-gray-600 text-right">
-                  <div className="font-medium">{getCurrentOrganizationName()}</div>
-                  <div className="text-xs opacity-75">{getCurrentPropertyName()}</div>
-                </div>
+              <div className="hidden lg:block min-w-[240px]">
+                <OrganizationSelector variant="compact" />
               </div>
               
               {/* Language Switcher */}
