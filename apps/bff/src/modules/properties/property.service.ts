@@ -38,8 +38,8 @@ export class PropertyService {
       throw new ForbiddenException('Insufficient permissions to create properties in this organization');
     }
 
-    // Verify organization exists and is active
-    const organization = await this.prisma.organization.findUnique({
+    // Verify organization exists and is active (findFirst because findUnique only supports unique fields)
+    const organization = await this.prisma.organization.findFirst({
       where: { id: organizationId, isActive: true }
     });
 
