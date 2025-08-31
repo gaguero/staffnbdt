@@ -104,6 +104,14 @@ export class TenantInterceptor implements NestInterceptor {
         userRole: jwtPayload.role,
       }, request);
 
+      // Also propagate effective tenant to request.user so downstream code using @CurrentUser sees overrides
+      try {
+        if (request.user) {
+          request.user.organizationId = organizationId;
+          request.user.propertyId = propertyId;
+        }
+      } catch {}
+
       // Only log success in debug mode to prevent log spam
       if (LoggingConfig.isDebugEnabled()) {
         this.safeLog('debug', `Tenant context set successfully for ${jwtPayload.email}`);
