@@ -10,7 +10,7 @@ import { propertyService, Property, PropertyFilter } from '../services/propertyS
 import { organizationService } from '../services/organizationService';
 
 const PropertiesPage: React.FC = () => {
-  const { user: _currentUser } = useAuth();
+  const { user: _currentUser, tenantInfo } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [organizations, setOrganizations] = useState<Array<{id: string; name: string}>>([]);
   const [loading, setLoading] = useState(true);
@@ -89,6 +89,14 @@ const PropertiesPage: React.FC = () => {
       setOrganizations([]);
     }
   }, []);
+
+  // Default the Organization filter to the active tenant organization
+  useEffect(() => {
+    // If tenant has an organization selected, prefer it
+    if (tenantInfo?.organizationId) {
+      setOrganizationFilter(prev => (prev === 'all' || prev !== tenantInfo.organizationId ? tenantInfo.organizationId! : prev));
+    }
+  }, [tenantInfo?.organizationId]);
 
   // Load property statistics
   const loadStats = useCallback(async () => {
