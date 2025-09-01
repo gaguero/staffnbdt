@@ -236,7 +236,7 @@ const App: React.FC = () => {
         <Route 
           path="/users" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'user', action: 'read', scope: 'property' }] }>
               <Layout>
                 <UsersPage />
               </Layout>
@@ -246,7 +246,7 @@ const App: React.FC = () => {
         <Route 
           path="/departments" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'system', action: 'manage', scope: 'department' }]}>
               <Layout>
                 <DepartmentsPage />
               </Layout>
@@ -276,7 +276,7 @@ const App: React.FC = () => {
         <Route 
           path="/properties" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'system', action: 'manage', scope: 'property' }]}>
               <Layout>
                 <PropertiesPage />
               </Layout>
@@ -286,7 +286,7 @@ const App: React.FC = () => {
         <Route 
           path="/brand-studio" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'system', action: 'manage', scope: 'organization' }]}>
               <Layout>
                 <BrandStudioPage />
               </Layout>
@@ -298,7 +298,7 @@ const App: React.FC = () => {
         <Route 
           path="/hotel/rooms" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'user', action: 'read', scope: 'department' }]}>
               <Layout>
                 <RoomsPage />
               </Layout>
@@ -308,7 +308,7 @@ const App: React.FC = () => {
         <Route 
           path="/hotel/guests" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'user', action: 'read', scope: 'department' }]}>
               <Layout>
                 <GuestsPage />
               </Layout>
@@ -318,7 +318,7 @@ const App: React.FC = () => {
         <Route 
           path="/hotel/reservations" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'user', action: 'read', scope: 'department' }]}>
               <Layout>
                 <ReservationsPage />
               </Layout>
