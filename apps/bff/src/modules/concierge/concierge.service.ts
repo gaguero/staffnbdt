@@ -136,7 +136,7 @@ export class ConciergeService {
     // Here we persist a minimal request log; actual queueing handled by worker service in this codebase
     await this.prisma.auditLog.create({
       data: {
-        userId: user.id,
+        userId: ctx.userId,
         action: 'PLAYBOOK_EXECUTE_REQUEST',
         entity: 'Playbook',
         entityId: dto.playbookId,
