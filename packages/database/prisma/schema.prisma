@@ -70,6 +70,10 @@ model Property {
   users              User[]
   profilePhotos      ProfilePhoto[]
   vacations          Vacation[]
+  // Back-relations
+  moduleSubscriptions ModuleSubscription[]
+  conciergeObjects    ConciergeObject[]
+  vendors             Vendor[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
