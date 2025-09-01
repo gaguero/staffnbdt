@@ -8,6 +8,7 @@ import EditUserModal from '../components/EditUserModal';
 import UserRoleAssignment from '../components/UserRoleManagement/UserRoleAssignment';
 import InvitationModal from '../components/InvitationModal';
 import RoleBadge from '../components/RoleBadge';
+import UserCustomRoleBadges from '../components/UserCustomRoleBadges';
 import PermissionGate from '../components/PermissionGate';
 import UserPropertyAccess from '../components/UserPropertyAccess';
 import { COMMON_PERMISSIONS } from '../types/permission';
@@ -753,7 +754,8 @@ const UsersPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getRoleBadge(user.role)}
+                        {/* Prefer custom roles; fall back to legacy system role */}
+                        <UserCustomRoleBadges userId={user.id} fallbackSystemRole={user.role} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getDepartmentHierarchy(user)}
