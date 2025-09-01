@@ -139,6 +139,42 @@ class ModuleManagementService {
   }
 
   /**
+   * Enable a module for an organization
+   */
+  async enableModuleForOrganization(
+    organizationId: string, 
+    moduleId: string
+  ): Promise<ModuleSubscription> {
+    try {
+      const response = await this.bulkUpdateOrganizationModules(organizationId, [
+        { moduleId, isEnabled: true }
+      ]);
+      return response[0];
+    } catch (error) {
+      console.error(`Failed to enable module ${moduleId} for organization ${organizationId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Disable a module for an organization
+   */
+  async disableModuleForOrganization(
+    organizationId: string, 
+    moduleId: string
+  ): Promise<ModuleSubscription> {
+    try {
+      const response = await this.bulkUpdateOrganizationModules(organizationId, [
+        { moduleId, isEnabled: false }
+      ]);
+      return response[0];
+    } catch (error) {
+      console.error(`Failed to disable module ${moduleId} for organization ${organizationId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Bulk enable/disable modules for organization
    */
   async bulkUpdateOrganizationModules(
