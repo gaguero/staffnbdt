@@ -20,16 +20,23 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Add tenant context headers (override path for PLATFORM_ADMIN)
+    // Add tenant context headers (single source of truth: property overrides organization)
     const tenantInfo = localStorage.getItem(TENANT_STORAGE_KEY);
     if (tenantInfo) {
       try {
         const parsedTenant = JSON.parse(tenantInfo);
-        if (parsedTenant.organizationId) {
-          config.headers['X-Organization-Id'] = parsedTenant.organizationId;
-        }
         if (parsedTenant.propertyId) {
+          // When property is selected, force headers to property + its org if available
           config.headers['X-Property-Id'] = parsedTenant.propertyId;
+          if (parsedTenant.property?.organizationId) {
+            config.headers['X-Organization-Id'] = parsedTenant.property.organizationId;
+          } else if (parsedTenant.organizationId) {
+            config.headers['X-Organization-Id'] = parsedTenant.organizationId;
+          }
+        } else if (parsedTenant.organizationId) {
+          // Only org selected
+          config.headers['X-Organization-Id'] = parsedTenant.organizationId;
+          delete (config.headers as any)['X-Property-Id'];
         }
         // Omit X-Acting-As to avoid CORS preflight blocks from backend
       } catch (error) {
