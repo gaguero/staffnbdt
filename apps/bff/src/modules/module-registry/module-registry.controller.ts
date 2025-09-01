@@ -13,7 +13,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ModuleRegistryService, RegisterModuleDto } from './module-registry.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
-import { PermissionGuard } from '../permissions/guards/permission.guard';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 import { UserType } from '@prisma/client';
 

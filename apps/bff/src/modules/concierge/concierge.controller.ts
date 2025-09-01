@@ -2,7 +2,7 @@ import { Controller, Get, Post, Put, Param, Body, UseGuards, Request } from '@ne
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ConciergeService } from './concierge.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
-import { PermissionGuard } from '../permissions/guards/permission.guard';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { RequirePermission, PermissionScope } from '../../shared/decorators/require-permission.decorator';
 import { CreateConciergeObjectDto } from './dto/create-concierge-object.dto';
 import { UpdateConciergeObjectDto } from './dto/update-concierge-object.dto';
