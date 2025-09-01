@@ -327,7 +327,33 @@ class HotelService {
   }
 
   async createReservation(reservation: CreateReservationInput): Promise<ApiResponse<Reservation>> {
-    const response = await api.post('/reservations', reservation);
+    // Map frontend payload to backend expectations
+    const checkInISO = new Date(reservation.checkInDate).toISOString();
+    const checkOutISO = new Date(reservation.checkOutDate).toISOString();
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const nights = Math.max(1, Math.ceil((new Date(checkOutISO).getTime() - new Date(checkInISO).getTime()) / msPerDay));
+    const computedTotal = Number(reservation.rate ?? 0) * nights;
+
+    const payload: any = {
+      unitId: reservation.roomId, // backend expects unitId
+      guestId: reservation.guestId, // required by backend
+      checkInDate: checkInISO,
+      checkOutDate: checkOutISO,
+      adults: reservation.adults,
+      children: reservation.children ?? 0,
+      status: 'CONFIRMED',
+      paymentStatus: 'PENDING',
+      totalAmount: computedTotal,
+      paidAmount: 0,
+      currency: 'USD',
+      paymentMethod: reservation.paymentMethod,
+      source: reservation.source,
+      specialRequests: Array.isArray(reservation.specialRequests) ? reservation.specialRequests.join(', ') : undefined,
+      notes: Array.isArray(reservation.notes) ? reservation.notes.join(', ') : undefined,
+      confirmationCode: (reservation as any).confirmationCode,
+    };
+
+    const response = await api.post('/reservations', payload);
     return {
       ...response.data,
       data: this.transformReservation(response.data?.data)
