@@ -131,6 +131,13 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
             path: '/brand-studio',
             icon: '🎨',
             requiredPermissions: ['system.manage.organizations'],
+          },
+          {
+            id: 'module-management',
+            label: 'nav.moduleManagement',
+            path: '/admin/modules',
+            icon: '🧩',
+            requiredPermissions: ['module.manage.organization'],
           }
         ]
       },

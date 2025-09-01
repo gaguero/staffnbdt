@@ -35,6 +35,7 @@ import VendorsPage from './pages/modules/VendorsPage';
 
 // Admin Pages
 import RolesManagementPage from './pages/admin/RolesManagementPage';
+import ModuleManagementPage from './pages/admin/ModuleManagementPage';
 import RoleStatsDashboardPage from './pages/RoleStatsDashboardPage';
 
 // Login component
@@ -354,6 +355,16 @@ const App: React.FC = () => {
             <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN']}>
               <Layout>
                 <RoleStatsDashboardPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/modules" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'module', action: 'manage', scope: 'organization' }]}>
+              <Layout>
+                <ModuleManagementPage />
               </Layout>
             </ProtectedRoute>
           } 

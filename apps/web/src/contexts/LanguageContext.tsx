@@ -36,6 +36,7 @@ const translations = {
     // Admin
     'nav.roles': 'Roles',
     'nav.roleStats': 'Role Statistics',
+    'nav.moduleManagement': 'Module Management',
     
     // External Users
     'nav.myReservations': 'My Reservations',
@@ -199,6 +200,82 @@ const translations = {
     'common.import': 'Import',
     'common.yes': 'Yes',
     'common.no': 'No',
+    'common.goBack': 'Go Back',
+    'common.organization': 'Organization',
+    'common.property': 'Property',
+    'common.role': 'Role',
+    'common.contactSupport': 'Contact Support',
+    
+    // Module Management
+    'modules.management': 'Module Management',
+    'modules.pageDescription': 'Manage module availability across your organization and properties',
+    'modules.managementDescription': 'Configure which modules are enabled for your organization and properties',
+    'modules.selectProperty': 'Select Property',
+    'modules.selectPropertyPlaceholder': 'Choose a property to manage...',
+    'modules.selectPropertyTitle': 'Select Property to Continue',
+    'modules.selectPropertyMessage': 'Please select a property to view and manage module configurations.',
+    'modules.loading': 'Loading modules...',
+    'modules.loadingProperty': 'Loading property modules...',
+    'modules.error': 'Error loading modules',
+    'modules.accessDenied': 'Access Denied',
+    'modules.accessDeniedDescription': 'You do not have permission to manage modules.',
+    'modules.permissionRequired': 'Permission Required',
+    'modules.permissionRequiredDescription': 'You need organization-level module management permissions.',
+    
+    // Module Status
+    'modules.enabled': 'Enabled',
+    'modules.disabled': 'Disabled',
+    'modules.organizationLevel': 'Organization Level',
+    'modules.propertyLevel': 'Property Level',
+    'modules.effectiveStatus': 'Effective Status',
+    'modules.override': 'Override',
+    'modules.reset': 'Reset',
+    'modules.removeOverride': 'Remove Override',
+    'modules.overriddenByProperty': 'Overridden by property setting',
+    'modules.propertyControlled': 'Property controlled',
+    
+    // Module Actions
+    'modules.enable': 'Enable',
+    'modules.disable': 'Disable',
+    'modules.enabling': 'Enabling...',
+    'modules.disabling': 'Disabling...',
+    'modules.enabledForOrganization': 'Module enabled for organization',
+    'modules.disabledForOrganization': 'Module disabled for organization',
+    'modules.enabledForProperty': 'Module enabled for property',
+    'modules.disabledForProperty': 'Module disabled for property',
+    'modules.overrideRemoved': 'Override removed for module',
+    'modules.actionFailed': 'Action failed',
+    
+    // Module Info
+    'modules.noDescription': 'No description available',
+    'modules.category': 'Category',
+    'modules.version': 'Version',
+    'modules.dependencies': 'Dependencies',
+    'modules.systemModule': 'System Module',
+    
+    // Statistics
+    'modules.statistics': 'Statistics',
+    'modules.totalModules': 'Total Modules',
+    'modules.orgEnabled': 'Organization Enabled',
+    'modules.propertyOverrides': 'Property Overrides',
+    'modules.activeModules': 'Active Modules',
+    'modules.enabledCount': 'Enabled Modules',
+    'modules.availableCount': 'Available Modules',
+    'modules.systemCount': 'System Modules',
+    
+    // Help
+    'modules.howItWorks': 'How It Works',
+    'modules.organizationLevelHelp': 'Organization-level settings apply to all properties by default.',
+    'modules.propertyLevelHelp': 'Property-level settings override organization settings for that specific property.',
+    'modules.precedenceHelp': 'Property settings take precedence over organization settings when both exist.',
+    'modules.viewAnalytics': 'View Analytics',
+    'modules.viewAnalyticsDescription': 'See usage statistics and trends',
+    'modules.viewHistory': 'View History',
+    'modules.viewHistoryDescription': 'Track module enablement changes',
+    'modules.bulkActions': 'Bulk Actions',
+    'modules.bulkActionsDescription': 'Enable or disable multiple modules',
+    'modules.lastUpdated': 'Last updated',
+    'modules.needHelp': 'Need help?',
   },
   es: {
     // Navigation
@@ -227,6 +304,7 @@ const translations = {
     // Admin
     'nav.roles': 'Roles',
     'nav.roleStats': 'Estadísticas de Roles',
+    'nav.moduleManagement': 'Gestión de Módulos',
     
     // External Users
     'nav.myReservations': 'Mis Reservaciones',
@@ -390,6 +468,82 @@ const translations = {
     'common.import': 'Importar',
     'common.yes': 'Sí',
     'common.no': 'No',
+    'common.goBack': 'Regresar',
+    'common.organization': 'Organización',
+    'common.property': 'Propiedad',
+    'common.role': 'Rol',
+    'common.contactSupport': 'Contactar Soporte',
+    
+    // Module Management
+    'modules.management': 'Gestión de Módulos',
+    'modules.pageDescription': 'Gestiona la disponibilidad de módulos en tu organización y propiedades',
+    'modules.managementDescription': 'Configura qué módulos están habilitados para tu organización y propiedades',
+    'modules.selectProperty': 'Seleccionar Propiedad',
+    'modules.selectPropertyPlaceholder': 'Elige una propiedad para gestionar...',
+    'modules.selectPropertyTitle': 'Selecciona Propiedad para Continuar',
+    'modules.selectPropertyMessage': 'Por favor selecciona una propiedad para ver y gestionar las configuraciones de módulos.',
+    'modules.loading': 'Cargando módulos...',
+    'modules.loadingProperty': 'Cargando módulos de la propiedad...',
+    'modules.error': 'Error cargando módulos',
+    'modules.accessDenied': 'Acceso Denegado',
+    'modules.accessDeniedDescription': 'No tienes permisos para gestionar módulos.',
+    'modules.permissionRequired': 'Permiso Requerido',
+    'modules.permissionRequiredDescription': 'Necesitas permisos de gestión de módulos a nivel de organización.',
+    
+    // Module Status
+    'modules.enabled': 'Habilitado',
+    'modules.disabled': 'Deshabilitado',
+    'modules.organizationLevel': 'Nivel de Organización',
+    'modules.propertyLevel': 'Nivel de Propiedad',
+    'modules.effectiveStatus': 'Estado Efectivo',
+    'modules.override': 'Sobrescribir',
+    'modules.reset': 'Restablecer',
+    'modules.removeOverride': 'Remover Sobrescritura',
+    'modules.overriddenByProperty': 'Sobrescrito por configuración de propiedad',
+    'modules.propertyControlled': 'Controlado por propiedad',
+    
+    // Module Actions
+    'modules.enable': 'Habilitar',
+    'modules.disable': 'Deshabilitar',
+    'modules.enabling': 'Habilitando...',
+    'modules.disabling': 'Deshabilitando...',
+    'modules.enabledForOrganization': 'Módulo habilitado para la organización',
+    'modules.disabledForOrganization': 'Módulo deshabilitado para la organización',
+    'modules.enabledForProperty': 'Módulo habilitado para la propiedad',
+    'modules.disabledForProperty': 'Módulo deshabilitado para la propiedad',
+    'modules.overrideRemoved': 'Sobrescritura removida para el módulo',
+    'modules.actionFailed': 'Acción falló',
+    
+    // Module Info
+    'modules.noDescription': 'No hay descripción disponible',
+    'modules.category': 'Categoría',
+    'modules.version': 'Versión',
+    'modules.dependencies': 'Dependencias',
+    'modules.systemModule': 'Módulo del Sistema',
+    
+    // Statistics
+    'modules.statistics': 'Estadísticas',
+    'modules.totalModules': 'Total de Módulos',
+    'modules.orgEnabled': 'Habilitados por Organización',
+    'modules.propertyOverrides': 'Sobrescrituras de Propiedad',
+    'modules.activeModules': 'Módulos Activos',
+    'modules.enabledCount': 'Módulos Habilitados',
+    'modules.availableCount': 'Módulos Disponibles',
+    'modules.systemCount': 'Módulos del Sistema',
+    
+    // Help
+    'modules.howItWorks': 'Cómo Funciona',
+    'modules.organizationLevelHelp': 'La configuración a nivel de organización se aplica a todas las propiedades por defecto.',
+    'modules.propertyLevelHelp': 'La configuración a nivel de propiedad sobrescribe la configuración de organización para esa propiedad específica.',
+    'modules.precedenceHelp': 'La configuración de propiedad tiene precedencia sobre la configuración de organización cuando ambas existen.',
+    'modules.viewAnalytics': 'Ver Analíticas',
+    'modules.viewAnalyticsDescription': 'Ver estadísticas de uso y tendencias',
+    'modules.viewHistory': 'Ver Historial',
+    'modules.viewHistoryDescription': 'Rastrear cambios de habilitación de módulos',
+    'modules.bulkActions': 'Acciones Masivas',
+    'modules.bulkActionsDescription': 'Habilitar o deshabilitar múltiples módulos',
+    'modules.lastUpdated': 'Última actualización',
+    'modules.needHelp': '¿Necesitas ayuda?',
   }
 };
 
