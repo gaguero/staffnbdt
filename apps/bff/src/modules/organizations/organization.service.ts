@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/database/prisma.service';
 import { TenantContextService } from '../../shared/tenant/tenant-context.service';
+import { PermissionService } from '../../shared/services/permission.service';
 import { Organization, User, Role, Prisma } from '@prisma/client';
 import { CreateOrganizationDto, UpdateOrganizationDto, OrganizationFilterDto, AssignUsersToOrganizationDto, RemoveUserFromOrganizationDto } from './dto';
 
@@ -17,6 +18,7 @@ export class OrganizationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContextService,
+    private readonly permissionService: PermissionService,
   ) {}
 
   /**
@@ -74,12 +76,17 @@ export class OrganizationService {
   }
 
   /**
-   * Get all organizations with filtering and pagination (Platform Admin only)
+   * Get all organizations with filtering and pagination
    */
   async findAll(filterDto: OrganizationFilterDto, currentUser: User) {
-    // Only Platform Admins can view all organizations
-    if (currentUser.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only Platform Admins can view all organizations');
+    // Check if user has permission to manage organizations
+    const hasPermission = await this.permissionService.evaluatePermission(
+      { resource: 'system', action: 'manage', scope: 'organizations' },
+      { user: currentUser, organizationId: currentUser.organizationId, propertyId: currentUser.propertyId }
+    );
+    
+    if (!hasPermission.granted) {
+      throw new ForbiddenException('Access denied: Insufficient permissions to view organizations');
     }
 
     const {
