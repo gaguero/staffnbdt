@@ -32,6 +32,13 @@ export class VendorsController {
     return this.vendorsService.getVendors(req, filters);
   }
 
+  @Get('stats')
+  @RequirePermission('vendors.read.property')
+  @PermissionScope('property')
+  async getVendorStats(@Request() req) {
+    return this.vendorsService.getVendorStats(req);
+  }
+
   @Get('links')
   @RequirePermission('vendors.read.property')
   @PermissionScope('property')

@@ -577,6 +577,98 @@ export class VendorsService {
       orderBy: { confirmationAt: 'desc' }
     });
   }
+
+  async getVendorStats(req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
+    if (!ctx.propertyId) {
+      throw new BadRequestException('Property context required for vendor operations');
+    }
+    if (!(await this.moduleRegistry.isModuleEnabledForProperty(ctx.organizationId, ctx.propertyId, 'vendors'))) {
+      throw new ForbiddenException('Vendors module not enabled for this property');
+    }
+
+    // Get total vendor count
+    const totalVendors = await this.prisma.vendor.count({
+      where: {
+        organizationId: ctx.organizationId,
+        propertyId: ctx.propertyId,
+      }
+    });
+
+    // Get active vendor count
+    const activeVendors = await this.prisma.vendor.count({
+      where: {
+        organizationId: ctx.organizationId,
+        propertyId: ctx.propertyId,
+        isActive: true,
+      }
+    });
+
+    // Get vendor links stats
+    const linkStats = await this.prisma.vendorLink.groupBy({
+      by: ['status'],
+      where: {
+        vendor: {
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+        }
+      },
+      _count: {
+        status: true,
+      }
+    });
+
+    // Get vendors by category
+    const vendorsByCategory = await this.prisma.vendor.groupBy({
+      by: ['category'],
+      where: {
+        organizationId: ctx.organizationId,
+        propertyId: ctx.propertyId,
+        isActive: true,
+      },
+      _count: {
+        category: true,
+      }
+    });
+
+    // Get recent activity (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentLinks = await this.prisma.vendorLink.count({
+      where: {
+        vendor: {
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+        },
+        confirmationAt: {
+          gte: thirtyDaysAgo,
+        }
+      }
+    });
+
+    return {
+      overview: {
+        totalVendors,
+        activeVendors,
+        inactiveVendors: totalVendors - activeVendors,
+      },
+      links: {
+        total: linkStats.reduce((sum, stat) => sum + stat._count.status, 0),
+        byStatus: linkStats.reduce((acc, stat) => {
+          acc[stat.status] = stat._count.status;
+          return acc;
+        }, {} as Record<string, number>),
+      },
+      categories: vendorsByCategory.map(cat => ({
+        category: cat.category,
+        count: cat._count.category,
+      })),
+      activity: {
+        recentLinks: recentLinks,
+      }
+    };
+  }
 }
 
 // DTOs for better type safety

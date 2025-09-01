@@ -42,6 +42,7 @@ import { GuestsModule } from './modules/guests/guests.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { ModuleRegistryModule } from './modules/module-registry/module-registry.module';
+import { ModuleSubscriptionsModule } from './modules/module-subscriptions/module-subscriptions.module';
 import { ConciergeModule } from './modules/concierge/concierge.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { RoomTypesModule } from './modules/room-types/room-types.module';
@@ -105,6 +106,7 @@ import { RoomTypesModule } from './modules/room-types/room-types.module';
     ReservationsModule,
     RolesModule,
     ModuleRegistryModule,
+    ModuleSubscriptionsModule,
     ConciergeModule,
     VendorsModule,
     RoomTypesModule,
