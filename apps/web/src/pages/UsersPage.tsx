@@ -7,7 +7,6 @@ import UserDetailsModal from '../components/UserDetailsModal';
 import EditUserModal from '../components/EditUserModal';
 import UserRoleAssignment from '../components/UserRoleManagement/UserRoleAssignment';
 import InvitationModal from '../components/InvitationModal';
-import RoleBadge from '../components/RoleBadge';
 import UserCustomRoleBadges from '../components/UserCustomRoleBadges';
 import PermissionGate from '../components/PermissionGate';
 import UserPropertyAccess from '../components/UserPropertyAccess';
@@ -342,15 +341,7 @@ const UsersPage: React.FC = () => {
   };
 
   // Role badge component now handles all styling and logic
-  const getRoleBadge = (role: string) => {
-    return (
-      <RoleBadge
-        role={role}
-        size="sm"
-        showTooltip={true}
-      />
-    );
-  };
+
 
   const formatDate = (date?: string) => {
     if (!date) return 'Never';
@@ -397,22 +388,24 @@ const UsersPage: React.FC = () => {
   };
 
   const canManageUser = (user: UserType) => {
-    if (['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '')) return true;
-    if (currentUser?.role === 'DEPARTMENT_ADMIN') {
-      return user.departmentId === currentUser.departmentId && user.role === 'STAFF';
+    // Use permission-based access control instead of role checks
+    if (hasPermission('user', 'update', 'property')) return true;
+    if (hasPermission('user', 'update', 'department')) {
+      return user.departmentId === currentUser.departmentId;
     }
     return false;
   };
 
-  const availableRoles = ['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER'].includes(currentUser?.role || '')
-    ? ['STAFF', 'DEPARTMENT_ADMIN', 'PROPERTY_MANAGER']
-    : ['STAFF'];
+  // Legacy roles - no longer used for new assignments
+  const availableRoles = ['STAFF'];
 
   // Filter users
   const filteredUsers = users.filter(user => {
-    // Department scoping for DEPARTMENT_ADMIN
-    if (currentUser?.role === 'DEPARTMENT_ADMIN' && user.departmentId !== currentUser.departmentId) {
-      return false;
+    // Department scoping based on permissions
+    if (hasPermission('user', 'read', 'department') && !hasPermission('user', 'read', 'property')) {
+      if (user.departmentId !== currentUser?.departmentId) {
+        return false;
+      }
     }
 
     const matchesRole = !selectedRole || user.role === selectedRole;

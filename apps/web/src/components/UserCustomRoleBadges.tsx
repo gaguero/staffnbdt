@@ -14,7 +14,7 @@ export const UserCustomRoleBadges: React.FC<Props> = ({ userId, fallbackSystemRo
   const { data, isLoading } = useQuery({
     queryKey: ['userCustomRoles', userId],
     queryFn: async () => {
-      const response = await userRoleService.getUserRoles(userId);
+      const response = await userRoleService.getUserRoles({ userId });
       return response.data as UserRole[];
     }
   });

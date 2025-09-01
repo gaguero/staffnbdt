@@ -194,40 +194,8 @@ export class UsersService {
   ): Promise<UserWithDepartment> {
     const existingUser = await this.findOne(id, currentUser);
 
-    // Permission checks
-    if (currentUser.role === Role.STAFF && currentUser.id !== id) {
-      throw new ForbiddenException('Can only update your own profile');
-    }
-
-    // Staff users can only update certain fields
-    if (currentUser.role === Role.STAFF) {
-      const allowedFields = ['firstName', 'lastName', 'phoneNumber', 'emergencyContact', 'profilePhoto'];
-      const attemptedFields = Object.keys(updateUserDto);
-      const forbiddenFields = attemptedFields.filter(field => !allowedFields.includes(field));
-      
-      if (forbiddenFields.length > 0) {
-        throw new ForbiddenException(`Staff users cannot update: ${forbiddenFields.join(', ')}`);
-      }
-    }
-
-    // Department admin cannot change roles or move users to other departments
-    if (currentUser.role === Role.DEPARTMENT_ADMIN) {
-      if (updateUserDto.role && updateUserDto.role !== existingUser.role) {
-        throw new ForbiddenException('Department admins cannot change user roles');
-      }
-      
-      if (updateUserDto.departmentId && updateUserDto.departmentId !== currentUser.departmentId) {
-        throw new ForbiddenException('Cannot move users to other departments');
-      }
-    }
-
-    // Validate department assignment if role is being changed
-    if (updateUserDto.role) {
-      this.validateDepartmentAssignment(
-        updateUserDto.role,
-        updateUserDto.departmentId || existingUser.departmentId,
-      );
-    }
+    // Permission-based access control is handled by @RequirePermission decorator
+    // Additional business logic validations can be added here
 
     // Validate department exists if provided
     if (updateUserDto.departmentId) {

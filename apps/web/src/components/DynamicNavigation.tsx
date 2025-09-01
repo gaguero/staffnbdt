@@ -330,9 +330,8 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
           return true;
         }
 
-        if (user?.role === 'PLATFORM_ADMIN') {
-          return true;
-        }
+        // Platform admin bypass is handled by hasPermission hook
+        // which checks effective permissions including custom roles
 
         return item.requiredPermissions.some(permission => {
           const [resource, action, scope] = permission.split('.');
@@ -367,10 +366,8 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
           return true;
         }
         
-        // Special handling for PLATFORM_ADMIN - show all admin tools
-        if (user.role === 'PLATFORM_ADMIN') {
-          return true;
-        }
+        // Platform admin bypass is handled by hasPermission hook
+        // which checks effective permissions including custom roles
         
         // Check if user has required permissions (OR logic - any permission grants access)
         return item.requiredPermissions.some(permission => {

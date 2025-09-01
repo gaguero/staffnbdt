@@ -140,13 +140,7 @@ export class PermissionService implements OnModuleInit {
 
       const permissions = new Map<string, Permission>();
 
-      // Get permissions from role assignments in database
-      const rolePermissions = await this.getRolePermissionsFromDatabase(user.role, user.userType);
-      this.logger.log(`User ${userId} with role ${user.role} gets ${rolePermissions.length} permissions from role assignments`);
-      
-      rolePermissions.forEach(permission => {
-        permissions.set(permission.id, permission);
-      });
+      // Skip legacy role permissions - all permissions now come from custom roles
       
       // Get permissions from enabled modules for this user type
       if (user.organizationId) {
@@ -227,12 +221,15 @@ export class PermissionService implements OnModuleInit {
         return { allowed: false, reason: 'User not found', source: 'default' };
       }
 
-      // PLATFORM_ADMIN users have unrestricted access to all resources
-      if (user.role === Role.PLATFORM_ADMIN) {
+      // Check if user has platform admin custom role
+      const hasPlatformAdminRole = user.userCustomRoles.some(
+        ucr => ucr.role.name === 'Platform Administrator' && ucr.isActive
+      );
+      if (hasPlatformAdminRole) {
         return { 
           allowed: true, 
-          reason: 'PLATFORM_ADMIN has unrestricted access', 
-          source: 'default' 
+          reason: 'Platform Administrator role has unrestricted access', 
+          source: 'role' 
         };
       }
       
@@ -267,15 +264,7 @@ export class PermissionService implements OnModuleInit {
         return { allowed: false, reason: 'Permission not found', source: 'default' };
       }
 
-      // Check role permissions from database
-      const hasRolePermission = await this.checkRolePermissionFromDatabase(user.role, permission.id);
-      if (hasRolePermission) {
-        const result = await this.evaluatePermissionConditions(permission, evaluationContext);
-        if (result.allowed) {
-          await this.cachePermissionResult(cacheKey, result, evaluationContext, resource, action, scope);
-          return { ...result, source: 'role' };
-        }
-      }
+      // Skip legacy role permission checks - all permissions come from custom roles
 
       // Check custom role permissions
       for (const userRole of user.userCustomRoles) {
@@ -913,9 +902,12 @@ export class PermissionService implements OnModuleInit {
       const user = await this.getUserWithRoles(userId);
       if (!user) return false;
       
-      // Internal users can access based on their role hierarchy
+      // Internal users can access based on their permissions
       if (user.userType === UserType.INTERNAL) {
-        return user.organizationId === targetOrgId || user.role === Role.PLATFORM_ADMIN;
+        const hasPlatformAdminRole = user.userCustomRoles.some(
+          ucr => ucr.role.name === 'Platform Administrator' && ucr.isActive
+        );
+        return user.organizationId === targetOrgId || hasPlatformAdminRole;
       }
       
       // External users can only access their own organization's data by default
