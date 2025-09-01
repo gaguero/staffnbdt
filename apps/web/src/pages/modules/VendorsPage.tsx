@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useTenant } from '../../contexts/TenantContext';
-import { useVendors, useCreateVendor, useUpdateVendor, useDeleteVendor, useToggleVendorStatus, useVendorStats, useVendorLinks } from '../../hooks/useVendors';
-import { Vendor, VendorFilter, CreateVendorInput, UpdateVendorInput, VendorCategory, VendorChannel } from '../../types/vendors';
+import { useVendors, useCreateVendor, useUpdateVendor, useDeleteVendor, useToggleVendorStatus, useVendorStats, useVendorLinks, useGenerateMagicLink, useCreateVendorLink, useBulkUpdateVendors } from '../../hooks/useVendors';
+import { Vendor, VendorFilter, VendorLink, VendorLinkFilter, CreateVendorInput, UpdateVendorInput, VendorCategory, VendorChannel } from '../../types/vendors';
 import PermissionGate from '../../components/PermissionGate';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorDisplay from '../../components/ErrorDisplay';
 import EnhancedTable from '../../components/EnhancedTable';
+import toastService from '../../services/toastService';
 
 type ViewMode = 'directory' | 'links' | 'portal';
 
@@ -376,13 +377,17 @@ const VendorsPage: React.FC = () => {
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>();
   
   const { data: vendorsData, isLoading, error, refetch } = useVendors(filter);
-  const { data: _linksData, isLoading: linksLoading } = useVendorLinks();
+  const { data: linksData, isLoading: linksLoading } = useVendorLinks();
   const createVendor = useCreateVendor();
   const updateVendor = useUpdateVendor();
   const deleteVendor = useDeleteVendor();
   const toggleStatus = useToggleVendorStatus();
-  // const _generateMagicLink = useGenerateMagicLink();
-  // const _sendNotification = useSendNotification();
+  const generateMagicLink = useGenerateMagicLink();
+  const createVendorLink = useCreateVendorLink();
+  const bulkUpdateVendors = useBulkUpdateVendors();
+  const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
+  const [showCreateLinkModal, setShowCreateLinkModal] = useState(false);
+  const [linkModalVendor, setLinkModalVendor] = useState<Vendor | undefined>();
 
   const handleCreateVendor = async (input: CreateVendorInput) => {
     await createVendor.mutateAsync(input);
@@ -405,10 +410,43 @@ const VendorsPage: React.FC = () => {
     await toggleStatus.mutateAsync(id);
   };
 
-  // Placeholder for magic link generation
-  // const _handleGenerateMagicLink = async (vendorId: string, linkId: string) => {
-  //   // Implementation placeholder
-  // };
+  const handleGenerateMagicLink = async (vendorId: string, linkId: string) => {
+    try {
+      await generateMagicLink.mutateAsync({ vendorId, linkId });
+    } catch (error: any) {
+      toastService.error('Failed to generate magic link');
+    }
+  };
+
+  const handleBulkActivate = async () => {
+    const selectedArray = Array.from(selectedVendors);
+    if (selectedArray.length === 0) return;
+    
+    try {
+      await bulkUpdateVendors.mutateAsync({ 
+        vendorIds: selectedArray, 
+        updates: { isActive: true } 
+      });
+      setSelectedVendors(new Set());
+    } catch (error: any) {
+      toastService.error('Failed to activate vendors');
+    }
+  };
+
+  const handleBulkDeactivate = async () => {
+    const selectedArray = Array.from(selectedVendors);
+    if (selectedArray.length === 0) return;
+    
+    try {
+      await bulkUpdateVendors.mutateAsync({ 
+        vendorIds: selectedArray, 
+        updates: { isActive: false } 
+      });
+      setSelectedVendors(new Set());
+    } catch (error: any) {
+      toastService.error('Failed to deactivate vendors');
+    }
+  };
 
   const propertyName = getCurrentPropertyName();
   const requiresPropertySelection = !propertyName || propertyName === 'Select Property';
@@ -434,7 +472,7 @@ const VendorsPage: React.FC = () => {
   }
 
   const vendors = vendorsData?.data?.data || [];
-  // const _links = linksData?.data?.data || [];
+  const links = linksData?.data?.data || [];
 
   const vendorColumns = [
     {
@@ -483,27 +521,44 @@ const VendorsPage: React.FC = () => {
       label: 'Actions',
       render: (_: any, vendor: Vendor) => (
         <div className="flex space-x-2">
-          <button
-            onClick={() => {
-              setEditingVendor(vendor);
-              setShowVendorModal(true);
-            }}
-            className="text-blue-600 hover:text-blue-800"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handleToggleStatus(vendor.id)}
-            className="text-yellow-600 hover:text-yellow-800"
-          >
-            {vendor.isActive ? 'Deactivate' : 'Activate'}
-          </button>
-          <button
-            onClick={() => handleDeleteVendor(vendor.id)}
-            className="text-red-600 hover:text-red-800"
-          >
-            Delete
-          </button>
+          <PermissionGate resource="vendors" action="update" scope="property" hideOnDenied>
+            <button
+              onClick={() => {
+                setEditingVendor(vendor);
+                setShowVendorModal(true);
+              }}
+              className="text-blue-600 hover:text-blue-800"
+            >
+              Edit
+            </button>
+          </PermissionGate>
+          <PermissionGate resource="vendors" action="update" scope="property" hideOnDenied>
+            <button
+              onClick={() => handleToggleStatus(vendor.id)}
+              className="text-yellow-600 hover:text-yellow-800"
+            >
+              {vendor.isActive ? 'Deactivate' : 'Activate'}
+            </button>
+          </PermissionGate>
+          <PermissionGate resource="vendors" action="create" scope="property" hideOnDenied>
+            <button
+              onClick={() => {
+                setLinkModalVendor(vendor);
+                setShowCreateLinkModal(true);
+              }}
+              className="text-green-600 hover:text-green-800"
+            >
+              Link
+            </button>
+          </PermissionGate>
+          <PermissionGate resource="vendors" action="delete" scope="property" hideOnDenied>
+            <button
+              onClick={() => handleDeleteVendor(vendor.id)}
+              className="text-red-600 hover:text-red-800"
+            >
+              Delete
+            </button>
+          </PermissionGate>
         </div>
       ),
     },
@@ -595,62 +650,51 @@ const VendorsPage: React.FC = () => {
                 <p className="text-sm text-gray-600">Manage your partner network and vendor relationships</p>
               </div>
               
+              {/* Bulk Actions */}
+              {selectedVendors.size > 0 && (
+                <div className="p-4 border-b border-gray-200 bg-blue-50">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-blue-700">
+                      {selectedVendors.size} vendor{selectedVendors.size > 1 ? 's' : ''} selected
+                    </span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleBulkActivate}
+                        disabled={bulkUpdateVendors.isPending}
+                        className="btn btn-sm btn-outline"
+                      >
+                        Activate
+                      </button>
+                      <button
+                        onClick={handleBulkDeactivate}
+                        disabled={bulkUpdateVendors.isPending}
+                        className="btn btn-sm btn-outline"
+                      >
+                        Deactivate
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <EnhancedTable
                 data={vendors}
                 columns={vendorColumns}
                 getItemId={(vendor: Vendor) => vendor.id}
                 loading={isLoading}
                 emptyMessage="🌟 Ready to build your vendor network! Add your first trusted partner to get started."
+                selectedIds={selectedVendors}
+                onSelectionChange={setSelectedVendors}
               />
             </div>
           )}
           
           {currentView === 'links' && (
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Vendor Links Management</h3>
-              {linksLoading ? (
-                <div className="flex justify-center items-center h-32">
-                  <LoadingSpinner size="lg" />
-                </div>
-              ) : (
-                <div className="text-center py-12 transform transition-all duration-300 hover:scale-105">
-                  <div className="text-6xl mb-6 animate-pulse">🪄</div>
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-8 max-w-md mx-auto">
-                    <h4 className="text-xl font-bold text-orange-800 mb-3">
-                      Magic in Progress!
-                    </h4>
-                    <p className="text-orange-600 mb-4">
-                      We\'re crafting something incredible for vendor link tracking and magic portal management. It\'s going to be amazing!
-                    </p>
-                    <div className="inline-flex items-center space-x-2 bg-orange-100 px-4 py-2 rounded-full">
-                      <span className="text-sm font-medium text-orange-800">Coming Soon</span>
-                      <span className="text-orange-600 animate-bounce">✨</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <VendorLinksView />
           )}
           
           {currentView === 'portal' && (
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Vendor Portal Management</h3>
-              <div className="text-center py-12 transform transition-all duration-300 hover:scale-105">
-                <div className="text-6xl mb-6 animate-spin-slow">🌐</div>
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-8 max-w-md mx-auto">
-                  <h4 className="text-xl font-bold text-purple-800 mb-3">
-                    Portal Power Incoming!
-                  </h4>
-                  <p className="text-purple-600 mb-4">
-                    Get ready for powerful portal analytics and seamless access management. Your vendor relationships are about to get supercharged!
-                  </p>
-                  <div className="inline-flex items-center space-x-2 bg-purple-100 px-4 py-2 rounded-full">
-                    <span className="text-sm font-medium text-purple-800">Building Magic</span>
-                    <span className="text-purple-600 animate-pulse">🚀</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <VendorPortalManagementView />
           )}
         </div>
 
@@ -673,6 +717,358 @@ const VendorsPage: React.FC = () => {
         />
       </div>
     </PermissionGate>
+  );
+};
+
+// Vendor Links View Component
+const VendorLinksView: React.FC = () => {
+  const [linkFilter, setLinkFilter] = useState<VendorLinkFilter>({});
+  const { data: linksData, isLoading, error, refetch } = useVendorLinks(linkFilter);
+  const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set());
+  const generateMagicLink = useGenerateMagicLink();
+  
+  const links = linksData?.data?.data || [];
+  
+  const handleGenerateLink = async (link: VendorLink) => {
+    try {
+      await generateMagicLink.mutateAsync({ 
+        vendorId: link.vendorId, 
+        linkId: link.id 
+      });
+    } catch (error: any) {
+      toastService.error('Failed to generate magic link');
+    }
+  };
+  
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      pending: { className: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
+      confirmed: { className: 'bg-green-100 text-green-800', label: 'Confirmed' },
+      declined: { className: 'bg-red-100 text-red-800', label: 'Declined' },
+      expired: { className: 'bg-gray-100 text-gray-800', label: 'Expired' },
+      cancelled: { className: 'bg-red-100 text-red-800', label: 'Cancelled' },
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
+        {config.label}
+      </span>
+    );
+  };
+  
+  const formatDate = (date?: Date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+  
+  const linkColumns = [
+    {
+      key: 'vendor',
+      label: 'Vendor',
+      render: (_: any, link: VendorLink) => (
+        <div>
+          <div className="font-medium text-gray-900">{link.vendor?.name || 'Unknown'}</div>
+          <div className="text-sm text-gray-500 capitalize">{link.vendor?.category?.replace('_', ' ') || ''}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'object',
+      label: 'Object',
+      render: (_: any, link: VendorLink) => (
+        <div className="text-sm">
+          <div className="font-medium">{link.objectType.replace('_', ' ')}</div>
+          <div className="text-gray-500">ID: {link.objectId.slice(-8)}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (_: any, link: VendorLink) => getStatusBadge(link.status),
+    },
+    {
+      key: 'expires',
+      label: 'Expires',
+      render: (_: any, link: VendorLink) => (
+        <div className="text-sm">
+          <div>{formatDate(link.expiresAt)}</div>
+          {link.expiresAt && new Date(link.expiresAt) < new Date() && (
+            <div className="text-red-500 text-xs">Expired</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'confirmed',
+      label: 'Confirmed',
+      render: (_: any, link: VendorLink) => formatDate(link.confirmationAt),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_: any, link: VendorLink) => (
+        <div className="flex space-x-2">
+          {link.status === 'pending' && (
+            <button
+              onClick={() => handleGenerateLink(link)}
+              className="text-blue-600 hover:text-blue-800 text-sm"
+              disabled={generateMagicLink.isPending}
+            >
+              Generate Link
+            </button>
+          )}
+          <button
+            className="text-gray-600 hover:text-gray-800 text-sm"
+          >
+            View
+          </button>
+        </div>
+      ),
+    },
+  ];
+  
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-32">
+          <LoadingSpinner size="lg" />
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorDisplay
+          message="Failed to load vendor links"
+          onRetry={refetch}
+        />
+      </div>
+    );
+  }
+  
+  return (
+    <div className="p-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Vendor Links Management</h3>
+          <p className="text-sm text-gray-600">Track vendor confirmations and portal access</p>
+        </div>
+        
+        <PermissionGate resource="vendors" action="create" scope="property">
+          <button
+            className="btn btn-primary mt-4 lg:mt-0"
+          >
+            Create Link
+          </button>
+        </PermissionGate>
+      </div>
+      
+      {/* Filters */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <input
+            type="text"
+            placeholder="Search links..."
+            value={linkFilter.search || ''}
+            onChange={(e) => setLinkFilter({ ...linkFilter, search: e.target.value })}
+            className="form-input"
+          />
+          <select
+            value={linkFilter.status?.[0] || ''}
+            onChange={(e) => setLinkFilter({ 
+              ...linkFilter, 
+              status: e.target.value ? [e.target.value as any] : undefined 
+            })}
+            className="form-input"
+          >
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="declined">Declined</option>
+            <option value="expired">Expired</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <select
+            value={linkFilter.objectType || ''}
+            onChange={(e) => setLinkFilter({ 
+              ...linkFilter, 
+              objectType: e.target.value || undefined 
+            })}
+            className="form-input"
+          >
+            <option value="">All Types</option>
+            <option value="restaurant_reservation">Restaurant</option>
+            <option value="transportation">Transportation</option>
+            <option value="tour_booking">Tours</option>
+            <option value="spa_appointment">Spa</option>
+          </select>
+          <select
+            value={linkFilter.expiringWithinHours || ''}
+            onChange={(e) => setLinkFilter({ 
+              ...linkFilter, 
+              expiringWithinHours: e.target.value ? parseInt(e.target.value) : undefined 
+            })}
+            className="form-input"
+          >
+            <option value="">Any Expiry</option>
+            <option value="24">Next 24h</option>
+            <option value="48">Next 48h</option>
+            <option value="168">Next Week</option>
+          </select>
+        </div>
+      </div>
+      
+      {/* Links Table */}
+      <EnhancedTable
+        data={links}
+        columns={linkColumns}
+        getItemId={(link: VendorLink) => link.id}
+        loading={isLoading}
+        emptyMessage="🔗 No vendor links found. Create links to start vendor collaborations!"
+        selectedIds={selectedLinks}
+        onSelectionChange={setSelectedLinks}
+      />
+    </div>
+  );
+};
+
+// Vendor Portal Management View Component
+const VendorPortalManagementView: React.FC = () => {
+  const { data: linksData, isLoading } = useVendorLinks({ 
+    status: ['pending', 'confirmed'] 
+  });
+  
+  const links = linksData?.data?.data || [];
+  const portalLinks = links.filter(link => link.portalToken);
+  
+  const getPortalStats = () => {
+    const total = portalLinks.length;
+    const active = portalLinks.filter(link => 
+      link.expiresAt && new Date(link.expiresAt) > new Date()
+    ).length;
+    const expired = total - active;
+    
+    return { total, active, expired };
+  };
+  
+  const stats = getPortalStats();
+  
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-32">
+          <LoadingSpinner size="lg" />
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="p-6">
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Vendor Portal Management</h3>
+        <p className="text-sm text-gray-600">Monitor portal access and vendor engagement</p>
+      </div>
+      
+      {/* Portal Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+          <div className="text-2xl mb-2">🌐</div>
+          <p className="text-sm text-blue-600">Total Portals</p>
+          <p className="text-2xl font-bold text-blue-800">{stats.total}</p>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+          <div className="text-2xl mb-2">✅</div>
+          <p className="text-sm text-green-600">Active Portals</p>
+          <p className="text-2xl font-bold text-green-800">{stats.active}</p>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+          <div className="text-2xl mb-2">⏰</div>
+          <p className="text-sm text-red-600">Expired Portals</p>
+          <p className="text-2xl font-bold text-red-800">{stats.expired}</p>
+        </div>
+      </div>
+      
+      {/* Portal Links List */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="p-4 border-b border-gray-200">
+          <h4 className="font-medium text-gray-900">Portal Access History</h4>
+        </div>
+        
+        {portalLinks.length === 0 ? (
+          <div className="p-8 text-center">
+            <div className="text-4xl mb-4">🌐</div>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">No Portal Access Yet</h4>
+            <p className="text-gray-600">Generate magic links to enable vendor portal access</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Object Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expires</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Generated</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {portalLinks.map((link) => (
+                  <tr key={link.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-medium text-gray-900">{link.vendor?.name}</div>
+                        <div className="text-sm text-gray-500">{link.vendor?.email}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                        {link.objectType.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        link.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                        link.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {link.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      {link.expiresAt ? (
+                        <div>
+                          <div>{new Date(link.expiresAt).toLocaleDateString()}</div>
+                          {new Date(link.expiresAt) < new Date() && (
+                            <div className="text-red-500 text-xs">Expired</div>
+                          )}
+                        </div>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {new Date(link.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
