@@ -58,7 +58,27 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       }
 
       this.logger.log(`✅ JWT validated successfully: ${user.email} (${user.firstName} ${user.lastName})`);
-      return user;
+      
+      // Return an enriched user object that includes JWT payload fields
+      // This ensures the TenantInterceptor can access both JWT fields and User data
+      return {
+        ...user,
+        // JWT payload fields for TenantInterceptor
+        sub: payload.sub,
+        email: payload.email || user.email,
+        role: payload.role || user.role,
+        organizationId: payload.organizationId || user.organizationId,
+        propertyId: payload.propertyId || user.propertyId,
+        departmentId: payload.departmentId || user.departmentId,
+        permissions: payload.permissions || [],
+        // JWT metadata
+        iat: payload.iat,
+        exp: payload.exp,
+        nbf: payload.nbf,
+        aud: payload.aud,
+        iss: payload.iss,
+        jti: payload.jti,
+      };
       
     } catch (error) {
       if (error instanceof UnauthorizedException) {
