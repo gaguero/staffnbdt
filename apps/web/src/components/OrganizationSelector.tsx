@@ -5,19 +5,6 @@ import { usePermissions } from '../hooks/usePermissions';
 import { organizationService, Organization } from '../services/organizationService';
 import { COMMON_PERMISSIONS } from '../types/permission';
 
-// Helper function to parse string-based permission into components
-const parsePermissionString = (permissionString: string) => {
-  const parts = permissionString.split('.');
-  if (parts.length >= 3) {
-    return {
-      resource: parts[0],
-      action: parts[1],
-      scope: parts[2]
-    };
-  }
-  return null;
-};
-
 interface OrganizationSelectorProps {
   className?: string;
   variant?: 'dropdown' | 'compact';
@@ -40,26 +27,25 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
     
     console.log('OrganizationSelector: Checking permissions for user:', user.role);
     
-    // Platform Admin should have access
+    // Platform Admin should always have access - simplified logic
     if (user.role === 'PLATFORM_ADMIN') {
       console.log('OrganizationSelector: Platform Admin access granted');
       return true;
     }
     
-    // Try the string-based permission first
-    const orgReadPlatform = parsePermissionString('organization.read.platform');
-    if (orgReadPlatform) {
-      console.log('OrganizationSelector: Checking string permission:', orgReadPlatform);
-      const hasStringPermission = hasPermission(
-        orgReadPlatform.resource,
-        orgReadPlatform.action,
-        orgReadPlatform.scope
-      );
-      console.log('OrganizationSelector: String permission result:', hasStringPermission);
-      if (hasStringPermission) return true;
-    }
+    // Try the platform-specific permission
+    console.log('OrganizationSelector: Checking organization.read.platform permission');
+    const hasPlatformPermission = hasPermission('organization', 'read', 'platform');
+    console.log('OrganizationSelector: Platform permission result:', hasPlatformPermission);
+    if (hasPlatformPermission) return true;
     
-    // Fallback to common permissions for viewing organizations
+    // Try the 'all' scope permission as fallback
+    console.log('OrganizationSelector: Checking organization.read.all permission');
+    const hasAllPermission = hasPermission('organization', 'read', 'all');
+    console.log('OrganizationSelector: All permission result:', hasAllPermission);
+    if (hasAllPermission) return true;
+    
+    // Final fallback to common permissions
     console.log('OrganizationSelector: Checking common permission:', COMMON_PERMISSIONS.VIEW_ORGANIZATIONS);
     const hasCommonPermission = hasPermission(
       COMMON_PERMISSIONS.VIEW_ORGANIZATIONS.resource,
@@ -82,8 +68,25 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
         // Avoid backend 500s with unsupported params; fetch with default pagination
         const resp = await organizationService.getOrganizations();
         console.log('OrganizationSelector: Raw response:', resp);
-        const data = Array.isArray((resp as any)?.data) ? (resp as any).data : [];
+        console.log('OrganizationSelector: Response structure:', {
+          hasData: !!resp.data,
+          dataType: typeof resp.data,
+          isArray: Array.isArray(resp.data),
+          hasNestedData: !!(resp.data && resp.data.data),
+          nestedDataType: resp.data && typeof resp.data.data
+        });
+        
+        let data = [];
+        if (Array.isArray(resp.data)) {
+          data = resp.data;
+        } else if (resp.data && Array.isArray(resp.data.data)) {
+          data = resp.data.data;
+        } else if (resp.data && resp.data.data && Array.isArray(resp.data.data.data)) {
+          data = resp.data.data.data;
+        }
+        
         console.log('OrganizationSelector: Processed data:', data);
+        console.log('OrganizationSelector: Organization count:', data.length);
         if (mounted) {
           setOrganizations(data);
         }

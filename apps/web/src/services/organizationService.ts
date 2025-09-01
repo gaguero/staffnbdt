@@ -100,19 +100,48 @@ class OrganizationService {
     
     const response = await api.get(url);
     
-    // Backend returns: { success: true, data: { data: [orgs], meta: {...} }, message: "..." }
-    // Axios wraps this in another data property, so we need response.data.data.data
     console.log('Organizations API response:', response);
+    console.log('Organizations API response structure:', {
+      hasData: !!response.data,
+      dataType: typeof response.data,
+      dataKeys: response.data ? Object.keys(response.data) : [],
+      hasSuccess: 'success' in (response.data || {}),
+      hasMessage: 'message' in (response.data || {}),
+      hasNestedData: response.data && 'data' in response.data,
+      nestedDataStructure: response.data && response.data.data ? {
+        type: typeof response.data.data,
+        keys: typeof response.data.data === 'object' ? Object.keys(response.data.data) : [],
+        hasDataArray: response.data.data && 'data' in response.data.data,
+        arrayLength: response.data.data && response.data.data.data && Array.isArray(response.data.data.data) ? response.data.data.data.length : 'not array'
+      } : null
+    });
     
+    // Handle multiple possible response formats
     if (response.data && response.data.data && Array.isArray(response.data.data.data)) {
-      // Return in the format expected by the frontend
+      // Backend format: { success: true, data: { data: [orgs], meta: {...} }, message: "..." }
+      console.log('Using nested data format');
       return {
         data: response.data.data.data,  // Extract the organizations array
         meta: response.data.data.meta   // Include pagination metadata
       };
+    } else if (response.data && Array.isArray(response.data.data)) {
+      // Backend format: { data: [orgs], meta: {...} }
+      console.log('Using direct data format');
+      return {
+        data: response.data.data,
+        meta: response.data.meta
+      };
+    } else if (Array.isArray(response.data)) {
+      // Direct array format: [orgs]
+      console.log('Using array format');
+      return {
+        data: response.data,
+        meta: {}
+      };
     }
     
     // Fallback to original response
+    console.log('Using fallback response format');
     return response;
   }
 
