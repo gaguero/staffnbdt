@@ -533,7 +533,7 @@ const VendorsPage: React.FC = () => {
   }
 
   return (
-    <PermissionGate permission="vendors.read.property">
+    <PermissionGate resource="vendors" action="read" scope="property">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -577,7 +577,7 @@ const VendorsPage: React.FC = () => {
               </button>
             </div>
             
-            <PermissionGate permission="vendors.create.property">
+            <PermissionGate resource="vendors" action="create" scope="property">
               <button
                 onClick={() => setShowVendorModal(true)}
                 className="btn btn-primary flex items-center space-x-2 hover:scale-105 transition-transform duration-200"

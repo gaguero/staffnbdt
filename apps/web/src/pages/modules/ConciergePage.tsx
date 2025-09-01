@@ -277,7 +277,7 @@ const ConciergePage: React.FC = () => {
   }
 
   return (
-    <PermissionGate permission="concierge.objects.read.property">
+    <PermissionGate resource="concierge.objects" action="read" scope="property">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -333,13 +333,13 @@ const ConciergePage: React.FC = () => {
           )}
           
           {currentView === 'reservation360' && (
-            <PermissionGate permission="concierge.reservations.read.property">
+            <PermissionGate resource="concierge.reservations" action="read" scope="property">
               <Reservation360 reservation={mockReservation} />
             </PermissionGate>
           )}
           
           {currentView === 'timeline' && (
-            <PermissionGate permission="concierge.guests.read.property">
+            <PermissionGate resource="concierge.guests" action="read" scope="property">
               <GuestTimeline guest={mockGuest} />
             </PermissionGate>
           )}
