@@ -146,6 +146,13 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
             requiredPermissions: ['user.read.department'],
           },
           {
+            id: 'room-types',
+            label: 'nav.roomTypes',
+            path: '/hotel/room-types',
+            icon: '🏷️',
+            requiredPermissions: ['user.read.department'],
+          },
+          {
             id: 'guests',
             label: 'nav.guests',
             path: '/hotel/guests',

@@ -12,6 +12,11 @@ export class CreateUnitDto {
   @IsEnum(UnitType)
   unitType: UnitType;
 
+  @ApiPropertyOptional({ example: 'cmf123abc456...' })
+  @IsOptional()
+  @IsString()
+  roomTypeId?: string;
+
   @ApiPropertyOptional({ example: 'Building A' })
   @IsOptional()
   @IsString()

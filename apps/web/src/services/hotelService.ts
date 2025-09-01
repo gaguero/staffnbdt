@@ -122,9 +122,12 @@ class HotelService {
 
   async createRoom(room: CreateRoomInput): Promise<ApiResponse<Room>> {
     // Map frontend CreateRoomInput to backend CreateUnitDto
-    const payload = {
+    const enumValues = ['STANDARD','DELUXE','SUITE','PRESIDENTIAL','FAMILY','ACCESSIBLE','STUDIO','APARTMENT','VILLA','OTHER'];
+    const isEnum = enumValues.includes(room.typeId);
+    const payload: any = {
       unitNumber: room.number,
-      unitType: (room.typeId || 'STANDARD'),
+      unitType: (isEnum ? room.typeId : 'STANDARD') as any,
+      roomTypeId: !isEnum ? room.typeId : undefined,
       building: undefined,
       floor: room.floor ?? 1,
       bedrooms: 1,
@@ -152,9 +155,14 @@ class HotelService {
 
   async updateRoom(id: string, room: UpdateRoomInput): Promise<ApiResponse<Room>> {
     // Map partial frontend fields to backend UpdateUnitDto
+    const enumValues = ['STANDARD','DELUXE','SUITE','PRESIDENTIAL','FAMILY','ACCESSIBLE','STUDIO','APARTMENT','VILLA','OTHER'];
     const payload: any = {};
     if (room.number !== undefined) payload.unitNumber = room.number;
-    if (room.typeId !== undefined) payload.unitType = room.typeId;
+    if (room.typeId !== undefined) {
+      const isEnum = enumValues.includes(room.typeId);
+      payload.unitType = (isEnum ? room.typeId : 'STANDARD') as any;
+      payload.roomTypeId = !isEnum ? room.typeId : undefined;
+    }
     if (room.floor !== undefined) payload.floor = room.floor;
     if (room.capacity !== undefined) payload.maxOccupancy = room.capacity;
     if (room.amenities !== undefined) payload.amenities = room.amenities;
@@ -194,7 +202,15 @@ class HotelService {
     try {
       const resp = await api.get('/room-types');
       if (Array.isArray(resp?.data?.data)) {
-        return { data: resp.data.data, message: 'Room types retrieved', success: true };
+        const normalized = resp.data.data.map((rt: any) => ({
+          id: rt.id,
+          name: rt.name,
+          description: rt.description || '',
+          baseRate: Number(rt.baseRate ?? 0),
+          maxCapacity: Number(rt.maxCapacity ?? 2),
+          amenities: Array.isArray(rt.amenities) ? rt.amenities : [],
+        }));
+        return { data: normalized, message: 'Room types retrieved', success: true };
       }
     } catch (e) {
       // Fallback to enum-derived if endpoint not present yet
@@ -203,6 +219,23 @@ class HotelService {
     const toLabel = (v: string) => v.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
     const types: RoomType[] = enumValues.map(v => ({ id: v, name: toLabel(v), description: '', baseRate: 0, maxCapacity: 2, amenities: [] }));
     return { data: types, message: 'Derived from UnitType enum', success: true };
+  }
+
+  async createRoomType(input: any): Promise<ApiResponse<RoomType>> {
+    const resp = await api.post('/room-types', input);
+    const rt = resp.data?.data;
+    return { data: { ...rt, baseRate: Number(rt?.baseRate ?? 0) }, message: 'Created', success: true };
+  }
+
+  async updateRoomType(id: string, input: any): Promise<ApiResponse<RoomType>> {
+    const resp = await api.patch(`/room-types/${id}`, input);
+    const rt = resp.data?.data;
+    return { data: { ...rt, baseRate: Number(rt?.baseRate ?? 0) }, message: 'Updated', success: true };
+  }
+
+  async deleteRoomType(id: string): Promise<ApiResponse<void>> {
+    const resp = await api.delete(`/room-types/${id}`);
+    return resp.data;
   }
 
   async getRoomAvailability(startDate: Date, endDate: Date): Promise<ApiResponse<RoomAvailability[]>> {

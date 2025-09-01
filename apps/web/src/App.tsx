@@ -29,6 +29,7 @@ import EnhancedOrganizationsPagePhase4 from './pages/EnhancedOrganizationsPagePh
 import RoomsPage from './pages/hotel/RoomsPage';
 import GuestsPage from './pages/hotel/GuestsPage';
 import ReservationsPage from './pages/hotel/ReservationsPage';
+import RoomTypesPage from './pages/hotel/RoomTypesPage';
 
 // Admin Pages
 import RolesManagementPage from './pages/admin/RolesManagementPage';
@@ -318,6 +319,17 @@ const App: React.FC = () => {
             <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
               <Layout>
                 <ReservationsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/hotel/room-types" 
+          element={
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+              <Layout>
+                <RoomTypesPage />
               </Layout>
             </ProtectedRoute>
           } 
