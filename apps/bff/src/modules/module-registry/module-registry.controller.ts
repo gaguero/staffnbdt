@@ -177,4 +177,99 @@ export class ModuleRegistryController {
       message: isValid ? 'All dependencies are met' : 'Some dependencies are missing' 
     };
   }
+
+  // Property-level module management endpoints
+
+  @Get('property/:propertyId')
+  @RequirePermission('module.read.property')
+  @ApiOperation({ summary: 'Get enabled modules for a property with precedence rules' })
+  @ApiResponse({ status: 200, description: 'List of enabled modules for the property' })
+  async getEnabledModulesForProperty(
+    @Param('propertyId') propertyId: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    return this.moduleRegistryService.getEnabledModulesForProperty(organizationId, propertyId);
+  }
+
+  @Post('property/:propertyId/enable/:moduleId')
+  @RequirePermission('module.manage.property')
+  @ApiOperation({ summary: 'Enable a module for a property (overrides organization setting)' })
+  @ApiResponse({ status: 200, description: 'Module enabled for property successfully' })
+  @ApiResponse({ status: 404, description: 'Module or property not found' })
+  @ApiResponse({ status: 400, description: 'Module has unmet dependencies' })
+  async enableModuleForProperty(
+    @Param('propertyId') propertyId: string,
+    @Param('moduleId') moduleId: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    await this.moduleRegistryService.enableModuleForProperty(organizationId, propertyId, moduleId);
+    return { message: 'Module enabled for property successfully' };
+  }
+
+  @Post('property/:propertyId/disable/:moduleId')
+  @RequirePermission('module.manage.property')
+  @ApiOperation({ summary: 'Disable a module for a property (overrides organization setting)' })
+  @ApiResponse({ status: 200, description: 'Module disabled for property successfully' })
+  @ApiResponse({ status: 404, description: 'Module subscription not found' })
+  @ApiResponse({ status: 400, description: 'Cannot disable system module' })
+  async disableModuleForProperty(
+    @Param('propertyId') propertyId: string,
+    @Param('moduleId') moduleId: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    await this.moduleRegistryService.disableModuleForProperty(organizationId, propertyId, moduleId);
+    return { message: 'Module disabled for property successfully' };
+  }
+
+  @Get('property/:propertyId/module/:moduleId/status')
+  @RequirePermission('module.read.property')
+  @ApiOperation({ summary: 'Check if a module is enabled for a property with precedence info' })
+  @ApiResponse({ status: 200, description: 'Module enablement status with precedence details' })
+  async getModuleStatusForProperty(
+    @Param('propertyId') propertyId: string,
+    @Param('moduleId') moduleId: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    const isEnabled = await this.moduleRegistryService.isModuleEnabledForProperty(
+      organizationId,
+      propertyId,
+      moduleId
+    );
+    const status = await this.moduleRegistryService.getModuleStatusDetails(
+      organizationId,
+      propertyId,
+      moduleId
+    );
+    return { 
+      moduleId,
+      propertyId,
+      organizationId,
+      isEnabled,
+      ...status
+    };
+  }
+
+  @Get('organization/:organizationId/modules')
+  @RequirePermission('module.read.organization')
+  @ApiOperation({ summary: 'Get all module subscriptions for an organization (org-level and property-level)' })
+  @ApiResponse({ status: 200, description: 'Organization module subscriptions with property overrides' })
+  async getOrganizationModuleStatus(
+    @Param('organizationId') organizationId: string,
+  ) {
+    return this.moduleRegistryService.getOrganizationModuleStatus(organizationId);
+  }
+
+  @Delete('property/:propertyId/module/:moduleId/override')
+  @RequirePermission('module.manage.property')
+  @ApiOperation({ summary: 'Remove property-level override (fall back to organization setting)' })
+  @ApiResponse({ status: 200, description: 'Property-level override removed successfully' })
+  @ApiResponse({ status: 404, description: 'Property-level override not found' })
+  async removePropertyOverride(
+    @Param('propertyId') propertyId: string,
+    @Param('moduleId') moduleId: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    await this.moduleRegistryService.removePropertyOverride(organizationId, propertyId, moduleId);
+    return { message: 'Property-level override removed successfully' };
+  }
 }

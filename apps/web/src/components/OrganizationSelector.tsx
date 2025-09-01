@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { organizationService, Organization } from '../services/organizationService';
+import { COMMON_PERMISSIONS } from '../types/permission';
 
 interface OrganizationSelectorProps {
   className?: string;
@@ -17,21 +18,40 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load organizations list for platform admins only
+  // Check if user can view organizations (Platform Admin)
+  const canViewOrganizations = useMemo(() => {
+    if (!user) return false;
+    
+    // Platform Admin should have access
+    if (user.role === 'PLATFORM_ADMIN') return true;
+    
+    // Check using common permissions for viewing organizations
+    return hasPermission(
+      COMMON_PERMISSIONS.VIEW_ORGANIZATIONS.resource,
+      COMMON_PERMISSIONS.VIEW_ORGANIZATIONS.action,
+      COMMON_PERMISSIONS.VIEW_ORGANIZATIONS.scope
+    );
+  }, [user, hasPermission]);
+
+  // Load organizations list for authorized users only
   useEffect(() => {
     let mounted = true;
     async function load() {
-      if (!user || !hasPermission('organization', 'manage', 'platform')) return;
+      if (!canViewOrganizations) return;
       setLoading(true);
       setError(null);
       try {
+        console.log('OrganizationSelector: Loading organizations for user:', user?.role);
         // Avoid backend 500s with unsupported params; fetch with default pagination
         const resp = await organizationService.getOrganizations();
+        console.log('OrganizationSelector: Raw response:', resp);
         const data = Array.isArray((resp as any)?.data) ? (resp as any).data : [];
+        console.log('OrganizationSelector: Processed data:', data);
         if (mounted) {
           setOrganizations(data);
         }
       } catch (e: any) {
+        console.error('OrganizationSelector: Error loading organizations:', e);
         if (mounted) setError(e?.message || 'Failed to load organizations');
       } finally {
         if (mounted) setLoading(false);
@@ -39,7 +59,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
     }
     load();
     return () => { mounted = false; };
-  }, [user]);
+  }, [canViewOrganizations]);
 
   const currentName = useMemo(() => {
     const found = organizations.find(o => o.id === organizationId);
@@ -53,7 +73,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
     window.location.reload();
   };
 
-  if (!user || !hasPermission('organization', 'manage', 'platform')) return null;
+  if (!canViewOrganizations) return null;
 
   if (variant === 'compact') {
     return (
