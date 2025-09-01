@@ -1006,17 +1006,28 @@ export class PermissionService implements OnModuleInit {
    */
   private async getRolePermissionsFromDatabase(role: Role, userType: UserType = UserType.INTERNAL): Promise<Permission[]> {
     try {
-      // First find the custom role by name (assuming role enum maps to role name)
+      // For legacy roles, find matching custom roles by mapping
+      const roleNameMappings: Record<string, string[]> = {
+        'PLATFORM_ADMIN': ['Platform Administrator'],
+        'ORGANIZATION_OWNER': ['Organization Owner'],
+        'ORGANIZATION_ADMIN': ['Organization Administrator'],
+        'PROPERTY_MANAGER': ['Property Manager'],
+        'DEPARTMENT_ADMIN': ['Department Admin', 'Front Desk Manager', 'Housekeeping Supervisor'],
+        'STAFF': ['Basic Staff', 'Training Coordinator'],
+      };
+
+      const possibleNames = roleNameMappings[role] || [role];
       const customRoles = await this.prisma.customRole.findMany({
         where: {
-          name: role,
+          name: {
+            in: possibleNames
+          },
           isActive: true,
-          userType: userType,
         },
       });
 
       if (customRoles.length === 0) {
-        this.logger.debug(`No custom roles found for role ${role} and userType ${userType}`);
+        this.logger.debug(`No custom roles found for role ${role} with names: ${possibleNames.join(', ')}`);
         return [];
       }
 
@@ -1039,7 +1050,7 @@ export class PermissionService implements OnModuleInit {
         .map(rp => rp.permission)
         .filter(p => p !== null);
 
-      this.logger.debug(`Role ${role}: Retrieved ${permissions.length} permissions from database`);
+      this.logger.debug(`Role ${role}: Retrieved ${permissions.length} permissions from ${customRoles.length} matching custom roles`);
       return permissions;
     } catch (error) {
       this.logger.error(`Error fetching permissions for role ${role}:`, error);
