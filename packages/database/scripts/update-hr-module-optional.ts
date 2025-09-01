@@ -1,6 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// Use Railway DATABASE_URL from environment or set it directly
+const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:FKoqzYFizlVtabOdDgfxykAwAZuExGbW@shuttle.proxy.rlwy.net:43481/railway";
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: DATABASE_URL
+    }
+  }
+});
 
 async function updateHRModuleToOptional() {
   try {
