@@ -101,6 +101,12 @@ export function usePermissions(): UsePermissionsReturn {
       return false;
     }
 
+    // Platform Admin bypass - if user has any platform-level permission, grant all permissions
+    const hasPlatformAccess = permissions.some(permission => permission.scope === 'platform');
+    if (hasPlatformAccess) {
+      return true;
+    }
+
     // Create normalized cache key for better cache hits
     const queryKey = PERMISSION_QUERY_KEYS.check(resource, action, scope, context);
     

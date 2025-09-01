@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
+import { usePermissions } from '../hooks/usePermissions';
 import { organizationService, Organization } from '../services/organizationService';
 
 interface OrganizationSelectorProps {
@@ -10,6 +11,7 @@ interface OrganizationSelectorProps {
 
 const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, variant = 'dropdown' }) => {
   const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const { organizationId, setAdminOverride } = useTenant();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(false);
@@ -19,7 +21,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
   useEffect(() => {
     let mounted = true;
     async function load() {
-      if (!user || user.role !== 'PLATFORM_ADMIN') return;
+      if (!user || !hasPermission('organization', 'manage', 'platform')) return;
       setLoading(true);
       setError(null);
       try {
@@ -51,7 +53,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
     window.location.reload();
   };
 
-  if (!user || user.role !== 'PLATFORM_ADMIN') return null;
+  if (!user || !hasPermission('organization', 'manage', 'platform')) return null;
 
   if (variant === 'compact') {
     return (

@@ -1509,7 +1509,42 @@ export class PermissionService implements OnModuleInit {
           throw roleError;
         }
       }
-      
+
+      // Assign all platform-level permissions to Platform Administrator
+      const platformAdminFromDb = await this.prisma.customRole.findFirst({
+        where: {
+          organizationId: defaultOrg.id,
+          propertyId: null,
+          name: 'Platform Administrator'
+        }
+      });
+
+      if (platformAdminFromDb) {
+        const platformPermissions = await this.prisma.permission.findMany({
+          where: { scope: 'platform' }
+        });
+
+        for (const permission of platformPermissions) {
+          await this.prisma.rolePermission.upsert({
+            where: {
+              roleId_permissionId: {
+                roleId: platformAdminFromDb.id,
+                permissionId: permission.id,
+              },
+            },
+            create: {
+              roleId: platformAdminFromDb.id,
+              permissionId: permission.id,
+              granted: true,
+            },
+            update: {
+              granted: true,
+            },
+          });
+        }
+        this.logger.log(`✓ Assigned ${platformPermissions.length} platform permissions to Platform Administrator`);
+      }
+
       this.logger.log('System roles initialization completed successfully');
     } catch (error) {
       this.logger.error('Error ensuring system roles:', {

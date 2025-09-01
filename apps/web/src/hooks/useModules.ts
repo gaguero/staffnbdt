@@ -26,6 +26,7 @@ export const MODULE_QUERY_KEYS = {
  */
 export function useModules() {
   const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
   
   // Get enabled modules for current user's organization
@@ -54,7 +55,7 @@ export function useModules() {
   } = useQuery({
     queryKey: MODULE_QUERY_KEYS.allModules(),
     queryFn: () => moduleRegistryService.getAllModules(),
-    enabled: user?.role === 'PLATFORM_ADMIN' || user?.role === 'ORGANIZATION_OWNER',
+    enabled: hasPermission('module', 'read', 'organization') || hasPermission('module', 'manage', 'organization'),
     staleTime: 15 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -157,10 +158,8 @@ export function useModuleNavigation(userType?: UserType) {
         return true;
       }
 
-      // PLATFORM_ADMIN bypass: show all module items
-      if (user?.role === 'PLATFORM_ADMIN') {
-        return true;
-      }
+      // Platform admin bypass is handled by the hasPermission hook
+      // which checks for platform-level permissions
 
       // OR logic: show if user has any of the required permissions
       return item.requiredPermissions.some(permission => {
