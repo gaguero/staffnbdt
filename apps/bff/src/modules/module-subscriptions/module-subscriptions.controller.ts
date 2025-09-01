@@ -16,7 +16,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
-import { TenantInterceptor } from '../../shared/interceptors/tenant.interceptor';
+import { TenantInterceptor } from '../../shared/tenant/tenant.interceptor';
 import { UseInterceptors } from '@nestjs/common';
 import { ModuleRegistryService } from '../module-registry/module-registry.service';
 
