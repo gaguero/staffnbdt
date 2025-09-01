@@ -418,12 +418,13 @@ const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
                 </div>
               )}
 
-              <div className="flex justify-end">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-amber-700">Select an existing guest to continue (temporary requirement).</p>
                 <button
                   type="button"
                   onClick={() => setStep('booking')}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={(useExistingGuest && !selectedGuestId) || isLoading}
+                  disabled={!selectedGuestId || isLoading}
                 >
                   {isLoading ? 'Loading...' : 'Next: Booking Details'}
                 </button>

@@ -328,6 +328,13 @@ class HotelService {
 
   async createReservation(reservation: CreateReservationInput): Promise<ApiResponse<Reservation>> {
     // Map frontend payload to backend expectations
+    if (!reservation.guestId) {
+      throw new Error('Guest selection is required');
+    }
+    if (!reservation.roomId) {
+      // Allow auto-assign later by backend? For now, require explicit unit to avoid 400s
+      throw new Error('Please select a specific room');
+    }
     const checkInISO = new Date(reservation.checkInDate).toISOString();
     const checkOutISO = new Date(reservation.checkOutDate).toISOString();
     const msPerDay = 1000 * 60 * 60 * 24;
@@ -335,12 +342,12 @@ class HotelService {
     const computedTotal = Number(reservation.rate ?? 0) * nights;
 
     const payload: any = {
-      unitId: reservation.roomId, // backend expects unitId
-      guestId: reservation.guestId, // required by backend
+      unitId: String(reservation.roomId), // backend expects unitId
+      guestId: String(reservation.guestId), // required by backend
       checkInDate: checkInISO,
       checkOutDate: checkOutISO,
-      adults: reservation.adults,
-      children: reservation.children ?? 0,
+      adults: Number(reservation.adults ?? 1),
+      children: Number(reservation.children ?? 0),
       status: 'CONFIRMED',
       paymentStatus: 'PENDING',
       totalAmount: computedTotal,
