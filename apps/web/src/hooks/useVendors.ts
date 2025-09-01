@@ -2,8 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { vendorsService } from '../services/vendorsService';
 import {
-  Vendor,
-  VendorLink,
   VendorFilter,
   VendorLinkFilter,
   CreateVendorInput,
@@ -42,7 +40,7 @@ export const useCreateVendor = () => {
   
   return useMutation({
     mutationFn: (input: CreateVendorInput) => vendorsService.createVendor(input),
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       // Invalidate vendors list
       queryClient.invalidateQueries({
         queryKey: [...vendorsQueryKeys.vendors.all, tenantKey]
@@ -70,7 +68,7 @@ export const useUpdateVendor = () => {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateVendorInput }) => 
       vendorsService.updateVendor(id, input),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, _variables) => {
       // Update the specific vendor in cache
       queryClient.setQueryData(
         [...vendorsQueryKeys.vendors.detail(variables.id), tenantKey],
@@ -119,7 +117,7 @@ export const useToggleVendorStatus = () => {
   
   return useMutation({
     mutationFn: (id: string) => vendorsService.toggleVendorStatus(id),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, _variables) => {
       // Update the specific vendor in cache
       queryClient.setQueryData(
         [...vendorsQueryKeys.vendors.detail(variables), tenantKey],
@@ -165,7 +163,7 @@ export const useCreateVendorLink = () => {
   
   return useMutation({
     mutationFn: (input: CreateVendorLinkInput) => vendorsService.createVendorLink(input),
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       // Invalidate links list
       queryClient.invalidateQueries({
         queryKey: [...vendorsQueryKeys.links.all, tenantKey]
@@ -193,7 +191,7 @@ export const useConfirmVendorLink = () => {
   return useMutation({
     mutationFn: ({ linkId, input }: { linkId: string; input: ConfirmVendorLinkInput }) => 
       vendorsService.confirmVendorLink(linkId, input),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, _variables) => {
       // Update the specific link in cache
       queryClient.setQueryData(
         [...vendorsQueryKeys.links.detail(variables.linkId), tenantKey],
@@ -222,7 +220,7 @@ export const useCancelVendorLink = () => {
   return useMutation({
     mutationFn: ({ linkId, reason }: { linkId: string; reason?: string }) => 
       vendorsService.cancelVendorLink(linkId, reason),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, _variables) => {
       // Update the specific link in cache
       queryClient.setQueryData(
         [...vendorsQueryKeys.links.detail(variables.linkId), tenantKey],
@@ -247,7 +245,7 @@ export const useGenerateMagicLink = () => {
   
   return useMutation({
     mutationFn: (input: GenerateMagicLinkInput) => vendorsService.generateMagicLink(input),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, _variables) => {
       // Invalidate link details to show updated portal token
       queryClient.invalidateQueries({
         queryKey: [...vendorsQueryKeys.links.detail(variables.linkId), tenantKey]
@@ -324,7 +322,7 @@ export const useSendNotification = () => {
   return useMutation({
     mutationFn: ({ linkId, channels }: { linkId: string; channels: string[] }) => 
       vendorsService.sendNotification(linkId, channels),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, _variables) => {
       // Invalidate notifications
       queryClient.invalidateQueries({
         queryKey: [...vendorsQueryKeys.links.detail(variables.linkId), 'notifications', tenantKey]

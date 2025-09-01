@@ -372,7 +372,7 @@ const VendorStatsCards: React.FC<VendorStatsCardsProps> = ({ onViewChange }) => 
 const VendorsPage: React.FC = () => {
   const { getCurrentPropertyName } = useTenant();
   const [currentView, setCurrentView] = useState<ViewMode>('directory');
-  const [filter, setFilter] = useState<VendorFilter>({});
+  const [filter, _setFilter] = useState<VendorFilter>({});
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>();
   
@@ -383,7 +383,7 @@ const VendorsPage: React.FC = () => {
   const deleteVendor = useDeleteVendor();
   const toggleStatus = useToggleVendorStatus();
   const generateMagicLink = useGenerateMagicLink();
-  const sendNotification = useSendNotification();
+  const _sendNotification = useSendNotification();
 
   const handleCreateVendor = async (input: CreateVendorInput) => {
     await createVendor.mutateAsync(input);
@@ -406,7 +406,7 @@ const VendorsPage: React.FC = () => {
     await toggleStatus.mutateAsync(id);
   };
 
-  const handleGenerateMagicLink = async (vendorId: string, linkId: string) => {
+  const _handleGenerateMagicLink = async (vendorId: string, linkId: string) => {
     try {
       const result = await generateMagicLink.mutateAsync({ vendorId, linkId });
       navigator.clipboard.writeText(result.data.magicLink);
@@ -440,7 +440,7 @@ const VendorsPage: React.FC = () => {
   }
 
   const vendors = vendorsData?.data?.data || [];
-  const links = linksData?.data?.data || [];
+  const _links = linksData?.data?.data || [];
 
   const vendorColumns = [
     {
@@ -668,7 +668,9 @@ const VendorsPage: React.FC = () => {
             setEditingVendor(undefined);
           }}
           vendor={editingVendor}
-          onSave={editingVendor ? handleUpdateVendor : handleCreateVendor}
+          onSave={editingVendor ? 
+            (data: any) => handleUpdateVendor({ id: editingVendor.id, data }) : 
+            handleCreateVendor}
           loading={createVendor.isPending || updateVendor.isPending}
         />
       </div>

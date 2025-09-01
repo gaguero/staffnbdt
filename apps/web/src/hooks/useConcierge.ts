@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { conciergeService } from '../services/conciergeService';
 import {
-  ConciergeObject,
   ConciergeObjectFilter,
   CreateConciergeObjectInput,
   UpdateConciergeObjectInput,
@@ -39,7 +38,7 @@ export const useCreateConciergeObject = () => {
   
   return useMutation({
     mutationFn: (input: CreateConciergeObjectInput) => conciergeService.createObject(input),
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       // Invalidate and refetch objects list
       queryClient.invalidateQueries({
         queryKey: [...conciergeQueryKeys.objects.all, tenantKey]
