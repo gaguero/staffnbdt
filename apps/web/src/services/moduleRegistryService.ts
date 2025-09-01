@@ -173,9 +173,38 @@ class ModuleRegistryService {
         const navItems = userType === UserType.INTERNAL 
           ? module.internalNavigation 
           : module.externalNavigation;
-          
-        if (Array.isArray(navItems)) {
+
+        if (Array.isArray(navItems) && navItems.length > 0) {
           navigationItems.push(...navItems);
+          return;
+        }
+
+        // Fallback navigation for known modules if manifests don't include nav yet
+        switch (module.moduleId) {
+          case 'concierge': {
+            navigationItems.push({
+              id: 'concierge-home',
+              label: 'nav.concierge',
+              path: '/concierge',
+              icon: '🛎️',
+              requiredPermissions: userType === UserType.INTERNAL 
+                ? ['concierge.objects.read.property'] 
+                : [],
+            });
+            break;
+          }
+          case 'vendors': {
+            navigationItems.push({
+              id: 'vendors-home',
+              label: 'nav.vendors',
+              path: '/vendors',
+              icon: '🤝',
+              requiredPermissions: userType === UserType.INTERNAL 
+                ? ['vendors.portal.access.property'] 
+                : [],
+            });
+            break;
+          }
         }
       });
       

@@ -30,6 +30,8 @@ import RoomsPage from './pages/hotel/RoomsPage';
 import GuestsPage from './pages/hotel/GuestsPage';
 import ReservationsPage from './pages/hotel/ReservationsPage';
 import RoomTypesPage from './pages/hotel/RoomTypesPage';
+import ConciergePage from './pages/modules/ConciergePage';
+import VendorsPage from './pages/modules/VendorsPage';
 
 // Admin Pages
 import RolesManagementPage from './pages/admin/RolesManagementPage';
@@ -362,6 +364,28 @@ const App: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <ComponentsTestPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        {/* Modules - Concierge */}
+        <Route 
+          path="/concierge" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ConciergePage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        {/* Modules - Vendors */}
+        <Route 
+          path="/vendors" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <VendorsPage />
               </Layout>
             </ProtectedRoute>
           } 
