@@ -524,41 +524,6 @@ export class ConciergeService {
     });
   }
 
-  async getStats(req: any) {
-    const ctx = this.tenantContext.getTenantContext(req);
-    if (!ctx.propertyId) {
-      throw new BadRequestException('Property context required for concierge operations');
-    }
-    if (!(await this.moduleRegistry.isModuleEnabledForProperty(ctx.organizationId, ctx.propertyId, 'concierge'))) {
-      throw new ForbiddenException('Concierge module not enabled for this property');
-    }
-
-    const where = {
-      organizationId: ctx.organizationId,
-      propertyId: ctx.propertyId,
-      deletedAt: null
-    };
-
-    const [total, open, inProgress, overdue] = await Promise.all([
-      this.prisma.conciergeObject.count({ where }),
-      this.prisma.conciergeObject.count({ where: { ...where, status: 'open' } }),
-      this.prisma.conciergeObject.count({ where: { ...where, status: 'in_progress' } }),
-      this.prisma.conciergeObject.count({
-        where: {
-          ...where,
-          dueAt: { lt: new Date() },
-          status: { in: ['open', 'in_progress'] }
-        }
-      })
-    ]);
-
-    return {
-      total,
-      open,
-      inProgress,
-      overdue
-    };
-  }
 }
 
 
