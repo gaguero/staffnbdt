@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useTenant } from '../../contexts/TenantContext';
-import { useVendors, useCreateVendor, useUpdateVendor, useDeleteVendor, useToggleVendorStatus, useVendorStats, useVendorLinks, useGenerateMagicLink, useSendNotification } from '../../hooks/useVendors';
+import { useVendors, useCreateVendor, useUpdateVendor, useDeleteVendor, useToggleVendorStatus, useVendorStats, useVendorLinks } from '../../hooks/useVendors';
 import { Vendor, VendorFilter, CreateVendorInput, UpdateVendorInput, VendorCategory, VendorChannel } from '../../types/vendors';
 import PermissionGate from '../../components/PermissionGate';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorDisplay from '../../components/ErrorDisplay';
 import EnhancedTable from '../../components/EnhancedTable';
-import { toast } from 'react-hot-toast';
 
 type ViewMode = 'directory' | 'links' | 'portal';
 
@@ -377,12 +376,12 @@ const VendorsPage: React.FC = () => {
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>();
   
   const { data: vendorsData, isLoading, error, refetch } = useVendors(filter);
-  const { data: linksData, isLoading: linksLoading } = useVendorLinks();
+  const { data: _linksData, isLoading: linksLoading } = useVendorLinks();
   const createVendor = useCreateVendor();
   const updateVendor = useUpdateVendor();
   const deleteVendor = useDeleteVendor();
   const toggleStatus = useToggleVendorStatus();
-  const generateMagicLink = useGenerateMagicLink();
+  // const _generateMagicLink = useGenerateMagicLink();
   // const _sendNotification = useSendNotification();
 
   const handleCreateVendor = async (input: CreateVendorInput) => {
