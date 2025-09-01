@@ -59,6 +59,15 @@ const CORRECT_PERMISSIONS = [
     category: 'Concierge',
     isSystem: true
   },
+  {
+    resource: 'concierge',
+    action: 'read',
+    scope: 'property',
+    name: 'View Concierge Stats',
+    description: 'View concierge statistics and metrics',
+    category: 'Concierge',
+    isSystem: true
+  },
 
   // ===== VENDORS MODULE (matching controller decorators) =====
   {

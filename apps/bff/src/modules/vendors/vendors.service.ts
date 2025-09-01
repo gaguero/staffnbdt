@@ -546,6 +546,37 @@ export class VendorsService {
       },
     });
   }
+
+  async getVendorLinks(req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
+    if (!ctx.propertyId) {
+      throw new BadRequestException('Property context required for vendor operations');
+    }
+    if (!(await this.moduleRegistry.isModuleEnabledForProperty(ctx.organizationId, ctx.propertyId, 'vendors'))) {
+      throw new ForbiddenException('Vendors module not enabled for this property');
+    }
+
+    return this.prisma.vendorLink.findMany({
+      where: {
+        vendor: {
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId
+        }
+      },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            category: true,
+            email: true,
+            phone: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
 }
 
 // DTOs for better type safety

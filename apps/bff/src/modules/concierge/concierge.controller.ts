@@ -75,6 +75,13 @@ export class ConciergeController {
   async executePlaybook(@Body() dto: ExecutePlaybookDto, @Request() req) {
     return this.conciergeService.executePlaybook(dto, req);
   }
+
+  @Get('stats')
+  @RequirePermission('concierge.read.property')
+  @PermissionScope('property')
+  async getStats(@Request() req) {
+    return this.conciergeService.getStats(req);
+  }
 }
 
 
