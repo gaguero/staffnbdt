@@ -224,7 +224,7 @@ export const useComprehensiveRoleManagement = () => {
     propertyRole?: string;
     experience?: 'new' | 'experienced' | 'senior';
   }) => {
-    const currentLevel = ROLE_HIERARCHY[userRole as Role]?.level ?? 999;
+    // const currentLevel = ROLE_HIERARCHY[userRole as Role]?.level ?? 999;
     const recommendations: Array<{
       role: string;
       reason: string;

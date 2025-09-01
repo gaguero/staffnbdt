@@ -2,10 +2,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import systemRolesService, { 
   SystemRoleInfo, 
-  SystemRoleAssignment, 
-  RolePermissionPreview,
-  UserRoleHistory,
-  RoleStatistics
+  SystemRoleAssignment
 } from '../services/systemRolesService';
 import { toastService } from '../services/toastService';
 
@@ -111,10 +108,10 @@ export const useAssignSystemRole = () => {
 
   return useMutation({
     mutationFn: systemRolesService.assignSystemRole,
-    onMutate: async (assignment: SystemRoleAssignment) => {
+    onMutate: async (_assignment: SystemRoleAssignment) => {
       toastService.loading('Assigning role...', { id: 'assign-role' });
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       toastService.dismiss('assign-role');
       toastService.success(`Role ${variables.role} assigned successfully`);
 
@@ -168,7 +165,7 @@ export const useBulkAssignSystemRoles = () => {
         queryClient.invalidateQueries({ queryKey: SYSTEM_ROLES_QUERY_KEYS.userPermissions(assignment.userId) });
       });
     },
-    onError: (error: any, variables) => {
+    onError: (error: any, _variables) => {
       toastService.dismiss('bulk-assign');
       toastService.error(
         error.response?.data?.message || 
@@ -187,10 +184,10 @@ export const useChangeUserRole = () => {
   return useMutation({
     mutationFn: ({ userId, role, reason }: { userId: string, role: string, reason?: string }) =>
       systemRolesService.changeUserRole(userId, role, reason),
-    onMutate: async ({ userId, role }) => {
+    onMutate: async ({ userId: _userId, role }) => {
       toastService.loading(`Changing role to ${role}...`, { id: 'change-role' });
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       toastService.dismiss('change-role');
       toastService.success(`User role changed to ${variables.role} successfully`);
 
@@ -224,7 +221,7 @@ export const useRefreshUserPermissions = () => {
 
   return useMutation({
     mutationFn: systemRolesService.refreshUserPermissions,
-    onMutate: async (userId: string) => {
+    onMutate: async (_userId: string) => {
       toastService.loading('Refreshing permissions...', { id: 'refresh-permissions' });
     },
     onSuccess: (data, userId) => {

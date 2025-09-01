@@ -162,6 +162,8 @@ export class RolesGuard implements CanActivate {
       [Role.PROPERTY_MANAGER]: 'property',
       [Role.DEPARTMENT_ADMIN]: 'department',
       [Role.STAFF]: 'own',
+      [Role.CLIENT]: 'organization',
+      [Role.VENDOR]: 'property',
     };
 
     return scopeMap[role] || null;

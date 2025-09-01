@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { User } from '../services/userService';
 import { useAuth } from '../contexts/AuthContext';
-import { Role, SYSTEM_ROLES, canManageRole } from '../types/role';
+import { Role, canManageRole } from '../types/role';
 import { useAssignSystemRole, useChangeUserRole } from '../hooks/useSystemRoles';
 import RoleBadge from './RoleBadge';
 import LoadingSpinner from './LoadingSpinner';
-import { toastService } from '../services/toastService';
+// toastService imported but handled by hooks
 
 interface QuickRoleActionsProps {
   user: User;

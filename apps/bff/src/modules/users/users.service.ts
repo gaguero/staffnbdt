@@ -558,7 +558,7 @@ export class UsersService {
         userType: updatedUser.userType,
         departmentId: updatedUser.departmentId,
         reason: changeRoleDto.reason || 'Role change'
-      },
+      } as any,
     );
 
     return {
@@ -815,13 +815,19 @@ export class UsersService {
   }
 
   /**
-   * Get user permissions for the current user context
+   * Get user action permissions for the current user context
    * This helps frontend determine what actions are available
    */
-  async getUserPermissions(
+  async getUserActionPermissions(
     targetUserId: string,
     currentUser: User,
-  ): Promise<UserPermissions> {
+  ): Promise<{
+    canView: boolean;
+    canEdit: boolean;
+    canDelete: boolean;
+    canChangeRole: boolean;
+    canChangeStatus: boolean;
+  }> {
     const isSuperAdmin = currentUser.role === Role.PLATFORM_ADMIN;
     const isDepartmentAdmin = currentUser.role === Role.DEPARTMENT_ADMIN;
     const isSelf = currentUser.id === targetUserId;

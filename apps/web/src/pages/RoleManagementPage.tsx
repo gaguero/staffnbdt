@@ -317,8 +317,8 @@ const RoleManagementPage: React.FC = () => {
   const canViewRoleManagement = hasPermission('role', 'read', 'organization') || 
                                hasPermission('role', 'read', 'platform');
 
-  const canBulkAssignRoles = hasPermission('role', 'assign', 'organization') || 
-                            hasPermission('role', 'assign', 'platform');
+  // const canBulkAssignRoles = hasPermission('role', 'assign', 'organization') || 
+  //                          hasPermission('role', 'assign', 'platform');
 
   if (!canViewRoleManagement) {
     return (

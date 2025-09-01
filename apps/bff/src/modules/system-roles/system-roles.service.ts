@@ -1,5 +1,5 @@
 import { Injectable, Logger, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../shared/services/prisma.service';
+import { PrismaService } from '../../shared/database/prisma.service';
 import { PermissionService } from '../../shared/services/permission.service';
 import { Role, User } from '@prisma/client';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';

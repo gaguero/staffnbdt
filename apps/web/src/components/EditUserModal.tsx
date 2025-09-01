@@ -398,7 +398,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           user={user}
           isOpen={showRoleManagement}
           onClose={() => setShowRoleManagement(false)}
-          onRoleChanged={(updatedUser, newRole) => {
+          onRoleChanged={(_, newRole) => {
             // Update the user object locally
             user.role = newRole as any;
             onSuccess(); // Trigger refresh in parent

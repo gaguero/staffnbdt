@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useSystemRoles, useRolePermissionPreview } from '../hooks/useSystemRoles';
 import { useAuth } from '../contexts/AuthContext';
-import { Role, ROLE_HIERARCHY, SYSTEM_ROLES } from '../types/role';
+import { Role, ROLE_HIERARCHY } from '../types/role';
 import LoadingSpinner from './LoadingSpinner';
 import RoleBadge from './RoleBadge';
 

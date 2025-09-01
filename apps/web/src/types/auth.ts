@@ -24,7 +24,7 @@ export interface InternalUser {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF';
+  role: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF' | 'CLIENT' | 'VENDOR';
   userType: UserType.INTERNAL;
   departmentId?: string;
   profilePhoto?: string;
@@ -54,7 +54,7 @@ export interface AuthUser {
   phoneNumber?: string;
   
   // Union of all possible user properties for backwards compatibility
-  role?: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF';
+  role?: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF' | 'CLIENT' | 'VENDOR';
   departmentId?: string;
   organizationId?: string;
   propertyId?: string;
