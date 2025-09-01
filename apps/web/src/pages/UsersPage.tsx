@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
+import { usePermissions } from '../hooks/usePermissions';
 import PropertySelector from '../components/PropertySelector';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UserDetailsModal from '../components/UserDetailsModal';
@@ -17,6 +18,7 @@ import { departmentService, Department } from '../services/departmentService';
 const UsersPage: React.FC = () => {
   const { user: currentUser, tenantInfo } = useAuth();
   const { propertyId } = useTenant();
+  const { hasPermission } = usePermissions();
   const [users, setUsers] = useState<UserType[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -389,6 +391,7 @@ const UsersPage: React.FC = () => {
 
   const canManageUser = (user: UserType) => {
     // Use permission-based access control instead of role checks
+    if (!currentUser) return false;
     if (hasPermission('user', 'update', 'property')) return true;
     if (hasPermission('user', 'update', 'department')) {
       return user.departmentId === currentUser.departmentId;
@@ -402,8 +405,9 @@ const UsersPage: React.FC = () => {
   // Filter users
   const filteredUsers = users.filter(user => {
     // Department scoping based on permissions
+    if (!currentUser) return false;
     if (hasPermission('user', 'read', 'department') && !hasPermission('user', 'read', 'property')) {
-      if (user.departmentId !== currentUser?.departmentId) {
+      if (user.departmentId !== currentUser.departmentId) {
         return false;
       }
     }
