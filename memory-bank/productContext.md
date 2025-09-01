@@ -190,3 +190,49 @@ Neither approach addresses the unique needs of the hotel industry:
 - **Partner ecosystem** with certified integrations
 
 This product context drives every feature decision, architectural choice, and business priority to ensure we're solving real hotel industry problems with measurable business impact.
+
+## New Modules: Concierge + Vendors
+
+### Concierge Module - Guest Experience Orchestration
+
+**Problem**: Hotel operations struggle with fragmented guest service tracking, inconsistent standards, and reactive rather than proactive service delivery.
+
+**Solution**: End-to-end guest experience orchestration through:
+- **Concierge Objects**: Configurable record types (transfers, tours, spa, special requests) with EAV attributes
+- **Operational Playbooks**: Automated SLA enforcement, dependency management, and task creation
+- **Ops-First Views**: Reservation 360, Guest Timeline, Today Board for proactive operations
+
+**UX Goals**:
+- **Reservation 360**: Single view with header + required-items checklist, quick-create from templates
+- **Guest Timeline**: Chronological log of all guest interactions, notes, files, notifications
+- **Today Board**: Due/overdue/upcoming items with bulk actions, mobile-first layouts
+- **Exception Panel**: Surface missing requirements and SLA violations immediately
+
+### Vendors Module - Partner Orchestration
+
+**Problem**: Hotel partnerships are manual, error-prone, and lack visibility into vendor performance and confirmations.
+
+**Solution**: Comprehensive vendor management with:
+- **Partner Directory**: Vendor profiles, policies, and performance tracking
+- **Vendor Links**: Configurable confirmation workflows and status tracking
+- **Multi-Channel Notifications**: Email, SMS, WhatsApp integration
+- **Magic-Link Portal**: Secure, scoped access for vendor confirmations
+
+**UX Goals**:
+- **Vendor Dashboard**: Performance metrics, pending confirmations, policy compliance
+- **Confirmation Portal**: Clean, mobile-friendly interface for vendor responses
+- **Policy Management**: Visual policy builder with approval workflows
+- **Integration Hub**: Seamless connection to Concierge objects and future modules
+
+### Module Enablement Strategy
+
+**Property-Level Control**: Extend `ModuleSubscription` to support property-specific enablement, allowing:
+- Organization-wide module management
+- Property-specific customization
+- Mixed billing models (org pays vs property pays)
+- Granular feature control per property
+
+**Rollout Approach**:
+- Phase 1: Core Concierge objects and basic vendor directory
+- Phase 2: Playbooks and confirmation workflows
+- Phase 3: Advanced integrations and AI features

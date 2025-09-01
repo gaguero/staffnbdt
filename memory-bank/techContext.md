@@ -447,3 +447,278 @@ Troubleshooting:
 
 Success criteria:
 - Backend starts cleanly; status shows `permissionTablesExist: true`; frontend works without warnings
+
+## New Module Technical Implementation
+
+### Database Schema Extensions
+
+**ModuleSubscription Enhancement**:
+```sql
+-- Add propertyId to existing table
+ALTER TABLE module_subscriptions 
+ADD COLUMN property_id VARCHAR(255) REFERENCES properties(id);
+
+-- Unique constraints for precedence
+CREATE UNIQUE INDEX idx_module_sub_org_prop 
+ON module_subscriptions(organization_id, module_id, property_id);
+
+CREATE UNIQUE INDEX idx_module_sub_org_only 
+ON module_subscriptions(organization_id, module_id) 
+WHERE property_id IS NULL;
+```
+
+**Concierge Schema**:
+```prisma
+model ConciergeObject {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  type           String
+  reservationId  String?
+  guestId        String?
+  status         String   @default("open")
+  dueAt          DateTime?
+  assignments    Json?
+  files          Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+  
+  attributes     ConciergeAttribute[]
+  @@index([organizationId, propertyId, type])
+  @@index([organizationId, propertyId, status, dueAt])
+}
+
+model ConciergeAttribute {
+  id             String   @id @default(cuid())
+  objectId       String
+  fieldKey       String
+  fieldType      String
+  stringValue    String?
+  numberValue    Float?
+  booleanValue   Boolean?
+  dateValue      DateTime?
+  jsonValue      Json?
+  
+  object         ConciergeObject @relation(fields: [objectId], references: [id])
+  @@index([objectId, fieldKey])
+  @@index([fieldKey, fieldType])
+}
+
+model ObjectType {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  fieldsSchema   Json
+  validations    Json?
+  uiHints        Json?
+  isActive       Boolean  @default(true)
+  
+  @@index([organizationId, propertyId])
+}
+
+model Playbook {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  trigger        String
+  conditions     Json
+  actions        Json
+  enforcements   Json?
+  isActive       Boolean  @default(true)
+  
+  @@index([organizationId, propertyId])
+}
+```
+
+**Vendors Schema**:
+```prisma
+model Vendor {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  email          String?
+  phone          String?
+  category       String
+  policies       Json?
+  performance    Json?
+  isActive       Boolean  @default(true)
+  
+  links          VendorLink[]
+  @@index([organizationId, propertyId])
+}
+
+model VendorLink {
+  id             String   @id @default(cuid())
+  vendorId       String
+  objectId       String
+  objectType     String
+  policyRef      String?
+  status         String   @default("pending")
+  confirmationAt DateTime?
+  expiresAt      DateTime?
+  
+  vendor         Vendor @relation(fields: [vendorId], references: [id])
+  @@index([vendorId, status])
+  @@index([objectId, objectType])
+}
+```
+
+### BFF API Patterns
+
+**Concierge Controllers**:
+```typescript
+@Controller('concierge')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+export class ConciergeController {
+  
+  @Get('object-types')
+  @RequirePermission('concierge.object-types.read.property')
+  @PermissionScope('property')
+  async getObjectTypes(@Request() req) {
+    return this.conciergeService.getObjectTypes(req.tenant);
+  }
+  
+  @Post('objects')
+  @RequirePermission('concierge.objects.create.property')
+  @PermissionScope('property')
+  async createObject(@Body() dto: CreateConciergeObjectDto, @Request() req) {
+    return this.conciergeService.createObject(dto, req.tenant);
+  }
+  
+  @Post('playbooks/execute')
+  @RequirePermission('concierge.playbooks.execute.property')
+  @PermissionScope('property')
+  async executePlaybook(@Body() dto: ExecutePlaybookDto, @Request() req) {
+    return this.conciergeService.executePlaybook(dto, req.tenant);
+  }
+}
+```
+
+**Vendors Controllers**:
+```typescript
+@Controller('vendors')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+export class VendorsController {
+  
+  @Post('links/:id/confirm')
+  @RequirePermission('vendors.links.confirm.property')
+  @PermissionScope('property')
+  async confirmLink(@Param('id') id: string, @Body() dto: ConfirmLinkDto) {
+    return this.vendorsService.confirmLink(id, dto);
+  }
+  
+  @Get('portal/:token')
+  async getPortalSession(@Param('token') token: string) {
+    return this.vendorsService.validatePortalToken(token);
+  }
+}
+```
+
+### Worker Architecture
+
+**SLA Enforcement Workers**:
+```typescript
+@Processor('sla-enforcement')
+export class SLAEnforcementProcessor {
+  
+  @Process('check-overdue')
+  async checkOverdue() {
+    const overdueObjects = await this.conciergeService.findOverdueObjects();
+    
+    for (const object of overdueObjects) {
+      await this.eventBus.emit('concierge.sla.overdue', {
+        objectId: object.id,
+        organizationId: object.organizationId,
+        propertyId: object.propertyId
+      });
+    }
+  }
+  
+  @Process('playbook-execution')
+  async executePlaybook(job: Job<PlaybookExecutionData>) {
+    const { playbookId, triggerData } = job.data;
+    await this.conciergeService.executePlaybook(playbookId, triggerData);
+  }
+}
+```
+
+**Vendor Notification Workers**:
+```typescript
+@Processor('vendor-notifications')
+export class VendorNotificationProcessor {
+  
+  @Process('send-confirmation')
+  async sendConfirmation(job: Job<VendorConfirmationData>) {
+    const { vendorId, linkId, channel } = job.data;
+    await this.vendorsService.sendConfirmation(vendorId, linkId, channel);
+  }
+  
+  @Process('portal-link-expiry')
+  async handlePortalExpiry() {
+    const expiringLinks = await this.vendorsService.findExpiringLinks();
+    // Send reminders or auto-decline logic
+  }
+}
+```
+
+### Frontend Integration
+
+**Module Registry Updates**:
+```typescript
+// Add to module manifests
+const conciergeManifest: ModuleManifest = {
+  moduleId: 'concierge',
+  name: 'Concierge',
+  version: '1.0.0',
+  category: 'operations',
+  internalPermissions: [
+    'concierge.objects.read.property',
+    'concierge.objects.create.property',
+    'concierge.playbooks.manage.property'
+  ],
+  internalNavigation: [
+    { path: '/concierge', label: 'Concierge', icon: 'concierge' },
+    { path: '/concierge/today', label: 'Today Board', icon: 'board' }
+  ]
+};
+```
+
+**React Context for Module Enablement**:
+```typescript
+interface ModuleEnablementContext {
+  isModuleEnabled: (moduleId: string, propertyId?: string) => boolean;
+  getModulePermissions: (moduleId: string) => string[];
+  refreshModuleStatus: () => Promise<void>;
+}
+
+// Hook for checking module access
+const useModuleAccess = (moduleId: string) => {
+  const { isModuleEnabled, getModulePermissions } = useModuleEnablement();
+  const { user } = useAuth();
+  
+  return {
+    isEnabled: isModuleEnabled(moduleId, user.propertyId),
+    permissions: getModulePermissions(moduleId),
+    hasPermission: (permission: string) => user.permissions.includes(permission)
+  };
+};
+```
+
+### Testing Strategy
+
+**E2E Test Coverage**:
+- Module enablement/disablement flows
+- Concierge object creation and EAV attribute handling
+- Playbook execution and SLA enforcement
+- Vendor confirmation workflows
+- Portal access and security
+
+**Performance Considerations**:
+- EAV query optimization with composite indexes
+- Module enablement caching at API level
+- Worker job queuing for SLA checks
+- Portal token validation caching

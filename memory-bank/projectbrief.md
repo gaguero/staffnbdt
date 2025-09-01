@@ -179,3 +179,21 @@ Provide a complete suite of operational modules that enable hotels to manage eve
 - 📋 Revenue management tools
 
 This project brief serves as the foundational document that guides all development decisions, architectural choices, and business priorities for Hotel Operations Hub.
+
+## New Modules (v1): Concierge + Vendors
+
+- Concierge: Orchestrate guest experiences end-to-end via configurable Concierge Objects (EAV attributes), Playbooks (SLA/dependency automation via workers), and ops-first views (Reservation 360, Guest Timeline, Today Board).
+- Vendors: Partner directory, policies, vendor links and confirmations, multi-channel notifications, and a magic-link portal (scoped PII).
+- Multi-tenant: All data tenant-scoped by `organizationId` and `propertyId`. File storage via R2 with tenant paths `/org-id/property-id/...`.
+
+### Module Enablement & Billing Direction
+- Extend `ModuleSubscription` to support `propertyId` (optional) to enable:
+  - Org-level enablement (single subscription record with `propertyId = NULL`).
+  - Property-level overrides (additional records per property).
+- Precedence: property-level overrides org-level for effective enablement.
+- Future billing: org pays for all, property pays for itself, or hybrid—enabled by property-scoped subscriptions.
+
+### Decisions
+- Attributes: EAV pattern for Concierge object fields (typed columns + indexes).
+- Playbooks/SLAs: worker-driven processors and timers.
+- Vendor Portal: magic-link token (hashed, expiry), scoped PII rendering.

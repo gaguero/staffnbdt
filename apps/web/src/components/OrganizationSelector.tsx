@@ -47,21 +47,8 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
 
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newOrgId = e.target.value || undefined;
-    // Step 1: set organization immediately and clear propertyId so subsequent requests use the new org
+    // Single-phase: set organization and clear property, then reload. PropertySelector will handle property selection.
     setAdminOverride(newOrgId, undefined, 'platform-admin');
-
-    // Step 2: fetch properties under the new org (headers now include X-Organization-Id)
-    let targetPropertyId: string | undefined = undefined;
-    try {
-      if (newOrgId) {
-        const propsResp = await propertyService.getProperties({ organizationId: newOrgId, isActive: true, limit: 50 });
-        const props = Array.isArray((propsResp as any)?.data) ? (propsResp as any).data : [];
-        targetPropertyId = (props as any[])[0]?.id; // may be undefined
-      }
-    } catch {}
-
-    // Step 3: set propertyId (if any) and reload to apply tenant-wide
-    setAdminOverride(newOrgId, targetPropertyId, 'platform-admin');
     window.location.reload();
   };
 
