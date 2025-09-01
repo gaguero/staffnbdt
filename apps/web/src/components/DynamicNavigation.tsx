@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useModuleNavigation, usePropertyModules } from '../hooks/useModules';
@@ -11,6 +11,8 @@ interface NavigationSection {
   title: string;
   items: (NavItem & { moduleId?: string })[];
   category?: string;
+  icon?: string;
+  isCollapsible?: boolean;
 }
 
 interface DynamicNavigationProps {
@@ -23,6 +25,8 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
   const dashboardSection: NavigationSection = {
     title: 'Dashboard',
     category: 'dashboard',
+    icon: '🏠',
+    isCollapsible: false,
     items: [
       {
         id: 'dashboard',
@@ -34,23 +38,201 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
     ]
   };
 
-  const profileSection: NavigationSection = {
-    title: 'Profile Management',
-    category: 'profile',
+  // Hotel Operations - Core features (always visible)
+  const hotelOperationsSection: NavigationSection = {
+    title: 'Hotel Operations',
+    category: 'hotel-operations',
+    icon: '🏨',
+    isCollapsible: true,
     items: [
       {
-        id: 'profile',
-        label: 'nav.profile',
-        path: '/profile',
-        icon: '👤',
-        requiredPermissions: [],
+        id: 'reservations',
+        label: 'nav.reservations',
+        path: '/hotel/reservations',
+        icon: '📅',
+        requiredPermissions: ['reservation.read.property'],
       },
       {
-        id: 'notifications',
-        label: 'nav.notifications',
-        path: '/notifications',
-        icon: '🔔',
+        id: 'guests',
+        label: 'nav.guests',
+        path: '/hotel/guests',
+        icon: '👨‍👩‍👧‍👦',
+        requiredPermissions: ['guest.read.property'],
+      },
+      {
+        id: 'rooms',
+        label: 'nav.rooms',
+        path: '/hotel/rooms',
+        icon: '🛏️',
+        requiredPermissions: ['unit.read.property'],
+      },
+      {
+        id: 'room-types',
+        label: 'nav.roomTypes',
+        path: '/hotel/room-types',
+        icon: '🏷️',
+        requiredPermissions: ['roomtype.read.property'],
+      }
+    ]
+  };
+  
+  // Guest Services - Module-based features
+  const guestServicesSection: NavigationSection = {
+    title: 'Guest Services',
+    category: 'guest-services',
+    icon: '🎯',
+    isCollapsible: true,
+    items: [
+      {
+        id: 'concierge',
+        label: 'nav.concierge',
+        path: '/concierge',
+        icon: '🛎️',
+        requiredPermissions: ['concierge.objects.read.property'],
+        moduleId: 'concierge',
+      }
+    ]
+  };
+  
+  // Employee Services - Module-based features
+  const employeeServicesSection: NavigationSection = {
+    title: 'Employee Services',
+    category: 'employee-services',
+    icon: '👥',
+    isCollapsible: true,
+    items: [
+      {
+        id: 'payroll',
+        label: 'nav.payroll',
+        path: '/payroll',
+        icon: '💰',
+        requiredPermissions: ['payroll.read.own'],
+        moduleId: 'hr',
+      },
+      {
+        id: 'vacation',
+        label: 'nav.vacation',
+        path: '/vacation',
+        icon: '🏖️',
+        requiredPermissions: ['vacation.read.own'],
+        moduleId: 'hr',
+      },
+      {
+        id: 'training',
+        label: 'nav.training',
+        path: '/training',
+        icon: '🎓',
+        requiredPermissions: ['training.read.own', 'training.read.department'],
+        moduleId: 'hr',
+      },
+      {
+        id: 'benefits',
+        label: 'nav.benefits',
+        path: '/benefits',
+        icon: '🎁',
         requiredPermissions: [],
+        moduleId: 'hr',
+      }
+    ]
+  };
+  
+  // Documents - Core feature
+  const documentsSection: NavigationSection = {
+    title: 'Documents',
+    category: 'documents',
+    icon: '📄',
+    isCollapsible: true,
+    items: [
+      {
+        id: 'documents',
+        label: 'nav.documents',
+        path: '/documents',
+        icon: '📄',
+        requiredPermissions: ['document.read.own'],
+      }
+    ]
+  };
+  
+  // Administration - Settings and management
+  const administrationSection: NavigationSection = {
+    title: 'Administration',
+    category: 'administration',
+    icon: '⚙️',
+    isCollapsible: true,
+    items: [
+      {
+        id: 'users',
+        label: 'nav.users',
+        path: '/users',
+        icon: '👥',
+        requiredPermissions: ['user.read.department'],
+      },
+      {
+        id: 'departments',
+        label: 'nav.departments',
+        path: '/departments',
+        icon: '🏢',
+        requiredPermissions: ['department.read.organization', 'department.manage.organization'],
+      },
+      {
+        id: 'vendors',
+        label: 'nav.vendors',
+        path: '/vendors',
+        icon: '🤝',
+        requiredPermissions: ['vendors.read.property'],
+        moduleId: 'vendors',
+      },
+      {
+        id: 'organizations',
+        label: 'nav.organizations',
+        path: '/organizations',
+        icon: '🏛️',
+        requiredPermissions: ['organization.read.platform', 'organization.manage.platform'],
+      },
+      {
+        id: 'properties',
+        label: 'nav.properties',
+        path: '/properties',
+        icon: '🏨',
+        requiredPermissions: ['property.read.organization', 'property.manage.organization'],
+      },
+      {
+        id: 'roles',
+        label: 'nav.roles',
+        path: '/admin/roles',
+        icon: '🔐',
+        requiredPermissions: ['role.read.organization', 'role.manage.organization'],
+      },
+      {
+        id: 'brand-studio',
+        label: 'nav.brandStudio',
+        path: '/brand-studio',
+        icon: '🎨',
+        requiredPermissions: ['branding.read.organization', 'branding.manage.organization'],
+      },
+      {
+        id: 'module-management',
+        label: 'nav.moduleManagement',
+        path: '/admin/modules',
+        icon: '🧩',
+        requiredPermissions: ['module.manage.organization'],
+      }
+    ]
+  };
+  
+  // Reports & Analytics
+  const reportsSection: NavigationSection = {
+    title: 'Reports & Analytics',
+    category: 'reports',
+    icon: '📊',
+    isCollapsible: true,
+    items: [
+      {
+        id: 'role-stats',
+        label: 'nav.roleStats',
+        path: '/admin/role-stats',
+        icon: '📊',
+        requiredPermissions: ['analytics.view.department'],
       }
     ]
   };
@@ -58,182 +240,23 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
   if (userType === UserType.INTERNAL) {
     return [
       dashboardSection,
-      profileSection,
-      {
-        title: 'HR Tools',
-        category: 'hr',
-        items: [
-          {
-            id: 'users',
-            label: 'nav.users',
-            path: '/users',
-            icon: '👥',
-            requiredPermissions: ['user.read.department'],
-          },
-          {
-            id: 'payroll',
-            label: 'nav.payroll',
-            path: '/payroll',
-            icon: '💰',
-            requiredPermissions: ['payroll.read.own'],
-          },
-          {
-            id: 'vacation',
-            label: 'nav.vacation',
-            path: '/vacation',
-            icon: '🏖️',
-            requiredPermissions: ['vacation.read.own'],
-          },
-          {
-            id: 'training',
-            label: 'nav.training',
-            path: '/training',
-            icon: '🎓',
-            requiredPermissions: ['training.read.own', 'training.read.department'],
-          }
-        ]
-      },
-      {
-        title: 'Administrative Tools',
-        category: 'admin',
-        items: [
-          {
-            id: 'departments',
-            label: 'nav.departments',
-            path: '/departments',
-            icon: '🏢',
-            requiredPermissions: ['department.read.organization', 'department.manage.organization'],
-          },
-          {
-            id: 'organizations',
-            label: 'nav.organizations',
-            path: '/organizations',
-            icon: '🏛️',
-            requiredPermissions: ['organization.read.platform', 'organization.manage.platform'],
-          },
-          {
-            id: 'properties',
-            label: 'nav.properties',
-            path: '/properties',
-            icon: '🏨',
-            requiredPermissions: ['property.read.organization', 'property.manage.organization'],
-          },
-          {
-            id: 'roles',
-            label: 'nav.roles',
-            path: '/admin/roles',
-            icon: '🔐',
-            requiredPermissions: ['role.read.organization', 'role.manage.organization'],
-          },
-          {
-            id: 'brand-studio',
-            label: 'nav.brandStudio',
-            path: '/brand-studio',
-            icon: '🎨',
-            requiredPermissions: ['branding.read.organization', 'branding.manage.organization'],
-          },
-          {
-            id: 'module-management',
-            label: 'nav.moduleManagement',
-            path: '/admin/modules',
-            icon: '🧩',
-            requiredPermissions: ['module.manage.organization'],
-          }
-        ]
-      },
-      {
-        title: 'Hotel Operations',
-        category: 'hotel',
-        items: [
-          {
-            id: 'rooms',
-            label: 'nav.rooms',
-            path: '/hotel/rooms',
-            icon: '🛏️',
-            requiredPermissions: ['unit.read.property'],
-          },
-          {
-            id: 'room-types',
-            label: 'nav.roomTypes',
-            path: '/hotel/room-types',
-            icon: '🏷️',
-            requiredPermissions: ['roomtype.read.property'],
-          },
-          {
-            id: 'guests',
-            label: 'nav.guests',
-            path: '/hotel/guests',
-            icon: '👨‍👩‍👧‍👦',
-            requiredPermissions: ['guest.read.property'],
-          },
-          {
-            id: 'reservations',
-            label: 'nav.reservations',
-            path: '/hotel/reservations',
-            icon: '📅',
-            requiredPermissions: ['reservation.read.property'],
-          },
-          {
-            id: 'concierge',
-            label: 'nav.concierge',
-            path: '/concierge',
-            icon: '🛎️',
-            requiredPermissions: ['concierge.read.property'],
-            moduleId: 'concierge',
-          },
-          {
-            id: 'vendors',
-            label: 'nav.vendors',
-            path: '/vendors',
-            icon: '🤝',
-            requiredPermissions: ['vendors.read.property'],
-            moduleId: 'vendors',
-          }
-        ]
-      },
-      {
-        title: 'Employee Services',
-        category: 'services',
-        items: [
-          {
-            id: 'documents',
-            label: 'nav.documents',
-            path: '/documents',
-            icon: '📄',
-            requiredPermissions: ['document.read.own'],
-          },
-          {
-            id: 'benefits',
-            label: 'nav.benefits',
-            path: '/benefits',
-            icon: '🎁',
-            requiredPermissions: [],
-          }
-        ]
-      },
-      {
-        title: 'Reports & Analytics',
-        category: 'reports',
-        items: [
-          {
-            id: 'role-stats',
-            label: 'nav.roleStats',
-            path: '/admin/role-stats',
-            icon: '📊',
-            requiredPermissions: ['analytics.view.department'],
-          }
-        ]
-      }
+      hotelOperationsSection,
+      guestServicesSection,
+      employeeServicesSection,
+      documentsSection,
+      administrationSection,
+      reportsSection
     ];
   }
 
   if (userType === UserType.CLIENT) {
     return [
       dashboardSection,
-      profileSection,
       {
         title: 'Guest Services',
-        category: 'guest',
+        category: 'guest-services',
+        icon: '🎯',
+        isCollapsible: true,
         items: [
           {
             id: 'reservations',
@@ -250,6 +273,28 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
             requiredPermissions: [],
           }
         ]
+      },
+      {
+        title: 'Profile',
+        category: 'profile',
+        icon: '👤',
+        isCollapsible: true,
+        items: [
+          {
+            id: 'profile',
+            label: 'nav.profile',
+            path: '/profile',
+            icon: '👤',
+            requiredPermissions: [],
+          },
+          {
+            id: 'notifications',
+            label: 'nav.notifications',
+            path: '/notifications',
+            icon: '🔔',
+            requiredPermissions: [],
+          }
+        ]
       }
     ];
   }
@@ -257,10 +302,11 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
   if (userType === UserType.VENDOR) {
     return [
       dashboardSection,
-      profileSection,
       {
         title: 'Vendor Tools',
-        category: 'vendor',
+        category: 'vendor-tools',
+        icon: '🔧',
+        isCollapsible: true,
         items: [
           {
             id: 'orders',
@@ -284,10 +330,11 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
   if (userType === UserType.PARTNER) {
     return [
       dashboardSection,
-      profileSection,
       {
         title: 'Partner Portal',
-        category: 'partner',
+        category: 'partner-portal',
+        icon: '🤝',
+        isCollapsible: true,
         items: [
           {
             id: 'analytics',
@@ -309,7 +356,7 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
   }
 
   // External users get minimal default navigation
-  return [dashboardSection, profileSection];
+  return [dashboardSection];
 };
 
 const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemClick }) => {
@@ -317,8 +364,44 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
   const { t } = useLanguage();
   const { hasPermission } = usePermissions();
   const { isModuleEnabled, isLoading: isLoadingModules } = usePropertyModules();
+  const location = useLocation();
   
   const { navigationItems, isLoading, error } = useModuleNavigation(userType);
+  
+  // Collapsible section state - load from localStorage
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('nav-expanded');
+      return saved ? JSON.parse(saved) : {
+        'hotel-operations': true, // Keep hotel operations expanded by default
+        'dashboard': true // Dashboard is always expanded (single item)
+      };
+    } catch {
+      return { 'hotel-operations': true, 'dashboard': true };
+    }
+  });
+  
+  // Toggle section expansion
+  const toggleSection = useCallback((sectionKey: string) => {
+    const newState = {
+      ...expandedSections,
+      [sectionKey]: !expandedSections[sectionKey]
+    };
+    setExpandedSections(newState);
+    try {
+      localStorage.setItem('nav-expanded', JSON.stringify(newState));
+    } catch (error) {
+      console.warn('Failed to save navigation state to localStorage:', error);
+    }
+  }, [expandedSections]);
+  
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback((event: React.KeyboardEvent, sectionKey: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleSection(sectionKey);
+    }
+  }, [toggleSection]);
 
   // Build navigation sections from module data
   const navigationSections = useMemo(() => {
@@ -412,6 +495,33 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
     return filtered;
   }, [navigationSections, user, hasPermission, isModuleEnabled]);
 
+  // Auto-expand section containing current active page
+  useEffect(() => {
+    const currentPath = location.pathname;
+    
+    // Find which section contains the current path
+    const activeSection = filteredNavSections.find(section => {
+      return section.items.some(item => {
+        // Check if current path matches or is a sub-path of this nav item
+        return currentPath === item.path || currentPath.startsWith(item.path + '/');
+      });
+    });
+    
+    if (activeSection) {
+      const activeSectionKey = activeSection.category || activeSection.title.toLowerCase().replace(/\s+/g, '-');
+      
+      // Only expand if it's currently collapsed and collapsible
+      if (activeSection.isCollapsible && !expandedSections[activeSectionKey]) {
+        const newState = {
+          ...expandedSections,
+          [activeSectionKey]: true
+        };
+        setExpandedSections(newState);
+        localStorage.setItem('nav-expanded', JSON.stringify(newState));
+      }
+    }
+  }, [location.pathname, filteredNavSections, expandedSections]);
+
   if (isLoading || isLoadingModules) {
     return (
       <nav className="flex-1 px-4 py-6 space-y-6">
@@ -426,55 +536,145 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
     );
   }
 
-  return (
-    <nav className="flex-1 px-4 py-6 space-y-6">
-      {filteredNavSections.map((section) => (
-        <div key={section.title}>
-          <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            {t(`nav.${section.category?.toLowerCase()}`) || section.title}
-          </h3>
-          <div className="space-y-1">
-            {section.items.map((item) => (
-              <NavLink
-                key={item.id}
-                to={item.path}
-                onClick={onItemClick}
-                className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200"
-                style={({ isActive }) => isActive ? {
-                  backgroundColor: 'var(--brand-primary)',
-                  color: 'white',
-                  boxShadow: 'var(--brand-shadow-soft)'
-                } : {
-                  color: 'var(--brand-text-primary)'
-                }}
-                onMouseEnter={(e) => {
-                  if (!e.currentTarget.classList.contains('active')) {
-                    e.currentTarget.style.backgroundColor = 'var(--brand-surface-hover)';
-                    e.currentTarget.style.color = 'var(--brand-primary)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!e.currentTarget.classList.contains('active')) {
-                    e.currentTarget.style.backgroundColor = '';
-                    e.currentTarget.style.color = 'var(--brand-text-primary)';
-                  }
-                }}
+  // Helper function to render navigation item
+  const renderNavItem = (item: NavItem & { moduleId?: string }) => {
+    const isCurrentPath = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+    
+    return (
+      <NavLink
+        key={item.id}
+        to={item.path}
+        onClick={onItemClick}
+        className={({ isActive }) => `
+          nav-item flex items-center px-4 py-2 text-sm font-medium rounded-lg ml-6
+          ${isActive || isCurrentPath ? 
+            'active text-white shadow-sm' : 
+            'text-gray-700 hover:text-gray-900'
+          }
+        `}
+        style={({ isActive }) => isActive || isCurrentPath ? {
+          backgroundColor: 'var(--brand-primary)',
+          color: 'white',
+          boxShadow: 'var(--brand-shadow-soft)'
+        } : {}}
+      >
+        {item.icon && (
+          <span className="mr-3 text-base flex-shrink-0" role="img" aria-hidden="true">
+            {item.icon}
+          </span>
+        )}
+        <span className="truncate">{t(item.label)}</span>
+        {(location.pathname === item.path || location.pathname.startsWith(item.path + '/')) && (
+          <div className="ml-auto w-2 h-2 bg-white bg-opacity-80 rounded-full" />
+        )}
+      </NavLink>
+    );
+  };
+
+  // Helper function to render collapsible section
+  const renderSection = (section: NavigationSection) => {
+    const sectionKey = section.category || section.title.toLowerCase().replace(/\s+/g, '-');
+    const isExpanded = expandedSections[sectionKey];
+    const hasItems = section.items.length > 0;
+    const hasActiveItem = section.items.some(item => 
+      location.pathname === item.path || location.pathname.startsWith(item.path + '/')
+    );
+    
+    if (!hasItems) return null;
+
+    // Non-collapsible sections (like Dashboard)
+    if (!section.isCollapsible) {
+      return (
+        <div key={section.title} className="space-y-1 mb-4">
+          {section.items.map(renderNavItem)}
+        </div>
+      );
+    }
+
+    return (
+      <div key={section.title} className="mb-2">
+        {/* Section Header */}
+        <button
+          onClick={() => toggleSection(sectionKey)}
+          onKeyDown={(e) => handleKeyDown(e, sectionKey)}
+          className={`
+            nav-section-header w-full px-4 py-3 text-sm font-semibold 
+            flex items-center justify-between group rounded-lg
+            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+            ${
+              hasActiveItem 
+                ? 'has-active text-gray-900' 
+                : 'text-gray-600 hover:text-gray-900'
+            }
+          `}
+          aria-expanded={isExpanded}
+          aria-controls={`section-${sectionKey}`}
+          aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${section.title} section`}
+          type="button"
+        >
+          <div className="flex items-center space-x-3">
+            {section.icon && (
+              <span 
+                className="text-lg group-hover:scale-110 transition-transform duration-200 flex-shrink-0" 
+                role="img" 
+                aria-hidden="true"
               >
-                {item.icon && (
-                  <span className="mr-3 text-lg" role="img" aria-hidden="true">
-                    {item.icon}
-                  </span>
-                )}
-                {t(item.label)}
-              </NavLink>
-            ))}
+                {section.icon}
+              </span>
+            )}
+            <span className="uppercase tracking-wider text-xs font-bold truncate">
+              {section.title}
+            </span>
+            {hasActiveItem && (
+              <div className="nav-active-indicator w-2 h-2 bg-blue-500 rounded-full ml-2 flex-shrink-0" />
+            )}
+          </div>
+          <span 
+            className={`nav-section-toggle text-gray-400 flex-shrink-0 ${
+              isExpanded ? 'expanded' : ''
+            }`}
+            aria-hidden="true"
+          >
+            ▶
+          </span>
+        </button>
+        
+        {/* Section Items - with smooth height transition */}
+        <div 
+          id={`section-${sectionKey}`}
+          className={`nav-section-content overflow-hidden ${
+            isExpanded ? 'expanded' : 'collapsed'
+          }`}
+          style={{
+            maxHeight: isExpanded ? `${section.items.length * 52 + 24}px` : '0px'
+          }}
+          role="region"
+          aria-labelledby={`section-${sectionKey}-header`}
+        >
+          <div className="space-y-1 pb-3 pt-2">
+            {isExpanded && section.items.map(renderNavItem)}
           </div>
         </div>
-      ))}
+      </div>
+    );
+  };
+
+  return (
+    <nav className="flex-1 px-2 py-6 space-y-1" role="navigation" aria-label="Main navigation">
+      {filteredNavSections.map(renderSection)}
       
       {error && (
-        <div className="px-4 py-3 text-sm text-red-600 bg-red-50 rounded-lg">
-          {t('nav.errorLoading')}: {error}
+        <div className="mx-2 my-4 py-3 text-sm text-red-600 bg-red-50 rounded-lg px-4 border border-red-200" role="alert">
+          <strong className="font-medium">{t('nav.errorLoading')}:</strong> {error}
+        </div>
+      )}
+      
+      {/* Debug info for development */}
+      {import.meta.env.DEV && (
+        <div className="mx-2 mt-8 p-2 text-xs text-gray-500 bg-gray-50 rounded border">
+          <div>Current path: {location.pathname}</div>
+          <div>Sections: {filteredNavSections.length}</div>
+          <div>Expanded: {Object.keys(expandedSections).filter(k => expandedSections[k]).join(', ')}</div>
         </div>
       )}
     </nav>

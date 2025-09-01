@@ -711,6 +711,135 @@
   left: 100%;
 }
 
+/* Navigation-specific styles */
+.nav-section-content {
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  will-change: max-height, opacity;
+}
+
+.nav-section-content.expanded {
+  opacity: 1;
+}
+
+.nav-section-content.collapsed {
+  opacity: 0;
+  max-height: 0 !important;
+}
+
+.nav-section-header {
+  transition: all 0.2s ease;
+}
+
+.nav-section-header:hover {
+  background-color: var(--brand-surface-hover);
+}
+
+.nav-section-header.has-active {
+  background-color: var(--brand-primary-50);
+  border-left: 3px solid var(--brand-primary);
+}
+
+.nav-item {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--brand-primary);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.nav-item.active::before {
+  transform: scaleX(1);
+}
+
+.nav-item:hover {
+  background-color: var(--brand-surface-hover);
+  color: var(--brand-primary);
+  transform: translateX(2px);
+}
+
+.nav-section-toggle {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-section-toggle.expanded {
+  transform: rotate(90deg);
+}
+
+.nav-active-indicator {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Mobile responsive navigation */
+@media (max-width: 768px) {
+  .nav-section-content {
+    transition: max-height 0.25s ease, opacity 0.25s ease;
+  }
+  
+  .nav-item {
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+  }
+  
+  .nav-section-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .nav-item:hover {
+    transform: none;
+  }
+}
+
+/* Smooth height calculation for dynamic content */
+@supports (height: max-content) {
+  .nav-section-content.expanded {
+    max-height: max-content;
+  }
+}
+
+/* Focus states for accessibility */
+.nav-item:focus-visible,
+.nav-section-header:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+  background-color: var(--brand-primary-50);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .nav-item.active {
+    background-color: var(--brand-primary);
+    color: white;
+  }
+  
+  .nav-section-header.has-active {
+    background-color: var(--brand-primary-100);
+    border-left-width: 4px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .nav-section-content,
+  .nav-section-header,
+  .nav-item,
+  .nav-section-toggle {
+    transition: none;
+  }
+  
+  .nav-active-indicator {
+    animation: none;
+  }
+}
+
 /* Print styles */
 @media print {
   .no-print {
