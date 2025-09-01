@@ -1,9 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../contexts/AuthContext';
 import moduleManagementService, { 
   ModuleStatusDetail, 
-  PropertyModuleResponse, 
-  ModuleSubscription 
+  PropertyModuleResponse
 } from '../services/moduleManagementService';
 import { toastService } from '../services/toastService';
 

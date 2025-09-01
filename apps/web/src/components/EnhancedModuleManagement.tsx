@@ -36,7 +36,7 @@ const EnhancedModuleManagement: React.FC = () => {
     queryKey: ['properties', organization?.id],
     queryFn: async () => {
       if (!organization?.id) return [];
-      const response = await propertyService.getPropertiesByOrganization(organization.id);
+      const response = await propertyService.getProperties({ organizationId: organization.id });
       return response.data || [];
     },
     enabled: !!organization?.id,
@@ -63,26 +63,21 @@ const EnhancedModuleManagement: React.FC = () => {
     mutationFn: async ({ moduleId, enable }: { moduleId: string; enable: boolean }) => {
       if (!organization?.id) throw new Error('No organization selected');
       
-      if (enable) {
-        await moduleManagementService.enableModuleForProperty(organization.id, '', moduleId);
-      } else {
-        await moduleManagementService.disableModuleForProperty(organization.id, '', moduleId);
-      }
+      const updates = [{ moduleId, isEnabled: enable }];
+      return moduleManagementService.bulkUpdateOrganizationModules(organization.id, updates);
     },
     onSuccess: (_, { moduleId, enable }) => {
       toastService.success(
         enable 
-          ? t('modules.enabledForOrganization', { module: moduleId })
-          : t('modules.disabledForOrganization', { module: moduleId })
+          ? `Module ${moduleId} enabled for organization`
+          : `Module ${moduleId} disabled for organization`
       );
       refetchPropertyModules();
       queryClient.invalidateQueries({ queryKey: ['propertyModules'] });
     },
     onError: (error: any) => {
       toastService.error(
-        t('modules.actionFailed', { 
-          message: error?.response?.data?.message || error.message 
-        })
+        `Organization toggle failed: ${error?.response?.data?.message || error.message}`
       );
     },
   });
@@ -103,16 +98,14 @@ const EnhancedModuleManagement: React.FC = () => {
     onSuccess: (_, { moduleId, enable }) => {
       toastService.success(
         enable 
-          ? t('modules.enabledForProperty', { module: moduleId })
-          : t('modules.disabledForProperty', { module: moduleId })
+          ? `Module ${moduleId} enabled for property`
+          : `Module ${moduleId} disabled for property`
       );
       refetchPropertyModules();
     },
     onError: (error: any) => {
       toastService.error(
-        t('modules.actionFailed', { 
-          message: error?.response?.data?.message || error.message 
-        })
+        `Property toggle failed: ${error?.response?.data?.message || error.message}`
       );
     },
   });
@@ -126,14 +119,12 @@ const EnhancedModuleManagement: React.FC = () => {
       await moduleManagementService.removePropertyOverride(organization.id, selectedPropertyId, moduleId);
     },
     onSuccess: (_, moduleId) => {
-      toastService.success(t('modules.overrideRemoved', { module: moduleId }));
+      toastService.success(`Property override removed for module ${moduleId}`);
       refetchPropertyModules();
     },
     onError: (error: any) => {
       toastService.error(
-        t('modules.actionFailed', { 
-          message: error?.response?.data?.message || error.message 
-        })
+        `Remove override failed: ${error?.response?.data?.message || error.message}`
       );
     },
   });
