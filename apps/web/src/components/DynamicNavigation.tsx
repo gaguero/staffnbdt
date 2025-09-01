@@ -324,13 +324,17 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
     const sections: NavigationSection[] = [];
     
     categoryMap.forEach((items, category) => {
-      // Filter items based on user permissions
+      // Filter items based on user permissions (OR logic) with Platform Admin bypass
       const filteredItems = items.filter(item => {
         if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
           return true;
         }
-        
-        return item.requiredPermissions.every(permission => {
+
+        if (user?.role === 'PLATFORM_ADMIN') {
+          return true;
+        }
+
+        return item.requiredPermissions.some(permission => {
           const [resource, action, scope] = permission.split('.');
           return hasPermission(resource, action, scope || 'own');
         });
@@ -454,6 +458,7 @@ function getCategoryTitle(category: string): string {
     dashboard: 'Dashboard',
     profile: 'Profile Management',
     hotel: 'Hotel Operations',
+    concierge: 'Concierge',
     staff: 'Staff Management',
     admin: 'Administrative Tools',
     system: 'System',
@@ -469,6 +474,7 @@ function getCategoryTitle(category: string): string {
     services: 'Employee Services',
     crm: 'Customer Relations',
     vendor: 'Vendor Tools',
+    vendors: 'Vendors',
     client: 'Guest Services',
     guest: 'Guest Services',
     partner: 'Partner Portal',
