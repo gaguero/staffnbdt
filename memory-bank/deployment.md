@@ -866,3 +866,26 @@ npm run health:check:production
 ```
 
 This deployment guide ensures reliable, secure, and scalable deployment of the Hotel Operations Hub platform on Railway with comprehensive monitoring and recovery procedures.
+
+## Rollout: Concierge + Vendors
+
+### Steps
+1. Create Prisma migrations (Concierge/Vendors + ModuleSubscription.propertyId)
+2. Deploy DB migrations to Railway
+3. Deploy BFF + Worker + Web services
+4. Seed module manifests and permissions
+5. Warm caches for module enablement
+
+### Verification (Mandatory)
+- Health: `/api/health` healthy
+- Schema: tables exist and indexed
+- API: Concierge/Vendors endpoints return 200s within tenant scope
+- Events: SLA overdue events visible in logs
+- Portal: Magic-link flow works, tokens expire as expected
+
+### Playwright Tests (Desktop + Mobile)
+- Concierge objects CRUD + EAV attributes
+- Today Board shows due/overdue with bulk actions
+- Reservation 360 checklist completeness and exceptions
+- Vendor confirmation flow (portal + back-office status)
+- Console is clean (no errors) and screenshots saved

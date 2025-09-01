@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 import { propertyService, CreatePropertyData } from '../services/propertyService';
+import { useTenant } from '../contexts/TenantContext';
 
 interface CreatePropertyModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
   onSuccess,
   organizations,
 }) => {
+  const { organizationId: activeOrganizationId } = useTenant();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreatePropertyData>({
@@ -48,6 +50,13 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
     },
     isActive: true,
   });
+
+  // Prefill organization from active tenant when modal opens
+  useEffect(() => {
+    if (isOpen && activeOrganizationId && !formData.organizationId) {
+      setFormData(prev => ({ ...prev, organizationId: activeOrganizationId }));
+    }
+  }, [isOpen, activeOrganizationId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -99,7 +108,16 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
         throw new Error('Slug must be 2-100 characters long and contain only lowercase letters, numbers, and hyphens');
       }
 
-      await propertyService.createProperty(formData);
+      // Normalize payload for backend enum/JSON expectations
+      const payload: CreatePropertyData = {
+        ...formData,
+        propertyType: formData.propertyType ? (formData.propertyType as any).toString().toUpperCase() as any : undefined,
+        address: formData.address ? (formData.address as any) : undefined,
+        settings: formData.settings ? (formData.settings as any) : undefined,
+        branding: formData.branding ? (formData.branding as any) : undefined,
+      };
+
+      await propertyService.createProperty(payload);
       onSuccess();
     } catch (error: any) {
       console.error('Failed to create property:', error);
@@ -136,7 +154,7 @@ const CreatePropertyModal: React.FC<CreatePropertyModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form id="create-property-form" onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900">Basic Information</h3>

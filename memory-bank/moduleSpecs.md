@@ -895,3 +895,70 @@ describe('ModuleIntegration', () => {
 ```
 
 This modular architecture enables Hotels Operations Hub to scale from basic HR functionality to comprehensive hotel operations management, with each module providing specialized functionality while maintaining seamless integration and consistent user experience.
+
+---
+
+## 13. Concierge Module (Planned - v1)
+
+**Purpose**: Orchestrate guest experience via configurable objects, playbooks, and ops-first views.
+
+**Data Model (Tenant-Scoped)**:
+```typescript
+ConciergeObject(id, organizationId, propertyId, type, reservationId?, guestId?, status, dueAt?, assignments[], files[])
+ConciergeAttribute(id, objectId, fieldKey, fieldType, stringValue?, numberValue?, booleanValue?, dateValue?, jsonValue?)
+ObjectType(id, organizationId, propertyId, name, fieldsSchema[], validations[], uiHints{})
+Playbook(id, organizationId, propertyId, name, trigger, conditions[], actions[], enforcements[])
+```
+
+**API (NestJS)**:
+```http
+GET  /api/concierge/object-types
+POST /api/concierge/objects
+PUT  /api/concierge/objects/:id
+POST /api/concierge/objects/:id/complete
+POST /api/concierge/playbooks/execute
+```
+
+**Permissions**:
+- `concierge.object-types.read.property`
+- `concierge.objects.create.property`
+- `concierge.objects.read.property`
+- `concierge.objects.update.property`
+- `concierge.playbooks.manage.property`
+- `concierge.playbooks.execute.property`
+
+**Events**:
+- Emits: `concierge.object.created|updated|completed`, `concierge.requirements.missing`, `concierge.sla.overdue`
+- Consumes: `vendor.confirmed|declined|overdue`
+
+**UX Surfaces**:
+- Reservation 360 (checklist), Guest Timeline, Today Board
+
+---
+
+## 14. Vendors Module (Planned - v1)
+
+**Purpose**: Vendor orchestration powering Concierge now, Inventory/Finance later.
+
+**Data Model (Tenant-Scoped)**:
+```typescript
+Vendor(id, organizationId, propertyId, name, email?, phone?, category, policies, performance, isActive)
+VendorLink(id, vendorId, objectId, objectType, policyRef?, status, confirmationAt?, expiresAt?)
+```
+
+**API (NestJS)**:
+```http
+POST /api/vendors/links/:id/confirm
+GET  /api/vendors/portal/:token
+```
+
+**Permissions**:
+- `vendors.links.confirm.property`
+- `vendors.manage.property`
+
+**Events**:
+- Emits: `vendor.confirmation.sent|confirmed|declined|overdue`
+- Consumes: `concierge.object.created|updated|completed`
+
+**Portal**:
+- Magic-link with JWT claims (vendorId, orgId, propertyId), 24–48h expiry, scoped PII

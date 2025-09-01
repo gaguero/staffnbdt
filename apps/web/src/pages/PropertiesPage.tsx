@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTenant } from '../contexts/TenantContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CreatePropertyModal from '../components/CreatePropertyModal';
 import EditPropertyModal from '../components/EditPropertyModal';
@@ -10,7 +11,8 @@ import { propertyService, Property, PropertyFilter } from '../services/propertyS
 import { organizationService } from '../services/organizationService';
 
 const PropertiesPage: React.FC = () => {
-  const { user: _currentUser } = useAuth();
+  const { user: _currentUser, tenantInfo } = useAuth();
+  const { tenantKey } = useTenant();
   const [properties, setProperties] = useState<Property[]>([]);
   const [organizations, setOrganizations] = useState<Array<{id: string; name: string}>>([]);
   const [loading, setLoading] = useState(true);
@@ -90,6 +92,14 @@ const PropertiesPage: React.FC = () => {
     }
   }, []);
 
+  // Default the Organization filter to the active tenant organization
+  useEffect(() => {
+    // If tenant has an organization selected, prefer it
+    if (tenantInfo?.organizationId) {
+      setOrganizationFilter(prev => (prev === 'all' || prev !== tenantInfo.organizationId ? tenantInfo.organizationId! : prev));
+    }
+  }, [tenantInfo?.organizationId]);
+
   // Load property statistics
   const loadStats = useCallback(async () => {
     try {
@@ -123,11 +133,13 @@ const PropertiesPage: React.FC = () => {
 
   useEffect(() => {
     loadProperties();
-  }, [loadProperties]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantKey]);
 
   useEffect(() => {
     loadStats();
-  }, [loadStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantKey]);
 
   // Filter properties for display - ensure properties is always an array
   const filteredProperties = (Array.isArray(properties) ? properties : []).filter(property => {

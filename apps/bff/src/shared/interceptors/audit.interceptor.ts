@@ -39,6 +39,9 @@ export class AuditInterceptor implements NestInterceptor {
     const oldData = request.body;
     const ipAddress = request.ip;
     const userAgent = request.headers['user-agent'];
+    const actingOrg = request.headers['x-organization-id'] || request.headers['x-org-id'];
+    const actingProp = request.headers['x-property-id'] || request.headers['x-prop-id'];
+    const actingAs = request.headers['x-acting-as'] || (user.role === 'PLATFORM_ADMIN' ? 'platform-admin' : undefined);
 
     return next.handle().pipe(
       tap((response) => {

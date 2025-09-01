@@ -6,14 +6,22 @@ See @README.md for project overview and @package.json for available commands.
 
 ## 📚 Memory Bank Navigation
 
-**CRITICAL**: Always consult the memory bank for comprehensive context:
+**Smart Context Loading**: Start with essential context, then consult specific memory bank files only when needed:
 
-- **@memory-bank/projectbrief.md** → Complete project vision and business requirements
-- **@memory-bank/progress.md** → Current status, achievements, and immediate priorities
-- **@memory-bank/activeContext.md** → Recent work focus and implementation decisions
-- **@memory-bank/techContext.md** → Technology stack and deployment configuration
-- **@memory-bank/systemPatterns.md** → Architectural patterns and code examples
-- **@memory-bank/uiDesign.md** → UI/UX patterns and design system
+### Core Files (Read First)
+- **@memory-bank/activeContext.md** → Recent work focus and current implementation decisions
+- **@memory-bank/progress.md** → Current status and immediate priorities
+
+### On-Demand Reference Files (Read When Needed)
+- **@memory-bank/projectbrief.md** → Complete project vision (read for new features or strategic questions)
+- **@memory-bank/techContext.md** → Technology stack details (read for deployment/infrastructure issues)
+- **@memory-bank/systemPatterns.md** → Architectural patterns (read for complex implementation questions)
+- **@memory-bank/uiDesign.md** → UI/UX patterns (read for design/interface work)
+
+**Usage Guidelines**: 
+- Always start with core files for context
+- Only read additional memory bank files when the task specifically requires that domain knowledge
+- Reference specific memory bank sections in agent delegation prompts when relevant
 
 ## 🏨 Project Context
 
@@ -140,8 +148,8 @@ Claude **NEVER** writes code directly. Instead:
 #### 2. Provide Complete Task Context
 - **Current Discussion**: Summary of user requirements and decisions
 - **Context7 Research**: Include any relevant documentation findings
-- **Memory Bank Context**: Reference relevant memory-bank files
-- **Project Status**: Current phase and implementation priorities
+- **Memory Bank Context**: Reference specific memory-bank files only if relevant to the task
+- **Project Status**: Current phase and implementation priorities (from activeContext.md/progress.md)
 - **Technical Constraints**: Railway deployment, tenant isolation requirements
 
 #### 3. Specify Clear Deliverables
@@ -180,7 +188,7 @@ This is a multi-tenant, white-labeled hotel ERP platform with:
 
 **Task Requirements**: [Detailed task description]
 **Context7 Research**: [Any relevant documentation found]
-**Memory Bank References**: [Relevant patterns/examples]
+**Memory Bank References**: [Only include if specific patterns/examples are relevant to this task]
 **Expected Deliverables**: [Specific outputs needed]
 
 **Agent System Prompt**: 
@@ -513,4 +521,4 @@ export class GuestsController {
 
 ---
 
-**Remember**: This CLAUDE.md serves as your navigation hub. Always reference memory bank files for comprehensive context and follow mandatory testing requirements for all development work.
+**Remember**: This CLAUDE.md serves as your navigation hub. Start with core memory bank files (activeContext.md, progress.md) for essential context, then consult additional memory bank files only when your task specifically requires that domain knowledge. Follow mandatory testing requirements for all development work.

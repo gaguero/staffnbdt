@@ -46,6 +46,19 @@ export class TenantInterceptor implements NestInterceptor {
       let organizationId = jwtPayload.organizationId;
       let propertyId = jwtPayload.propertyId;
 
+      // PLATFORM_ADMIN override via headers (no DB changes)
+      // Note: Node lowercases header names
+      const headerOrg = request.headers['x-organization-id'] || request.headers['x-org-id'];
+      const headerProp = request.headers['x-property-id'] || request.headers['x-prop-id'];
+      const isPlatformAdmin = jwtPayload.role === 'PLATFORM_ADMIN';
+      if (isPlatformAdmin && (headerOrg || headerProp)) {
+        if (headerOrg) organizationId = String(headerOrg);
+        if (headerProp) propertyId = String(headerProp);
+        if (LoggingConfig.isDebugEnabled()) {
+          this.safeLog('debug', `PLATFORM_ADMIN override: org=${organizationId || 'unchanged'}, property=${propertyId || 'unchanged'}`);
+        }
+      }
+
       // If user doesn't have tenant info in JWT, try to get from database
       if (!organizationId || !propertyId) {
         // This is important to log as it indicates potential JWT issues
@@ -90,6 +103,14 @@ export class TenantInterceptor implements NestInterceptor {
         departmentId: jwtPayload.departmentId,
         userRole: jwtPayload.role,
       }, request);
+
+      // Also propagate effective tenant to request.user so downstream code using @CurrentUser sees overrides
+      try {
+        if (request.user) {
+          request.user.organizationId = organizationId;
+          request.user.propertyId = propertyId;
+        }
+      } catch {}
 
       // Only log success in debug mode to prevent log spam
       if (LoggingConfig.isDebugEnabled()) {

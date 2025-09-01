@@ -153,8 +153,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               >
                 <option value="">Select room type</option>
                 {roomTypes?.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name} - ${type.baseRate}/night
+                  <option key={type?.id || Math.random()} value={type?.id || ''}>
+                    {type?.name || 'Unknown Type'} - ${type?.baseRate || 0}/night
                   </option>
                 ))}
               </select>

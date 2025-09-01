@@ -5,6 +5,8 @@ import DepartmentStats from '../components/DepartmentStats';
 import { departmentService } from '../services/departmentService';
 import { userService } from '../services/userService';
 import { useAuth } from '../contexts/AuthContext';
+import { useTenant } from '../contexts/TenantContext';
+import PropertySelector from '../components/PropertySelector';
 
 interface Department {
   id: string;
@@ -47,6 +49,8 @@ interface Department {
 
 const DepartmentsPage: React.FC = () => {
   const { user: currentUser } = useAuth();
+  const { propertyId } = useTenant();
+  const { tenantKey } = useTenant();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [hierarchyDepartments, setHierarchyDepartments] = useState<Department[]>([]);
   const [availableManagers, setAvailableManagers] = useState<any[]>([]);
@@ -77,12 +81,13 @@ const DepartmentsPage: React.FC = () => {
     budget: ''
   });
 
-  // Load departments and users on component mount
+  // Load departments and users on tenant change
   useEffect(() => {
     loadDepartments();
     loadHierarchy();
     loadAvailableManagers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantKey]);
 
   const loadDepartments = async () => {
     setIsLoading(true);
@@ -556,7 +561,9 @@ const DepartmentsPage: React.FC = () => {
           <h1 className="heading-2">Department Management</h1>
           <p className="text-gray-600">Manage departments, budgets, and organizational structure</p>
         </div>
-        
+        {currentUser?.role === 'PLATFORM_ADMIN' && (
+          <PropertySelector variant="compact" className="min-w-[180px]" showOrganization={false} size="sm" />
+        )}
         <button
           onClick={handleAddDepartment}
           className="btn btn-primary"
@@ -565,6 +572,15 @@ const DepartmentsPage: React.FC = () => {
           Add Department
         </button>
       </div>
+
+      {currentUser?.role === 'PLATFORM_ADMIN' && !propertyId && (
+        <div className="card p-4 bg-yellow-50 border border-yellow-200">
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-sm text-yellow-800">Select a property to view departments for that property.</div>
+            <PropertySelector variant="compact" className="min-w-[200px]" showOrganization={false} size="sm" />
+          </div>
+        </div>
+      )}
 
       {/* Department Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

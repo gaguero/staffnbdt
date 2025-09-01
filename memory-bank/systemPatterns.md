@@ -784,3 +784,100 @@ GET /roles/optimization
 - All role features respect tenant isolation and permission gates
 - UI uses brand-aware CSS variables (white-labeling) and mobile-first layouts
 - Testing: unit, integration, and E2E coverage with Playwright where applicable
+
+## New Module Patterns
+
+### EAV (Entity-Attribute-Value) Pattern for Concierge Objects
+
+**Implementation**: Dynamic field storage for configurable Concierge Objects
+```typescript
+// Core object with typed attributes
+ConciergeObject {
+  id, type, status, dueAt, assignments, files
+  // EAV attributes stored separately
+}
+
+ConciergeAttribute {
+  objectId, fieldKey, fieldType, stringValue, numberValue, 
+  booleanValue, dateValue, jsonValue
+}
+```
+
+**Benefits**:
+- Strong indexing per field type
+- Type-safe attribute access
+- Flexible schema evolution
+- Efficient querying for common patterns
+
+**Validation**: `ObjectType.fieldsSchema` defines field types, required flags, and validation rules at API boundary
+
+### Module Enablement Precedence
+
+**Property-Level Override**: Extend `ModuleSubscription` to support property-specific control
+```sql
+-- Unique constraints
+UNIQUE(organizationId, moduleId, propertyId) -- property-level
+UNIQUE(organizationId, moduleId) WHERE propertyId IS NULL -- org-level
+```
+
+**Precedence Logic**:
+1. Check for property-specific subscription: `(org, module, property)`
+2. Fall back to organization-level: `(org, module, null)`
+3. Property-level `isEnabled` overrides org-level setting
+
+**Use Cases**:
+- Organization pays for all properties
+- Individual properties manage their own subscriptions
+- Mixed models with org defaults and property overrides
+
+### Playbook Automation Pattern
+
+**Worker-Driven Execution**: Background workers handle SLA enforcement and dependency management
+```typescript
+// Playbook triggers
+interface PlaybookTrigger {
+  event: 'reservation.created' | 'concierge.object.completed'
+  conditions: PlaybookCondition[]
+  actions: PlaybookAction[]
+}
+
+// SLA enforcement
+interface SLAEnforcement {
+  objectId: string
+  dueAt: DateTime
+  workerId: string
+  status: 'pending' | 'overdue' | 'completed'
+}
+```
+
+**Event Flow**:
+1. Reservation/object created → trigger playbook evaluation
+2. Worker creates required objects and sets SLAs
+3. SLA workers monitor due dates and emit overdue events
+4. UI surfaces exceptions in Today Board and Reservation 360
+
+### Magic-Link Portal Pattern
+
+**Secure External Access**: Vendor confirmation portal with scoped PII access
+```typescript
+// Portal session
+interface PortalSession {
+  token: string // JWT with vendor context
+  vendorId: string
+  organizationId: string
+  propertyId: string
+  permissions: string[] // Scoped to vendor operations
+  expiresAt: DateTime
+}
+```
+
+**Security Model**:
+- JWT tokens with vendor-specific claims
+- PII scoped to vendor's assigned objects
+- Time-limited sessions (24-48 hours)
+- Audit logging for all portal actions
+
+**Integration Points**:
+- Vendor links reference `vendorPolicyRef`
+- Concierge objects can link to vendor confirmations
+- Event bus handles vendor status changes

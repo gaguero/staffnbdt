@@ -1,5 +1,6 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo } from 'react';
 import { useAuth } from './AuthContext';
+import { TENANT_STORAGE_KEY } from '../utils/constants';
 
 interface Organization {
   id: string;
@@ -42,9 +43,12 @@ interface TenantContextType {
   propertyId?: string;
   property?: Property;
   availableProperties: Property[];
+  // A stable key that changes whenever tenant context changes
+  tenantKey: string;
   
   // Actions
   switchProperty: (propertyId: string) => Promise<void>;
+  setAdminOverride: (orgId?: string, propertyId?: string, actingAsLabel?: string) => void;
   
   // Utilities
   canAccessProperty: (propertyId: string) => boolean;
@@ -75,6 +79,11 @@ interface TenantProviderProps {
 
 export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
   const { tenantInfo, switchProperty: authSwitchProperty } = useAuth();
+  const tenantKey = useMemo(() => {
+    const org = tenantInfo.organizationId || 'no-org';
+    const prop = tenantInfo.propertyId || 'no-prop';
+    return `${org}:${prop}`;
+  }, [tenantInfo.organizationId, tenantInfo.propertyId]);
 
   const canAccessProperty = (propertyId: string): boolean => {
     return tenantInfo.availableProperties?.some(p => p.id === propertyId) || false;
@@ -84,18 +93,27 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
   const hasOrganization = !!tenantInfo.organizationId;
 
   const getCurrentPropertyName = (): string => {
-    if (tenantInfo.property) {
-      return tenantInfo.property.name;
-    }
+    // Prefer propertyId lookup to avoid stale cached property objects
     if (tenantInfo.propertyId && tenantInfo.availableProperties) {
       const property = tenantInfo.availableProperties.find(p => p.id === tenantInfo.propertyId);
-      return property?.name || 'Unknown Property';
+      if (property) return property.name;
+    }
+    // Fallback to property object only if it matches propertyId
+    if (tenantInfo.property && tenantInfo.propertyId === tenantInfo.property.id) {
+      return tenantInfo.property.name;
     }
     return 'No Property Selected';
   };
 
   const getCurrentOrganizationName = (): string => {
-    if (tenantInfo.organization) {
+    // If we have a property selected, use its organization as truthy source when available
+    if (tenantInfo.property && tenantInfo.propertyId === tenantInfo.property.id) {
+      // We may not have the organization object; display placeholder
+      return tenantInfo.organization && tenantInfo.organization.id === tenantInfo.property.organizationId
+        ? tenantInfo.organization.name
+        : 'Organization';
+    }
+    if (tenantInfo.organization && tenantInfo.organizationId === tenantInfo.organization.id) {
       return tenantInfo.organization.name;
     }
     return 'No Organization';
@@ -111,7 +129,35 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
     propertyId: tenantInfo.propertyId,
     property: tenantInfo.property,
     availableProperties: tenantInfo.availableProperties || [],
+    tenantKey,
     switchProperty: authSwitchProperty,
+    setAdminOverride: (orgId?: string, propertyId?: string, actingAsLabel?: string) => {
+      try {
+        const stored = localStorage.getItem(TENANT_STORAGE_KEY);
+        const current = stored ? JSON.parse(stored) : {};
+        const next: any = { ...current };
+
+        if (orgId !== undefined) {
+          next.organizationId = orgId;
+          // Clear potentially stale cached objects when org changes
+          if (current.organization && current.organization.id !== orgId) {
+            next.organization = null;
+          }
+        }
+        // If switching org without a property, explicitly clear property context and cached object
+        if (propertyId !== undefined) {
+          next.propertyId = propertyId ?? null;
+        } else if (orgId !== undefined) {
+          next.propertyId = null;
+          next.property = null;
+        }
+        if (actingAsLabel !== undefined) {
+          next.actingAs = actingAsLabel;
+        }
+
+        localStorage.setItem(TENANT_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+    },
     canAccessProperty,
     isMultiProperty,
     hasOrganization,

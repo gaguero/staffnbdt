@@ -249,7 +249,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const updatedTenant: TenantInfo = {
         ...tenantInfo,
         propertyId: propertyId,
-        property: targetProperty
+        property: targetProperty,
+        // Ensure organization context matches selected property
+        organizationId: targetProperty.organizationId,
       };
       
       setTenantInfo(updatedTenant);

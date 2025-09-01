@@ -363,3 +363,28 @@
 - **Machine Learning**: AI-powered insights and automation
 
 This progress tracking ensures we maintain focus on critical path items while building toward our multi-tenant hotel ERP platform vision.
+
+## New Initiative Tracking — Concierge + Vendors
+
+### Status
+- Plan approved for v1 scope and architecture
+- Memory bank updated: productContext, systemPatterns, techContext, projectbrief
+
+### Pending Work
+- Database migrations (Concierge/Vendors + ModuleSubscription.propertyId)
+- API controllers and services (concierge, vendors)
+- Workers (SLA enforcement, notifications)
+- Frontend ops views and vendor portal
+- Playwright E2E coverage and screenshots
+
+### Milestones
+- M1: Schema migrated and deployed to Railway
+- M2: Concierge objects CRUD + object-types API live
+- M3: Playbook execution + SLA overdue events live
+- M4: Vendor confirmation flow + portal live
+- M5: Ops views (Today Board, Reservation 360 checklist, Guest Timeline)
+
+### Risks
+- Cross-tenant isolation regressions → Strict TenantInterceptor validation in all endpoints
+- Indexing overhead on EAV → Targeted composite/partial indexes
+- Portal abuse risk → Rate limits + token hashing + short expiry

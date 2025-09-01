@@ -139,6 +139,11 @@ const PermissionGate: React.FC<PermissionGateProps> = ({
       return false;
     }
 
+    // Platform Admin override: always allowed in UI
+    if (user.role === 'PLATFORM_ADMIN') {
+      return true;
+    }
+
     if (permissionsToCheck.length === 0) {
       // No permissions specified, allow by default
       if (debug) {

@@ -47,13 +47,18 @@ const FormField: React.FC<FormFieldProps> = ({
 }) => {
   const [, setIsFocused] = useState(false);
   const fieldRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(null);
+  // Extract register handlers so we can compose onChange/onBlur and ensure RHF is updated
+  const regOnChange = (register as any)?.onChange as ((e: any) => void) | undefined;
+  const regOnBlur = (register as any)?.onBlur as ((e: any) => void) | undefined;
+  const regName = (register as any)?.name as string | undefined;
+  const regRef = (register as any)?.ref as ((instance: any) => void) | undefined;
 
   const errorMessage = typeof error === 'string' ? error : error?.message;
   const hasError = !!errorMessage;
   const showSuccess = success && !hasError && !validating;
 
   // Generate field ID for accessibility
-  const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`;
+  const fieldId = React.useMemo(() => `field-${label.toLowerCase().replace(/\s+/g, '-')}-${Math.random().toString(36).slice(2, 7)}`,[label]);
 
   const baseInputClasses = `
     form-input
@@ -66,29 +71,33 @@ const FormField: React.FC<FormFieldProps> = ({
   `;
 
   const handleFocus = () => setIsFocused(true);
-  const handleBlur = () => {
+  const handleBlur = (e?: any) => {
     setIsFocused(false);
+    regOnBlur?.(e);
     onBlur?.();
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    // First notify RHF, then any external change handler
+    regOnChange?.(e);
     onChange?.(e);
   };
 
   const renderField = () => {
     const commonProps = {
       id: fieldId,
+      name: regName,
       placeholder,
       disabled,
       className: `${baseInputClasses} ${className}`,
       onFocus: handleFocus,
       onBlur: handleBlur,
       onChange: handleChange,
-      ref: fieldRef,
+      ref: (el: any) => { (fieldRef as any).current = el; regRef?.(el); },
       'aria-invalid': hasError,
       'aria-describedby': `${fieldId}-help`,
       ...(value !== undefined && { value }),
-      ...register,
+      // do not spread register here to avoid overriding composed handlers
     };
 
     switch (type) {

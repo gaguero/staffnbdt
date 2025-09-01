@@ -38,8 +38,8 @@ export class PropertyService {
       throw new ForbiddenException('Insufficient permissions to create properties in this organization');
     }
 
-    // Verify organization exists and is active
-    const organization = await this.prisma.organization.findUnique({
+    // Verify organization exists and is active (findFirst because findUnique only supports unique fields)
+    const organization = await this.prisma.organization.findFirst({
       where: { id: organizationId, isActive: true }
     });
 
@@ -174,9 +174,11 @@ export class PropertyService {
       };
     }
 
-    // Build order by clause
-    const orderBy: Prisma.PropertyOrderByWithRelationInput = {};
-    orderBy[sortBy] = sortOrder;
+    // Build order by clause safely
+    const validSortFields = new Set(['name', 'propertyType', 'createdAt', 'updatedAt']);
+    const safeSortField = validSortFields.has((sortBy as any)) ? sortBy : 'name';
+    const safeSortOrder: 'asc' | 'desc' = sortOrder === 'desc' ? 'desc' : 'asc';
+    const orderBy: Prisma.PropertyOrderByWithRelationInput = { [safeSortField]: safeSortOrder } as any;
 
     // Calculate pagination
     const skip = (page - 1) * limit;
@@ -221,8 +223,9 @@ export class PropertyService {
         }
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch properties: ${error.message}`, error.stack);
-      throw new BadRequestException('Failed to fetch properties');
+      this.logger.error(`Failed to fetch properties: ${error?.message}`, (error as any)?.stack);
+      // Re-throw as BadRequest to avoid generic 500s and expose a clearer message to the client
+      throw new BadRequestException(error?.message || 'Failed to fetch properties');
     }
   }
 

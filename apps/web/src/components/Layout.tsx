@@ -7,6 +7,7 @@ import { useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { UserType } from '../types/auth';
 import PropertySelector from './PropertySelector';
+import OrganizationSelector from './OrganizationSelector';
 import Breadcrumb from './Breadcrumb';
 import DynamicNavigation from './DynamicNavigation';
 
@@ -77,6 +78,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return t(routeTitles[path] || 'nav.dashboard');
   };
 
+  const isPlatformAdmin = user?.role === 'PLATFORM_ADMIN';
   return (
     <div className="min-h-screen lg:flex" style={{ backgroundColor: 'var(--brand-background)' }}>
       {/* Mobile sidebar backdrop */}
@@ -120,14 +122,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* User info and property selector in sidebar */}
         <div className="border-t border-gray-200 p-4 space-y-3">
-          {/* Property Selector */}
-          <div>
-            <PropertySelector 
-              variant="dropdown" 
-              showOrganization={true}
-              className="w-full"
-            />
-          </div>
+          {/* For Platform Admins: prefer a single Property selector; hide org selector when a property is active */}
+          {isPlatformAdmin ? (
+            <div>
+              <PropertySelector 
+                variant="dropdown" 
+                showOrganization={true}
+                className="w-full"
+              />
+            </div>
+          ) : (
+            <>
+              <OrganizationSelector className="w-full" />
+              <div>
+                <PropertySelector 
+                  variant="dropdown" 
+                  showOrganization={true}
+                  className="w-full"
+                />
+              </div>
+            </>
+          )}
           
           {/* User Info */}
           <div className="flex items-center space-x-3">
@@ -192,13 +207,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* User menu */}
             <div className="flex items-center space-x-4">
-              {/* Property Selector for desktop header */}
-              <div className="hidden lg:block">
-                <div className="text-sm text-gray-600 text-right">
-                  <div className="font-medium">{getCurrentOrganizationName()}</div>
-                  <div className="text-xs opacity-75">{getCurrentPropertyName()}</div>
+              {/* Show compact Organization selector in header for Platform Admins */}
+              {isPlatformAdmin && (
+                <div className="hidden lg:block min-w-[240px]">
+                  <OrganizationSelector variant="compact" />
                 </div>
-              </div>
+              )}
               
               {/* Language Switcher */}
               <button

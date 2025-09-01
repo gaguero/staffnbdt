@@ -138,9 +138,12 @@ class PropertyService {
     if (filter.search) params.append('search', filter.search);
     if (filter.organizationId) params.append('organizationId', filter.organizationId);
     if (filter.isActive !== undefined) params.append('isActive', filter.isActive.toString());
-    if (filter.type) params.append('type', filter.type);
-    if (filter.limit) params.append('limit', filter.limit.toString());
-    if (filter.offset) params.append('offset', filter.offset.toString());
+    if (filter.type) params.append('propertyType', filter.type);
+    // Respect backend max limit (100)
+    const safeLimit = Math.min(filter.limit || 20, 100);
+    params.append('limit', safeLimit.toString());
+    // Backend expects pagination via page, not offset; default to page 1
+    params.append('page', '1');
 
     const queryString = params.toString();
     const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;

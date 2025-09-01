@@ -75,9 +75,13 @@ export class UsersService {
     const { limit, offset, role, departmentId, search, includeInactive } = filterDto;
 
     // Build where clause based on user role and filters
-    let whereClause: any = {
-      propertyId: currentUser.propertyId!
-    };
+    let whereClause: any = {};
+    if (currentUser.organizationId) {
+      whereClause.organizationId = currentUser.organizationId;
+    }
+    if (currentUser.propertyId) {
+      whereClause.propertyId = currentUser.propertyId;
+    }
 
     // Apply soft delete filtering conditionally
     // When includeInactive is true, include both active and inactive users

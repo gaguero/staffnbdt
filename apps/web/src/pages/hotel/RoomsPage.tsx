@@ -204,8 +204,8 @@ const RoomsPage: React.FC = () => {
             >
               <option value="">All Types</option>
               {roomTypes?.map(type => (
-                <option key={type.id} value={type.id}>
-                  {type.name}
+                <option key={type?.id || Math.random()} value={type?.id || ''}>
+                  {type?.name || 'Unknown Type'}
                 </option>
               ))}
             </select>

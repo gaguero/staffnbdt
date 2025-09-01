@@ -8,6 +8,8 @@ import CreateRoleModal from '../../components/roles/CreateRoleModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import RoleBadge from '../../components/RoleBadge';
 import PermissionGate from '../../components/PermissionGate';
+import { useTenant } from '../../contexts/TenantContext';
+import PropertySelector from '../../components/PropertySelector';
 
 // BULLETPROOF UTILITY FUNCTIONS
 const extractSafeArray = <T,>(data: any, fallback: T[] = []): T[] => {
@@ -129,6 +131,7 @@ const getQueryParam = (name: string): string | null => {
 };
 
 const RolesManagementPage: React.FC = () => {
+  const { propertyId } = useTenant();
   // Debug mode from query parameter
   const debugMode = getQueryParam('debug') === 'true';
   
@@ -514,6 +517,7 @@ const RolesManagementPage: React.FC = () => {
             Manage user roles, permissions, and access levels
           </p>
         </div>
+        <PropertySelector variant="compact" className="min-w-[180px]" showOrganization={false} size="sm" />
         <PermissionGate resource="role" action="create">
           <button
             onClick={() => setShowCreateRoleModal(true)}
@@ -524,6 +528,13 @@ const RolesManagementPage: React.FC = () => {
           </button>
         </PermissionGate>
       </div>
+
+      {!propertyId && (
+        <div className="bg-yellow-50 border border-yellow-200 px-4 py-3 rounded flex items-center justify-between">
+          <span className="text-sm text-yellow-800">Select a property to view property-scoped roles and assignments.</span>
+          <PropertySelector variant="compact" className="min-w-[200px]" showOrganization={false} size="sm" />
+        </div>
+      )}
 
       {/* Stats Cards with Safe Data */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
