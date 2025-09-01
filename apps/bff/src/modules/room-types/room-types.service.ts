@@ -33,20 +33,27 @@ export class RoomTypesService {
     // Unique per property
     const exists = await this.prisma.roomType.findFirst({
       where: {
-        propertyId: (this.tenantContext.getTenantContext() as any).propertyId,
-        code: dataWithTenant.code,
+        propertyId: (this.tenantContext as any).getTenantContext?.(currentUser)?.propertyId || (currentUser as any)?.propertyId,
+        code: (dataWithTenant as any).code,
       },
     });
     if (exists) {
       throw new BadRequestException('Room type code already exists for this property');
     }
 
-    return this.prisma.roomType.create({ data: dataWithTenant });
+    return this.prisma.roomType.create({
+      data: {
+        ...(dataWithTenant as any),
+        property: {
+          connect: { id: (this.tenantContext as any).getTenantContext?.(currentUser)?.propertyId || (currentUser as any)?.propertyId },
+        },
+      },
+    });
   }
 
   async findAll(currentUser: User) {
     const query = TenantQueryHelper.createSafeQuery(
-      { where: { isActive: true }, orderBy: { name: 'asc' } },
+      { where: { isActive: true }, orderBy: { name: 'asc' as any } },
       this.tenantContext,
       { scope: 'property', resourceType: 'generic' },
     );
@@ -57,7 +64,7 @@ export class RoomTypesService {
     // Ensure belongs to tenant
     const rt = await this.prisma.roomType.findUnique({ where: { id } });
     if (!rt) throw new NotFoundException('Room type not found');
-    TenantQueryHelper.validateTenantOwnership(rt, this.tenantContext);
+    TenantQueryHelper.validateTenantOwnership(rt, this.tenantContext, currentUser as any);
 
     const data: any = {};
     if (dto.name !== undefined) data.name = dto.name;
@@ -73,7 +80,7 @@ export class RoomTypesService {
   async remove(id: string, currentUser: User) {
     const rt = await this.prisma.roomType.findUnique({ where: { id } });
     if (!rt) throw new NotFoundException('Room type not found');
-    TenantQueryHelper.validateTenantOwnership(rt, this.tenantContext);
+    TenantQueryHelper.validateTenantOwnership(rt, this.tenantContext, currentUser as any);
     return this.prisma.roomType.update({ where: { id }, data: { isActive: false } });
   }
 }
