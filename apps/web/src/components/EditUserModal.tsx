@@ -109,9 +109,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
   if (!isOpen) return null;
 
-  const formatRole = (role: string) => {
-    return role.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
-  };
+  // Roles are managed in a dedicated access modal; no role formatting needed here
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -348,7 +346,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             </button>
             <button
               onClick={handleSave}
-              disabled={saving || !formData.firstName || !formData.lastName || !formData.email || !formData.role}
+              disabled={saving || !formData.firstName || !formData.lastName || !formData.email}
               className="px-4 py-2 bg-warm-gold text-white rounded-md hover:bg-opacity-90 disabled:opacity-50 font-medium"
             >
               {saving ? 'Saving...' : 'Save Changes'}
