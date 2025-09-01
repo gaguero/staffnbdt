@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
 import { organizationService, Organization } from '../services/organizationService';
-import { propertyService } from '../services/propertyService';
 
 interface OrganizationSelectorProps {
   className?: string;
