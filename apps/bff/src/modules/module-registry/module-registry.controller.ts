@@ -16,6 +16,13 @@ import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 import { UserType } from '@prisma/client';
+import {
+  ModuleStatusDetailDto,
+  OrganizationModuleStatusDto,
+  EnableModuleDto,
+  DisableModuleDto,
+  ModuleDependencyValidationDto
+} from './dto';
 
 @ApiTags('Module Registry')
 @ApiBearerAuth()

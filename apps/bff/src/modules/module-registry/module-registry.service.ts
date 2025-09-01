@@ -539,4 +539,376 @@ export class ModuleRegistryService {
       }
     }
   }
+
+  /**
+   * Enable a module for a specific property (creates property-level override)
+   */
+  async enableModuleForProperty(
+    organizationId: string,
+    propertyId: string,
+    moduleId: string
+  ): Promise<void> {
+    this.logger.log(`Enabling module ${moduleId} for property ${propertyId} in org ${organizationId}`);
+
+    try {
+      // Verify module exists and is active
+      const manifest = await this.getModuleManifest(moduleId);
+      if (!manifest) {
+        throw new NotFoundException(`Module ${moduleId} not found or inactive`);
+      }
+
+      // Validate dependencies
+      const isValid = await this.validateModuleDependencies(moduleId);
+      if (!isValid) {
+        throw new BadRequestException(`Module ${moduleId} has unmet dependencies`);
+      }
+
+      // Create property-level subscription (overrides organization setting)
+      const existing = await this.prisma.moduleSubscription.findFirst({
+        where: { organizationId, moduleName: moduleId, propertyId },
+      });
+      
+      if (existing) {
+        await this.prisma.moduleSubscription.update({
+          where: { id: existing.id },
+          data: { 
+            isEnabled: true, 
+            enabledAt: new Date(), 
+            disabledAt: null,
+            settings: existing.settings // Preserve existing settings
+          },
+        });
+      } else {
+        await this.prisma.moduleSubscription.create({
+          data: {
+            organizationId,
+            propertyId,
+            moduleName: moduleId,
+            isEnabled: true,
+            enabledAt: new Date(),
+          },
+        });
+      }
+
+      // Log the action
+      await this.auditService.logCreate(
+        'system',
+        'ModuleSubscription',
+        `${organizationId}:${propertyId}:${moduleId}`,
+        {
+          organizationId,
+          propertyId,
+          moduleId,
+          action: 'enable_property_override',
+        }
+      );
+
+      this.logger.log(`Module ${moduleId} enabled for property ${propertyId}`);
+
+    } catch (error) {
+      this.logger.error(`Error enabling module ${moduleId} for property ${propertyId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Disable a module for a specific property (creates property-level override)
+   */
+  async disableModuleForProperty(
+    organizationId: string,
+    propertyId: string,
+    moduleId: string
+  ): Promise<void> {
+    this.logger.log(`Disabling module ${moduleId} for property ${propertyId} in org ${organizationId}`);
+
+    try {
+      // Check if module is a system module that cannot be disabled
+      const manifest = await this.getModuleManifest(moduleId);
+      if (manifest?.isSystemModule) {
+        throw new BadRequestException(`Cannot disable system module: ${moduleId}`);
+      }
+
+      // Create property-level subscription with disabled status (overrides organization setting)
+      const existing = await this.prisma.moduleSubscription.findFirst({
+        where: { organizationId, moduleName: moduleId, propertyId },
+      });
+      
+      if (existing) {
+        await this.prisma.moduleSubscription.update({
+          where: { id: existing.id },
+          data: { 
+            isEnabled: false, 
+            disabledAt: new Date(),
+            settings: existing.settings // Preserve existing settings
+          },
+        });
+      } else {
+        // Create a property-level disabled override
+        await this.prisma.moduleSubscription.create({
+          data: {
+            organizationId,
+            propertyId,
+            moduleName: moduleId,
+            isEnabled: false,
+            disabledAt: new Date(),
+          },
+        });
+      }
+
+      // Log the action
+      await this.auditService.logUpdate(
+        'system',
+        'ModuleSubscription',
+        `${organizationId}:${propertyId}:${moduleId}`,
+        { isEnabled: true },
+        { isEnabled: false, disabledAt: new Date() }
+      );
+
+      this.logger.log(`Module ${moduleId} disabled for property ${propertyId}`);
+
+    } catch (error) {
+      this.logger.error(`Error disabling module ${moduleId} for property ${propertyId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove property-level override (fall back to organization setting)
+   */
+  async removePropertyOverride(
+    organizationId: string,
+    propertyId: string,
+    moduleId: string
+  ): Promise<void> {
+    this.logger.log(`Removing property override for module ${moduleId} in property ${propertyId}`);
+
+    try {
+      const propertySubscription = await this.prisma.moduleSubscription.findFirst({
+        where: { organizationId, moduleName: moduleId, propertyId },
+      });
+
+      if (!propertySubscription) {
+        throw new NotFoundException(`Property-level override not found`);
+      }
+
+      // Delete the property-level subscription
+      await this.prisma.moduleSubscription.delete({
+        where: { id: propertySubscription.id },
+      });
+
+      // Log the action
+      await this.auditService.logDelete(
+        'system',
+        'ModuleSubscription',
+        propertySubscription.id,
+        propertySubscription
+      );
+
+      this.logger.log(`Property override removed for module ${moduleId} in property ${propertyId}`);
+
+    } catch (error) {
+      this.logger.error(`Error removing property override for module ${moduleId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get detailed module status for a property with precedence information
+   */
+  async getModuleStatusDetails(
+    organizationId: string,
+    propertyId: string,
+    moduleId: string
+  ): Promise<{
+    orgLevelEnabled: boolean;
+    propertyLevelOverride: boolean | null;
+    effectiveStatus: boolean;
+    precedenceSource: 'property' | 'organization' | 'none';
+  }> {
+    try {
+      // Check organization-level subscription
+      const orgSubscription = await this.prisma.moduleSubscription.findFirst({
+        where: { organizationId, moduleName: moduleId, propertyId: null },
+        select: { isEnabled: true },
+      });
+
+      // Check property-level subscription
+      const propertySubscription = await this.prisma.moduleSubscription.findFirst({
+        where: { organizationId, moduleName: moduleId, propertyId },
+        select: { isEnabled: true },
+      });
+
+      const orgLevelEnabled = !!orgSubscription?.isEnabled;
+      const propertyLevelOverride = propertySubscription ? propertySubscription.isEnabled : null;
+      
+      let effectiveStatus: boolean;
+      let precedenceSource: 'property' | 'organization' | 'none';
+
+      if (propertySubscription) {
+        effectiveStatus = propertySubscription.isEnabled;
+        precedenceSource = 'property';
+      } else if (orgSubscription) {
+        effectiveStatus = orgSubscription.isEnabled;
+        precedenceSource = 'organization';
+      } else {
+        effectiveStatus = false;
+        precedenceSource = 'none';
+      }
+
+      return {
+        orgLevelEnabled,
+        propertyLevelOverride,
+        effectiveStatus,
+        precedenceSource,
+      };
+
+    } catch (error) {
+      this.logger.error(`Error getting module status details for ${moduleId}:`, error);
+      return {
+        orgLevelEnabled: false,
+        propertyLevelOverride: null,
+        effectiveStatus: false,
+        precedenceSource: 'none',
+      };
+    }
+  }
+
+  /**
+   * Get comprehensive organization module status with property overrides
+   */
+  async getOrganizationModuleStatus(organizationId: string): Promise<{
+    organizationModules: Array<{
+      moduleId: string;
+      isEnabled: boolean;
+      enabledAt?: Date | null;
+      disabledAt?: Date | null;
+      settings?: any;
+    }>;
+    propertyOverrides: Array<{
+      propertyId: string;
+      moduleId: string;
+      isEnabled: boolean;
+      enabledAt?: Date | null;
+      disabledAt?: Date | null;
+      settings?: any;
+    }>;
+    availableModules: Array<{
+      moduleId: string;
+      name: string;
+      category: string;
+      description?: string;
+      isSystemModule: boolean;
+    }>;
+  }> {
+    try {
+      // Get organization-level subscriptions
+      const orgSubscriptions = await this.prisma.moduleSubscription.findMany({
+        where: {
+          organizationId,
+          propertyId: null,
+        },
+        select: {
+          moduleName: true,
+          isEnabled: true,
+          enabledAt: true,
+          disabledAt: true,
+          settings: true,
+        },
+        orderBy: { moduleName: 'asc' },
+      });
+
+      // Get property-level overrides
+      const propertyOverrides = await this.prisma.moduleSubscription.findMany({
+        where: {
+          organizationId,
+          propertyId: { not: null },
+        },
+        select: {
+          propertyId: true,
+          moduleName: true,
+          isEnabled: true,
+          enabledAt: true,
+          disabledAt: true,
+          settings: true,
+        },
+        orderBy: [{ propertyId: 'asc' }, { moduleName: 'asc' }],
+      });
+
+      // Get all available modules
+      const availableModules = await this.prisma.moduleManifest.findMany({
+        where: { isActive: true },
+        select: {
+          moduleId: true,
+          name: true,
+          category: true,
+          description: true,
+          isSystemModule: true,
+        },
+        orderBy: [{ category: 'asc' }, { name: 'asc' }],
+      });
+
+      return {
+        organizationModules: orgSubscriptions.map(sub => ({
+          moduleId: sub.moduleName,
+          isEnabled: sub.isEnabled,
+          enabledAt: sub.enabledAt,
+          disabledAt: sub.disabledAt,
+          settings: sub.settings,
+        })),
+        propertyOverrides: propertyOverrides.map(sub => ({
+          propertyId: sub.propertyId!,
+          moduleId: sub.moduleName,
+          isEnabled: sub.isEnabled,
+          enabledAt: sub.enabledAt,
+          disabledAt: sub.disabledAt,
+          settings: sub.settings,
+        })),
+        availableModules: availableModules.map(mod => ({
+          moduleId: mod.moduleId,
+          name: mod.name,
+          category: mod.category,
+          description: mod.description,
+          isSystemModule: mod.isSystemModule,
+        })),
+      };
+
+    } catch (error) {
+      this.logger.error(`Error getting organization module status for ${organizationId}:`, error);
+      return {
+        organizationModules: [],
+        propertyOverrides: [],
+        availableModules: [],
+      };
+    }
+  }
+
+  /**
+   * Get modules with caching for performance
+   */
+  async getCachedModules(cacheKey: string, fetchFn: () => Promise<any>): Promise<any> {
+    // For now, return direct fetch - can add Redis caching later
+    return fetchFn();
+  }
+
+  /**
+   * Validate property exists and user has access
+   */
+  async validatePropertyAccess(organizationId: string, propertyId: string): Promise<boolean> {
+    try {
+      const property = await this.prisma.property.findFirst({
+        where: {
+          id: propertyId,
+          organizationId,
+          isActive: true,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      
+      return !!property;
+    } catch (error) {
+      this.logger.error(`Error validating property access:`, error);
+      return false;
+    }
+  }
 }

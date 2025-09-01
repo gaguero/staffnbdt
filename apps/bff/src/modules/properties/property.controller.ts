@@ -26,13 +26,17 @@ import {
   RemoveUserFromPropertyDto
 } from './dto';
 import { User } from '@prisma/client';
+import { ModuleRegistryService } from '../module-registry/module-registry.service';
 
 @ApiTags('Properties')
 @Controller('properties')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @ApiBearerAuth()
 export class PropertyController {
-  constructor(private readonly propertyService: PropertyService) {}
+  constructor(
+    private readonly propertyService: PropertyService,
+    private readonly moduleRegistryService: ModuleRegistryService,
+  ) {}
 
   @Post()
   @RequirePermission('property.create.platform', 'property.create.organization')

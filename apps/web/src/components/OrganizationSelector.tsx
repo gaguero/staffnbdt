@@ -5,6 +5,19 @@ import { usePermissions } from '../hooks/usePermissions';
 import { organizationService, Organization } from '../services/organizationService';
 import { COMMON_PERMISSIONS } from '../types/permission';
 
+// Helper function to parse string-based permission into components
+const parsePermissionString = (permissionString: string) => {
+  const parts = permissionString.split('.');
+  if (parts.length >= 3) {
+    return {
+      resource: parts[0],
+      action: parts[1],
+      scope: parts[2]
+    };
+  }
+  return null;
+};
+
 interface OrganizationSelectorProps {
   className?: string;
   variant?: 'dropdown' | 'compact';
@@ -20,17 +33,41 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ className, 
 
   // Check if user can view organizations (Platform Admin)
   const canViewOrganizations = useMemo(() => {
-    if (!user) return false;
+    if (!user) {
+      console.log('OrganizationSelector: No user, access denied');
+      return false;
+    }
+    
+    console.log('OrganizationSelector: Checking permissions for user:', user.role);
     
     // Platform Admin should have access
-    if (user.role === 'PLATFORM_ADMIN') return true;
+    if (user.role === 'PLATFORM_ADMIN') {
+      console.log('OrganizationSelector: Platform Admin access granted');
+      return true;
+    }
     
-    // Check using common permissions for viewing organizations
-    return hasPermission(
+    // Try the string-based permission first
+    const orgReadPlatform = parsePermissionString('organization.read.platform');
+    if (orgReadPlatform) {
+      console.log('OrganizationSelector: Checking string permission:', orgReadPlatform);
+      const hasStringPermission = hasPermission(
+        orgReadPlatform.resource,
+        orgReadPlatform.action,
+        orgReadPlatform.scope
+      );
+      console.log('OrganizationSelector: String permission result:', hasStringPermission);
+      if (hasStringPermission) return true;
+    }
+    
+    // Fallback to common permissions for viewing organizations
+    console.log('OrganizationSelector: Checking common permission:', COMMON_PERMISSIONS.VIEW_ORGANIZATIONS);
+    const hasCommonPermission = hasPermission(
       COMMON_PERMISSIONS.VIEW_ORGANIZATIONS.resource,
       COMMON_PERMISSIONS.VIEW_ORGANIZATIONS.action,
       COMMON_PERMISSIONS.VIEW_ORGANIZATIONS.scope
     );
+    console.log('OrganizationSelector: Common permission result:', hasCommonPermission);
+    return hasCommonPermission;
   }, [user, hasPermission]);
 
   // Load organizations list for authorized users only
