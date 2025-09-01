@@ -5,6 +5,7 @@ import PropertySelector from '../components/PropertySelector';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UserDetailsModal from '../components/UserDetailsModal';
 import EditUserModal from '../components/EditUserModal';
+import UserRoleAssignment from '../components/UserRoleManagement/UserRoleAssignment';
 import InvitationModal from '../components/InvitationModal';
 import RoleBadge from '../components/RoleBadge';
 import PermissionGate from '../components/PermissionGate';
@@ -22,6 +23,7 @@ const UsersPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showEditUser, setShowEditUser] = useState(false);
+  const [showManageAccess, setShowManageAccess] = useState(false);
   const [showViewUser, setShowViewUser] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showImportResults, setShowImportResults] = useState(false);
@@ -796,6 +798,15 @@ const UsersPage: React.FC = () => {
                                 </button>
                               </PermissionGate>
                               <button 
+                                className="text-green-600 hover:text-green-800"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setShowManageAccess(true);
+                                }}
+                              >
+                                Manage Access
+                              </button>
+                              <button 
                                 className="text-red-600 hover:text-red-800"
                                 onClick={() => user.deletedAt 
                                   ? handleChangeStatus(user.id, true)
@@ -1134,6 +1145,20 @@ const UsersPage: React.FC = () => {
           }}
           user={selectedUser}
           onSuccess={handleUserModalSuccess}
+        />
+      )}
+
+      {/* Manage Access Modal */}
+      {selectedUser && (
+        <UserRoleAssignment
+          user={selectedUser}
+          isOpen={showManageAccess}
+          onClose={() => {
+            setShowManageAccess(false);
+            setSelectedUser(null);
+          }}
+          onRoleChange={() => loadUsers()}
+          mode="manage"
         />
       )}
 

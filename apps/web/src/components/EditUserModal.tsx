@@ -19,7 +19,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     firstName: '',
     lastName: '',
     email: '',
-    role: '',
     departmentId: '',
     position: '',
     phoneNumber: '',
@@ -39,7 +38,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        role: user.role || '',
         departmentId: user.departmentId || '',
         position: user.position || '',
         phoneNumber: user.phoneNumber || '',
@@ -83,7 +81,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        role: formData.role,
         departmentId: formData.departmentId || null,
         position: formData.position || null,
         phoneNumber: formData.phoneNumber || null,
@@ -115,8 +112,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   const formatRole = (role: string) => {
     return role.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
   };
-
-  const availableRoles = ['STAFF', 'DEPARTMENT_ADMIN', 'PROPERTY_MANAGER'];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -201,26 +196,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Role *
-                  </label>
-                  <select
-                    name="role"
-                    value={formData.role}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold"
-                    disabled={saving}
-                    required
-                  >
-                    <option value="">Select Role</option>
-                    {availableRoles.map(role => (
-                      <option key={role} value={role}>
-                        {formatRole(role)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Role selection removed; manage roles and direct permissions via User Access modal */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -348,28 +324,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             </div>
           </div>
 
-          {/* Role Assignment Warning */}
-          {formData.role === 'PROPERTY_MANAGER' && formData.departmentId && (
-            <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <div className="flex items-start space-x-2">
-                <div className="text-yellow-600">⚠️</div>
-                <div className="text-sm text-yellow-800">
-                  <strong>Warning:</strong> Superadmins typically don't belong to specific departments.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(formData.role === 'STAFF' || formData.role === 'DEPARTMENT_ADMIN') && !formData.departmentId && (
-            <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="flex items-start space-x-2">
-                <div className="text-red-600">❌</div>
-                <div className="text-sm text-red-800">
-                  <strong>Required:</strong> {formatRole(formData.role)} users must be assigned to a department.
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Role assignment warnings removed; access is managed in the dedicated modal */}
 
           {error && (
             <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-3">
