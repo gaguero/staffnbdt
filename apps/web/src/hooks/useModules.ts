@@ -152,18 +152,23 @@ export function useModuleNavigation(userType?: UserType) {
   // Filter navigation items based on user permissions
   const filteredNavigationItems = useMemo(() => {
     return navigationItems.filter(item => {
-      // If no required permissions, show the item
+      // If no required permissions, always show
       if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
         return true;
       }
-      
-      // Check if user has all required permissions
-      return item.requiredPermissions.every(permission => {
+
+      // PLATFORM_ADMIN bypass: show all module items
+      if (user?.role === 'PLATFORM_ADMIN') {
+        return true;
+      }
+
+      // OR logic: show if user has any of the required permissions
+      return item.requiredPermissions.some(permission => {
         const [resource, action, scope] = permission.split('.');
         return hasPermission(resource, action, scope || 'own');
       });
     });
-  }, [navigationItems, hasPermission]);
+  }, [navigationItems, hasPermission, user]);
 
   return {
     navigationItems: filteredNavigationItems,
