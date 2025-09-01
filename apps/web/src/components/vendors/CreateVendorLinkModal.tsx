@@ -243,46 +243,46 @@ const CreateVendorLinkModal: React.FC<CreateVendorLinkModalProps> = ({
                 };
                 
                 return (
-                  <label key={channel} className=\"flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer\">
+                  <label key={channel} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
                     <input
-                      type=\"checkbox\"
+                      type="checkbox"
                       checked={formData.notificationChannels.includes(channel)}
                       onChange={(e) => handleChannelChange(channel, e.target.checked)}
-                      className=\"rounded border-gray-300 text-blue-600 focus:ring-blue-500\"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className=\"ml-3 text-sm text-gray-700 capitalize flex items-center\">
-                      <span className=\"mr-2\">{channelIcons[channel]}</span>
+                    <span className="ml-3 text-sm text-gray-700 capitalize flex items-center">
+                      <span className="mr-2">{channelIcons[channel]}</span>
                       {channel}
                     </span>
                   </label>
                 );
               })}
             </div>
-            <p className=\"text-xs text-gray-500 mt-2\">
+            <p className="text-xs text-gray-500 mt-2">
               Select how the vendor will be notified about this request
             </p>
           </div>
 
           {/* Policy Reference */}
           <div>
-            <label className=\"block text-sm font-medium text-gray-700 mb-1\">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Policy Reference (Optional)
             </label>
             <input
-              type=\"text\"
+              type="text"
               value={formData.policyRef || ''}
               onChange={(e) => setFormData(prev => ({ ...prev, policyRef: e.target.value || undefined }))}
-              className=\"w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500\"
-              placeholder=\"Reference to specific vendor policy or terms\"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Reference to specific vendor policy or terms"
             />
-            <p className=\"text-xs text-gray-500 mt-1\">
+            <p className="text-xs text-gray-500 mt-1">
               Optional reference to specific terms or policies that apply to this request
             </p>
           </div>
 
           {/* Additional Notes */}
           <div>
-            <label className=\"block text-sm font-medium text-gray-700 mb-1\">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Special Instructions (Optional)
             </label>
             <textarea
@@ -292,28 +292,28 @@ const CreateVendorLinkModal: React.FC<CreateVendorLinkModalProps> = ({
                 metadata: { ...prev.metadata, notes: e.target.value }
               }))}
               rows={3}
-              className=\"w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500\"
-              placeholder=\"Add any special instructions for the vendor...\"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Add any special instructions for the vendor..."
             />
           </div>
 
-          <div className=\"flex space-x-3 pt-6 border-t\">
+          <div className="flex space-x-3 pt-6 border-t">
             <button
-              type=\"submit\"
+              type="submit"
               disabled={createVendorLink.isPending}
-              className=\"flex-1 btn btn-primary\"
+              className="flex-1 btn btn-primary"
             >
-              {createVendorLink.isPending ? <LoadingSpinner size=\"sm\" /> : (
+              {createVendorLink.isPending ? <LoadingSpinner size="sm" /> : (
                 <>
-                  <span className=\"mr-2\">🔗</span>
+                  <span className="mr-2">🔗</span>
                   Create Link
                 </>
               )}
             </button>
             <button
-              type=\"button\"
+              type="button"
               onClick={onClose}
-              className=\"flex-1 btn btn-outline\"
+              className="flex-1 btn btn-outline"
             >
               Cancel
             </button>
