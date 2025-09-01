@@ -220,23 +220,6 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
     ]
   };
   
-  // Reports & Analytics
-  const reportsSection: NavigationSection = {
-    title: 'Reports & Analytics',
-    category: 'reports',
-    icon: '📊',
-    isCollapsible: true,
-    items: [
-      {
-        id: 'role-stats',
-        label: 'nav.roleStats',
-        path: '/admin/role-stats',
-        icon: '📊',
-        requiredPermissions: ['analytics.view.department'],
-      }
-    ]
-  };
-
   if (userType === UserType.INTERNAL) {
     return [
       dashboardSection,
@@ -244,8 +227,7 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
       guestServicesSection,
       employeeServicesSection,
       documentsSection,
-      administrationSection,
-      reportsSection
+      administrationSection
     ];
   }
 
