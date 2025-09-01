@@ -58,23 +58,22 @@ export class ModuleRegistryBootstrap implements OnModuleInit {
         isSystemModule: false,
       });
 
-      // Enable modules at org-level for default org if present
-      const defaultOrg = await this.prisma.organization.findFirst({ where: { slug: 'nayara-group' }, select: { id: true } });
-      if (defaultOrg) {
+      // Enable modules at org-level for all organizations (dev bootstrap)
+      const orgs = await this.prisma.organization.findMany({ select: { id: true, slug: true } });
+      for (const org of orgs) {
         await this.prisma.moduleSubscription.upsert({
-          where: { organizationId_moduleName: { organizationId: defaultOrg.id, moduleName: 'concierge' } },
-          create: { organizationId: defaultOrg.id, moduleName: 'concierge', isEnabled: true, enabledAt: new Date(), propertyId: null },
+          where: { organizationId_moduleName: { organizationId: org.id, moduleName: 'concierge' } },
+          create: { organizationId: org.id, moduleName: 'concierge', isEnabled: true, enabledAt: new Date(), propertyId: null },
           update: { isEnabled: true, enabledAt: new Date(), disabledAt: null },
         } as any);
 
         await this.prisma.moduleSubscription.upsert({
-          where: { organizationId_moduleName: { organizationId: defaultOrg.id, moduleName: 'vendors' } },
-          create: { organizationId: defaultOrg.id, moduleName: 'vendors', isEnabled: true, enabledAt: new Date(), propertyId: null },
+          where: { organizationId_moduleName: { organizationId: org.id, moduleName: 'vendors' } },
+          create: { organizationId: org.id, moduleName: 'vendors', isEnabled: true, enabledAt: new Date(), propertyId: null },
           update: { isEnabled: true, enabledAt: new Date(), disabledAt: null },
         } as any);
-
-        this.logger.log('Seeded and enabled modules for default organization');
       }
+      this.logger.log(`Seeded and enabled modules for ${orgs.length} organizations`);
     } catch (error) {
       this.logger.error('Module registry bootstrap failed', error as any);
     }
