@@ -48,7 +48,7 @@ export class VendorEventHandler {
     await this.notificationProcessor.sendConfirmation(data);
   }
 
-  private async handleExpiryCheck(): Promise<void> {
+  private async handleExpiryCheck(event: DomainEvent): Promise<void> {
     await this.notificationProcessor.handlePortalExpiry();
   }
 }

@@ -46,7 +46,7 @@ export class ConciergeEventHandler {
     await this.slaProcessor.executePlaybook(data);
   }
 
-  private async handleSLACheck(): Promise<void> {
+  private async handleSLACheck(event: DomainEvent): Promise<void> {
     await this.slaProcessor.checkOverdueObjects();
   }
 }
