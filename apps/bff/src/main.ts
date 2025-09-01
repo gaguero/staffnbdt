@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, BadRequestException } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
@@ -88,12 +88,12 @@ async function bootstrap() {
           enableImplicitConversion: true,
         },
         exceptionFactory: (errors) => {
-          const result = errors.map((error) => ({
+          const details = errors.map((error) => ({
             property: error.property,
             value: error.value,
             constraints: error.constraints,
           }));
-          return new Error(JSON.stringify(result));
+          return new BadRequestException(details);
         },
       }),
     );
