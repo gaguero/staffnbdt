@@ -90,6 +90,30 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
         icon: '🛎️',
         requiredPermissions: ['concierge.objects.read.property'],
         moduleId: 'concierge',
+      },
+      {
+        id: 'today-board',
+        label: 'nav.todayBoard',
+        path: '/concierge/today',
+        icon: '📋',
+        requiredPermissions: ['concierge.objects.read.property'],
+        moduleId: 'concierge',
+      },
+      {
+        id: 'reservation-360',
+        label: 'nav.reservation360',
+        path: '/concierge/reservation-360',
+        icon: '🎯',
+        requiredPermissions: ['concierge.objects.read.property'],
+        moduleId: 'concierge',
+      },
+      {
+        id: 'vendors',
+        label: 'nav.vendors',
+        path: '/vendors',
+        icon: '🤝',
+        requiredPermissions: ['vendors.read.property'],
+        moduleId: 'vendors',
       }
     ]
   };

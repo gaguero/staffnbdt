@@ -33,6 +33,17 @@ import RoomTypesPage from './pages/hotel/RoomTypesPage';
 import ConciergePage from './pages/modules/ConciergePage';
 import VendorsPage from './pages/modules/VendorsPage';
 
+// Concierge Module Pages
+import TodayBoardPage from './pages/modules/TodayBoardPage';
+import Reservation360Page from './pages/modules/Reservation360Page';
+import GuestTimelinePage from './pages/modules/GuestTimelinePage';
+import ObjectTypesPage from './pages/modules/ObjectTypesPage';
+
+// Vendors Module Pages
+import VendorLinksPage from './pages/modules/VendorLinksPage';
+import VendorPerformancePage from './pages/modules/VendorPerformancePage';
+import VendorPortalPage from './pages/modules/VendorPortalPage';
+
 // Admin Pages
 import RolesManagementPage from './pages/admin/RolesManagementPage';
 import ModuleManagementPage from './pages/admin/ModuleManagementPage';
@@ -383,23 +394,90 @@ const App: React.FC = () => {
         <Route 
           path="/concierge" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'objects', scope: 'read.property' }]}>
               <Layout>
                 <ConciergePage />
               </Layout>
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/concierge/today" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'objects', scope: 'read.property' }]}>
+              <Layout>
+                <TodayBoardPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/concierge/reservation-360" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'objects', scope: 'read.property' }]}>
+              <Layout>
+                <Reservation360Page />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/concierge/timeline/:guestId" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'objects', scope: 'read.property' }]}>
+              <Layout>
+                <GuestTimelinePage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/concierge/object-types" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'object-types', scope: 'manage.property' }]}>
+              <Layout>
+                <ObjectTypesPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
         {/* Modules - Vendors */}
         <Route 
           path="/vendors" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute permissionsAny={[{ resource: 'vendors', action: 'read', scope: 'property' }]}>
               <Layout>
                 <VendorsPage />
               </Layout>
             </ProtectedRoute>
           } 
+        />
+        <Route 
+          path="/vendors/links" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'vendors', action: 'links', scope: 'read.property' }]}>
+              <Layout>
+                <VendorLinksPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/vendors/performance" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'vendors', action: 'performance', scope: 'read.property' }]}>
+              <Layout>
+                <VendorPerformancePage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Vendor Portal - No Layout, Special Route */}
+        <Route 
+          path="/vendor-portal/:token" 
+          element={<VendorPortalPage />} 
         />
         
         {/* Default redirect */}
