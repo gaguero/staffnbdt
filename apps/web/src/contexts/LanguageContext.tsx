@@ -30,6 +30,8 @@ const translations = {
     'nav.rooms': 'Rooms',
     'nav.guests': 'Guests', 
     'nav.reservations': 'Reservations',
+    'nav.concierge': 'Concierge',
+    'nav.vendors': 'Vendors',
     
     // Admin
     'nav.roles': 'Roles',
@@ -219,6 +221,8 @@ const translations = {
     'nav.rooms': 'Habitaciones',
     'nav.guests': 'Huéspedes',
     'nav.reservations': 'Reservaciones',
+    'nav.concierge': 'Conserjería',
+    'nav.vendors': 'Proveedores',
     
     // Admin
     'nav.roles': 'Roles',

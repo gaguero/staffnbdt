@@ -165,6 +165,20 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
             path: '/hotel/reservations',
             icon: '📅',
             requiredPermissions: ['user.read.department'],
+          },
+          {
+            id: 'concierge',
+            label: 'nav.concierge',
+            path: '/concierge',
+            icon: '🛎️',
+            requiredPermissions: ['concierge.read.property'],
+          },
+          {
+            id: 'vendors',
+            label: 'nav.vendors',
+            path: '/vendors',
+            icon: '🤝',
+            requiredPermissions: ['vendors.read.property'],
           }
         ]
       },

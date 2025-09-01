@@ -763,6 +763,145 @@ const PERMISSIONS: PermissionDefinition[] = [
     description: 'Modify benefit details and availability',
     category: 'Benefits',
     isSystem: true
+  },
+
+  // ===== CONCIERGE MODULE =====
+  {
+    resource: 'concierge',
+    action: 'object-types.read',
+    scope: 'property',
+    name: 'View Concierge Object Types',
+    description: 'View available concierge object types and their schemas',
+    category: 'Concierge',
+    isSystem: true
+  },
+  {
+    resource: 'concierge',
+    action: 'objects.read',
+    scope: 'property',
+    name: 'View Concierge Objects',
+    description: 'View concierge objects and requests within the property',
+    category: 'Concierge',
+    isSystem: true
+  },
+  {
+    resource: 'concierge',
+    action: 'objects.create',
+    scope: 'property',
+    name: 'Create Concierge Objects',
+    description: 'Create new concierge requests and objects',
+    category: 'Concierge',
+    isSystem: true
+  },
+  {
+    resource: 'concierge',
+    action: 'objects.update',
+    scope: 'property',
+    name: 'Update Concierge Objects',
+    description: 'Modify concierge objects and their status',
+    category: 'Concierge',
+    isSystem: true
+  },
+  {
+    resource: 'concierge',
+    action: 'objects.complete',
+    scope: 'property',
+    name: 'Complete Concierge Objects',
+    description: 'Mark concierge objects as completed',
+    category: 'Concierge',
+    isSystem: true
+  },
+  {
+    resource: 'concierge',
+    action: 'playbooks.execute',
+    scope: 'property',
+    name: 'Execute Concierge Playbooks',
+    description: 'Execute automated concierge workflows and SLA processes',
+    category: 'Concierge',
+    isSystem: true
+  },
+
+  // ===== VENDORS MODULE =====
+  {
+    resource: 'vendors',
+    action: 'read',
+    scope: 'property',
+    name: 'View Property Vendors',
+    description: 'View vendor directory and information',
+    category: 'Vendors',
+    isSystem: true
+  },
+  {
+    resource: 'vendors',
+    action: 'create',
+    scope: 'property',
+    name: 'Create Vendors',
+    description: 'Add new vendors to the property directory',
+    category: 'Vendors',
+    isSystem: true
+  },
+  {
+    resource: 'vendors',
+    action: 'update',
+    scope: 'property',
+    name: 'Update Vendors',
+    description: 'Modify vendor information and status',
+    category: 'Vendors',
+    isSystem: true
+  },
+  {
+    resource: 'vendors',
+    action: 'delete',
+    scope: 'property',
+    name: 'Delete Vendors',
+    description: 'Remove vendors from the property directory',
+    category: 'Vendors',
+    isSystem: true
+  },
+  {
+    resource: 'vendors',
+    action: 'links.create',
+    scope: 'property',
+    name: 'Create Vendor Links',
+    description: 'Create links between vendors and objects',
+    category: 'Vendors',
+    isSystem: true
+  },
+  {
+    resource: 'vendors',
+    action: 'links.confirm',
+    scope: 'property',
+    name: 'Confirm Vendor Links',
+    description: 'Process vendor confirmations and responses',
+    category: 'Vendors',
+    isSystem: true
+  },
+  {
+    resource: 'vendors',
+    action: 'portal.create',
+    scope: 'property',
+    name: 'Create Vendor Portal Tokens',
+    description: 'Generate secure access tokens for vendor portal',
+    category: 'Vendors',
+    isSystem: true
+  },
+  {
+    resource: 'vendors',
+    action: 'portal.send',
+    scope: 'property',
+    name: 'Send Vendor Portal Notifications',
+    description: 'Send notifications and invitations to vendors',
+    category: 'Vendors',
+    isSystem: true
+  },
+  {
+    resource: 'vendors',
+    action: 'manage',
+    scope: 'property',
+    name: 'Manage Vendor Operations',
+    description: 'Full vendor management including policies and performance tracking',
+    category: 'Vendors',
+    isSystem: true
   }
 ];
 
@@ -820,7 +959,8 @@ const SYSTEM_ROLES: CustomRoleDefinition[] = [
       .filter(p => 
         p.scope === 'own' ||
         (p.scope === 'property' && ['guest', 'reservation', 'unit'].includes(p.resource) && p.action !== 'delete') ||
-        (p.resource === 'task' && ['read', 'update'].includes(p.action))
+        (p.resource === 'task' && ['read', 'update'].includes(p.action)) ||
+        (p.resource === 'concierge' && ['object-types.read', 'objects.read', 'objects.create', 'objects.update', 'objects.complete'].includes(p.action))
       )
       .map(p => `${p.resource}.${p.action}.${p.scope}`)
   },
@@ -834,6 +974,21 @@ const SYSTEM_ROLES: CustomRoleDefinition[] = [
         p.scope === 'own' ||
         (p.resource === 'unit' && ['read', 'update'].includes(p.action)) ||
         (p.resource === 'task' && ['read', 'update'].includes(p.action))
+      )
+      .map(p => `${p.resource}.${p.action}.${p.scope}`)
+  },
+  {
+    name: 'Concierge Agent',
+    description: 'Handles guest concierge services and vendor coordination',
+    isSystemRole: true,
+    priority: 250,
+    permissions: PERMISSIONS
+      .filter(p => 
+        p.scope === 'own' ||
+        (p.resource === 'concierge' && p.scope === 'property') ||
+        (p.resource === 'vendors' && ['read', 'links.create', 'links.confirm', 'portal.create', 'portal.send'].includes(p.action)) ||
+        (p.resource === 'guest' && ['read', 'update'].includes(p.action)) ||
+        (p.resource === 'reservation' && p.action === 'read')
       )
       .map(p => `${p.resource}.${p.action}.${p.scope}`)
   },

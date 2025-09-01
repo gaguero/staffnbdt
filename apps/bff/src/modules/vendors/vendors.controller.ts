@@ -54,28 +54,28 @@ export class VendorsController {
   }
 
   @Post('links')
-  @RequirePermission('vendors.links.create.property')
+  @RequirePermission('vendors.create.property')
   @PermissionScope('property')
   async createVendorLink(@Body() dto: CreateVendorLinkDto, @Request() req) {
     return this.vendorsService.createVendorLink(dto, req);
   }
 
   @Post('links/:id/confirm')
-  @RequirePermission('vendors.links.confirm.property')
+  @RequirePermission('vendors.update.property')
   @PermissionScope('property')
   async confirmLink(@Param('id') id: string, @Body() dto: ConfirmLinkDto, @Request() req) {
     return this.vendorsService.confirmLink(id, dto, req);
   }
 
   @Post('links/:id/portal-token')
-  @RequirePermission('vendors.portal.create.property')
+  @RequirePermission('vendors.create.property')
   @PermissionScope('property')
   async createPortalToken(@Param('id') linkId: string, @Request() req) {
     return this.vendorsService.createPortalToken(linkId, req);
   }
 
   @Post('links/:id/send-notification')
-  @RequirePermission('vendors.portal.send.property')
+  @RequirePermission('vendors.update.property')
   @PermissionScope('property')
   async sendPortalNotification(
     @Param('id') linkId: string,

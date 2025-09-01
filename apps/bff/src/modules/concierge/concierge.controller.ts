@@ -16,14 +16,14 @@ export class ConciergeController {
   constructor(private readonly conciergeService: ConciergeService) {}
 
   @Get('object-types')
-  @RequirePermission('concierge.object-types.read.property')
+  @RequirePermission('concierge.read.property')
   @PermissionScope('property')
   async getObjectTypes(@Request() req) {
     return this.conciergeService.getObjectTypes(req);
   }
 
   @Get('objects')
-  @RequirePermission('concierge.objects.read.property')
+  @RequirePermission('concierge.read.property')
   @PermissionScope('property')
   async getConciergeObjects(
     @Request() req,
@@ -42,35 +42,35 @@ export class ConciergeController {
   }
 
   @Get('objects/:id')
-  @RequirePermission('concierge.objects.read.property')
+  @RequirePermission('concierge.read.property')
   @PermissionScope('property')
   async getConciergeObject(@Param('id') id: string, @Request() req) {
     return this.conciergeService.getConciergeObject(id, req);
   }
 
   @Post('objects')
-  @RequirePermission('concierge.objects.create.property')
+  @RequirePermission('concierge.create.property')
   @PermissionScope('property')
   async createObject(@Body() dto: CreateConciergeObjectDto, @Request() req) {
     return this.conciergeService.createObject(dto, req);
   }
 
   @Put('objects/:id')
-  @RequirePermission('concierge.objects.update.property')
+  @RequirePermission('concierge.update.property')
   @PermissionScope('property')
   async updateObject(@Param('id') id: string, @Body() dto: UpdateConciergeObjectDto, @Request() req) {
     return this.conciergeService.updateObject(id, dto, req);
   }
 
   @Post('objects/:id/complete')
-  @RequirePermission('concierge.objects.complete.property')
+  @RequirePermission('concierge.complete.property')
   @PermissionScope('property')
   async completeObject(@Param('id') id: string, @Request() req) {
     return this.conciergeService.completeObject(id, req);
   }
 
   @Post('playbooks/execute')
-  @RequirePermission('concierge.playbooks.execute.property')
+  @RequirePermission('concierge.execute.property')
   @PermissionScope('property')
   async executePlaybook(@Body() dto: ExecutePlaybookDto, @Request() req) {
     return this.conciergeService.executePlaybook(dto, req);
