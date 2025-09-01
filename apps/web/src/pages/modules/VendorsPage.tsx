@@ -352,7 +352,7 @@ const VendorStatsCards: React.FC<VendorStatsCardsProps> = ({ onViewChange }) => 
       {cards.map((card) => (
         <div
           key={card.title}
-          className={`${card.bgColor} border border-gray-200 rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow`}
+          className={`${card.bgColor} border border-gray-200 rounded-lg p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200 transform`}
           onClick={card.onClick}
         >
           <div className="flex items-center justify-between">
@@ -421,14 +421,20 @@ const VendorsPage: React.FC = () => {
 
   if (requiresPropertySelection) {
     return (
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🏨</div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Property Selection Required
-        </h3>
-        <p className="text-gray-600">
-          Please select a property to access the Vendors module.
-        </p>
+      <div className="text-center py-16 transform transition-all duration-300 hover:scale-105">
+        <div className="text-8xl mb-6 animate-bounce">🏨</div>
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-8 max-w-md mx-auto">
+          <h3 className="text-xl font-bold text-blue-800 mb-3">
+            Almost There!
+          </h3>
+          <p className="text-blue-600 mb-4">
+            Choose your property to unlock the amazing world of vendor partnerships and seamless service coordination.
+          </p>
+          <div className="inline-flex items-center space-x-2 bg-blue-100 px-4 py-2 rounded-full">
+            <span className="text-sm font-medium text-blue-800">Ready to Connect</span>
+            <span className="text-blue-600 animate-pulse">🔗</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -574,9 +580,9 @@ const VendorsPage: React.FC = () => {
             <PermissionGate permission="vendors.create.property">
               <button
                 onClick={() => setShowVendorModal(true)}
-                className="btn btn-primary flex items-center space-x-2"
+                className="btn btn-primary flex items-center space-x-2 hover:scale-105 transition-transform duration-200"
               >
-                <span>➕</span>
+                <span className="hover:animate-bounce">✨</span>
                 <span>Add Vendor</span>
               </button>
             </PermissionGate>
@@ -600,7 +606,7 @@ const VendorsPage: React.FC = () => {
                 columns={vendorColumns}
                 getItemId={(vendor: Vendor) => vendor.id}
                 loading={isLoading}
-                emptyMessage="No vendors found. Add your first vendor to get started."
+                emptyMessage="🌟 Ready to build your vendor network! Add your first trusted partner to get started."
               />
             </div>
           )}
@@ -613,14 +619,20 @@ const VendorsPage: React.FC = () => {
                   <LoadingSpinner size="lg" />
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-4">🔗</div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">
-                    Links Management Coming Soon
-                  </h4>
-                  <p className="text-gray-600">
-                    This section will show vendor link tracking and magic link management.
-                  </p>
+                <div className="text-center py-12 transform transition-all duration-300 hover:scale-105">
+                  <div className="text-6xl mb-6 animate-pulse">🪄</div>
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-8 max-w-md mx-auto">
+                    <h4 className="text-xl font-bold text-orange-800 mb-3">
+                      Magic in Progress!
+                    </h4>
+                    <p className="text-orange-600 mb-4">
+                      We\'re crafting something incredible for vendor link tracking and magic portal management. It\'s going to be amazing!
+                    </p>
+                    <div className="inline-flex items-center space-x-2 bg-orange-100 px-4 py-2 rounded-full">
+                      <span className="text-sm font-medium text-orange-800">Coming Soon</span>
+                      <span className="text-orange-600 animate-bounce">✨</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -629,14 +641,20 @@ const VendorsPage: React.FC = () => {
           {currentView === 'portal' && (
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Vendor Portal Management</h3>
-              <div className="text-center py-8">
-                <div className="text-4xl mb-4">🌐</div>
-                <h4 className="text-lg font-medium text-gray-900 mb-2">
-                  Portal Management Coming Soon
-                </h4>
-                <p className="text-gray-600">
-                  This section will show portal analytics and access management.
-                </p>
+              <div className="text-center py-12 transform transition-all duration-300 hover:scale-105">
+                <div className="text-6xl mb-6 animate-spin-slow">🌐</div>
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-8 max-w-md mx-auto">
+                  <h4 className="text-xl font-bold text-purple-800 mb-3">
+                    Portal Power Incoming!
+                  </h4>
+                  <p className="text-purple-600 mb-4">
+                    Get ready for powerful portal analytics and seamless access management. Your vendor relationships are about to get supercharged!
+                  </p>
+                  <div className="inline-flex items-center space-x-2 bg-purple-100 px-4 py-2 rounded-full">
+                    <span className="text-sm font-medium text-purple-800">Building Magic</span>
+                    <span className="text-purple-600 animate-pulse">🚀</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}

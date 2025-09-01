@@ -80,11 +80,20 @@ const TodayBoardSection: React.FC<TodayBoardSectionProps> = ({
       {/* Objects List */}
       <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
         {objects.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <div className="text-4xl mb-2">
-              {variant === 'overdue' ? '✅' : variant === 'today' ? '📅' : '🔜'}
+          <div className="text-center py-8 text-gray-500 transform transition-all duration-300 hover:scale-105">
+            <div className="text-4xl mb-3 animate-bounce">
+              {variant === 'overdue' ? '🎉' : variant === 'today' ? '☀️' : '🌟'}
             </div>
-            <p>No {title.toLowerCase()} items</p>
+            <p className="font-medium text-gray-700 mb-1">
+              {variant === 'overdue' ? 'Amazing! No overdue items' : 
+               variant === 'today' ? 'Ready for a productive day!' : 
+               'Future tasks are planned ahead'}
+            </p>
+            <p className="text-sm text-gray-500">
+              {variant === 'overdue' ? 'Keep up the excellent work!' : 
+               variant === 'today' ? 'New tasks will appear here as they arrive' : 
+               'Stay ahead of the game!'}
+            </p>
           </div>
         ) : (
           objects.map((object) => (
@@ -127,8 +136,8 @@ const ConciergeObjectCard: React.FC<ConciergeObjectCardProps> = ({
   
   return (
     <div 
-      className={`bg-white border rounded-lg p-3 cursor-pointer transition-all hover:shadow-md ${
-        selected ? 'ring-2 ring-blue-500 border-blue-300' : 'border-gray-200'
+      className={`bg-white border rounded-lg p-3 cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${
+        selected ? 'ring-2 ring-blue-500 border-blue-300 shadow-md' : 'border-gray-200 hover:border-blue-200'
       }`}
       onClick={(e) => {
         if ((e.target as HTMLElement).type !== 'checkbox') {
@@ -217,6 +226,15 @@ const TodayBoard: React.FC<TodayBoardProps> = ({ onObjectClick = () => {} }) => 
       switch (actionId) {
         case 'complete':
           await bulkComplete.mutateAsync({ objectIds });
+          // Celebration for bulk completion
+          if (objectIds.length > 1) {
+            setTimeout(() => {
+              toast.success(`🎉 Amazing! ${objectIds.length} tasks completed at once!`, {
+                duration: 4000,
+                icon: '🏆'
+              });
+            }, 500);
+          }
           break;
         case 'in_progress':
           await bulkUpdateStatus.mutateAsync({ objectIds, status: 'in_progress' });
@@ -292,14 +310,19 @@ const TodayBoard: React.FC<TodayBoardProps> = ({ onObjectClick = () => {} }) => 
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="btn btn-outline btn-sm flex items-center space-x-2"
+            className="btn btn-outline btn-sm flex items-center space-x-2 hover:scale-105 transition-transform duration-200"
           >
             {isRefreshing ? (
-              <LoadingSpinner size="sm" />
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin text-blue-500">⚡</div>
+                <span>Syncing...</span>
+              </div>
             ) : (
-              <span>🔄</span>
+              <>
+                <span className="hover:animate-spin transition-transform">🔄</span>
+                <span>Refresh</span>
+              </>
             )}
-            <span>Refresh</span>
           </button>
         </div>
       </div>
@@ -353,16 +376,23 @@ const TodayBoard: React.FC<TodayBoardProps> = ({ onObjectClick = () => {} }) => 
         })}
       </div>
 
-      {/* Empty State */}
+      {/* Empty State - Celebration Moment */}
       {sections.every(section => section.objects.length === 0) && (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🎉</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            All caught up!
-          </h3>
-          <p className="text-gray-600">
-            No urgent tasks or overdue items. Great work!
-          </p>
+        <div className="text-center py-12 transform transition-all duration-500 hover:scale-105">
+          <div className="text-6xl mb-4 animate-pulse">✨</div>
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-8 mx-auto max-w-md border border-green-200">
+            <div className="text-4xl mb-4">🏆</div>
+            <h3 className="text-xl font-bold text-green-800 mb-3">
+              Outstanding Performance!
+            </h3>
+            <p className="text-green-700 mb-4">
+              Your team is on top of everything. All tasks are complete and no items are overdue.
+            </p>
+            <div className="inline-flex items-center space-x-2 bg-green-100 px-4 py-2 rounded-full">
+              <span className="text-sm font-medium text-green-800">Perfect Score</span>
+              <span className="text-green-600">💯</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

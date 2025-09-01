@@ -60,12 +60,12 @@ const TimelineEventCard: React.FC<TimelineEventCardProps> = ({ event, isLast }) 
       )}
       
       {/* Event Icon */}
-      <div className={`flex-shrink-0 w-12 h-12 rounded-full ${config.bgColor} flex items-center justify-center border-2 ${config.borderColor} bg-white`}>
-        <span className={`text-lg ${config.iconColor}`}>{config.icon}</span>
+      <div className={`flex-shrink-0 w-12 h-12 rounded-full ${config.bgColor} flex items-center justify-center border-2 ${config.borderColor} bg-white hover:scale-110 transition-transform duration-200`}>
+        <span className={`text-lg ${config.iconColor} hover:animate-bounce`}>{config.icon}</span>
       </div>
       
       {/* Event Content */}
-      <div className="flex-1 min-w-0 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+      <div className="flex-1 min-w-0 bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-1">
@@ -232,11 +232,11 @@ const GuestHeader: React.FC<GuestHeaderProps> = ({ guest }) => {
         
         {/* Quick Actions */}
         <div className="flex flex-col space-y-2">
-          <button className="btn btn-outline btn-sm">
-            📞 Contact
+          <button className="btn btn-outline btn-sm hover:scale-105 transition-transform duration-200">
+            <span className="hover:animate-pulse">📞</span> Contact
           </button>
-          <button className="btn btn-outline btn-sm">
-            📝 Add Note
+          <button className="btn btn-outline btn-sm hover:scale-105 transition-transform duration-200">
+            <span className="hover:animate-bounce">📝</span> Add Note
           </button>
         </div>
       </div>
@@ -369,9 +369,9 @@ const GuestTimeline: React.FC<GuestTimelineProps> = ({ guest }) => {
         
         <button
           onClick={() => refetch()}
-          className="btn btn-outline btn-sm flex items-center space-x-2"
+          className="btn btn-outline btn-sm flex items-center space-x-2 hover:scale-105 transition-transform duration-200"
         >
-          <span>🔄</span>
+          <span className="hover:animate-spin transition-transform">🔄</span>
           <span>Refresh</span>
         </button>
       </div>
@@ -379,17 +379,27 @@ const GuestTimeline: React.FC<GuestTimelineProps> = ({ guest }) => {
       {/* Timeline */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {Object.keys(groupedEvents).length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-4">📅</div>
-            <h4 className="text-lg font-medium text-gray-900 mb-2">
-              No events found
-            </h4>
-            <p className="text-gray-600">
-              {totalEvents === 0 
-                ? 'No timeline events recorded for this guest yet.'
-                : 'No events match your current filters. Try adjusting your search criteria.'
-              }
-            </p>
+          <div className="text-center py-16 transform transition-all duration-300 hover:scale-105">
+            <div className="text-6xl mb-6 animate-pulse">
+              {totalEvents === 0 ? '🌟' : '🔍'}
+            </div>
+            <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-8 max-w-md mx-auto">
+              <h4 className="text-xl font-bold text-gray-800 mb-3">
+                {totalEvents === 0 ? 'Fresh Start!' : 'Refine Your Search'}
+              </h4>
+              <p className="text-gray-600 mb-4">
+                {totalEvents === 0 
+                  ? 'This guest\'s journey is just beginning. New interactions will appear here as they happen.'
+                  : 'Try adjusting your filters to discover the perfect events. Every guest has a story to tell!'
+                }
+              </p>
+              {totalEvents === 0 && (
+                <div className="inline-flex items-center space-x-2 bg-blue-100 px-4 py-2 rounded-full">
+                  <span className="text-sm font-medium text-blue-800">Ready for Action</span>
+                  <span className="text-blue-600">🚀</span>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="p-6">

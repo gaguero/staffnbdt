@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTenant, usePropertySelector } from '../contexts/TenantContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import { propertyService } from '../services/propertyService';
 
 interface PropertySelectorProps {
@@ -25,7 +26,8 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
   const { availableProperties, currentPropertyId, selectProperty, isLoading, error, clearError } = usePropertySelector();
   const { t } = useLanguage();
   const { user } = useAuth();
-  const isPlatformAdmin = user?.role === 'PLATFORM_ADMIN';
+  const { hasPermission } = usePermissions();
+  const isPlatformAdmin = hasPermission('property', 'manage', 'platform') || hasPermission('organization', 'manage', 'platform');
   const { organizationId, setAdminOverride } = useTenant();
   const [adminProperties, setAdminProperties] = useState<any[]>([]);
   const [loadingAdminProps, setLoadingAdminProps] = useState(false);
@@ -58,7 +60,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
   useEffect(() => {
     let mounted = true;
     async function loadAdminProps() {
-      if (!isPlatformAdmin || !organizationId) { if (mounted) setAdminProperties([]); return; }
+      if (!(hasPermission('property', 'manage', 'platform') || hasPermission('organization', 'manage', 'platform')) || !organizationId) { if (mounted) setAdminProperties([]); return; }
       try {
         setLoadingAdminProps(true);
         const resp = await propertyService.getProperties({ organizationId, isActive: true, limit: 200 });
@@ -172,7 +174,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
 
     try {
       setLastSwitchTime(now);
-      if (isPlatformAdmin) {
+      if (hasPermission('property', 'manage', 'platform') || hasPermission('organization', 'manage', 'platform')) {
         setAdminOverride(undefined, propertyId, 'platform-admin');
         window.location.reload();
         return;
@@ -195,7 +197,7 @@ const PropertySelector: React.FC<PropertySelectorProps> = ({
   };
 
   // Don't render if user only has access to one property
-  if (!isMultiProperty && !isPlatformAdmin) {
+  if (!isMultiProperty && !(hasPermission('property', 'manage', 'platform') || hasPermission('organization', 'manage', 'platform'))) {
     return showOrganization ? (
       <div className={`${currentSize.container} text-gray-600 ${className}`}>
         <div className="font-medium">{getCurrentOrganizationName()}</div>
