@@ -139,7 +139,7 @@ class HotelService {
       isActive: true,
       description: room.description || undefined,
       notes: undefined,
-      dailyRate: room.rate,
+      dailyRate: Number(room.rate ?? 0).toFixed(2),
     };
 
     const response = await api.post('/units', payload);
@@ -167,7 +167,7 @@ class HotelService {
     if (room.capacity !== undefined) payload.maxOccupancy = room.capacity;
     if (room.amenities !== undefined) payload.amenities = room.amenities;
     if (room.description !== undefined) payload.description = room.description;
-    if (room.rate !== undefined) payload.dailyRate = room.rate;
+    if (room.rate !== undefined) payload.dailyRate = Number(room.rate).toFixed(2);
     if ((room as any).status !== undefined) payload.status = (room as any).status;
     
     const response = await api.patch(`/units/${id}`, payload);

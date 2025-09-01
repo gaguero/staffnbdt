@@ -1,14 +1,11 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../shared/database/prisma.service';
-import { TenantContextService } from '../../shared/tenant/tenant-context.service';
-import { TenantQueryHelper } from '../../shared/tenant/tenant-query.helper';
-import { User, Role } from '@prisma/client';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class RoomTypesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly tenantContext: TenantContextService,
   ) {}
 
   async create(dto: any, currentUser: User) {
@@ -16,25 +13,28 @@ export class RoomTypesService {
     if (!dto.name) {
       throw new BadRequestException('Room type name is required');
     }
+    const organizationId = (currentUser as any).organizationId;
+    const propertyId = (currentUser as any).propertyId;
+    if (!organizationId || !propertyId) {
+      throw new ForbiddenException('Tenant context missing. Select a property and try again.');
+    }
 
-    const dataWithTenant = TenantQueryHelper.ensureTenantContext(
-      {
-        name: dto.name,
-        code: dto.code || dto.name.toLowerCase().replace(/\s+/g, '-'),
-        baseRate: dto.baseRate ?? 0,
-        maxCapacity: dto.maxCapacity ?? 2,
-        amenities: Array.isArray(dto.amenities) ? dto.amenities : [],
-        isActive: dto.isActive ?? true,
-      },
-      this.tenantContext,
-      { scope: 'property' },
-    );
+    const dataWithTenant: any = {
+      name: dto.name,
+      code: dto.code || dto.name.toLowerCase().replace(/\s+/g, '-'),
+      baseRate: dto.baseRate ?? 0,
+      maxCapacity: dto.maxCapacity ?? 2,
+      amenities: Array.isArray(dto.amenities) ? dto.amenities : [],
+      isActive: dto.isActive ?? true,
+      organizationId,
+      propertyId,
+    };
 
     // Unique per property
     const exists = await this.prisma.roomType.findFirst({
       where: {
-        propertyId: (this.tenantContext as any).getTenantContext?.(currentUser)?.propertyId || (currentUser as any)?.propertyId,
-        code: (dataWithTenant as any).code,
+        propertyId,
+        code: dataWithTenant.code,
       },
     });
     if (exists) {
@@ -42,29 +42,29 @@ export class RoomTypesService {
     }
 
     return this.prisma.roomType.create({
-      data: {
-        ...(dataWithTenant as any),
-        property: {
-          connect: { id: (this.tenantContext as any).getTenantContext?.(currentUser)?.propertyId || (currentUser as any)?.propertyId },
-        },
-      },
+      data: dataWithTenant,
     });
   }
 
   async findAll(currentUser: User) {
-    const query = TenantQueryHelper.createSafeQuery(
-      { where: { isActive: true }, orderBy: { name: 'asc' as any } },
-      this.tenantContext,
-      { scope: 'property', resourceType: 'generic' },
-    );
-    return this.prisma.roomType.findMany(query);
+    const propertyId = (currentUser as any).propertyId;
+    const organizationId = (currentUser as any).organizationId;
+    if (!organizationId || !propertyId) {
+      throw new ForbiddenException('Tenant context missing. Select a property and try again.');
+    }
+    return this.prisma.roomType.findMany({
+      where: { organizationId, propertyId, isActive: true },
+      orderBy: { name: 'asc' },
+    });
   }
 
   async update(id: string, dto: any, currentUser: User) {
     // Ensure belongs to tenant
     const rt = await this.prisma.roomType.findUnique({ where: { id } });
     if (!rt) throw new NotFoundException('Room type not found');
-    TenantQueryHelper.validateTenantOwnership(rt, this.tenantContext, currentUser as any);
+    if ((currentUser as any).propertyId !== (rt as any).propertyId) {
+      throw new ForbiddenException('Cannot modify room type outside current property');
+    }
 
     const data: any = {};
     if (dto.name !== undefined) data.name = dto.name;
@@ -80,7 +80,9 @@ export class RoomTypesService {
   async remove(id: string, currentUser: User) {
     const rt = await this.prisma.roomType.findUnique({ where: { id } });
     if (!rt) throw new NotFoundException('Room type not found');
-    TenantQueryHelper.validateTenantOwnership(rt, this.tenantContext, currentUser as any);
+    if ((currentUser as any).propertyId !== (rt as any).propertyId) {
+      throw new ForbiddenException('Cannot modify room type outside current property');
+    }
     return this.prisma.roomType.update({ where: { id }, data: { isActive: false } });
   }
 }
