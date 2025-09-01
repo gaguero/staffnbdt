@@ -121,7 +121,25 @@ class HotelService {
   }
 
   async createRoom(room: CreateRoomInput): Promise<ApiResponse<Room>> {
-    const response = await api.post('/units', room);
+    // Map frontend CreateRoomInput to backend CreateUnitDto
+    const payload = {
+      unitNumber: room.number,
+      unitType: (room.typeId || 'STANDARD'),
+      building: undefined,
+      floor: room.floor ?? 1,
+      bedrooms: 1,
+      bathrooms: 1,
+      maxOccupancy: room.capacity,
+      size: undefined,
+      amenities: room.amenities || [],
+      status: 'AVAILABLE',
+      isActive: true,
+      description: room.description || undefined,
+      notes: undefined,
+      dailyRate: room.rate,
+    };
+
+    const response = await api.post('/units', payload);
     
     // Transform the backend unit data to match frontend Room interface
     const transformedData = {
@@ -133,7 +151,18 @@ class HotelService {
   }
 
   async updateRoom(id: string, room: UpdateRoomInput): Promise<ApiResponse<Room>> {
-    const response = await api.patch(`/units/${id}`, room);
+    // Map partial frontend fields to backend UpdateUnitDto
+    const payload: any = {};
+    if (room.number !== undefined) payload.unitNumber = room.number;
+    if (room.typeId !== undefined) payload.unitType = room.typeId;
+    if (room.floor !== undefined) payload.floor = room.floor;
+    if (room.capacity !== undefined) payload.maxOccupancy = room.capacity;
+    if (room.amenities !== undefined) payload.amenities = room.amenities;
+    if (room.description !== undefined) payload.description = room.description;
+    if (room.rate !== undefined) payload.dailyRate = room.rate;
+    if ((room as any).status !== undefined) payload.status = (room as any).status;
+    
+    const response = await api.patch(`/units/${id}`, payload);
     
     // Transform the backend unit data to match frontend Room interface
     const transformedData = {
@@ -162,13 +191,20 @@ class HotelService {
   }
 
   async getRoomTypes(): Promise<ApiResponse<RoomType[]>> {
-    // Room types are handled through unit filtering - return empty for now
-    // TODO: Implement unit types endpoint or derive from units
-    return {
-      data: [],
-      message: 'Room types endpoint not implemented',
-      success: true
-    };
+    // Derive available types from backend enum UnitType
+    const enumValues = [
+      'STANDARD','DELUXE','SUITE','PRESIDENTIAL','FAMILY','ACCESSIBLE','STUDIO','APARTMENT','VILLA','OTHER'
+    ];
+    const toLabel = (v: string) => v.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    const types: RoomType[] = enumValues.map(v => ({
+      id: v,
+      name: toLabel(v),
+      description: '',
+      baseRate: 0,
+      maxCapacity: 2,
+      amenities: [],
+    }));
+    return { data: types, message: 'Derived from UnitType enum', success: true };
   }
 
   async getRoomAvailability(startDate: Date, endDate: Date): Promise<ApiResponse<RoomAvailability[]>> {
