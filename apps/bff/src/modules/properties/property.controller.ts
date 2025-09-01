@@ -177,4 +177,131 @@ export class PropertyController {
     const result = await this.propertyService.removeUser(id, removeUserDto, currentUser);
     return CustomApiResponse.success(result, 'User removed successfully');
   }
+
+  // Property-level module management endpoints
+
+  @Get(':id/modules')
+  @RequirePermission('module.read.property')
+  @ApiOperation({ summary: 'Get enabled modules for property with precedence rules' })
+  @ApiResponse({ status: 200, description: 'Property module status retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Property not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Access denied to this property' })
+  async getPropertyModules(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    // Verify user has access to this property
+    const property = await this.propertyService.findOne(id, currentUser);
+    
+    const enabledModules = await this.moduleRegistryService.getEnabledModulesForProperty(
+      property.organizationId, 
+      id
+    );
+    return CustomApiResponse.success(enabledModules, 'Property modules retrieved successfully');
+  }
+
+  @Post(':id/modules/:moduleId/enable')
+  @RequirePermission('module.manage.property')
+  @Audit({ action: 'ENABLE_MODULE_PROPERTY', entity: 'Property' })
+  @ApiOperation({ summary: 'Enable a module for property (creates property-level override)' })
+  @ApiResponse({ status: 200, description: 'Module enabled for property successfully' })
+  @ApiResponse({ status: 404, description: 'Property or module not found' })
+  @ApiResponse({ status: 400, description: 'Module has unmet dependencies' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  async enableModuleForProperty(
+    @Param('id') id: string,
+    @Param('moduleId') moduleId: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    // Verify user has access to this property
+    const property = await this.propertyService.findOne(id, currentUser);
+    
+    await this.moduleRegistryService.enableModuleForProperty(
+      property.organizationId,
+      id,
+      moduleId
+    );
+    return CustomApiResponse.success(null, 'Module enabled for property successfully');
+  }
+
+  @Post(':id/modules/:moduleId/disable')
+  @RequirePermission('module.manage.property')
+  @Audit({ action: 'DISABLE_MODULE_PROPERTY', entity: 'Property' })
+  @ApiOperation({ summary: 'Disable a module for property (creates property-level override)' })
+  @ApiResponse({ status: 200, description: 'Module disabled for property successfully' })
+  @ApiResponse({ status: 404, description: 'Property or module not found' })
+  @ApiResponse({ status: 400, description: 'Cannot disable system module' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  async disableModuleForProperty(
+    @Param('id') id: string,
+    @Param('moduleId') moduleId: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    // Verify user has access to this property
+    const property = await this.propertyService.findOne(id, currentUser);
+    
+    await this.moduleRegistryService.disableModuleForProperty(
+      property.organizationId,
+      id,
+      moduleId
+    );
+    return CustomApiResponse.success(null, 'Module disabled for property successfully');
+  }
+
+  @Get(':id/modules/:moduleId/status')
+  @RequirePermission('module.read.property')
+  @ApiOperation({ summary: 'Get detailed module status for property with precedence info' })
+  @ApiResponse({ status: 200, description: 'Module status retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Property not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Access denied to this property' })
+  async getModuleStatusForProperty(
+    @Param('id') id: string,
+    @Param('moduleId') moduleId: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    // Verify user has access to this property
+    const property = await this.propertyService.findOne(id, currentUser);
+    
+    const isEnabled = await this.moduleRegistryService.isModuleEnabledForProperty(
+      property.organizationId,
+      id,
+      moduleId
+    );
+    const statusDetails = await this.moduleRegistryService.getModuleStatusDetails(
+      property.organizationId,
+      id,
+      moduleId
+    );
+    
+    return CustomApiResponse.success({
+      moduleId,
+      propertyId: id,
+      organizationId: property.organizationId,
+      isEnabled,
+      ...statusDetails
+    }, 'Module status retrieved successfully');
+  }
+
+  @Delete(':id/modules/:moduleId/override')
+  @RequirePermission('module.manage.property')
+  @Audit({ action: 'REMOVE_MODULE_OVERRIDE', entity: 'Property' })
+  @ApiOperation({ summary: 'Remove property-level module override (fall back to organization setting)' })
+  @ApiResponse({ status: 200, description: 'Property-level override removed successfully' })
+  @ApiResponse({ status: 404, description: 'Property-level override not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  async removePropertyModuleOverride(
+    @Param('id') id: string,
+    @Param('moduleId') moduleId: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    // Verify user has access to this property
+    const property = await this.propertyService.findOne(id, currentUser);
+    
+    await this.moduleRegistryService.removePropertyOverride(
+      property.organizationId,
+      id,
+      moduleId
+    );
+    return CustomApiResponse.success(null, 'Property-level override removed successfully');
+  }
 }
