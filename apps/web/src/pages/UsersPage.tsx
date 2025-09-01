@@ -11,6 +11,8 @@ import InvitationModal from '../components/InvitationModal';
 import UserCustomRoleBadges from '../components/UserCustomRoleBadges';
 import PermissionGate from '../components/PermissionGate';
 import UserPropertyAccess from '../components/UserPropertyAccess';
+import UserSystemRoleManagement from '../components/UserSystemRoleManagement';
+import { Role, canManageRole } from '../types/role';
 import { COMMON_PERMISSIONS } from '../types/permission';
 import { userService, User as UserType, UserFilter, BulkImportResult } from '../services/userService';
 import { departmentService, Department } from '../services/departmentService';
@@ -62,6 +64,8 @@ const UsersPage: React.FC = () => {
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkActionType, setBulkActionType] = useState<'deactivate' | 'activate' | 'delete' | 'invite' | 'changeRole' | ''>('');
+  const [showSystemRoleManagement, setShowSystemRoleManagement] = useState(false);
+  const [selectedUserForRole, setSelectedUserForRole] = useState<UserType | null>(null);
 
   // Load users
   const loadUsers = useCallback(async () => {
@@ -397,6 +401,16 @@ const UsersPage: React.FC = () => {
       return user.departmentId === currentUser.departmentId;
     }
     return false;
+  };
+
+  const canManageUserRole = (user: UserType) => {
+    if (!currentUser) return false;
+    
+    // Check if current user can manage this user's role
+    const currentUserRole = currentUser.role as Role;
+    const targetUserRole = user.role as Role;
+    
+    return canManageRole(currentUserRole, targetUserRole);
   };
 
   // Legacy roles - no longer used for new assignments
@@ -805,6 +819,17 @@ const UsersPage: React.FC = () => {
                               >
                                 Manage Access
                               </button>
+                              {canManageUserRole(user) && (
+                                <button 
+                                  className="text-purple-600 hover:text-purple-800"
+                                  onClick={() => {
+                                    setSelectedUserForRole(user);
+                                    setShowSystemRoleManagement(true);
+                                  }}
+                                >
+                                  System Role
+                                </button>
+                              )}
                               <button 
                                 className="text-red-600 hover:text-red-800"
                                 onClick={() => user.deletedAt 
@@ -1239,6 +1264,23 @@ const UsersPage: React.FC = () => {
         onClose={() => setShowInvitationModal(false)}
         onSuccess={loadUsers}
       />
+
+      {/* System Role Management Modal */}
+      {selectedUserForRole && (
+        <UserSystemRoleManagement
+          user={selectedUserForRole}
+          isOpen={showSystemRoleManagement}
+          onClose={() => {
+            setShowSystemRoleManagement(false);
+            setSelectedUserForRole(null);
+          }}
+          onRoleChanged={() => {
+            loadUsers(); // Refresh the users list
+            setShowSystemRoleManagement(false);
+            setSelectedUserForRole(null);
+          }}
+        />
+      )}
 
       {/* Bulk Action Confirmation Modal */}
       {showBulkActions && (

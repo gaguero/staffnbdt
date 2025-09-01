@@ -279,9 +279,117 @@ export const PERMISSIONS = {
 
   // Role management
   ROLE: {
+    CREATE_PLATFORM: 'role.create.platform',
+    CREATE_ORGANIZATION: 'role.create.organization',
+    CREATE_PROPERTY: 'role.create.property',
+    READ_PLATFORM: 'role.read.platform',
+    READ_ORGANIZATION: 'role.read.organization',
+    READ_PROPERTY: 'role.read.property',
+    READ_DEPARTMENT: 'role.read.department',
+    UPDATE_PLATFORM: 'role.update.platform',
+    UPDATE_ORGANIZATION: 'role.update.organization',
+    UPDATE_PROPERTY: 'role.update.property',
+    DELETE_PLATFORM: 'role.delete.platform',
+    DELETE_ORGANIZATION: 'role.delete.organization',
+    DELETE_PROPERTY: 'role.delete.property',
     ASSIGN_PLATFORM: 'role.assign.platform',
     ASSIGN_ORGANIZATION: 'role.assign.organization',
     ASSIGN_PROPERTY: 'role.assign.property',
     ASSIGN_DEPARTMENT: 'role.assign.department',
+  },
+
+  // Hotel operations - Units (Rooms)
+  UNIT: {
+    CREATE_PLATFORM: 'unit.create.platform',
+    CREATE_PROPERTY: 'unit.create.property',
+    READ_PLATFORM: 'unit.read.platform',
+    READ_PROPERTY: 'unit.read.property',
+    UPDATE_PLATFORM: 'unit.update.platform',
+    UPDATE_PROPERTY: 'unit.update.property',
+    DELETE_PLATFORM: 'unit.delete.platform',
+    DELETE_PROPERTY: 'unit.delete.property',
+    STATUS_PROPERTY: 'unit.status.property',
+    MAINTENANCE_PROPERTY: 'unit.maintenance.property',
+  },
+
+  // Hotel operations - Guests
+  GUEST: {
+    CREATE_PLATFORM: 'guest.create.platform',
+    CREATE_PROPERTY: 'guest.create.property',
+    READ_PLATFORM: 'guest.read.platform',
+    READ_PROPERTY: 'guest.read.property',
+    READ_OWN: 'guest.read.own',
+    UPDATE_PLATFORM: 'guest.update.platform',
+    UPDATE_PROPERTY: 'guest.update.property',
+    DELETE_PLATFORM: 'guest.delete.platform',
+    DELETE_PROPERTY: 'guest.delete.property',
+    BLACKLIST_PLATFORM: 'guest.blacklist.platform',
+    BLACKLIST_PROPERTY: 'guest.blacklist.property',
+  },
+
+  // Hotel operations - Reservations
+  RESERVATION: {
+    CREATE_PLATFORM: 'reservation.create.platform',
+    CREATE_PROPERTY: 'reservation.create.property',
+    READ_PLATFORM: 'reservation.read.platform',
+    READ_PROPERTY: 'reservation.read.property',
+    READ_OWN: 'reservation.read.own',
+    UPDATE_PLATFORM: 'reservation.update.platform',
+    UPDATE_PROPERTY: 'reservation.update.property',
+    DELETE_PLATFORM: 'reservation.delete.platform',
+    DELETE_PROPERTY: 'reservation.delete.property',
+    CHECKIN_PROPERTY: 'reservation.checkin.property',
+    CHECKOUT_PROPERTY: 'reservation.checkout.property',
+    CANCEL_PROPERTY: 'reservation.cancel.property',
+  },
+
+  // Concierge module
+  CONCIERGE: {
+    CREATE_PLATFORM: 'concierge.create.platform',
+    CREATE_PROPERTY: 'concierge.create.property',
+    READ_PLATFORM: 'concierge.read.platform',
+    READ_PROPERTY: 'concierge.read.property',
+    UPDATE_PLATFORM: 'concierge.update.platform',
+    UPDATE_PROPERTY: 'concierge.update.property',
+    DELETE_PLATFORM: 'concierge.delete.platform',
+    DELETE_PROPERTY: 'concierge.delete.property',
+    OBJECT_TYPES_PROPERTY: 'concierge.object-types.property',
+    PLAYBOOKS_PROPERTY: 'concierge.playbooks.property',
+    EXECUTE_PROPERTY: 'concierge.execute.property',
+    ASSIGN_PROPERTY: 'concierge.assign.property',
+  },
+
+  // Vendor module
+  VENDOR: {
+    CREATE_PLATFORM: 'vendor.create.platform',
+    CREATE_PROPERTY: 'vendor.create.property',
+    READ_PLATFORM: 'vendor.read.platform',
+    READ_PROPERTY: 'vendor.read.property',
+    READ_OWN: 'vendor.read.own',
+    UPDATE_PLATFORM: 'vendor.update.platform',
+    UPDATE_PROPERTY: 'vendor.update.property',
+    UPDATE_OWN: 'vendor.update.own',
+    DELETE_PLATFORM: 'vendor.delete.platform',
+    DELETE_PROPERTY: 'vendor.delete.property',
+    LINK_PROPERTY: 'vendor.link.property',
+    CONFIRM_PROPERTY: 'vendor.confirm.property',
+    PORTAL_VENDOR: 'vendor.portal.vendor',
+  },
+
+  // System administration
+  SYSTEM: {
+    ADMIN_PLATFORM: 'system.admin.platform',
+    CONFIG_PLATFORM: 'system.config.platform',
+    AUDIT_PLATFORM: 'system.audit.platform',
+    ANALYTICS_PLATFORM: 'system.analytics.platform',
+    ANALYTICS_PROPERTY: 'system.analytics.property',
+  },
+
+  // Portal access
+  PORTAL: {
+    ACCESS_PLATFORM: 'portal.access.platform',
+    ACCESS_PROPERTY: 'portal.access.property',
+    ACCESS_CLIENT: 'portal.access.client',
+    ACCESS_VENDOR: 'portal.access.vendor',
   },
 } as const;

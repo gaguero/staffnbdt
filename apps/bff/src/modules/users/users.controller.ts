@@ -163,8 +163,8 @@ export class UsersController {
     @Body() changeRoleDto: ChangeRoleDto,
     @CurrentUser() currentUser: User,
   ) {
-    const user = await this.usersService.changeRole(id, changeRoleDto, currentUser);
-    return CustomApiResponse.success(user, 'User role changed successfully');
+    const userWithPermissions = await this.usersService.changeRole(id, changeRoleDto, currentUser);
+    return CustomApiResponse.success(userWithPermissions, 'User role changed successfully - permissions updated');
   }
 
   @Patch(':id/status')
@@ -239,7 +239,7 @@ export class UsersController {
 
   @Get(':id/permissions')
   @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department', 'user.read.own')
-  @ApiOperation({ summary: 'Get user permissions for current user context' })
+  @ApiOperation({ summary: 'Get user effective permissions' })
   @ApiResponse({ status: 200, description: 'User permissions retrieved successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async getUserPermissions(
@@ -248,6 +248,18 @@ export class UsersController {
   ) {
     const permissions = await this.usersService.getUserPermissions(id, currentUser);
     return CustomApiResponse.success(permissions, 'User permissions retrieved successfully');
+  }
+
+  @Post(':id/permissions/refresh')
+  @RequirePermission('user.read.all', 'user.read.organization', 'user.read.property', 'user.read.department', 'user.read.own')
+  @ApiOperation({ summary: 'Refresh user permissions cache' })
+  @ApiResponse({ status: 200, description: 'User permissions refreshed successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async refreshUserPermissions(
+    @Param('id') id: string,
+  ) {
+    const permissions = await this.usersService.refreshUserPermissions(id);
+    return CustomApiResponse.success(permissions, 'User permissions refreshed successfully');
   }
 
   @Post('bulk')

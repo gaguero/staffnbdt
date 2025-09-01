@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { userService, User } from '../services/userService';
 import { departmentService, Department } from '../services/departmentService';
+import { useAuth } from '../contexts/AuthContext';
+import { Role, SYSTEM_ROLES, canManageRole } from '../types/role';
+import RoleBadge from './RoleBadge';
+import UserSystemRoleManagement from './UserSystemRoleManagement';
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -31,6 +35,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showRoleManagement, setShowRoleManagement] = useState(false);
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     if (isOpen && user) {
@@ -194,7 +200,38 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                   />
                 </div>
 
-                {/* Role selection removed; manage roles and direct permissions via User Access modal */}
+                {/* System Role Display and Management */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    System Role
+                  </label>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md">
+                    <div className="flex items-center space-x-3">
+                      <RoleBadge role={user.role || 'STAFF'} size="sm" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {SYSTEM_ROLES[user.role as Role]?.label || user.role || 'Staff'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Level {SYSTEM_ROLES[user.role as Role]?.level || 5}
+                        </div>
+                      </div>
+                    </div>
+                    {currentUser && canManageRole(currentUser.role as Role, user.role as Role) && (
+                      <button
+                        type="button"
+                        onClick={() => setShowRoleManagement(true)}
+                        disabled={saving}
+                        className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        Change Role
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    System roles determine platform-wide permissions and access levels
+                  </p>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -354,6 +391,21 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* System Role Management Modal */}
+      {showRoleManagement && (
+        <UserSystemRoleManagement
+          user={user}
+          isOpen={showRoleManagement}
+          onClose={() => setShowRoleManagement(false)}
+          onRoleChanged={(updatedUser, newRole) => {
+            // Update the user object locally
+            user.role = newRole as any;
+            onSuccess(); // Trigger refresh in parent
+            setShowRoleManagement(false);
+          }}
+        />
+      )}
     </div>
   );
 };

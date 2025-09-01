@@ -907,6 +907,8 @@ enum Role {
   PROPERTY_MANAGER
   DEPARTMENT_ADMIN
   STAFF
+  CLIENT
+  VENDOR
 }
 
 enum UserType {
