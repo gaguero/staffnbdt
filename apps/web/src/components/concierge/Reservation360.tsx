@@ -441,9 +441,9 @@ const Reservation360: React.FC<Reservation360Props> = ({ reservation }) => {
     }
   };
 
-  const handleEditItem = (item: ChecklistItem) => {
+  const handleEditItem = (_item: ChecklistItem) => {
     // This would open an edit modal in a real implementation
-    toast.info('Edit functionality not implemented yet');
+    toast('Edit functionality not implemented yet');
   };
 
   if (isLoading) {
