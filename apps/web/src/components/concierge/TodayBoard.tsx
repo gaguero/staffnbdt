@@ -140,7 +140,7 @@ const ConciergeObjectCard: React.FC<ConciergeObjectCardProps> = ({
         selected ? 'ring-2 ring-blue-500 border-blue-300 shadow-md' : 'border-gray-200 hover:border-blue-200'
       }`}
       onClick={(e) => {
-        if ((e.target as HTMLElement).type !== 'checkbox') {
+        if ((e.target as HTMLInputElement).type !== 'checkbox') {
           onClick();
         }
       }}
@@ -272,7 +272,7 @@ const TodayBoard: React.FC<TodayBoardProps> = ({ onObjectClick = () => {} }) => 
   }
 
   const sections = data?.data || [];
-  const selectedCount = bulkSelection.selectedItems.length;
+  const selectedCount = bulkSelection.state.selectedCount;
   const selectedObjects = sections.flatMap(section => section.objects)
     .filter(obj => bulkSelection.isSelected(obj.id));
 
@@ -351,14 +351,14 @@ const TodayBoard: React.FC<TodayBoardProps> = ({ onObjectClick = () => {} }) => 
               count={section.count}
               variant={variant}
               onObjectClick={onObjectClick}
-              selectedObjects={new Set(bulkSelection.selectedItems.map(obj => obj.id))}
+              selectedObjects={new Set(bulkSelection.state.selectedItems.map((obj: any) => obj.id))}
               onObjectSelect={(objectId, selected) => {
                 const object = sections.flatMap(s => s.objects).find(obj => obj.id === objectId);
                 if (object) {
                   if (selected) {
-                    bulkSelection.selectItem(object);
+                    bulkSelection.toggleItem(object.id, object);
                   } else {
-                    bulkSelection.deselectItem(objectId);
+                    bulkSelection.toggleItem(objectId);
                   }
                 }
               }}
@@ -366,9 +366,9 @@ const TodayBoard: React.FC<TodayBoardProps> = ({ onObjectClick = () => {} }) => 
                 const objects = sections.flatMap(s => s.objects)
                   .filter(obj => objectIds.includes(obj.id));
                 if (selected) {
-                  objects.forEach(obj => bulkSelection.selectItem(obj));
+                  objects.forEach(obj => bulkSelection.toggleItem(obj.id, obj));
                 } else {
-                  objects.forEach(obj => bulkSelection.deselectItem(obj.id));
+                  objects.forEach(obj => bulkSelection.toggleItem(obj.id));
                 }
               }}
             />

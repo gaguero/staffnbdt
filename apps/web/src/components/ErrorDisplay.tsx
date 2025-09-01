@@ -1,10 +1,11 @@
 import React from 'react';
 
 export interface ErrorDisplayProps {
-  error: Error | null;
+  error?: Error | null;
+  message?: string;
   title?: string;
   showDetails?: boolean;
-  onRetry?: () => void;
+  onRetry?: (() => void) | (() => Promise<any>);
   onDismiss?: () => void;
   variant?: 'inline' | 'modal' | 'banner';
   className?: string;
@@ -12,6 +13,7 @@ export interface ErrorDisplayProps {
 
 const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   error,
+  message,
   title = 'Error',
   showDetails = false,
   onRetry,
@@ -19,7 +21,9 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   variant = 'inline',
   className = '',
 }) => {
-  if (!error) return null;
+  if (!error && !message) return null;
+
+  const displayMessage = message || (error ? getErrorMessage(error) : 'An error occurred');
 
   const getErrorMessage = (error: Error): string => {
     const response = (error as any).response;
