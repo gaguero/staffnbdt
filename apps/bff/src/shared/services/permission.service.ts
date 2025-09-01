@@ -110,7 +110,7 @@ export class PermissionService {
   }
 
   /**
-   * Get user permissions from database custom roles
+   * Get user permissions from database (both custom roles and direct permissions)
    */
   private async getUserPermissionsFromDatabase(user: CurrentUser): Promise<string[]> {
     const cacheKey = `user_perms_${user.id}`;
@@ -122,6 +122,8 @@ export class PermissionService {
     }
 
     try {
+      const allPermissions: string[] = [];
+
       // Get user's active role assignments
       const userRoles = await this.prisma.userCustomRole.findMany({
         where: {
@@ -144,17 +146,40 @@ export class PermissionService {
         }
       });
 
-      if (userRoles.length === 0) {
-        this.logger.debug(`User ${user.id} has no active custom roles assigned`);
-        return [];
-      }
-
-      // Collect all permissions from all active roles
-      const allPermissions: string[] = [];
+      // Collect all permissions from custom roles
       userRoles.forEach(userRole => {
         userRole.role.permissions.forEach(rp => {
           allPermissions.push(`${rp.permission.resource}.${rp.permission.action}.${rp.permission.scope}`);
         });
+      });
+
+      // Get user's direct permissions
+      const directPermissions = await this.prisma.userPermission.findMany({
+        where: {
+          userId: user.id,
+          isActive: true,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } }
+          ]
+        },
+        include: {
+          permission: true
+        }
+      });
+
+      // Process direct permissions (granted permissions are added, denied permissions remove from the list)
+      directPermissions.forEach(userPerm => {
+        const permissionKey = `${userPerm.permission.resource}.${userPerm.permission.action}.${userPerm.permission.scope}`;
+        if (userPerm.granted) {
+          allPermissions.push(permissionKey);
+        } else {
+          // Remove denied permission from the list
+          const index = allPermissions.indexOf(permissionKey);
+          if (index > -1) {
+            allPermissions.splice(index, 1);
+          }
+        }
       });
 
       const permissions = [...new Set(allPermissions)]; // Remove duplicates
@@ -163,7 +188,7 @@ export class PermissionService {
       this.permissionCache.set(cacheKey, permissions);
       this.cacheExpiry.set(cacheKey, now + this.CACHE_TTL);
 
-      this.logger.debug(`User ${user.id} has ${permissions.length} database permissions from ${userRoles.length} custom roles`);
+      this.logger.debug(`User ${user.id} has ${permissions.length} database permissions from ${userRoles.length} custom roles and ${directPermissions.length} direct permissions`);
       return permissions;
     } catch (error) {
       this.logger.error(`Error fetching user permissions from database: ${error.message}`);
