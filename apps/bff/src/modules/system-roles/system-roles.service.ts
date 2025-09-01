@@ -219,7 +219,7 @@ export class SystemRolesService {
         whereClause.organizationId = currentUser.organizationId;
       }
       
-      if ([Role.PROPERTY_MANAGER, Role.DEPARTMENT_ADMIN].includes(currentUser.role as Role.PROPERTY_MANAGER | Role.DEPARTMENT_ADMIN) && currentUser.propertyId) {
+      if ((currentUser.role === Role.PROPERTY_MANAGER || currentUser.role === Role.DEPARTMENT_ADMIN) && currentUser.propertyId) {
         whereClause.propertyId = currentUser.propertyId;
       }
     }
@@ -352,7 +352,7 @@ export class SystemRolesService {
     }
 
     // Department-level roles need department assignment
-    if ([Role.DEPARTMENT_ADMIN, Role.STAFF].includes(role as Role.DEPARTMENT_ADMIN | Role.STAFF) && !user.departmentId) {
+    if ((role === Role.DEPARTMENT_ADMIN || role === Role.STAFF) && !user.departmentId) {
       // Allow this for now, can be assigned later
     }
 
