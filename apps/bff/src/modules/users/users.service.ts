@@ -1349,7 +1349,7 @@ export class UsersService {
       }
       
       // Additional checks for property and department level access
-      if ([Role.PROPERTY_MANAGER, Role.DEPARTMENT_ADMIN].includes(currentUser.role)) {
+      if ([Role.PROPERTY_MANAGER, Role.DEPARTMENT_ADMIN].includes(currentUser.role as Role.PROPERTY_MANAGER | Role.DEPARTMENT_ADMIN)) {
         if (targetUser.propertyId !== currentUser.propertyId) {
           throw new ForbiddenException('Cannot access user from different property');
         }
