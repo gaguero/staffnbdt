@@ -79,9 +79,9 @@ export class OrganizationService {
    * Get all organizations with filtering and pagination
    */
   async findAll(filterDto: OrganizationFilterDto, currentUser: User) {
-    // Check if user has permission to manage organizations
+    // Check if user has permission to read organizations at platform level
     const hasPermission = await this.permissionService.evaluatePermission(
-      { resource: 'system', action: 'manage', scope: 'organizations' },
+      'organization.read.platform',
       { user: currentUser, organizationId: currentUser.organizationId, propertyId: currentUser.propertyId }
     );
     
