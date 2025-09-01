@@ -79,6 +79,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const isPlatformAdmin = user?.role === 'PLATFORM_ADMIN';
+  const isOrganizationLevel = user?.role === 'ORGANIZATION_OWNER' || user?.role === 'ORGANIZATION_ADMIN';
+  const isPropertyLevel = user?.role === 'PROPERTY_MANAGER' || user?.role === 'DEPARTMENT_ADMIN' || user?.role === 'STAFF';
+  
   return (
     <div className="min-h-screen lg:flex" style={{ backgroundColor: 'var(--brand-background)' }}>
       {/* Mobile sidebar backdrop */}
@@ -122,8 +125,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* User info and property selector in sidebar */}
         <div className="border-t border-gray-200 p-4 space-y-3">
-          {/* For Platform Admins: prefer a single Property selector; hide org selector when a property is active */}
+          {/* Tenant selector logic based on user role */}
           {isPlatformAdmin ? (
+            // Platform Admins: Single property selector with org context
             <div>
               <PropertySelector 
                 variant="dropdown" 
@@ -131,7 +135,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 className="w-full"
               />
             </div>
-          ) : (
+          ) : isOrganizationLevel ? (
+            // Organization-level users: Both org and property selectors
             <>
               <OrganizationSelector className="w-full" />
               <div>
@@ -142,6 +147,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 />
               </div>
             </>
+          ) : isPropertyLevel ? (
+            // Property-level users: Only property selector (they're scoped to their property)
+            <div>
+              <PropertySelector 
+                variant="dropdown" 
+                showOrganization={false}
+                className="w-full"
+              />
+            </div>
+          ) : (
+            // External users (CLIENT, VENDOR, PARTNER): No selectors needed
+            <div className="text-sm text-gray-500">
+              {getCurrentOrganizationName()} - {getCurrentPropertyName()}
+            </div>
           )}
           
           {/* User Info */}
