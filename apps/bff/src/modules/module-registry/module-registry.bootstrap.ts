@@ -61,17 +61,39 @@ export class ModuleRegistryBootstrap implements OnModuleInit {
       // Enable modules at org-level for all organizations (dev bootstrap)
       const orgs = await this.prisma.organization.findMany({ select: { id: true, slug: true } });
       for (const org of orgs) {
-        await this.prisma.moduleSubscription.upsert({
-          where: { organizationId_moduleName: { organizationId: org.id, moduleName: 'concierge' } },
-          create: { organizationId: org.id, moduleName: 'concierge', isEnabled: true, enabledAt: new Date(), propertyId: null },
-          update: { isEnabled: true, enabledAt: new Date(), disabledAt: null },
-        } as any);
+        {
+          const existing = await this.prisma.moduleSubscription.findFirst({
+            where: { organizationId: org.id, moduleName: 'concierge', propertyId: null },
+            select: { id: true },
+          });
+          if (existing) {
+            await this.prisma.moduleSubscription.update({
+              where: { id: existing.id },
+              data: { isEnabled: true, enabledAt: new Date(), disabledAt: null },
+            });
+          } else {
+            await this.prisma.moduleSubscription.create({
+              data: { organizationId: org.id, moduleName: 'concierge', isEnabled: true, enabledAt: new Date(), propertyId: null },
+            });
+          }
+        }
 
-        await this.prisma.moduleSubscription.upsert({
-          where: { organizationId_moduleName: { organizationId: org.id, moduleName: 'vendors' } },
-          create: { organizationId: org.id, moduleName: 'vendors', isEnabled: true, enabledAt: new Date(), propertyId: null },
-          update: { isEnabled: true, enabledAt: new Date(), disabledAt: null },
-        } as any);
+        {
+          const existing = await this.prisma.moduleSubscription.findFirst({
+            where: { organizationId: org.id, moduleName: 'vendors', propertyId: null },
+            select: { id: true },
+          });
+          if (existing) {
+            await this.prisma.moduleSubscription.update({
+              where: { id: existing.id },
+              data: { isEnabled: true, enabledAt: new Date(), disabledAt: null },
+            });
+          } else {
+            await this.prisma.moduleSubscription.create({
+              data: { organizationId: org.id, moduleName: 'vendors', isEnabled: true, enabledAt: new Date(), propertyId: null },
+            });
+          }
+        }
       }
       this.logger.log(`Seeded and enabled modules for ${orgs.length} organizations`);
     } catch (error) {
