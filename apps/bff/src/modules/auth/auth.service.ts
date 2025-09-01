@@ -194,6 +194,16 @@ export class AuthService {
       return;
     }
 
+    // Get user permissions for magic link request
+    let permissions: string[] = [];
+    try {
+      const userPermissions = await this.permissionService.getUserPermissions(user.id);
+      permissions = userPermissions.map(p => `${p.resource}.${p.action}.${p.scope}`);
+    } catch (error) {
+      // Permission system not available, continue without permissions
+      console.warn('Permission system not available during magic link request:', error.message);
+    }
+
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -201,6 +211,7 @@ export class AuthService {
       departmentId: user.departmentId,
       organizationId: user.organizationId,
       propertyId: user.propertyId,
+      permissions,
     };
 
     const magicToken = this.jwtService.sign(payload, { expiresIn: '15m' });
@@ -229,6 +240,16 @@ export class AuthService {
         throw new UnauthorizedException('Invalid magic link');
       }
 
+      // Get user permissions for magic link login
+      let permissions: string[] = [];
+      try {
+        const userPermissions = await this.permissionService.getUserPermissions(user.id);
+        permissions = userPermissions.map(p => `${p.resource}.${p.action}.${p.scope}`);
+      } catch (error) {
+        // Permission system not available, continue without permissions
+        console.warn('Permission system not available during magic link login:', error.message);
+      }
+
       const newPayload: JwtPayload = {
         sub: user.id,
         email: user.email,
@@ -236,6 +257,7 @@ export class AuthService {
         departmentId: user.departmentId,
         organizationId: user.organizationId,
         propertyId: user.propertyId,
+        permissions,
       };
 
       const accessToken = this.jwtService.sign(newPayload);
@@ -350,6 +372,16 @@ export class AuthService {
       },
     });
 
+    // Get user permissions for new registration
+    let permissions: string[] = [];
+    try {
+      const userPermissions = await this.permissionService.getUserPermissions(user.id);
+      permissions = userPermissions.map(p => `${p.resource}.${p.action}.${p.scope}`);
+    } catch (error) {
+      // Permission system not available, continue without permissions
+      console.warn('Permission system not available during registration:', error.message);
+    }
+
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -357,6 +389,7 @@ export class AuthService {
       departmentId: user.departmentId,
       organizationId: user.organizationId,
       propertyId: user.propertyId,
+      permissions,
     };
 
     const accessToken = this.jwtService.sign(payload);

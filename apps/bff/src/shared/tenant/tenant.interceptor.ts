@@ -36,9 +36,15 @@ export class TenantInterceptor implements NestInterceptor {
     const user = request.user;
     const jwtPayload = user as JwtPayload;
 
+    // Validate JWT payload has required fields
+    if (!jwtPayload.sub || !jwtPayload.email) {
+      this.safeLog('error', 'Invalid JWT payload: missing required fields (sub or email)');
+      throw new UnauthorizedException('Invalid authentication token: missing required fields');
+    }
+
     // Only log tenant context setup in debug mode
     if (LoggingConfig.isDebugEnabled()) {
-      this.safeLog('debug', `Setting tenant context for user: ${jwtPayload.email}`);
+      this.safeLog('debug', `Setting tenant context for user: ${jwtPayload.email} (ID: ${jwtPayload.sub})`);
     }
 
     try {
@@ -63,6 +69,12 @@ export class TenantInterceptor implements NestInterceptor {
       if (!organizationId || !propertyId) {
         // This is important to log as it indicates potential JWT issues
         this.safeLog('warn', `User ${jwtPayload.email} missing tenant info in JWT, fetching from database`);
+        
+        // Validate that we have a valid user ID before proceeding
+        if (!jwtPayload.sub) {
+          this.safeLog('error', `User ${jwtPayload.email} has invalid JWT: missing sub (user ID)`);
+          throw new UnauthorizedException('Invalid authentication token: missing user ID');
+        }
         
         try {
           const tenantContext = await this.tenantService.getTenantFromUser(jwtPayload.sub);

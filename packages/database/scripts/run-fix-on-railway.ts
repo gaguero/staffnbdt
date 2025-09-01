@@ -1,9 +1,46 @@
 import { PrismaClient } from '@prisma/client';
+import * as dotenv from 'dotenv';
 
-const prisma = new PrismaClient();
+// Load environment variables
+dotenv.config();
+
+// Ensure we have Railway DATABASE_URL
+const railwayDatabaseUrl = process.env.DATABASE_URL;
+if (!railwayDatabaseUrl) {
+  console.error('❌ DATABASE_URL environment variable not found');
+  console.log('Please set your Railway DATABASE_URL:');
+  console.log('export DATABASE_URL="your-railway-postgres-url"');
+  process.exit(1);
+}
+
+console.log('🚂 Connecting to Railway database...');
+console.log(`📍 Database URL: ${railwayDatabaseUrl.substring(0, 30)}...`);
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: railwayDatabaseUrl
+    }
+  }
+});
 
 async function main() {
-  console.log('🔍 Comprehensive fix for Vendor module access issues...');
+  console.log('🔗 Testing connection to Railway database...');
+  
+  try {
+    await prisma.$connect();
+    console.log('✅ Successfully connected to Railway database');
+    
+    // Test query
+    const userCount = await prisma.user.count();
+    console.log(`📊 Found ${userCount} users in database`);
+    
+  } catch (error) {
+    console.error('❌ Failed to connect to Railway database:', error.message);
+    process.exit(1);
+  }
+
+  console.log('\n🔍 Comprehensive fix for Vendor module access issues...');
   
   // Users mentioned in the error logs
   const userIds = [
@@ -25,7 +62,8 @@ async function main() {
     await fixUserIssues(userId);
   }
   
-  console.log('🎉 All fixes completed successfully!');
+  console.log('\n🎉 All fixes completed successfully!');
+  await prisma.$disconnect();
 }
 
 async function fixUserIssues(userId: string) {
@@ -308,4 +346,9 @@ async function validateUserAccess(userId: string) {
   }
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+main().catch((error) => {
+  console.error('❌ Script failed:', error);
+  process.exit(1);
+}).finally(async () => {
+  await prisma.$disconnect();
+});
