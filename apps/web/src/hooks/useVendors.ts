@@ -71,8 +71,8 @@ export const useUpdateVendor = () => {
     onSuccess: (_data, _variables) => {
       // Update the specific vendor in cache
       queryClient.setQueryData(
-        [...vendorsQueryKeys.vendors.detail(variables.id), tenantKey],
-        { data: data.data, success: true }
+        [...vendorsQueryKeys.vendors.detail(_variables.id), tenantKey],
+        { data: _data.data, success: true }
       );
       // Invalidate lists
       queryClient.invalidateQueries({
@@ -120,14 +120,14 @@ export const useToggleVendorStatus = () => {
     onSuccess: (_data, _variables) => {
       // Update the specific vendor in cache
       queryClient.setQueryData(
-        [...vendorsQueryKeys.vendors.detail(variables), tenantKey],
-        { data: data.data, success: true }
+        [...vendorsQueryKeys.vendors.detail(_variables), tenantKey],
+        { data: _data.data, success: true }
       );
       // Invalidate lists
       queryClient.invalidateQueries({
         queryKey: [...vendorsQueryKeys.vendors.lists(), tenantKey]
       });
-      toast.success(`Vendor ${data.data.isActive ? 'activated' : 'deactivated'} successfully`);
+      toast.success(`Vendor ${_data.data.isActive ? 'activated' : 'deactivated'} successfully`);
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to toggle vendor status');
@@ -170,7 +170,7 @@ export const useCreateVendorLink = () => {
       });
       // Invalidate vendor details (to update links)
       queryClient.invalidateQueries({
-        queryKey: [...vendorsQueryKeys.vendors.detail(data.data.vendorId), tenantKey]
+        queryKey: [...vendorsQueryKeys.vendors.detail(_data.data.vendorId), tenantKey]
       });
       // Invalidate stats
       queryClient.invalidateQueries({
@@ -194,8 +194,8 @@ export const useConfirmVendorLink = () => {
     onSuccess: (_data, _variables) => {
       // Update the specific link in cache
       queryClient.setQueryData(
-        [...vendorsQueryKeys.links.detail(variables.linkId), tenantKey],
-        { data: data.data, success: true }
+        [...vendorsQueryKeys.links.detail(_variables.linkId), tenantKey],
+        { data: _data.data, success: true }
       );
       // Invalidate lists
       queryClient.invalidateQueries({
@@ -203,9 +203,9 @@ export const useConfirmVendorLink = () => {
       });
       // Invalidate tracking
       queryClient.invalidateQueries({
-        queryKey: [...vendorsQueryKeys.links.tracking(variables.linkId), tenantKey]
+        queryKey: [...vendorsQueryKeys.links.tracking(_variables.linkId), tenantKey]
       });
-      toast.success(`Link ${data.data.status === 'confirmed' ? 'confirmed' : 'declined'} successfully`);
+      toast.success(`Link ${_data.data.status === 'confirmed' ? 'confirmed' : 'declined'} successfully`);
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to update link status');
@@ -223,8 +223,8 @@ export const useCancelVendorLink = () => {
     onSuccess: (_data, _variables) => {
       // Update the specific link in cache
       queryClient.setQueryData(
-        [...vendorsQueryKeys.links.detail(variables.linkId), tenantKey],
-        { data: data.data, success: true }
+        [...vendorsQueryKeys.links.detail(_variables.linkId), tenantKey],
+        { data: _data.data, success: true }
       );
       // Invalidate lists
       queryClient.invalidateQueries({
@@ -248,11 +248,11 @@ export const useGenerateMagicLink = () => {
     onSuccess: (_data, _variables) => {
       // Invalidate link details to show updated portal token
       queryClient.invalidateQueries({
-        queryKey: [...vendorsQueryKeys.links.detail(variables.linkId), tenantKey]
+        queryKey: [...vendorsQueryKeys.links.detail(_variables.linkId), tenantKey]
       });
       // Invalidate tracking
       queryClient.invalidateQueries({
-        queryKey: [...vendorsQueryKeys.links.tracking(variables.linkId), tenantKey]
+        queryKey: [...vendorsQueryKeys.links.tracking(_variables.linkId), tenantKey]
       });
       toast.success('Magic link generated successfully');
     },
@@ -325,11 +325,11 @@ export const useSendNotification = () => {
     onSuccess: (_data, _variables) => {
       // Invalidate notifications
       queryClient.invalidateQueries({
-        queryKey: [...vendorsQueryKeys.links.detail(variables.linkId), 'notifications', tenantKey]
+        queryKey: [...vendorsQueryKeys.links.detail(_variables.linkId), 'notifications', tenantKey]
       });
       // Invalidate tracking
       queryClient.invalidateQueries({
-        queryKey: [...vendorsQueryKeys.links.tracking(variables.linkId), tenantKey]
+        queryKey: [...vendorsQueryKeys.links.tracking(_variables.linkId), tenantKey]
       });
       toast.success('Notification sent successfully');
     },

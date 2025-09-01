@@ -383,7 +383,7 @@ const VendorsPage: React.FC = () => {
   const deleteVendor = useDeleteVendor();
   const toggleStatus = useToggleVendorStatus();
   const generateMagicLink = useGenerateMagicLink();
-  const _sendNotification = useSendNotification();
+  // const _sendNotification = useSendNotification();
 
   const handleCreateVendor = async (input: CreateVendorInput) => {
     await createVendor.mutateAsync(input);
@@ -406,15 +406,10 @@ const VendorsPage: React.FC = () => {
     await toggleStatus.mutateAsync(id);
   };
 
-  const _handleGenerateMagicLink = async (vendorId: string, linkId: string) => {
-    try {
-      const result = await generateMagicLink.mutateAsync({ vendorId, linkId });
-      navigator.clipboard.writeText(result.data.magicLink);
-      toast.success('Magic link copied to clipboard!');
-    } catch (error) {
-      // Error handling is in the hook
-    }
-  };
+  // Placeholder for magic link generation
+  // const _handleGenerateMagicLink = async (vendorId: string, linkId: string) => {
+  //   // Implementation placeholder
+  // };
 
   const propertyName = getCurrentPropertyName();
   const requiresPropertySelection = !propertyName || propertyName === 'Select Property';
@@ -440,7 +435,7 @@ const VendorsPage: React.FC = () => {
   }
 
   const vendors = vendorsData?.data?.data || [];
-  const _links = linksData?.data?.data || [];
+  // const _links = linksData?.data?.data || [];
 
   const vendorColumns = [
     {
@@ -668,9 +663,13 @@ const VendorsPage: React.FC = () => {
             setEditingVendor(undefined);
           }}
           vendor={editingVendor}
-          onSave={editingVendor ? 
-            (data: any) => handleUpdateVendor({ id: editingVendor.id, data }) : 
-            handleCreateVendor}
+          onSave={async (data: any) => {
+            if (editingVendor) {
+              await handleUpdateVendor({ id: editingVendor.id, data });
+            } else {
+              await handleCreateVendor(data);
+            }
+          }}
           loading={createVendor.isPending || updateVendor.isPending}
         />
       </div>
