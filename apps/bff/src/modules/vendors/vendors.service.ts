@@ -10,8 +10,8 @@ export class VendorsService {
     private readonly tenantContext: TenantContextService,
   ) {}
 
-  async confirmLink(id: string, dto: any, user: any) {
-    const ctx = this.tenantContext.ensureTenantContext(user);
+  async confirmLink(id: string, dto: any, req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
     const link = await this.prisma.vendorLink.findFirst({
       where: { id },
       include: { vendor: true },

@@ -13,8 +13,8 @@ export class ConciergeService {
     private readonly moduleRegistry: ModuleRegistryService,
   ) {}
 
-  async getObjectTypes(user: any) {
-    const ctx = this.tenantContext.ensureTenantContext(user);
+  async getObjectTypes(req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
     if (!(await this.moduleRegistry.isModuleEnabledForProperty(ctx.organizationId, ctx.propertyId || null, 'concierge'))) {
       throw new ForbiddenException('Concierge module not enabled for this property');
     }
@@ -24,8 +24,8 @@ export class ConciergeService {
     });
   }
 
-  async createObject(dto: any, user: any) {
-    const ctx = this.tenantContext.ensureTenantContext(user);
+  async createObject(dto: any, req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
     if (!ctx.propertyId) throw new BadRequestException('Property context required');
     if (!(await this.moduleRegistry.isModuleEnabledForProperty(ctx.organizationId, ctx.propertyId, 'concierge'))) {
       throw new ForbiddenException('Concierge module not enabled for this property');
@@ -86,8 +86,8 @@ export class ConciergeService {
     return created;
   }
 
-  async updateObject(id: string, dto: any, user: any) {
-    const ctx = this.tenantContext.ensureTenantContext(user);
+  async updateObject(id: string, dto: any, req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
     if (!(await this.moduleRegistry.isModuleEnabledForProperty(ctx.organizationId, ctx.propertyId || null, 'concierge'))) {
       throw new ForbiddenException('Concierge module not enabled for this property');
     }
@@ -109,8 +109,8 @@ export class ConciergeService {
     return updated;
   }
 
-  async completeObject(id: string, user: any) {
-    const ctx = this.tenantContext.ensureTenantContext(user);
+  async completeObject(id: string, req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
     const existing = await this.prisma.conciergeObject.findFirst({
       where: { id, organizationId: ctx.organizationId, propertyId: ctx.propertyId },
     });
@@ -129,8 +129,8 @@ export class ConciergeService {
     return completed;
   }
 
-  async executePlaybook(dto: any, user: any) {
-    const ctx = this.tenantContext.ensureTenantContext(user);
+  async executePlaybook(dto: any, req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
     if (!ctx.propertyId) throw new BadRequestException('Property context required');
     // Enqueue job to worker (using Redis queue name)
     // Here we persist a minimal request log; actual queueing handled by worker service in this codebase
