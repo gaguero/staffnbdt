@@ -44,6 +44,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { ModuleRegistryModule } from './modules/module-registry/module-registry.module';
 import { ConciergeModule } from './modules/concierge/concierge.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
+import { RoomTypesModule } from './modules/room-types/room-types.module';
 
 @Module({
   imports: [
@@ -106,6 +107,7 @@ import { VendorsModule } from './modules/vendors/vendors.module';
     ModuleRegistryModule,
     ConciergeModule,
     VendorsModule,
+    RoomTypesModule,
   ],
   controllers: [],
   providers: [

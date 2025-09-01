@@ -74,6 +74,7 @@ model Property {
   moduleSubscriptions ModuleSubscription[]
   conciergeObjects    ConciergeObject[]
   vendors             Vendor[]
+  roomTypes          RoomType[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -571,12 +572,36 @@ model Unit {
   reservations Reservation[]
   tasks        Task[]        @relation("UnitTasks")
   property     Property      @relation(fields: [propertyId], references: [id])
+  roomType     RoomType?     @relation(fields: [roomTypeId], references: [id])
+  roomTypeId   String?
 
   @@unique([propertyId, unitNumber])
   @@index([propertyId])
   @@index([status])
   @@index([isActive])
   @@index([building, floor])
+}
+
+model RoomType {
+  id           String   @id @default(cuid())
+  organizationId String?
+  propertyId   String
+  code         String
+  name         String
+  description  String?
+  baseRate     Decimal? @db.Decimal(10, 2)
+  maxCapacity  Int      @default(2)
+  amenities    String[]
+  images       String[]
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  property     Property @relation(fields: [propertyId], references: [id])
+  units        Unit[]
+
+  @@unique([propertyId, code])
+  @@index([propertyId])
+  @@index([isActive])
 }
 
 model Guest {

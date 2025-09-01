@@ -191,19 +191,17 @@ class HotelService {
   }
 
   async getRoomTypes(): Promise<ApiResponse<RoomType[]>> {
-    // Derive available types from backend enum UnitType
-    const enumValues = [
-      'STANDARD','DELUXE','SUITE','PRESIDENTIAL','FAMILY','ACCESSIBLE','STUDIO','APARTMENT','VILLA','OTHER'
-    ];
+    try {
+      const resp = await api.get('/room-types');
+      if (Array.isArray(resp?.data?.data)) {
+        return { data: resp.data.data, message: 'Room types retrieved', success: true };
+      }
+    } catch (e) {
+      // Fallback to enum-derived if endpoint not present yet
+    }
+    const enumValues = ['STANDARD','DELUXE','SUITE','PRESIDENTIAL','FAMILY','ACCESSIBLE','STUDIO','APARTMENT','VILLA','OTHER'];
     const toLabel = (v: string) => v.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-    const types: RoomType[] = enumValues.map(v => ({
-      id: v,
-      name: toLabel(v),
-      description: '',
-      baseRate: 0,
-      maxCapacity: 2,
-      amenities: [],
-    }));
+    const types: RoomType[] = enumValues.map(v => ({ id: v, name: toLabel(v), description: '', baseRate: 0, maxCapacity: 2, amenities: [] }));
     return { data: types, message: 'Derived from UnitType enum', success: true };
   }
 
