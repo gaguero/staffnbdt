@@ -51,8 +51,9 @@ class ModuleRegistryService {
    */
   async getAllModules(): Promise<ModuleManifest[]> {
     try {
-      const response = await api.get<ModuleRegistryResponse<ModuleManifest[]>>(this.baseUrl);
-      return response.data.data || [];
+      const response = await api.get(this.baseUrl);
+      const payload = (response.data && (response.data.data ?? response.data)) as ModuleManifest[];
+      return Array.isArray(payload) ? payload : [];
     } catch (error) {
       console.error('Failed to fetch all modules:', error);
       return [];
@@ -65,11 +66,12 @@ class ModuleRegistryService {
   async getEnabledModules(organizationId: string, userType?: UserType): Promise<ModuleManifest[]> {
     try {
       const params = userType ? { userType } : {};
-      const response = await api.get<ModuleRegistryResponse<ModuleManifest[]>>(
+      const response = await api.get(
         `${this.baseUrl}/organization/${organizationId}`,
         { params }
       );
-      return response.data.data || [];
+      const payload = (response.data && (response.data.data ?? response.data)) as ModuleManifest[];
+      return Array.isArray(payload) ? payload : [];
     } catch (error) {
       console.error(`Failed to fetch enabled modules for organization ${organizationId}:`, error);
       return [];
@@ -81,10 +83,11 @@ class ModuleRegistryService {
    */
   async getModuleManifest(moduleId: string): Promise<ModuleManifest | null> {
     try {
-      const response = await api.get<ModuleRegistryResponse<ModuleManifest>>(
+      const response = await api.get(
         `${this.baseUrl}/${moduleId}`
       );
-      return response.data.data || null;
+      const payload = (response.data && (response.data.data ?? response.data)) as ModuleManifest | null;
+      return (payload as any)?.moduleId ? (payload as ModuleManifest) : null;
     } catch (error) {
       console.error(`Failed to fetch module manifest for ${moduleId}:`, error);
       return null;
@@ -96,11 +99,12 @@ class ModuleRegistryService {
    */
   async getModulePermissions(moduleId: string, userType: UserType = UserType.INTERNAL): Promise<PermissionDefinition[]> {
     try {
-      const response = await api.get<ModuleRegistryResponse<PermissionDefinition[]>>(
+      const response = await api.get(
         `${this.baseUrl}/${moduleId}/permissions`,
         { params: { userType } }
       );
-      return response.data.data || [];
+      const payload = (response.data && (response.data.data ?? response.data)) as PermissionDefinition[];
+      return Array.isArray(payload) ? payload : [];
     } catch (error) {
       console.error(`Failed to fetch permissions for module ${moduleId}:`, error);
       return [];
