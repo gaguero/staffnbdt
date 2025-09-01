@@ -821,6 +821,71 @@ const PERMISSIONS: PermissionDefinition[] = [
     isSystem: true
   },
 
+  // ===== MODULE REGISTRY =====
+  {
+    resource: 'module',
+    action: 'read',
+    scope: 'organization',
+    name: 'View Organization Modules',
+    description: 'View enabled modules and their configurations for the organization',
+    category: 'Admin',
+    isSystem: true
+  },
+  {
+    resource: 'module',
+    action: 'read',
+    scope: 'property',
+    name: 'View Property Modules',
+    description: 'View enabled modules and their configurations for the property',
+    category: 'Admin',
+    isSystem: true
+  },
+  {
+    resource: 'module',
+    action: 'manage',
+    scope: 'organization',
+    name: 'Manage Organization Modules',
+    description: 'Enable and disable modules for the organization',
+    category: 'Admin',
+    isSystem: true
+  },
+  {
+    resource: 'module',
+    action: 'manage',
+    scope: 'property',
+    name: 'Manage Property Modules',
+    description: 'Enable and disable modules for the property',
+    category: 'Admin',
+    isSystem: true
+  },
+  {
+    resource: 'module',
+    action: 'create',
+    scope: 'all',
+    name: 'Create Platform Modules',
+    description: 'Register new modules on the platform',
+    category: 'Platform',
+    isSystem: true
+  },
+  {
+    resource: 'module',
+    action: 'delete',
+    scope: 'all',
+    name: 'Delete Platform Modules',
+    description: 'Unregister modules from the platform',
+    category: 'Platform',
+    isSystem: true
+  },
+  {
+    resource: 'permission',
+    action: 'read',
+    scope: 'organization',
+    name: 'View Organization Permissions',
+    description: 'View permission information within the organization',
+    category: 'Admin',
+    isSystem: true
+  },
+
   // ===== VENDORS MODULE =====
   {
     resource: 'vendors',
