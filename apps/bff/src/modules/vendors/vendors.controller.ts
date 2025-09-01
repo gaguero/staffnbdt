@@ -32,18 +32,18 @@ export class VendorsController {
     return this.vendorsService.getVendors(req, filters);
   }
 
-  @Get(':id')
-  @RequirePermission('vendors.read.property')
-  @PermissionScope('property')
-  async getVendor(@Param('id') id: string, @Request() req) {
-    return this.vendorsService.getVendor(id, req);
-  }
-
   @Get('links')
   @RequirePermission('vendors.read.property')
   @PermissionScope('property')
   async getVendorLinks(@Request() req) {
     return this.vendorsService.getVendorLinks(req);
+  }
+
+  @Get(':id')
+  @RequirePermission('vendors.read.property')
+  @PermissionScope('property')
+  async getVendor(@Param('id') id: string, @Request() req) {
+    return this.vendorsService.getVendor(id, req);
   }
 
   @Post()

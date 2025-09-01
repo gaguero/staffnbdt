@@ -574,7 +574,7 @@ export class VendorsService {
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { confirmationAt: 'desc' }
     });
   }
 }

@@ -16,6 +16,59 @@ export class ConciergeService {
     private readonly moduleRegistry: ModuleRegistryService,
   ) {}
 
+  async getStats(req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
+    if (!ctx.propertyId) {
+      throw new BadRequestException('Property context required for concierge operations');
+    }
+    if (!(await this.moduleRegistry.isModuleEnabledForProperty(ctx.organizationId, ctx.propertyId, 'concierge'))) {
+      throw new ForbiddenException('Concierge module not enabled for this property');
+    }
+
+    const [totalObjects, activeObjects, completedObjects, overdueObjects] = await Promise.all([
+      this.prisma.conciergeObject.count({
+        where: {
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+          deletedAt: null
+        }
+      }),
+      this.prisma.conciergeObject.count({
+        where: {
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+          status: { in: ['open', 'in_progress'] },
+          deletedAt: null
+        }
+      }),
+      this.prisma.conciergeObject.count({
+        where: {
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+          status: 'completed',
+          deletedAt: null
+        }
+      }),
+      this.prisma.conciergeObject.count({
+        where: {
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+          status: { in: ['open', 'in_progress'] },
+          dueAt: { lt: new Date() },
+          deletedAt: null
+        }
+      })
+    ]);
+
+    return {
+      totalObjects,
+      activeObjects,
+      completedObjects,
+      overdueObjects,
+      completionRate: totalObjects > 0 ? Math.round((completedObjects / totalObjects) * 100) : 0
+    };
+  }
+
   async getObjectTypes(req: any) {
     const ctx = this.tenantContext.getTenantContext(req);
     if (!ctx.propertyId) {
