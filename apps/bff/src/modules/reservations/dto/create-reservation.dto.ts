@@ -1,7 +1,7 @@
-import { IsString, IsDateString, IsInt, IsEnum, IsOptional, IsDecimal, Min, Max } from 'class-validator';
+import { IsString, IsDateString, IsInt, IsEnum, IsOptional, IsNumber, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ReservationStatus, PaymentStatus } from '@prisma/client';
-import { Transform } from 'class-transformer';
+import { Type } from 'class-transformer';
 
 export class CreateReservationDto {
   @ApiProperty({ example: 'unit-123' })
@@ -38,14 +38,14 @@ export class CreateReservationDto {
   status: ReservationStatus;
 
   @ApiProperty({ example: 450.00 })
-  @Transform(({ value }) => parseFloat(value))
-  @IsDecimal()
+  @Type(() => Number)
+  @IsNumber()
   totalAmount: number;
 
   @ApiPropertyOptional({ example: 0.00 })
   @IsOptional()
-  @Transform(({ value }) => parseFloat(value))
-  @IsDecimal()
+  @Type(() => Number)
+  @IsNumber()
   paidAmount?: number = 0;
 
   @ApiPropertyOptional({ example: 'USD' })
