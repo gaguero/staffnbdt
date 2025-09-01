@@ -61,4 +61,26 @@ All 15 UX enhancements implemented (Aug 21, 2025):
 
 Production-ready Brand Studio with real-time theme switching using CSS variables, org/property hierarchy resolution, and accessibility validation. See detailed architecture in `memory-bank/systemPatterns.md` and API/UI specifics in the branding implementation guide entries in `activeContext.md`.
 
+## Concierge Ops Views (v1)
+
+### Reservation 360
+- Header with reservation/guest summary
+- Required-items checklist (from Playbooks)
+- Quick-create from templates
+- Exception panel for missing requirements and SLAs
+
+### Guest Timeline
+- Chronological log of Concierge Objects, notes, files, notifications
+- Filters by type/status/date
+
+### Today Board
+- Due/overdue/upcoming sections
+- Bulk nudge/reassign actions
+- Mobile-first column stack
+
+## Vendor Portal (Magic-Link)
+- Minimal, focused UI for confirm/decline with optional notes/ETA
+- Brand-aligned minimal styling; responsive first
+- Clear status feedback and expiry messaging
+
 

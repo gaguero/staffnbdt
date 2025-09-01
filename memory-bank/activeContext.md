@@ -426,3 +426,27 @@ Current todos when session ended:
 - **Module system demo** with enable/disable functionality
 
 This active context guides daily development decisions and ensures we stay focused on the critical path to multi-tenant hotel ERP platform launch.
+
+## New Focus: Concierge + Vendors Modules (Initiated)
+**Date**: August 27, 2025  
+**Scope**: Implement Concierge (EAV objects, playbooks/SLAs, ops views) and Vendors (directory, policies, confirmations, magic-link portal)
+
+### Key Decisions (Approved)
+- Attributes: **EAV model** for Concierge object fields
+- Automation: **Worker-driven playbooks & SLAs** (background jobs)
+- Vendor Portal: **Magic-link** session with scoped PII
+- Enablement: Extend **ModuleSubscription** with optional `propertyId`; property overrides org-level
+
+### Immediate Next Steps
+1. Prisma migrations: `ConciergeObject`, `ConciergeAttribute`, `ObjectType`, `Playbook`, `Vendor`, `VendorLink`; extend `ModuleSubscription.propertyId`
+2. API controllers: Concierge `object-types`, `objects`, `playbooks/execute`; Vendors `links/confirm`, `portal/:token`
+3. Workers: SLA enforcement loop, playbook executor, vendor notifications
+4. Frontend: Module manifests; Today Board, Reservation 360 checklist, Guest Timeline; Vendor portal view
+5. Permissions: New permission keys and role mappings (concierge.*, vendors.*)
+6. Testing: Railway deploy; Playwright E2E (desktop + mobile), screenshots, console clean
+
+### Risks & Mitigations
+- EAV query complexity → Composite indexes and query helpers
+- Portal security → Short-lived tokens, minimal PII projection, audit logs
+- Enablement caching → API cache with invalidation on subscription change
+- SLA timers drift → Idempotent jobs with clock skew tolerance

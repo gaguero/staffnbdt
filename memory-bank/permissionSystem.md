@@ -1123,3 +1123,27 @@ async function healthCheck() {
 - **Predictive Security**: Proactive permission adjustments
 
 This comprehensive permission system provides the foundation for secure, scalable, multi-tenant hotel operations while maintaining the flexibility to evolve with business needs.
+
+## New Permissions (Concierge & Vendors)
+
+### Concierge
+```typescript
+'concierge.object-types.read.property'
+'concierge.objects.create.property'
+'concierge.objects.read.property'
+'concierge.objects.update.property'
+'concierge.objects.complete.property'
+'concierge.playbooks.manage.property'
+'concierge.playbooks.execute.property'
+```
+
+### Vendors
+```typescript
+'vendors.manage.property'
+'vendors.links.confirm.property'
+'vendors.portal.read.vendor' // vendor-scoped portal access
+```
+
+### Scoping Notes
+- All permissions scoped to `property` by default; platform/org roles may aggregate
+- Portal permission is vendor-claim scoped via magic-link token, not staff JWT

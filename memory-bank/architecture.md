@@ -932,3 +932,46 @@ export class ConfigService {
 ```
 
 This architecture provides a solid foundation for a scalable, secure, multi-tenant hotel operations platform that can grow from single properties to international hotel chains while maintaining performance, security, and operational efficiency.
+
+## Module Enablement Architecture (Org vs Property)
+
+**Goal**: Allow organizations to manage modules globally while properties can override enablement/billing as needed.
+
+**Data**:
+```sql
+-- module_subscriptions
+organization_id UUID NOT NULL,
+property_id UUID NULL,
+module_id TEXT NOT NULL,
+is_enabled BOOLEAN NOT NULL DEFAULT true,
+UNIQUE(organization_id, module_id, property_id),
+UNIQUE(organization_id, module_id) WHERE property_id IS NULL
+```
+
+**Precedence**:
+1. Use `(org, module, property)` when present
+2. Else inherit `(org, module, NULL)`
+
+**API Caching**:
+- Cache effective enablement per `(org, property)`; invalidate on write
+
+## Concierge ↔ Vendors Event Flow
+
+```mermaid
+description
+flowchart TD
+  R[Reservation Created] --> P[Evaluate Playbooks]
+  P -->|actions| CO[Create Concierge Objects]
+  CO -->|vendorPolicyRef| VL[Create VendorLink]
+  VL -->|send| N[Notification Worker]
+  N -->|email/sms/whatsapp| V[Vendor]
+  V -->|confirm/decline| EB[Event Bus]
+  EB -->|vendor.confirmed| COC[Update Concierge Object]
+  EB -->|vendor.declined| EX[Raise Exception]
+  SLA[DueAt Reached] --> OD[Emit concierge.sla.overdue]
+  OD --> TB[Today Board Exception]
+```
+
+**Notes**:
+- All events enriched with tenant context (orgId, propertyId)
+- Audit logging on status transitions and portal actions
