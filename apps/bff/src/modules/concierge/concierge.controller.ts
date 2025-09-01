@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Param, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ConciergeService } from './concierge.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
@@ -20,6 +20,32 @@ export class ConciergeController {
   @PermissionScope('property')
   async getObjectTypes(@Request() req) {
     return this.conciergeService.getObjectTypes(req);
+  }
+
+  @Get('objects')
+  @RequirePermission('concierge.objects.read.property')
+  @PermissionScope('property')
+  async getConciergeObjects(
+    @Request() req,
+    @Query('type') type?: string,
+    @Query('status') status?: string,
+    @Query('reservationId') reservationId?: string,
+    @Query('guestId') guestId?: string,
+  ) {
+    const filters = {
+      ...(type && { type }),
+      ...(status && { status }),
+      ...(reservationId && { reservationId }),
+      ...(guestId && { guestId }),
+    };
+    return this.conciergeService.getConciergeObjects(req, filters);
+  }
+
+  @Get('objects/:id')
+  @RequirePermission('concierge.objects.read.property')
+  @PermissionScope('property')
+  async getConciergeObject(@Param('id') id: string, @Request() req) {
+    return this.conciergeService.getConciergeObject(id, req);
   }
 
   @Post('objects')
