@@ -6,6 +6,8 @@ import { EmailNotificationProcessor } from './processors/email-notification.proc
 import { TrainingGradingProcessor } from './processors/training-grading.processor';
 import { FileProcessingProcessor } from './processors/file-processing.processor';
 import { VacationNotificationProcessor } from './processors/vacation-notification.processor';
+import { ConciergeSLAProcessor } from './processors/concierge-sla.processor';
+import { ConciergePlaybookProcessor } from './processors/concierge-playbook.processor';
 import { Logger } from './services/logger.service';
 import { EmailService } from './services/email.service';
 import { StorageService } from './services/storage.service';
@@ -28,6 +30,8 @@ export class WorkerApplication {
   private readonly trainingGradingProcessor: TrainingGradingProcessor;
   private readonly fileProcessingProcessor: FileProcessingProcessor;
   private readonly vacationNotificationProcessor: VacationNotificationProcessor;
+  private readonly conciergeSLAProcessor: ConciergeSLAProcessor;
+  private readonly conciergePlaybookProcessor: ConciergePlaybookProcessor;
 
   constructor() {
     this.logger.info('Initializing Worker Application...');
@@ -79,6 +83,9 @@ export class WorkerApplication {
       this.prisma,
       this.emailService
     );
+
+    this.conciergeSLAProcessor = new ConciergeSLAProcessor(this.prisma);
+    this.conciergePlaybookProcessor = new ConciergePlaybookProcessor(this.prisma);
   }
 
   async start(): Promise<void> {
@@ -158,6 +165,17 @@ export class WorkerApplication {
     await this.queueManager.registerProcessor(
       'vacation-notification',
       this.vacationNotificationProcessor.process.bind(this.vacationNotificationProcessor)
+    );
+
+    // Register concierge SLA processor
+    await this.queueManager.registerProcessor(
+      'concierge-sla-enforcement',
+      this.conciergeSLAProcessor.process.bind(this.conciergeSLAProcessor)
+    );
+
+    await this.queueManager.registerProcessor(
+      'concierge-playbook-execution',
+      this.conciergePlaybookProcessor.process.bind(this.conciergePlaybookProcessor)
     );
 
     this.logger.info('All processors registered successfully');

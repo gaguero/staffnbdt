@@ -42,6 +42,8 @@ import { GuestsModule } from './modules/guests/guests.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { ModuleRegistryModule } from './modules/module-registry/module-registry.module';
+import { ConciergeModule } from './modules/concierge/concierge.module';
+import { VendorsModule } from './modules/vendors/vendors.module';
 
 @Module({
   imports: [
@@ -102,6 +104,8 @@ import { ModuleRegistryModule } from './modules/module-registry/module-registry.
     ReservationsModule,
     RolesModule,
     ModuleRegistryModule,
+    ConciergeModule,
+    VendorsModule,
   ],
   controllers: [],
   providers: [

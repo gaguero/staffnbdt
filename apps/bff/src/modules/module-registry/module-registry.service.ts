@@ -205,15 +205,81 @@ export class ModuleRegistryService {
   }
 
   /**
+   * Property-aware effective enablement check with precedence:
+   * 1) property-level (org, module, property) if exists
+   * 2) fallback to org-level (org, module, NULL)
+   */
+  async isModuleEnabledForProperty(
+    organizationId: string,
+    propertyId: string | null,
+    moduleId: string
+  ): Promise<boolean> {
+    // Check property-level override first
+    if (propertyId) {
+      const propertyLevel = await this.prisma.moduleSubscription.findFirst({
+        where: { organizationId, moduleName: moduleId, propertyId, },
+        select: { isEnabled: true },
+      });
+      if (propertyLevel) {
+        return !!propertyLevel.isEnabled;
+      }
+    }
+
+    // Fall back to org-level (propertyId null)
+    const orgLevel = await this.prisma.moduleSubscription.findFirst({
+      where: { organizationId, moduleName: moduleId, propertyId: null },
+      select: { isEnabled: true },
+    });
+    return !!orgLevel?.isEnabled;
+  }
+
+  /**
+   * Get enabled modules effective for a property (applies precedence rules)
+   */
+  async getEnabledModulesForProperty(
+    organizationId: string,
+    propertyId: string
+  ): Promise<ModuleManifest[]> {
+    // Fetch both property-level enabled and org-level enabled
+    const subs = await this.prisma.moduleSubscription.findMany({
+      where: {
+        organizationId,
+        isEnabled: true,
+        OR: [
+          { propertyId },
+          { propertyId: null },
+        ],
+      },
+      select: { moduleName: true, propertyId: true },
+    });
+
+    // Apply precedence: property-level wins
+    const effective = new Map<string, boolean>();
+    for (const s of subs) {
+      const key = s.moduleName;
+      if (s.propertyId === propertyId) {
+        effective.set(key, true);
+      } else if (!effective.has(key) && s.propertyId === null) {
+        effective.set(key, true);
+      }
+    }
+
+    const moduleIds = Array.from(effective.keys());
+    if (moduleIds.length === 0) return [];
+
+    return this.prisma.moduleManifest.findMany({
+      where: { moduleId: { in: moduleIds }, isActive: true },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  /**
    * Get module manifest by ID
    */
   async getModuleManifest(moduleId: string): Promise<ModuleManifest | null> {
     try {
-      return await this.prisma.moduleManifest.findUnique({
-        where: { 
-          moduleId,
-          isActive: true 
-        }
+      return await this.prisma.moduleManifest.findFirst({
+        where: { moduleId, isActive: true }
       });
     } catch (error) {
       this.logger.error(`Error getting module manifest for ${moduleId}:`, error);
@@ -241,25 +307,26 @@ export class ModuleRegistryService {
       }
 
       // Enable the module subscription
-      await this.prisma.moduleSubscription.upsert({
-        where: {
-          organizationId_moduleName: {
+      // Use findFirst + create/update to avoid relying on a non-representable partial-unique in Prisma
+      const existing = await this.prisma.moduleSubscription.findFirst({
+        where: { organizationId, moduleName: moduleId, propertyId: null },
+      });
+      if (existing) {
+        await this.prisma.moduleSubscription.update({
+          where: { id: existing.id },
+          data: { isEnabled: true, enabledAt: new Date(), disabledAt: null },
+        });
+      } else {
+        await this.prisma.moduleSubscription.create({
+          data: {
             organizationId,
             moduleName: moduleId,
+            propertyId: null,
+            isEnabled: true,
+            enabledAt: new Date(),
           },
-        },
-        create: {
-          organizationId,
-          moduleName: moduleId,
-          isEnabled: true,
-          enabledAt: new Date(),
-        },
-        update: {
-          isEnabled: true,
-          enabledAt: new Date(),
-          disabledAt: null,
-        },
-      });
+        });
+      }
 
       // Log the action
       await this.auditService.logCreate(
@@ -288,13 +355,8 @@ export class ModuleRegistryService {
     this.logger.log(`Disabling module ${moduleId} for organization ${organizationId}`);
 
     try {
-      const subscription = await this.prisma.moduleSubscription.findUnique({
-        where: {
-          organizationId_moduleName: {
-            organizationId,
-            moduleName: moduleId,
-          },
-        },
+      const subscription = await this.prisma.moduleSubscription.findFirst({
+        where: { organizationId, moduleName: moduleId, propertyId: null },
       });
 
       if (!subscription) {
@@ -309,16 +371,8 @@ export class ModuleRegistryService {
 
       // Disable the module subscription
       await this.prisma.moduleSubscription.update({
-        where: {
-          organizationId_moduleName: {
-            organizationId,
-            moduleName: moduleId,
-          },
-        },
-        data: {
-          isEnabled: false,
-          disabledAt: new Date(),
-        },
+        where: { id: subscription.id },
+        data: { isEnabled: false, disabledAt: new Date() },
       });
 
       // Log the action

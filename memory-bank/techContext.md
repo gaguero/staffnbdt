@@ -722,3 +722,46 @@ const useModuleAccess = (moduleId: string) => {
 - Module enablement caching at API level
 - Worker job queuing for SLA checks
 - Portal token validation caching
+
+## Context7 Technical Addenda
+
+### Prisma + Postgres: Partial Unique Indexes
+- Prisma schema cannot express partial unique constraints; define them in SQL migrations
+```sql
+CREATE UNIQUE INDEX idx_mod_sub_org_mod_prop
+ON module_subscriptions(organization_id, module_id, property_id);
+
+CREATE UNIQUE INDEX idx_mod_sub_org_mod_orglevel
+ON module_subscriptions(organization_id, module_id)
+WHERE property_id IS NULL;
+```
+
+### EAV Constraints & Indexes
+```sql
+ALTER TABLE concierge_attributes ADD CONSTRAINT chk_exactly_one_value
+CHECK (
+  (string_value IS NOT NULL)::int +
+  (number_value IS NOT NULL)::int +
+  (boolean_value IS NOT NULL)::int +
+  (date_value IS NOT NULL)::int +
+  (json_value IS NOT NULL)::int = 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_ca_object_field ON concierge_attributes(object_id, field_key);
+CREATE INDEX IF NOT EXISTS idx_ca_field_type ON concierge_attributes(field_key, field_type);
+```
+
+### Worker Idempotency & Scheduling
+- Deterministic `jobId` for playbook jobs; dedupe on object+playbook
+- SLA enforcement via window scans (e.g., dueAt <= now) rather than per-object timers
+- Include tenant context in job data; configure retries/backoff
+
+### R2 Pre-signed URLs & CORS
+- Upload expiry: 5 minutes; validate `Content-Type` and size
+- Path convention: `org-{orgId}/property-{propertyId}/concierge/{objectId}/...`
+- CORS: allow PUT/GET, wildcard headers, expose ETag; deny list via validation
+
+### TanStack Query v5 (Tenant-Aware)
+- Include `propertyId` (and `organizationId` when needed) in query keys
+- On property switch, invalidate tenant-scoped queries
+- Tune `staleTime` per view (Today Board short, Timeline longer)

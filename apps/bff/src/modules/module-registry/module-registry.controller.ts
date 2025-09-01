@@ -34,6 +34,57 @@ export class ModuleRegistryController {
     return this.moduleRegistryService.registerModule(registerModuleDto);
   }
 
+  @Post('register/seed-defaults')
+  @RequirePermission('module.create.platform')
+  @ApiOperation({ summary: 'Seed default module manifests for Concierge and Vendors' })
+  async seedDefaults() {
+    const concierge = await this.moduleRegistryService.registerModule({
+      moduleId: 'concierge',
+      name: 'Concierge',
+      version: '1.0.0',
+      category: 'operations',
+      description: 'Guest experience orchestration',
+      internalPermissions: [
+        { resource: 'concierge.object-types', action: 'read', scope: 'property', name: 'Read Concierge Object Types' },
+        { resource: 'concierge.objects', action: 'create', scope: 'property', name: 'Create Concierge Objects' },
+        { resource: 'concierge.objects', action: 'read', scope: 'property', name: 'Read Concierge Objects' },
+        { resource: 'concierge.objects', action: 'update', scope: 'property', name: 'Update Concierge Objects' },
+        { resource: 'concierge.objects', action: 'complete', scope: 'property', name: 'Complete Concierge Objects' },
+        { resource: 'concierge.playbooks', action: 'manage', scope: 'property', name: 'Manage Concierge Playbooks' },
+        { resource: 'concierge.playbooks', action: 'execute', scope: 'property', name: 'Execute Concierge Playbooks' },
+      ],
+      externalPermissions: [],
+      internalNavigation: [
+        { id: 'concierge-root', label: 'Concierge', path: '/concierge', icon: 'concierge', requiredPermissions: ['concierge.objects.read.property'] },
+        { id: 'concierge-today', label: 'Today Board', path: '/concierge/today', icon: 'board', requiredPermissions: ['concierge.objects.read.property'] },
+      ],
+      externalNavigation: [],
+      dependencies: [],
+      isSystemModule: false,
+    });
+
+    const vendors = await this.moduleRegistryService.registerModule({
+      moduleId: 'vendors',
+      name: 'Vendors',
+      version: '1.0.0',
+      category: 'operations',
+      description: 'Vendor orchestration and portal',
+      internalPermissions: [
+        { resource: 'vendors', action: 'manage', scope: 'property', name: 'Manage Vendors' },
+        { resource: 'vendors.links', action: 'confirm', scope: 'property', name: 'Confirm Vendor Links' },
+      ],
+      externalPermissions: [],
+      internalNavigation: [
+        { id: 'vendors-root', label: 'Vendors', path: '/vendors', icon: 'vendors', requiredPermissions: ['vendors.manage.property'] },
+      ],
+      externalNavigation: [],
+      dependencies: [],
+      isSystemModule: false,
+    });
+
+    return { concierge, vendors };
+  }
+
   @Delete(':moduleId')
   @RequirePermission('module.delete.platform')
   @ApiOperation({ summary: 'Unregister a module' })
@@ -71,11 +122,7 @@ export class ModuleRegistryController {
   @ApiResponse({ status: 200, description: 'Module manifest' })
   @ApiResponse({ status: 404, description: 'Module not found' })
   async getModuleManifest(@Param('moduleId') moduleId: string) {
-    const manifest = await this.moduleRegistryService.getModuleManifest(moduleId);
-    if (!manifest) {
-      throw new Error('Module not found');
-    }
-    return manifest;
+    return this.moduleRegistryService.getModuleManifest(moduleId);
   }
 
   @Post('organization/:organizationId/enable/:moduleId')

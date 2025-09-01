@@ -87,10 +87,133 @@ model ModuleSubscription {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
+  propertyId     String?
+  property       Property?    @relation(fields: [propertyId], references: [id])
 
-  @@unique([organizationId, moduleName])
   @@index([organizationId])
   @@index([moduleName])
+  @@unique([organizationId, moduleName, propertyId])
+}
+
+model ConciergeObject {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  type           String
+  reservationId  String?
+  guestId        String?
+  status         String   @default("open")
+  dueAt          DateTime?
+  assignments    Json?
+  files          Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  property       Property @relation(fields: [propertyId], references: [id])
+  attributes     ConciergeAttribute[]
+
+  @@index([organizationId, propertyId, type])
+  @@index([organizationId, propertyId, status, dueAt])
+}
+
+model ConciergeAttribute {
+  id           String   @id @default(cuid())
+  objectId     String
+  fieldKey     String
+  fieldType    String
+  stringValue  String?
+  numberValue  Float?
+  booleanValue Boolean?
+  dateValue    DateTime?
+  jsonValue    Json?
+
+  object       ConciergeObject @relation(fields: [objectId], references: [id])
+
+  @@index([objectId, fieldKey])
+  @@index([fieldKey, fieldType])
+}
+
+model ObjectType {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  fieldsSchema   Json
+  validations    Json?
+  uiHints        Json?
+  isActive       Boolean  @default(true)
+
+  @@index([organizationId, propertyId])
+  @@unique([organizationId, propertyId, name])
+}
+
+model Playbook {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  trigger        String
+  conditions     Json
+  actions        Json
+  enforcements   Json?
+  isActive       Boolean  @default(true)
+
+  @@index([organizationId, propertyId])
+  @@unique([organizationId, propertyId, name])
+}
+
+model Vendor {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  email          String?
+  phone          String?
+  category       String
+  policies       Json?
+  performance    Json?
+  isActive       Boolean  @default(true)
+
+  property       Property @relation(fields: [propertyId], references: [id])
+  links          VendorLink[]
+
+  @@index([organizationId, propertyId])
+  @@index([isActive])
+}
+
+model VendorLink {
+  id             String   @id @default(cuid())
+  vendorId       String
+  objectId       String
+  objectType     String
+  policyRef      String?
+  status         String   @default("pending")
+  confirmationAt DateTime?
+  expiresAt      DateTime?
+
+  vendor         Vendor   @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId, status])
+  @@index([objectId, objectType])
+}
+
+model VendorPortalToken {
+  id             String   @id @default(cuid())
+  vendorId       String
+  organizationId String
+  propertyId     String
+  linkId         String
+  tokenHash      String
+  expiresAt      DateTime
+  usedAt         DateTime?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([vendorId])
+  @@index([organizationId, propertyId])
+  @@index([expiresAt])
+  @@unique([linkId, tokenHash])
 }
 
 model TenantSettings {

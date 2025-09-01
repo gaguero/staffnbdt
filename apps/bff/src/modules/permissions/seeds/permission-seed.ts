@@ -221,6 +221,86 @@ export async function seedPermissions() {
     },
   ];
 
+  // Concierge Permissions
+  const conciergePermissions = [
+    {
+      resource: 'concierge.object-types',
+      action: 'read',
+      scope: 'property',
+      name: 'Read Concierge Object Types',
+      description: 'View available concierge object types',
+      category: 'Concierge',
+    },
+    {
+      resource: 'concierge.objects',
+      action: 'create',
+      scope: 'property',
+      name: 'Create Concierge Objects',
+      description: 'Create concierge objects for guests/reservations',
+      category: 'Concierge',
+    },
+    {
+      resource: 'concierge.objects',
+      action: 'read',
+      scope: 'property',
+      name: 'Read Concierge Objects',
+      description: 'View concierge objects in property',
+      category: 'Concierge',
+    },
+    {
+      resource: 'concierge.objects',
+      action: 'update',
+      scope: 'property',
+      name: 'Update Concierge Objects',
+      description: 'Update concierge objects in property',
+      category: 'Concierge',
+    },
+    {
+      resource: 'concierge.objects',
+      action: 'complete',
+      scope: 'property',
+      name: 'Complete Concierge Objects',
+      description: 'Mark concierge objects as completed',
+      category: 'Concierge',
+    },
+    {
+      resource: 'concierge.playbooks',
+      action: 'manage',
+      scope: 'property',
+      name: 'Manage Concierge Playbooks',
+      description: 'Create and manage concierge playbooks',
+      category: 'Concierge',
+    },
+    {
+      resource: 'concierge.playbooks',
+      action: 'execute',
+      scope: 'property',
+      name: 'Execute Concierge Playbooks',
+      description: 'Execute concierge playbooks',
+      category: 'Concierge',
+    },
+  ];
+
+  // Vendors Permissions
+  const vendorsPermissions = [
+    {
+      resource: 'vendors.links',
+      action: 'confirm',
+      scope: 'property',
+      name: 'Confirm Vendor Links',
+      description: 'Confirm or decline vendor links',
+      category: 'Vendors',
+    },
+    {
+      resource: 'vendors',
+      action: 'manage',
+      scope: 'property',
+      name: 'Manage Vendors',
+      description: 'Create and manage vendors',
+      category: 'Vendors',
+    },
+  ];
+
   // Admin Permissions
   const adminPermissions = [
     {
@@ -290,6 +370,8 @@ export async function seedPermissions() {
     ...trainingPermissions,
     ...documentPermissions,
     ...operationsPermissions,
+    ...conciergePermissions,
+    ...vendorsPermissions,
     ...adminPermissions,
     ...modulePermissions,
   ];
@@ -347,6 +429,12 @@ export async function seedPermissions() {
         'unit.read.property',
         'unit.update.property',
         'task.create.department',
+        'concierge.object-types.read.property',
+        'concierge.objects.create.property',
+        'concierge.objects.read.property',
+        'concierge.objects.update.property',
+        'concierge.objects.complete.property',
+        'concierge.playbooks.execute.property',
       ],
     },
     {
@@ -388,6 +476,7 @@ export async function seedPermissions() {
         'document.read.own',
         'task.read.own',
         'task.update.own',
+        // read-only concierge visibility in some contexts (optional)
       ],
     },
   ];

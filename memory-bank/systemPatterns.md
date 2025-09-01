@@ -724,6 +724,45 @@ const ResponsiveRoomGrid: React.FC = () => {
 
 These patterns form the foundation of Hotel Operations Hub's architecture, ensuring scalability, security, and maintainability while supporting the complex requirements of multi-tenant hotel operations.
 
+## Tenant Reactivity & Platform Admin Selector Rules
+
+### Single Source of Truth
+- For Platform Admins, the active `propertyId` is the authoritative tenant context. Its `organizationId` implicitly defines the organization.
+- If only `organizationId` is set (no `propertyId`), content is organization-scoped; property-scoped pages must prompt to select a property.
+
+### Header Rules (axios)
+- Request headers are derived exclusively from the `TenantContext` stored in `TENANT_STORAGE_KEY`.
+- If `propertyId` exists: always send `X-Property-Id` and set `X-Organization-Id` to the property’s organization (fallback to stored org id if needed).
+- If only `organizationId` exists: send `X-Organization-Id` and omit `X-Property-Id`.
+
+### TenantContext Reconciliation
+- On any change to `organizationId`/`propertyId`, clear stale cached objects (`organization`, `property`) if their ids no longer match.
+- Name helpers derive from ids first, then fall back to cached objects to avoid UI showing outdated names.
+- `tenantKey = \`${organizationId || 'no-org'}:${propertyId || 'no-prop'}\`` is the dependency to re-fetch on tenant changes.
+
+### Selector Rendering
+- Sidebar (Platform Admin): render a single `PropertySelector`; hide the `OrganizationSelector` there to avoid duplication.
+- Header (Platform Admin): show compact `OrganizationSelector` for org switching; selecting an org clears `propertyId` and reloads, then the `PropertySelector` loads properties for the new org.
+- Page headers (Users, Departments, Roles, Hotel pages): include compact `PropertySelector` and block stats/cards until a property is selected.
+
+### Selector Behavior
+- Organization switch is single-phase: `setAdminOverride(newOrgId, undefined)` then reload. No prefetch of properties during the switch.
+- Property switch sets both `propertyId` and aligns `organizationId` to the selected property’s org, then reload.
+
+### Backend Alignment
+- `TenantInterceptor` ensures effective org/property ids propagate to `request.user` for downstream filters.
+- Platform Admin bypass in `PermissionGuard` allows management across tenants while still enforcing header-based scoping.
+
+### Common Pitfalls Avoided
+- Stale property/org objects causing mismatched breadcrumbs and selectors (fixed by reconciliation).
+- 500s on `/properties` due to mismatched query params (frontend now uses `propertyType`, `page`, and caps `limit` ≤ 100).
+- Duplicate selectors causing conflicting states (sidebar/header cleanup for Platform Admins).
+
+### Testing Checklist
+- Switch org → property prompt appears on property-scoped pages.
+- Select property → all lists/cards update; headers include both ids; no console errors.
+- Switch org again → breadcrumbs, header badges, and sidebar reflect the new org; property list shows new org’s properties.
+
 ## Role System UI & Management Patterns
 
 ### Role Badges and Role Display
@@ -881,3 +920,34 @@ interface PortalSession {
 - Vendor links reference `vendorPolicyRef`
 - Concierge objects can link to vendor confirmations
 - Event bus handles vendor status changes
+
+### EAV Constraints & Indexing (Context7)
+
+```sql
+-- Ensure exactly one typed value is set per attribute
+ALTER TABLE concierge_attributes ADD CONSTRAINT chk_exactly_one_value
+CHECK (
+  (string_value IS NOT NULL)::int +
+  (number_value IS NOT NULL)::int +
+  (boolean_value IS NOT NULL)::int +
+  (date_value IS NOT NULL)::int +
+  (json_value IS NOT NULL)::int = 1
+);
+
+-- Recommended indexes
+CREATE INDEX IF NOT EXISTS idx_ca_object_field ON concierge_attributes(object_id, field_key);
+CREATE INDEX IF NOT EXISTS idx_ca_field_type ON concierge_attributes(field_key, field_type);
+-- Add targeted indexes for frequently queried fields, e.g. dates
+-- CREATE INDEX IF NOT EXISTS idx_ca_field_date ON concierge_attributes(field_key, date_value);
+```
+
+### Domain Events Guidelines (Context7)
+- Include `tenantContext` and `correlationId` on all events
+- Idempotent handlers (use dedup keys) and retries with backoff
+- Persist events to event store for audit/replay
+
+### Magic-Link Security Details (Context7)
+- Store magic-link token as a hash (Argon2/bcrypt), with `expiresAt`, `usedAt`
+- One-time exchange: GET renders, POST exchanges token → short-lived portal JWT
+- Scope portal JWT to `vendorId`, `organizationId`, `propertyId`, minimal permissions
+- Enforce TTL (24–48h), rate limits, and full audit logging
