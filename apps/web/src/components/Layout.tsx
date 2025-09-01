@@ -207,7 +207,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* User menu */}
             <div className="flex items-center space-x-4">
-              {/* For Platform Admins, do not double-render a second org selector in header */}
+              {/* Show compact Organization selector in header for Platform Admins */}
+              {isPlatformAdmin && (
+                <div className="hidden lg:block min-w-[240px]">
+                  <OrganizationSelector variant="compact" />
+                </div>
+              )}
               
               {/* Language Switcher */}
               <button
