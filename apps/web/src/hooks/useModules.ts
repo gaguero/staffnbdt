@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { moduleRegistryService } from '../services/moduleRegistryService';
+import moduleManagementService, { PropertyModuleResponse } from '../services/moduleManagementService';
 import { UserType } from '../types/auth';
 import { usePermissions } from './usePermissions';
 import { useMemo } from 'react';
@@ -19,6 +20,8 @@ export const MODULE_QUERY_KEYS = {
     [...MODULE_QUERY_KEYS.all, 'navigation', organizationId, userType] as const,
   modulePermissions: (organizationId: string, userType: UserType) => 
     [...MODULE_QUERY_KEYS.all, 'modulePermissions', organizationId, userType] as const,
+  propertyModules: (organizationId: string, propertyId: string) => 
+    [...MODULE_QUERY_KEYS.all, 'property', organizationId, propertyId] as const,
 };
 
 /**
@@ -235,6 +238,61 @@ export function useModuleDependencies(moduleId: string | undefined) {
     enabled: !!moduleId,
     staleTime: 5 * 60 * 1000, // 5 minutes (shorter since dependencies can change)
   });
+}
+
+/**
+ * Hook to check property-level module enablement
+ */
+export function usePropertyModules() {
+  const { user } = useAuth();
+  const organizationId = user?.organizationId;
+  const propertyId = user?.propertyId;
+
+  const {
+    data: propertyModules,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: MODULE_QUERY_KEYS.propertyModules(organizationId || '', propertyId || ''),
+    queryFn: () => {
+      if (!organizationId || !propertyId) return Promise.resolve(null);
+      return moduleManagementService.getPropertyModules(organizationId, propertyId);
+    },
+    enabled: !!organizationId && !!propertyId,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 20 * 60 * 1000, // 20 minutes
+    refetchOnWindowFocus: false,
+  });
+
+  // Create a function to check if a specific module is enabled
+  const isModuleEnabled = useMemo(() => {
+    return (moduleId: string): boolean => {
+      if (!propertyModules?.statusDetails) return false;
+      
+      const moduleStatus = propertyModules.statusDetails.find(
+        detail => detail.moduleId === moduleId
+      );
+      
+      return moduleStatus?.effectiveStatus ?? false;
+    };
+  }, [propertyModules]);
+
+  // Get list of enabled module IDs
+  const enabledModuleIds = useMemo(() => {
+    if (!propertyModules?.statusDetails) return [];
+    
+    return propertyModules.statusDetails
+      .filter(detail => detail.effectiveStatus)
+      .map(detail => detail.moduleId);
+  }, [propertyModules]);
+
+  return {
+    propertyModules,
+    isLoading,
+    error: error?.message || null,
+    isModuleEnabled,
+    enabledModuleIds,
+  };
 }
 
 export default useModules;

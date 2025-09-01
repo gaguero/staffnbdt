@@ -2,14 +2,14 @@ import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useModuleNavigation } from '../hooks/useModules';
+import { useModuleNavigation, usePropertyModules } from '../hooks/useModules';
 import { usePermissions } from '../hooks/usePermissions';
 import { UserType } from '../types/auth';
 import { NavItem } from '../services/moduleRegistryService';
 
 interface NavigationSection {
   title: string;
-  items: NavItem[];
+  items: (NavItem & { moduleId?: string })[];
   category?: string;
 }
 
@@ -179,6 +179,7 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
             path: '/concierge',
             icon: '🛎️',
             requiredPermissions: ['concierge.read.property'],
+            moduleId: 'concierge',
           },
           {
             id: 'vendors',
@@ -186,6 +187,7 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
             path: '/vendors',
             icon: '🤝',
             requiredPermissions: ['vendors.read.property'],
+            moduleId: 'vendors',
           }
         ]
       },
@@ -314,12 +316,13 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
   const { user } = useAuth();
   const { t } = useLanguage();
   const { hasPermission } = usePermissions();
+  const { isModuleEnabled, isLoading: isLoadingModules } = usePropertyModules();
   
   const { navigationItems, isLoading, error } = useModuleNavigation(userType);
 
   // Build navigation sections from module data
   const navigationSections = useMemo(() => {
-    if (isLoading) {
+    if (isLoading || isLoadingModules) {
       return getDefaultNavigation(userType);
     }
 
@@ -382,7 +385,15 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
     const filtered = navigationSections.map(section => ({
       ...section,
       items: section.items.filter(item => {
-        // If no permissions required, always show
+        // Check module enablement first (if item requires a module)
+        if ((item as any).moduleId) {
+          const moduleEnabled = isModuleEnabled((item as any).moduleId);
+          if (!moduleEnabled) {
+            return false;
+          }
+        }
+        
+        // If no permissions required, show (assuming module check passed)
         if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
           return true;
         }
@@ -399,9 +410,9 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ userType, onItemC
     })).filter(section => section.items.length > 0);
 
     return filtered;
-  }, [navigationSections, user, hasPermission]);
+  }, [navigationSections, user, hasPermission, isModuleEnabled]);
 
-  if (isLoading) {
+  if (isLoading || isLoadingModules) {
     return (
       <nav className="flex-1 px-4 py-6 space-y-6">
         <div className="animate-pulse space-y-4">
