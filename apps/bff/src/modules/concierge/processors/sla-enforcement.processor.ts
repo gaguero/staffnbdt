@@ -1,9 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Processor, Process } from '@nestjs/bull';
+import { Job } from 'bull';
 import { PrismaService } from '../../../shared/database/prisma.service';
 import { DomainEventBus } from '../../../shared/events/domain-event-bus.service';
 import { ConciergeService } from '../concierge.service';
 
+export interface SLACheckJob {
+  organizationId?: string;
+  propertyId?: string;
+  objectId?: string;
+  checkType: 'overdue' | 'upcoming' | 'escalation';
+  windowMinutes?: number;
+}
+
 @Injectable()
+@Processor('sla-enforcement')
 export class SLAEnforcementProcessor {
   private readonly logger = new Logger(SLAEnforcementProcessor.name);
 
@@ -14,285 +25,360 @@ export class SLAEnforcementProcessor {
   ) {}
 
   /**
-   * Check for overdue concierge objects and emit events
-   * This should be called periodically (e.g., every 15 minutes)
+   * Check for overdue objects across all properties
    */
-  async checkOverdueObjects(): Promise<void> {
+  @Process('check-overdue')
+  async checkOverdueObjects(job: Job<SLACheckJob>): Promise<void> {
+    this.logger.log('Starting overdue objects check');
+    
     try {
-      const overdueObjects = await this.conciergeService.findOverdueObjects();
+      const { organizationId, propertyId } = job.data;
       
-      this.logger.log(`Found ${overdueObjects.length} overdue concierge objects`);
+      const whereClause: any = {
+        dueAt: { lte: new Date() },
+        status: { notIn: ['completed', 'cancelled'] },
+        deletedAt: null,
+      };
+
+      if (organizationId) whereClause.organizationId = organizationId;
+      if (propertyId) whereClause.propertyId = propertyId;
+
+      const overdueObjects = await this.prisma.conciergeObject.findMany({
+        where: whereClause,
+        include: {
+          attributes: true,
+        },
+        orderBy: { dueAt: 'asc' },
+      });
+
+      this.logger.log(`Found ${overdueObjects.length} overdue objects`);
 
       for (const object of overdueObjects) {
-        await this.eventBus.emit({
-          type: 'concierge.sla.overdue',
-          payload: {
-            objectId: object.id,
-            type: object.type,
-            status: object.status,
-            dueAt: object.dueAt?.toISOString(),
-            reservationId: object.reservationId,
-            guestId: object.guestId,
-            overdueBy: object.dueAt ? Date.now() - object.dueAt.getTime() : null,
-          },
-          tenant: {
-            organizationId: object.organizationId,
-            propertyId: object.propertyId,
-          },
-          correlationId: `sla-overdue-${object.id}`,
-          timestamp: new Date().toISOString(),
-        });
-
-        // Update object status to indicate it's overdue
-        await this.prisma.conciergeObject.update({
-          where: { id: object.id },
-          data: { 
-            status: 'overdue',
-            updatedAt: new Date(),
-          },
-        });
+        await this.handleOverdueObject(object);
       }
+
+      // Update job progress
+      await job.progress(100);
+      
     } catch (error) {
-      this.logger.error('Error checking overdue objects:', error);
+      this.logger.error('Error checking overdue objects', error.stack);
       throw error;
     }
   }
 
   /**
-   * Execute a playbook based on trigger event
+   * Check for upcoming due dates (warning notifications)
    */
-  async executePlaybook(data: PlaybookExecutionData): Promise<void> {
+  @Process('check-upcoming')
+  async checkUpcomingDueDates(job: Job<SLACheckJob>): Promise<void> {
+    this.logger.log('Starting upcoming due dates check');
+    
     try {
-      const { playbookId, playbookName, trigger, triggerData, actions, conditions, enforcements } = data;
+      const { windowMinutes = 60 } = job.data;
+      const now = new Date();
+      const windowEnd = new Date(now.getTime() + windowMinutes * 60 * 1000);
 
-      this.logger.log(`Executing playbook: ${playbookName} (${playbookId})`);
+      const upcomingObjects = await this.prisma.conciergeObject.findMany({
+        where: {
+          dueAt: {
+            gte: now,
+            lte: windowEnd,
+          },
+          status: { notIn: ['completed', 'cancelled'] },
+          deletedAt: null,
+        },
+        include: {
+          attributes: true,
+        },
+        orderBy: { dueAt: 'asc' },
+      });
 
-      // Validate conditions first
-      if (conditions && !this.evaluateConditions(conditions, triggerData)) {
-        this.logger.log(`Playbook ${playbookName} conditions not met, skipping execution`);
-        return;
+      this.logger.log(`Found ${upcomingObjects.length} objects due within ${windowMinutes} minutes`);
+
+      for (const object of upcomingObjects) {
+        await this.handleUpcomingDueDate(object, windowMinutes);
       }
-
-      // Execute each action
-      for (const action of actions || []) {
-        await this.executeAction(action, triggerData, data.tenant);
-      }
-
-      // Apply enforcements (SLAs, notifications, etc.)
-      if (enforcements) {
-        await this.applyEnforcements(enforcements, triggerData, data.tenant);
-      }
-
-      this.logger.log(`Playbook ${playbookName} executed successfully`);
 
     } catch (error) {
-      this.logger.error(`Error executing playbook ${data.playbookName}:`, error);
+      this.logger.error('Error checking upcoming due dates', error.stack);
       throw error;
     }
   }
 
-  private evaluateConditions(conditions: any, triggerData: any): boolean {
-    // Simple condition evaluation logic
-    // In a real implementation, this would be more sophisticated
+  /**
+   * Handle escalation rules for overdue objects
+   */
+  @Process('handle-escalation')
+  async handleEscalation(job: Job<SLACheckJob>): Promise<void> {
+    this.logger.log('Starting escalation handling');
+    
     try {
-      if (conditions.type === 'and') {
-        return conditions.rules.every((rule: any) => this.evaluateRule(rule, triggerData));
+      const { objectId } = job.data;
+      
+      if (!objectId) {
+        throw new Error('Object ID required for escalation handling');
       }
-      if (conditions.type === 'or') {
-        return conditions.rules.some((rule: any) => this.evaluateRule(rule, triggerData));
-      }
-      return this.evaluateRule(conditions, triggerData);
-    } catch (error) {
-      this.logger.warn('Error evaluating conditions, defaulting to true:', error);
-      return true; // Default to true if evaluation fails
-    }
-  }
 
-  private evaluateRule(rule: any, triggerData: any): boolean {
-    const { field, operator, value } = rule;
-    const fieldValue = this.getNestedValue(triggerData, field);
-
-    switch (operator) {
-      case 'equals':
-        return fieldValue === value;
-      case 'not_equals':
-        return fieldValue !== value;
-      case 'contains':
-        return fieldValue && fieldValue.includes(value);
-      case 'gt':
-        return fieldValue > value;
-      case 'lt':
-        return fieldValue < value;
-      case 'gte':
-        return fieldValue >= value;
-      case 'lte':
-        return fieldValue <= value;
-      default:
-        return true;
-    }
-  }
-
-  private getNestedValue(obj: any, path: string): any {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
-  }
-
-  private async executeAction(action: any, triggerData: any, tenant: any): Promise<void> {
-    try {
-      switch (action.type) {
-        case 'create_object':
-          await this.createConciergeObject(action, triggerData, tenant);
-          break;
-        case 'update_object':
-          await this.updateConciergeObject(action, triggerData, tenant);
-          break;
-        case 'send_notification':
-          await this.sendNotification(action, triggerData, tenant);
-          break;
-        case 'assign_task':
-          await this.assignTask(action, triggerData, tenant);
-          break;
-        default:
-          this.logger.warn(`Unknown action type: ${action.type}`);
-      }
-    } catch (error) {
-      this.logger.error(`Error executing action ${action.type}:`, error);
-      // Continue with other actions even if one fails
-    }
-  }
-
-  private async createConciergeObject(action: any, triggerData: any, tenant: any): Promise<void> {
-    const objectData = {
-      organizationId: tenant.organizationId,
-      propertyId: tenant.propertyId,
-      type: action.objectType || 'task',
-      status: action.status || 'pending',
-      dueAt: action.dueAt ? new Date(action.dueAt) : null,
-      reservationId: triggerData.reservationId || null,
-      guestId: triggerData.guestId || null,
-      assignments: action.assignments || null,
-      files: action.files || null,
-    };
-
-    await this.prisma.conciergeObject.create({ data: objectData });
-    this.logger.log(`Created concierge object of type: ${objectData.type}`);
-  }
-
-  private async updateConciergeObject(action: any, triggerData: any, tenant: any): Promise<void> {
-    const objectId = action.objectId || triggerData.completedObjectId;
-    if (!objectId) {
-      this.logger.warn('No object ID provided for update action');
-      return;
-    }
-
-    const updateData: any = {};
-    if (action.status) updateData.status = action.status;
-    if (action.assignments) updateData.assignments = action.assignments;
-    if (action.dueAt) updateData.dueAt = new Date(action.dueAt);
-
-    await this.prisma.conciergeObject.updateMany({
-      where: {
-        id: objectId,
-        organizationId: tenant.organizationId,
-        propertyId: tenant.propertyId,
-      },
-      data: updateData,
-    });
-
-    this.logger.log(`Updated concierge object: ${objectId}`);
-  }
-
-  private async sendNotification(action: any, triggerData: any, tenant: any): Promise<void> {
-    await this.eventBus.emit({
-      type: 'notification.send.requested',
-      payload: {
-        type: action.notificationType || 'info',
-        title: action.title || 'Concierge Notification',
-        message: action.message || 'A concierge task requires your attention',
-        recipients: action.recipients || [],
-        data: {
-          ...triggerData,
-          playbookGenerated: true,
+      const object = await this.prisma.conciergeObject.findUnique({
+        where: { id: objectId },
+        include: {
+          attributes: true,
         },
-      },
-      tenant,
-      correlationId: `playbook-notification-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-    });
+      });
 
-    this.logger.log(`Notification sent: ${action.title}`);
+      if (!object) {
+        this.logger.warn(`Object ${objectId} not found for escalation`);
+        return;
+      }
+
+      await this.processEscalation(object);
+
+    } catch (error) {
+      this.logger.error('Error handling escalation', error.stack);
+      throw error;
+    }
   }
 
-  private async assignTask(action: any, triggerData: any, tenant: any): Promise<void> {
-    // Create a task assignment (this would integrate with your task system)
-    await this.eventBus.emit({
-      type: 'task.assignment.requested',
-      payload: {
-        title: action.title || 'Concierge Task',
-        description: action.description || 'Task generated by playbook',
-        assignedTo: action.assignedTo,
-        dueDate: action.dueDate || null,
-        priority: action.priority || 'medium',
-        relatedObjectId: triggerData.objectId || triggerData.completedObjectId,
-        relatedObjectType: 'concierge_object',
-      },
-      tenant,
-      correlationId: `playbook-task-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-    });
+  /**
+   * Execute playbook for SLA enforcement
+   */
+  @Process('execute-sla-playbook')
+  async executeSLAPlaybook(job: Job<any>): Promise<void> {
+    this.logger.log(`Executing SLA playbook for object ${job.data.objectId}`);
+    
+    try {
+      const { playbookId, objectId, triggerType, context } = job.data;
 
-    this.logger.log(`Task assigned: ${action.title}`);
-  }
+      // Find and execute the appropriate playbook
+      const playbook = await this.prisma.playbook.findFirst({
+        where: {
+          id: playbookId,
+          isActive: true,
+        },
+      });
 
-  private async applyEnforcements(enforcements: any, triggerData: any, tenant: any): Promise<void> {
-    if (enforcements.sla) {
-      // Set up SLA monitoring
-      const slaData = {
-        objectId: triggerData.objectId || triggerData.completedObjectId,
-        slaMinutes: enforcements.sla.minutes || 60,
-        escalationRules: enforcements.sla.escalation || [],
-      };
+      if (!playbook) {
+        this.logger.warn(`Playbook ${playbookId} not found or inactive`);
+        return;
+      }
 
+      // Emit playbook execution event
       await this.eventBus.emit({
-        type: 'sla.monitoring.started',
-        payload: slaData,
-        tenant,
-        correlationId: `sla-setup-${Date.now()}`,
+        type: 'concierge.playbook.execution.requested',
+        payload: {
+          playbookId,
+          playbookName: playbook.name,
+          trigger: triggerType,
+          triggerData: {
+            objectId,
+            slaType: triggerType,
+            timestamp: new Date().toISOString(),
+          },
+          actions: playbook.actions,
+          conditions: playbook.conditions,
+          enforcements: playbook.enforcements,
+        },
+        tenant: context,
+        correlationId: `sla-${triggerType}-${objectId}-${Date.now()}`,
         timestamp: new Date().toISOString(),
       });
 
-      this.logger.log(`SLA enforcement applied: ${slaData.slaMinutes} minutes`);
-    }
-
-    if (enforcements.notifications) {
-      // Schedule future notifications
-      for (const notification of enforcements.notifications) {
-        await this.eventBus.emit({
-          type: 'notification.schedule.requested',
-          payload: {
-            ...notification,
-            scheduledAt: new Date(Date.now() + (notification.delayMinutes || 0) * 60 * 1000),
-          },
-          tenant,
-          correlationId: `scheduled-notification-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      this.logger.log(`Scheduled ${enforcements.notifications.length} notifications`);
+    } catch (error) {
+      this.logger.error('Error executing SLA playbook', error.stack);
+      throw error;
     }
   }
-}
 
-export interface PlaybookExecutionData {
-  playbookId: string;
-  playbookName: string;
-  trigger: string;
-  triggerData: any;
-  actions: any[];
-  conditions?: any;
-  enforcements?: any;
-  tenant: {
-    organizationId: string;
-    propertyId: string;
-  };
+  /**
+   * Handle individual overdue object
+   */
+  private async handleOverdueObject(object: any): Promise<void> {
+    const minutesOverdue = Math.floor(
+      (new Date().getTime() - new Date(object.dueAt).getTime()) / (1000 * 60)
+    );
+
+    this.logger.debug(`Object ${object.id} is ${minutesOverdue} minutes overdue`);
+
+    // Emit overdue event
+    await this.eventBus.emit({
+      type: 'concierge.sla.overdue',
+      payload: {
+        objectId: object.id,
+        type: object.type,
+        status: object.status,
+        dueAt: object.dueAt,
+        minutesOverdue,
+        reservationId: object.reservationId,
+        guestId: object.guestId,
+        assignments: object.assignments,
+      },
+      tenant: { 
+        organizationId: object.organizationId, 
+        propertyId: object.propertyId 
+      },
+      correlationId: `overdue-${object.id}-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Check for escalation rules
+    await this.checkEscalationRules(object, minutesOverdue);
+  }
+
+  /**
+   * Handle upcoming due date notifications
+   */
+  private async handleUpcomingDueDate(object: any, windowMinutes: number): Promise<void> {
+    const minutesUntilDue = Math.floor(
+      (new Date(object.dueAt).getTime() - new Date().getTime()) / (1000 * 60)
+    );
+
+    this.logger.debug(`Object ${object.id} is due in ${minutesUntilDue} minutes`);
+
+    // Emit upcoming due event
+    await this.eventBus.emit({
+      type: 'concierge.sla.upcoming',
+      payload: {
+        objectId: object.id,
+        type: object.type,
+        status: object.status,
+        dueAt: object.dueAt,
+        minutesUntilDue,
+        windowMinutes,
+        reservationId: object.reservationId,
+        guestId: object.guestId,
+        assignments: object.assignments,
+      },
+      tenant: { 
+        organizationId: object.organizationId, 
+        propertyId: object.propertyId 
+      },
+      correlationId: `upcoming-${object.id}-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Check and apply escalation rules
+   */
+  private async checkEscalationRules(object: any, minutesOverdue: number): Promise<void> {
+    // Find playbooks with escalation rules for this object type
+    const escalationPlaybooks = await this.prisma.playbook.findMany({
+      where: {
+        organizationId: object.organizationId,
+        propertyId: object.propertyId,
+        trigger: 'concierge.sla.overdue',
+        isActive: true,
+      },
+    });
+
+    for (const playbook of escalationPlaybooks) {
+      const enforcements = playbook.enforcements as any;
+      
+      if (!enforcements?.escalation?.rules) continue;
+
+      for (const rule of enforcements.escalation.rules) {
+        if (this.shouldTriggerEscalation(rule, minutesOverdue, object)) {
+          await this.triggerEscalationRule(rule, object, playbook.id);
+        }
+      }
+    }
+  }
+
+  /**
+   * Determine if escalation rule should trigger
+   */
+  private shouldTriggerEscalation(rule: any, minutesOverdue: number, object: any): boolean {
+    // Check time-based rules
+    if (rule.type === 'time_based') {
+      const thresholdMinutes = rule.thresholdMinutes || 60;
+      return minutesOverdue >= thresholdMinutes;
+    }
+
+    // Check status-based rules
+    if (rule.type === 'status_based') {
+      return rule.statuses.includes(object.status);
+    }
+
+    // Check priority-based rules (from attributes)
+    if (rule.type === 'priority_based') {
+      const priorityAttribute = object.attributes?.find((attr: any) => 
+        attr.fieldKey === 'priority'
+      );
+      
+      if (priorityAttribute) {
+        const priority = priorityAttribute.stringValue || priorityAttribute.selectValue;
+        return rule.priorities.includes(priority);
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Trigger specific escalation rule
+   */
+  private async triggerEscalationRule(rule: any, object: any, playbookId: string): Promise<void> {
+    this.logger.log(`Triggering escalation rule ${rule.name} for object ${object.id}`);
+
+    // Check if this rule was already triggered recently
+    const recentExecution = await this.prisma.playbookExecution.findFirst({
+      where: {
+        playbookId,
+        objectId: object.id,
+        status: { in: ['completed', 'running'] },
+        startedAt: {
+          gte: new Date(new Date().getTime() - (rule.cooldownMinutes || 60) * 60 * 1000),
+        },
+      },
+    });
+
+    if (recentExecution) {
+      this.logger.debug(`Escalation rule ${rule.name} recently executed, skipping`);
+      return;
+    }
+
+    // Emit escalation event
+    await this.eventBus.emit({
+      type: 'concierge.sla.escalation',
+      payload: {
+        objectId: object.id,
+        escalationRule: rule.name,
+        escalationType: rule.type,
+        playbookId,
+        severity: rule.severity || 'medium',
+        actions: rule.actions || [],
+      },
+      tenant: { 
+        organizationId: object.organizationId, 
+        propertyId: object.propertyId 
+      },
+      correlationId: `escalation-${object.id}-${rule.name}-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Process escalation actions
+   */
+  private async processEscalation(object: any): Promise<void> {
+    // This could trigger notifications, task assignments, status changes, etc.
+    this.logger.log(`Processing escalation for object ${object.id}`);
+
+    // Example escalation actions:
+    // 1. Notify managers
+    // 2. Create urgent tasks
+    // 3. Change object priority
+    // 4. Assign to different department
+    
+    // These would be implemented based on specific business rules
+  }
+
+  /**
+   * Schedule next SLA check job
+   */
+  async scheduleNextSLACheck(organizationId?: string, propertyId?: string): Promise<void> {
+    // This would typically be called by a scheduler service
+    // Implementation depends on the job queue system being used
+    this.logger.log('Scheduling next SLA check');
+  }
 }

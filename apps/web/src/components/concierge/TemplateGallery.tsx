@@ -5,113 +5,51 @@ import TemplateCard from './TemplateCard';
 interface TemplateGalleryProps {
   templates: TemplateData[];
   onCloneTemplate: (template: TemplateData) => void;
+  onPreviewTemplate?: (template: TemplateData) => void;
+  viewMode?: 'grid' | 'list';
+  searchTerm?: string;
 }
 
-const TemplateGallery: React.FC<TemplateGalleryProps> = ({ templates, onCloneTemplate }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sortBy, setSortBy] = useState<'name' | 'usage' | 'rating'>('usage');
-
-  // Get unique categories
-  const categories = Array.from(new Set(templates.map(t => t.category))).sort();
-
-  // Filter and sort templates
-  const filteredTemplates = templates
-    .filter(template => {
-      const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
-      
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'usage':
-          return b.usageCount - a.usageCount;
-        case 'rating':
-          return b.rating - a.rating;
-        default:
-          return 0;
-      }
-    });
+const TemplateGallery: React.FC<TemplateGalleryProps> = ({ 
+  templates, 
+  onCloneTemplate, 
+  onPreviewTemplate, 
+  viewMode = 'grid',
+  searchTerm = '' 
+}) => {
+  // Templates are already filtered and sorted by parent component
+  const filteredTemplates = templates;
 
   return (
     <div className="space-y-6">
-      {/* Search and Filters */}
-      <div className="card p-4">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Search templates by name, description, or tags..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-input w-full"
-            />
-          </div>
-          
-          {/* Category Filter */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="form-input lg:w-48"
-          >
-            <option value="all">All Categories</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-          
-          {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'name' | 'usage' | 'rating')}
-            className="form-input lg:w-48"
-          >
-            <option value="usage">Most Used</option>
-            <option value="rating">Highest Rated</option>
-            <option value="name">Alphabetical</option>
-          </select>
-        </div>
-      </div>
 
-      {/* Results Summary */}
-      <div className="flex justify-between items-center">
-        <p className="text-gray-600">
-          {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''} found
-          {searchTerm && ` for "${searchTerm}"`}
-          {selectedCategory !== 'all' && ` in ${selectedCategory}`}
-        </p>
-        
-        {(searchTerm || selectedCategory !== 'all') && (
-          <button
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedCategory('all');
-            }}
-            className="text-sm text-warm-gold hover:text-opacity-80"
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
-
-      {/* Templates Grid */}
+      {/* Templates Display */}
       {filteredTemplates.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTemplates.map((template) => (
-            <TemplateCard
-              key={template.id}
-              template={template}
-              onClone={() => onCloneTemplate(template)}
-            />
-          ))}
-        </div>
+        viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTemplates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                onClone={() => onCloneTemplate(template)}
+                onPreview={onPreviewTemplate ? () => onPreviewTemplate(template) : undefined}
+                searchTerm={searchTerm}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredTemplates.map((template) => (
+              <TemplateListItem
+                key={template.id}
+                template={template}
+                onClone={() => onCloneTemplate(template)}
+                onPreview={onPreviewTemplate ? () => onPreviewTemplate(template) : undefined}
+                searchTerm={searchTerm}
+              />
+            ))}
+          </div>
+        )
       ) : (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
@@ -119,60 +57,126 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({ templates, onCloneTem
             No Templates Found
           </h3>
           <p className="text-gray-600 mb-4">
-            {searchTerm || selectedCategory !== 'all'
+            {searchTerm 
               ? 'Try adjusting your search terms or filters.'
-              : 'No templates are available at the moment.'
+              : 'No templates match your current filters.'
             }
           </p>
-          {(searchTerm || selectedCategory !== 'all') && (
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedCategory('all');
-              }}
-              className="btn btn-secondary"
-            >
-              Show All Templates
-            </button>
-          )}
         </div>
       )}
 
-      {/* Featured Categories Section */}
-      {!searchTerm && selectedCategory === 'all' && (
-        <div className="mt-12">
-          <h3 className="text-xl font-semibold text-charcoal mb-6">Browse by Category</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map(category => {
-              const categoryTemplates = templates.filter(t => t.category === category);
-              const categoryIcons = {
-                'Transportation': '🚗',
-                'Dining': '🍽️',
-                'Wellness': '🧘',
-                'Activities': '🎯',
-                'Services': '🛎️',
-                'Events': '🎉'
-              } as Record<string, string>;
-              
-              return (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className="card p-4 text-center hover:shadow-md transition-shadow group"
-                >
-                  <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">
-                    {categoryIcons[category] || '📋'}
+    </div>
+  );
+};
+
+// List view component for templates
+interface TemplateListItemProps {
+  template: TemplateData;
+  onClone: () => void;
+  onPreview?: () => void;
+  searchTerm?: string;
+}
+
+const TemplateListItem: React.FC<TemplateListItemProps> = ({ template, onClone, onPreview, searchTerm }) => {
+  const highlightText = (text: string, search: string) => {
+    if (!search) return text;
+    const regex = new RegExp(`(${search})`, 'gi');
+    return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+  };
+
+  return (
+    <div className="card p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-start gap-4">
+            {/* Template Icon */}
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-2xl flex-shrink-0">
+              {template.category === 'Transportation' && '🚗'}
+              {template.category === 'Dining' && '🍽️'}
+              {template.category === 'Wellness' && '🧘'}
+              {template.category === 'Activities' && '🎯'}
+              {template.category === 'Services' && '🛎️'}
+              {template.category === 'Events' && '🎉'}
+              {!['Transportation', 'Dining', 'Wellness', 'Activities', 'Services', 'Events'].includes(template.category) && '📋'}
+            </div>
+            
+            {/* Template Details */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h3 
+                    className="font-semibold text-lg text-charcoal"
+                    dangerouslySetInnerHTML={{ __html: highlightText(template.name, searchTerm || '') }}
+                  />
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                      {template.category}
+                    </span>
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <span>⭐</span>
+                      <span>{template.rating}</span>
+                      <span className="text-gray-400 mx-2">•</span>
+                      <span>📊 {template.usageCount} uses</span>
+                    </div>
+                    {template.isOfficial && (
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                        ✓ Official
+                      </span>
+                    )}
                   </div>
-                  <h4 className="font-medium text-charcoal text-sm mb-1">{category}</h4>
-                  <p className="text-xs text-gray-500">
-                    {categoryTemplates.length} template{categoryTemplates.length !== 1 ? 's' : ''}
-                  </p>
-                </button>
-              );
-            })}
+                </div>
+              </div>
+              
+              <p 
+                className="text-gray-600 text-sm mb-3 line-clamp-2"
+                dangerouslySetInnerHTML={{ __html: highlightText(template.description, searchTerm || '') }}
+              />
+              
+              {/* Tags */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {template.tags.slice(0, 4).map(tag => (
+                  <span 
+                    key={tag} 
+                    className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full"
+                    dangerouslySetInnerHTML={{ __html: highlightText(`#${tag}`, searchTerm || '') }}
+                  />
+                ))}
+                {template.tags.length > 4 && (
+                  <span className="text-xs text-gray-500">
+                    +{template.tags.length - 4} more
+                  </span>
+                )}
+              </div>
+              
+              {/* Field Summary */}
+              <div className="text-xs text-gray-500">
+                {template.fieldsSchema.fields.length} field{template.fieldsSchema.fields.length !== 1 ? 's' : ''}: 
+                {template.fieldsSchema.fields.slice(0, 3).map((field: any) => field.label).join(', ')}
+                {template.fieldsSchema.fields.length > 3 && `, +${template.fieldsSchema.fields.length - 3} more`}
+              </div>
+            </div>
           </div>
         </div>
-      )}
+        
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 ml-4">
+          {onPreview && (
+            <button
+              onClick={onPreview}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              title="Preview template"
+            >
+              👁️ Preview
+            </button>
+          )}
+          <button
+            onClick={onClone}
+            className="px-4 py-2 bg-warm-gold text-white rounded hover:bg-opacity-90 transition-colors text-sm font-medium"
+          >
+            🧬 Clone Template
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

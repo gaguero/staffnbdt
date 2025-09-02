@@ -230,7 +230,7 @@ const getConversion = (amount: string, unit: string): string | null => {
   const num = parseFloat(amount);
   if (isNaN(num)) return null;
 
-  const conversions: Record<string, (val: number) => string> = {
+  const conversions: Record<string, (val: number) => string | null> = {
     kg: (val) => val >= 1 ? `${(val * 2.205).toFixed(1)} lbs` : `${(val * 1000).toFixed(0)} grams`,
     grams: (val) => val >= 1000 ? `${(val / 1000).toFixed(1)} kg` : null,
     pounds: (val) => `${(val * 0.453592).toFixed(1)} kg`,

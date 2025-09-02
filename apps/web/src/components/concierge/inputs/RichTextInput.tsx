@@ -84,12 +84,6 @@ const RichTextInput: React.FC<RichTextInputProps> = ({
     }
   };
 
-  const insertImage = () => {
-    const url = prompt('Enter image URL:');
-    if (url) {
-      execCommand('insertImage', url);
-    }
-  };
 
   const formatBlock = (tagName: string) => {
     execCommand('formatBlock', tagName);

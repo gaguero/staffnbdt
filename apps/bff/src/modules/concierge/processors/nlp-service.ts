@@ -645,5 +645,318 @@ export class NLPService {
     };
   }
 
+  // Missing helper methods implementation
+  private async getObjectTypeMappings(tenant: any): Promise<Map<string, any>> {
+    const mappings = new Map();
+    mappings.set('room_service', { objectType: 'Room Service Request', priority: 'medium' });
+    mappings.set('housekeeping', { objectType: 'Housekeeping Request', priority: 'high' });
+    mappings.set('maintenance', { objectType: 'Maintenance Request', priority: 'urgent' });
+    mappings.set('concierge', { objectType: 'Concierge Request', priority: 'medium' });
+    mappings.set('complaint', { objectType: 'Guest Complaint', priority: 'urgent' });
+    return mappings;
+  }
+
+  private async mapEntitiesToFields(entities: any[], mapping: any): Promise<any> {
+    const fields: any = {};
+    
+    for (const entity of entities) {
+      switch (entity.entity) {
+        case 'room_number':
+          fields.roomNumber = entity.value;
+          break;
+        case 'time':
+          fields.preferredTime = entity.value;
+          break;
+        case 'date':
+          fields.preferredDate = entity.value;
+          break;
+        case 'phone':
+          fields.contactPhone = entity.value;
+          break;
+        case 'email':
+          fields.contactEmail = entity.value;
+          break;
+        case 'person_name':
+          fields.guestName = entity.value;
+          break;
+        case 'location':
+          fields.location = entity.value;
+          break;
+      }
+    }
+    
+    return fields;
+  }
+
+  private mapUrgencyToPriority(urgency: any): string {
+    switch (urgency.level) {
+      case 'urgent': return 'critical';
+      case 'high': return 'high';
+      case 'medium': return 'medium';
+      case 'low': return 'low';
+      default: return 'medium';
+    }
+  }
+
+  private estimateTaskDuration(category: string, entities: any[]): number {
+    const baseDurations: Record<string, number> = {
+      'room_service': 30, // 30 minutes
+      'housekeeping': 45, // 45 minutes
+      'maintenance': 120, // 2 hours
+      'concierge': 15, // 15 minutes
+      'complaint': 60 // 1 hour
+    };
+    
+    const base = baseDurations[category] || 30;
+    const complexity = entities.length > 3 ? 1.5 : 1.0; // More entities = more complex
+    
+    return Math.round(base * complexity);
+  }
+
+  private async suggestAssignments(analysisResult: any, context: any): Promise<string[]> {
+    const suggestions: string[] = [];
+    
+    switch (analysisResult.intent.category) {
+      case 'room_service':
+        suggestions.push('Kitchen Staff', 'Room Service Team');
+        break;
+      case 'housekeeping':
+        suggestions.push('Housekeeping Team', 'Cleaning Staff');
+        break;
+      case 'maintenance':
+        suggestions.push('Maintenance Team', 'Technical Support');
+        break;
+      case 'concierge':
+        suggestions.push('Concierge Staff', 'Guest Relations');
+        break;
+      case 'complaint':
+        suggestions.push('Guest Relations Manager', 'Department Supervisor');
+        break;
+      default:
+        suggestions.push('Front Desk', 'General Staff');
+    }
+    
+    return suggestions;
+  }
+
+  private calculateDueDate(urgency: any): Date {
+    const now = new Date();
+    let hoursToAdd: number;
+    
+    switch (urgency.level) {
+      case 'urgent':
+        hoursToAdd = 1;
+        break;
+      case 'high':
+        hoursToAdd = 4;
+        break;
+      case 'medium':
+        hoursToAdd = 8;
+        break;
+      case 'low':
+        hoursToAdd = 24;
+        break;
+      default:
+        hoursToAdd = 8;
+    }
+    
+    return new Date(now.getTime() + (hoursToAdd * 60 * 60 * 1000));
+  }
+
+  private async generateSecondarySuggestions(analysisResult: any, context: any): Promise<any[]> {
+    const suggestions: any[] = [];
+    
+    // If there's a complaint, also suggest a follow-up check
+    if (analysisResult.intent.category === 'complaint') {
+      suggestions.push({
+        type: 'Follow-up Check',
+        confidence: 0.7,
+        fields: {
+          description: 'Schedule follow-up to ensure guest satisfaction',
+          dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours later
+        },
+        reasoning: 'Complaints should be followed up to ensure resolution',
+        priority: 'medium'
+      });
+    }
+    
+    // If maintenance request, suggest inspection
+    if (analysisResult.intent.category === 'maintenance') {
+      suggestions.push({
+        type: 'Room Inspection',
+        confidence: 0.6,
+        fields: {
+          description: 'Inspect room after maintenance completion',
+          dueAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours later
+        },
+        reasoning: 'Room should be inspected after maintenance',
+        priority: 'low'
+      });
+    }
+    
+    return suggestions;
+  }
+
+  private async fixGrammarAndSpelling(text: string): Promise<any> {
+    // Simplified grammar and spelling fixes
+    return {
+      originalText: text,
+      correctedText: text.replace(/\bi\b/g, 'I'), // Basic capitalization
+      corrections: []
+    };
+  }
+
+  private async adjustTone(text: string, style: string): Promise<any> {
+    return {
+      originalText: text,
+      adjustedText: text,
+      changes: []
+    };
+  }
+
+  private async checkCompleteness(text: string, purpose: string): Promise<any> {
+    return {
+      isComplete: text.length > 50,
+      missingElements: text.length <= 50 ? ['More detail needed'] : [],
+      suggestions: []
+    };
+  }
+
+  private async addMissingInformation(text: string, suggestions: string[]): Promise<string> {
+    return text; // Simplified - would use AI in production
+  }
+
+  private async applyProfessionalFormatting(text: string, purpose: string): Promise<string> {
+    return text; // Simplified formatting
+  }
+
+  private calculateQualityScore(text: string, improvements: any): number {
+    return Math.min(1.0, text.length / 200); // Simple quality score based on length
+  }
+
+  private calculateReadabilityScore(text: string): number {
+    const words = text.split(/\s+/).length;
+    const sentences = text.split(/[.!?]+/).length;
+    const avgWordsPerSentence = words / Math.max(1, sentences);
+    
+    // Simple readability score (lower is better)
+    return Math.max(0.1, Math.min(1.0, 1 - (avgWordsPerSentence - 15) / 20));
+  }
+
+  private async suggestDescriptions(partialText: string, context: any): Promise<string[]> {
+    return [
+      'Complete description based on context',
+      'Add specific details about the request',
+      'Include timeline expectations'
+    ];
+  }
+
+  private async suggestLocations(partialText: string, context: any): Promise<string[]> {
+    return ['Room', 'Lobby', 'Restaurant', 'Pool Area', 'Gym'];
+  }
+
+  private async suggestServices(partialText: string, context: any): Promise<string[]> {
+    return ['Room Service', 'Housekeeping', 'Concierge', 'Maintenance', 'Front Desk'];
+  }
+
+  private async suggestStaffAssignments(partialText: string, context: any): Promise<string[]> {
+    return ['Available Staff Member', 'Department Head', 'Specialist'];
+  }
+
+  private async generateGenericCompletions(partialText: string, context: any): Promise<string[]> {
+    const completions = [
+      partialText + ' as soon as possible',
+      partialText + ' at your earliest convenience',
+      partialText + ' within the next hour'
+    ];
+    
+    return completions;
+  }
+
+  private async predictRelatedFields(partialText: string, context: any): Promise<any[]> {
+    return [
+      { fieldName: 'priority', suggestedValue: 'medium' },
+      { fieldName: 'category', suggestedValue: 'general' }
+    ];
+  }
+
+  private async recommendTemplates(partialText: string, context: any): Promise<any[]> {
+    return [
+      { templateName: 'Standard Request', similarity: 0.7 },
+      { templateName: 'Urgent Issue', similarity: 0.5 }
+    ];
+  }
+
+  private async extractTopics(conversation: string): Promise<string[]> {
+    // Simple topic extraction based on keywords
+    const topics = [];
+    if (conversation.includes('room')) topics.push('Room Issues');
+    if (conversation.includes('service')) topics.push('Service Quality');
+    if (conversation.includes('food')) topics.push('Food & Beverage');
+    if (conversation.includes('clean')) topics.push('Cleanliness');
+    
+    return topics.length > 0 ? topics : ['General Discussion'];
+  }
+
+  private async extractActionItems(messages: any[]): Promise<any[]> {
+    // Extract action items from conversation
+    const actionItems = [];
+    
+    for (const message of messages) {
+      if (message.content.includes('need to') || message.content.includes('will')) {
+        actionItems.push({
+          action: message.content.substring(0, 100),
+          priority: 'medium',
+          assignee: message.sender || 'Unassigned'
+        });
+      }
+    }
+    
+    return actionItems;
+  }
+
+  private async identifyFollowUpNeeds(messages: any[], topics: string[]): Promise<any[]> {
+    const followUps = [];
+    
+    // If complaint topics are present, suggest follow-up
+    if (topics.some(topic => topic.toLowerCase().includes('issue'))) {
+      followUps.push({
+        type: 'resolution_check',
+        description: 'Check if the reported issue has been resolved',
+        suggestedDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+    }
+    
+    return followUps;
+  }
+
+  private async analyzeSatisfaction(messages: any[]): Promise<any> {
+    let totalSentiment = 0;
+    let messageCount = 0;
+    const indicators = [];
+    const concerns = [];
+    
+    for (const message of messages) {
+      const sentiment = await this.analyzeSentiment(message.content, 'en');
+      totalSentiment += sentiment.score;
+      messageCount++;
+      
+      if (sentiment.score > 0.5) {
+        indicators.push('Positive language detected');
+      } else if (sentiment.score < -0.5) {
+        concerns.push('Negative sentiment detected');
+      }
+    }
+    
+    const averageSentiment = messageCount > 0 ? totalSentiment / messageCount : 0;
+    const normalizedScore = (averageSentiment + 1) / 2; // Convert from [-1,1] to [0,1]
+    
+    return {
+      score: normalizedScore,
+      indicators,
+      concerns
+    };
+  }
+
   // ... Many more helper methods would be implemented for production use
 }

@@ -112,7 +112,7 @@ const FileUploadInput: React.FC<FileUploadInputProps> = ({
     uploadedFile: UploadedFile,
     onProgress: (progress: number) => void
   ): Promise<void> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       let progress = 0;
       const interval = setInterval(() => {
         progress += Math.random() * 20;

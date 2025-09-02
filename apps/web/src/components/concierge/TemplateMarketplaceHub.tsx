@@ -152,6 +152,11 @@ const TemplateMarketplaceHub: React.FC<TemplateMarketplaceHubProps> = ({ onTempl
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   
+  const handlePreviewTemplate = (template: TemplateData) => {
+    setSelectedTemplate(template);
+    setShowPreviewModal(true);
+  };
+  
   // Enhanced search and filtering state
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -601,6 +606,135 @@ const TemplateMarketplaceHub: React.FC<TemplateMarketplaceHubProps> = ({ onTempl
           template={selectedTemplate}
           onSuccess={handleTemplateCreated}
         />
+      )}
+      
+      {/* Template Preview Modal */}
+      {showPreviewModal && selectedTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-charcoal">{selectedTemplate.name}</h3>
+                  <p className="text-gray-600 mt-1">{selectedTemplate.description}</p>
+                  <div className="flex items-center gap-4 mt-3 text-sm">
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                      {selectedTemplate.category}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      ⭐ {selectedTemplate.rating}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      📊 {selectedTemplate.usageCount} uses
+                    </span>
+                    {selectedTemplate.isOfficial && (
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                        ✓ Official
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPreviewModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Fields Preview */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-4">Fields ({selectedTemplate.fieldsSchema.fields.length})</h4>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {selectedTemplate.fieldsSchema.fields.map((field: any, index: number) => (
+                      <div key={index} className="border rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">{field.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded capitalize">
+                              {field.type}
+                            </span>
+                            {field.required && (
+                              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                                Required
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {field.options && (
+                          <div className="text-xs text-gray-600">
+                            Options: {field.options.join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Template Details */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-4">Template Details</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Tags</label>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {selectedTemplate.tags.map(tag => (
+                          <span key={tag} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Usage Statistics</label>
+                      <div className="mt-1 space-y-1 text-sm text-gray-600">
+                        <div>• {selectedTemplate.usageCount} total clones</div>
+                        <div>• {selectedTemplate.rating}/5.0 average rating</div>
+                        <div>• {selectedTemplate.fieldsSchema.fields.length} field definitions</div>
+                      </div>
+                    </div>
+                    
+                    {selectedTemplate.isOfficial && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-600">✓</span>
+                          <span className="text-sm font-medium text-green-800">Official Template</span>
+                        </div>
+                        <p className="text-xs text-green-700 mt-1">
+                          This template is maintained by our team and follows best practices.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setShowPreviewModal(false)}
+                  className="btn btn-secondary"
+                >
+                  Close Preview
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPreviewModal(false);
+                    handleCloneTemplate(selectedTemplate);
+                  }}
+                  className="btn btn-primary"
+                >
+                  🧬 Clone This Template
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

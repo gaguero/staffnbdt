@@ -4,10 +4,18 @@ import { TemplateData } from './TemplateMarketplaceHub';
 interface TemplateCardProps {
   template: TemplateData;
   onClone: () => void;
+  onPreview?: () => void;
+  searchTerm?: string;
 }
 
-const TemplateCard: React.FC<TemplateCardProps> = ({ template, onClone }) => {
+const TemplateCard: React.FC<TemplateCardProps> = ({ template, onClone, onPreview, searchTerm }) => {
   const [showPreview, setShowPreview] = useState(false);
+  
+  const highlightText = (text: string, search: string) => {
+    if (!search) return text;
+    const regex = new RegExp(`(${search})`, 'gi');
+    return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+  };
 
   const getCategoryIcon = (category: string) => {
     const icons = {
@@ -52,7 +60,10 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onClone }) => {
         <div className="flex items-start space-x-3">
           <div className="text-3xl">{getCategoryIcon(template.category)}</div>
           <div>
-            <h3 className="font-semibold text-charcoal text-lg leading-tight">{template.name}</h3>
+            <h3 
+              className="font-semibold text-charcoal text-lg leading-tight"
+              dangerouslySetInnerHTML={{ __html: highlightText(template.name, searchTerm || '') }}
+            />
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-xs text-warm-gold bg-warm-gold bg-opacity-10 px-2 py-1 rounded-full">
                 {template.category}
@@ -76,7 +87,11 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onClone }) => {
       </div>
 
       {/* Description */}
-      <p className="text-sm text-gray-600 mb-4" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{template.description}</p>
+      <p 
+        className="text-sm text-gray-600 mb-4" 
+        style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+        dangerouslySetInnerHTML={{ __html: highlightText(template.description, searchTerm || '') }}
+      />
 
       {/* Field Preview (when expanded) */}
       {showPreview && (
@@ -112,9 +127,8 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onClone }) => {
             <span
               key={tag}
               className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded"
-            >
-              {tag}
-            </span>
+              dangerouslySetInnerHTML={{ __html: highlightText(`#${tag}`, searchTerm || '') }}
+            />
           ))}
           {template.tags.length > 3 && (
             <span className="text-xs text-gray-500">
@@ -147,13 +161,23 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onClone }) => {
           onClick={onClone}
           className="btn btn-primary flex-1"
         >
-          Clone Template
+          🧬 Clone
         </button>
+        {onPreview && (
+          <button
+            onClick={onPreview}
+            className="btn btn-secondary px-4"
+            title="Full preview"
+          >
+            👁️ Preview
+          </button>
+        )}
         <button
           onClick={() => setShowPreview(!showPreview)}
-          className="btn btn-secondary px-4"
+          className="btn btn-secondary px-3"
+          title={showPreview ? 'Hide quick preview' : 'Show quick preview'}
         >
-          {showPreview ? 'Hide' : 'Preview'}
+          {showPreview ? '↑' : '↓'}
         </button>
       </div>
 

@@ -634,4 +634,320 @@ export class PlaybookExecutionService {
       },
     });
   }
+
+  /**
+   * Test playbook execution with mock data (dry run)
+   */
+  async testPlaybook(
+    testDto: any,
+    context: PlaybookExecutionContext,
+  ): Promise<ExecutionResult> {
+    this.logger.log(`Testing playbook: ${testDto.playbookId}`);
+
+    // Get playbook details
+    const playbook = await this.prisma.playbook.findFirst({
+      where: {
+        id: testDto.playbookId,
+        organizationId: context.organizationId,
+        propertyId: context.propertyId,
+        isActive: true,
+      },
+    });
+
+    if (!playbook) {
+      throw new Error(`Playbook ${testDto.playbookId} not found or inactive`);
+    }
+
+    // Create a mock execution record for testing (if not dry run)
+    let executionId: string | null = null;
+    if (!testDto.dryRun) {
+      const execution = await this.prisma.playbookExecution.create({
+        data: {
+          playbookId: testDto.playbookId,
+          objectId: 'test-object-' + Date.now(),
+          status: 'running',
+        },
+      });
+      executionId = execution.id;
+    }
+
+    try {
+      const testResults = {
+        playbook: {
+          id: playbook.id,
+          name: playbook.name,
+          trigger: playbook.trigger,
+          isActive: playbook.isActive,
+        },
+        testData: testDto.testData,
+        dryRun: testDto.dryRun,
+        validationResults: {},
+        conditionEvaluation: null,
+        actionSimulations: [],
+      };
+
+      // Validate conditions structure
+      if (playbook.conditions) {
+        testResults.validationResults = await this.validatePlaybookConditions(
+          playbook.conditions,
+          testDto.testData,
+        );
+      }
+
+      // Evaluate conditions with test data
+      if (playbook.conditions && testDto.testData) {
+        testResults.conditionEvaluation = await this.simulateConditionEvaluation(
+          playbook.conditions,
+          testDto.testData,
+          context,
+        );
+      }
+
+      // Simulate actions execution
+      if (playbook.actions) {
+        const actions = playbook.actions as PlaybookAction[];
+        for (const action of actions) {
+          const simulation = await this.simulateActionExecution(
+            action,
+            testDto.testData,
+            context,
+          );
+          testResults.actionSimulations.push({
+            action: action.type,
+            config: action.config,
+            simulation,
+          });
+        }
+      }
+
+      // Complete test execution if not dry run
+      if (executionId) {
+        await this.prisma.playbookExecution.update({
+          where: { id: executionId },
+          data: {
+            status: 'completed',
+            completedAt: new Date(),
+            results: testResults,
+          },
+        });
+      }
+
+      return {
+        success: true,
+        results: testResults,
+      };
+
+    } catch (error) {
+      this.logger.error(`Playbook test failed: ${testDto.playbookId}`, error.stack);
+      
+      // Update test execution if not dry run
+      if (executionId) {
+        await this.prisma.playbookExecution.update({
+          where: { id: executionId },
+          data: {
+            status: 'failed',
+            completedAt: new Date(),
+            errors: { message: error.message, stack: error.stack },
+          },
+        });
+      }
+
+      return {
+        success: false,
+        errors: [error.message],
+      };
+    }
+  }
+
+  private async validatePlaybookConditions(
+    conditions: any,
+    testData: any,
+  ): Promise<any> {
+    const validation = {
+      structure: 'valid',
+      issues: [] as string[],
+      warnings: [] as string[],
+    };
+
+    if (!conditions.rules || !Array.isArray(conditions.rules)) {
+      validation.issues.push('Conditions must have a rules array');
+      validation.structure = 'invalid';
+      return validation;
+    }
+
+    if (!conditions.operator || !['AND', 'OR'].includes(conditions.operator)) {
+      validation.issues.push('Conditions must have operator AND or OR');
+      validation.structure = 'invalid';
+    }
+
+    for (const rule of conditions.rules) {
+      if (!rule.type) {
+        validation.issues.push('Each rule must have a type');
+      }
+      
+      if (!rule.operator) {
+        validation.issues.push(`Rule of type ${rule.type} must have an operator`);
+      }
+
+      // Validate rule-specific requirements
+      switch (rule.type) {
+        case 'object_attribute':
+          if (!rule.fieldKey) {
+            validation.issues.push('object_attribute rule must have fieldKey');
+          }
+          break;
+        case 'time_condition':
+          if (!rule.value) {
+            validation.issues.push('time_condition rule must have value');
+          }
+          break;
+        case 'reservation_status':
+          if (!testData?.reservationId) {
+            validation.warnings.push('reservation_status rule requires reservationId in test data');
+          }
+          break;
+      }
+    }
+
+    return validation;
+  }
+
+  private async simulateConditionEvaluation(
+    conditions: any,
+    testData: any,
+    context: PlaybookExecutionContext,
+  ): Promise<any> {
+    const evaluation = {
+      overallResult: false,
+      operator: conditions.operator,
+      ruleResults: [] as any[],
+    };
+
+    if (!conditions.rules || !Array.isArray(conditions.rules)) {
+      return evaluation;
+    }
+
+    // Mock object for testing
+    const mockObject = {
+      id: 'test-object-' + Date.now(),
+      type: testData.objectType || 'test',
+      status: testData.status || 'open',
+      organizationId: context.organizationId,
+      propertyId: context.propertyId,
+      attributes: testData.attributes || [],
+      reservationId: testData.reservationId,
+      guestId: testData.guestId,
+    };
+
+    for (const rule of conditions.rules) {
+      try {
+        const ruleResult = await this.evaluateConditionRule(rule, mockObject, context);
+        evaluation.ruleResults.push({
+          rule: rule.type,
+          operator: rule.operator,
+          expected: rule.value,
+          result: ruleResult,
+        });
+
+        // Apply logical operator
+        if (conditions.operator === 'AND') {
+          evaluation.overallResult = evaluation.ruleResults.every(r => r.result);
+        } else if (conditions.operator === 'OR') {
+          evaluation.overallResult = evaluation.ruleResults.some(r => r.result);
+        }
+      } catch (error) {
+        evaluation.ruleResults.push({
+          rule: rule.type,
+          operator: rule.operator,
+          expected: rule.value,
+          result: false,
+          error: error.message,
+        });
+      }
+    }
+
+    return evaluation;
+  }
+
+  private async simulateActionExecution(
+    action: PlaybookAction,
+    testData: any,
+    context: PlaybookExecutionContext,
+  ): Promise<any> {
+    const simulation = {
+      actionType: action.type,
+      wouldExecute: true,
+      expectedResult: null as any,
+      validation: [] as string[],
+    };
+
+    try {
+      switch (action.type) {
+        case 'create_object':
+          simulation.expectedResult = {
+            objectType: action.config.objectType,
+            status: action.config.status || 'open',
+            attributes: action.config.attributes?.length || 0,
+          };
+          if (!action.config.objectType) {
+            simulation.validation.push('Missing objectType in configuration');
+            simulation.wouldExecute = false;
+          }
+          break;
+
+        case 'update_object_status':
+          simulation.expectedResult = {
+            newStatus: action.config.newStatus,
+          };
+          if (!action.config.newStatus) {
+            simulation.validation.push('Missing newStatus in configuration');
+            simulation.wouldExecute = false;
+          }
+          break;
+
+        case 'assign_to_user':
+          simulation.expectedResult = {
+            assignedUsers: action.config.userIds || [action.config.userId],
+          };
+          if (!action.config.userId && !action.config.userIds) {
+            simulation.validation.push('Missing userId or userIds in configuration');
+            simulation.wouldExecute = false;
+          }
+          break;
+
+        case 'create_task':
+          simulation.expectedResult = {
+            title: action.config.title,
+            taskType: action.config.taskType || 'OTHER',
+            priority: action.config.priority || 'MEDIUM',
+          };
+          if (!action.config.title) {
+            simulation.validation.push('Missing title in task configuration');
+            simulation.wouldExecute = false;
+          }
+          break;
+
+        case 'send_notification':
+          simulation.expectedResult = {
+            recipients: action.config.recipients,
+            type: action.config.type,
+            title: action.config.title,
+          };
+          if (!action.config.recipients || !action.config.title) {
+            simulation.validation.push('Missing recipients or title in notification configuration');
+            simulation.wouldExecute = false;
+          }
+          break;
+
+        default:
+          simulation.validation.push(`Unknown action type: ${action.type}`);
+          simulation.wouldExecute = false;
+      }
+    } catch (error) {
+      simulation.validation.push(`Simulation error: ${error.message}`);
+      simulation.wouldExecute = false;
+    }
+
+    return simulation;
+  }
 }

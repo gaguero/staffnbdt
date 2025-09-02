@@ -107,7 +107,7 @@ export interface ObjectFieldDefinition {
     maxSize?: number;
     // For rating fields
     maxRating?: number;
-    ratingType?: 'stars' | 'slider' | 'thumbs';
+    ratingType?: 'stars' | 'slider' | 'thumbs' | 'numeric';
     // For rich text
     toolbar?: string[];
   };

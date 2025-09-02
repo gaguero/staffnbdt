@@ -457,6 +457,243 @@ export class FieldValidationService {
     return result;
   }
 
+  /**
+   * Validate all attributes for an object with enhanced field types
+   */
+  async validateObjectAttributes(
+    attributes: any[],
+    objectType: any,
+    context: ValidationContext,
+  ): Promise<ValidationResult> {
+    const result: ValidationResult = { isValid: true, errors: [] };
+    
+    if (!attributes || !Array.isArray(attributes)) {
+      return result;
+    }
+
+    const schema = objectType?.fieldsSchema || {};
+    const schemaFields = schema.fields || [];
+    const fieldConfigMap = new Map(schemaFields.map((f: any) => [f.key, f]));
+
+    // Validate each attribute
+    for (const attribute of attributes) {
+      const fieldConfig = fieldConfigMap.get(attribute.fieldKey);
+      if (!fieldConfig) {
+        result.errors.push(`Unknown field: ${attribute.fieldKey}`);
+        result.isValid = false;
+        continue;
+      }
+
+      const validation = await this.validateAttribute(
+        attribute.fieldKey,
+        attribute.fieldType,
+        this.getAttributeValue(attribute),
+        fieldConfig,
+        context,
+      );
+
+      this.mergeValidationResults(result, validation);
+    }
+
+    // Check for missing required fields
+    const requiredFields = schemaFields.filter((f: any) => f.required).map((f: any) => f.key);
+    const providedFields = attributes.map(attr => attr.fieldKey);
+    
+    for (const requiredField of requiredFields) {
+      if (!providedFields.includes(requiredField)) {
+        result.errors.push(`Required field '${requiredField}' is missing`);
+        result.isValid = false;
+      }
+    }
+
+    // Perform cross-field validation
+    const crossFieldValidation = await this.validateCrossFieldRules(attributes, objectType, context);
+    this.mergeValidationResults(result, crossFieldValidation);
+
+    return result;
+  }
+
+  /**
+   * Validate quantity field with unit support
+   */
+  async validateQuantityWithUnit(
+    quantity: number,
+    unit: string,
+    config: any,
+    context: ValidationContext,
+  ): Promise<ValidationResult> {
+    const result: ValidationResult = { isValid: true, errors: [] };
+
+    // Validate quantity value
+    const quantityValidation = this.validateQuantityField(quantity, config);
+    this.mergeValidationResults(result, quantityValidation);
+
+    // Validate unit
+    if (config.allowedUnits && Array.isArray(config.allowedUnits)) {
+      if (!config.allowedUnits.includes(unit)) {
+        result.errors.push(`Invalid unit '${unit}'. Allowed units: ${config.allowedUnits.join(', ')}`);
+        result.isValid = false;
+      }
+    }
+
+    // Unit conversion validation (if needed)
+    if (config.baseUnit && config.conversions && unit !== config.baseUnit) {
+      const conversionFactor = config.conversions[unit];
+      if (!conversionFactor) {
+        result.warnings = result.warnings || [];
+        result.warnings.push(`No conversion factor defined for unit '${unit}' to base unit '${config.baseUnit}'`);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Validate money field with currency support
+   */
+  async validateMoneyWithCurrency(
+    amount: number,
+    currency: string,
+    config: any,
+    context: ValidationContext,
+  ): Promise<ValidationResult> {
+    const result: ValidationResult = { isValid: true, errors: [] };
+
+    // Validate amount
+    const moneyValidation = this.validateMoneyField(amount, config);
+    this.mergeValidationResults(result, moneyValidation);
+
+    // Validate currency code
+    if (!/^[A-Z]{3}$/.test(currency)) {
+      result.errors.push('Currency must be a valid 3-letter ISO code (e.g., USD, EUR)');
+      result.isValid = false;
+    }
+
+    // Check allowed currencies
+    if (config.allowedCurrencies && Array.isArray(config.allowedCurrencies)) {
+      if (!config.allowedCurrencies.includes(currency)) {
+        result.errors.push(`Currency '${currency}' not allowed. Allowed currencies: ${config.allowedCurrencies.join(', ')}`);
+        result.isValid = false;
+      }
+    }
+
+    // Currency exchange rate validation (if needed)
+    if (config.baseCurrency && currency !== config.baseCurrency) {
+      result.warnings = result.warnings || [];
+      result.warnings.push(`Amount in ${currency} may need conversion to base currency ${config.baseCurrency}`);
+    }
+
+    return result;
+  }
+
+  /**
+   * Validate location field (coordinates, address, etc.)
+   */
+  async validateLocationField(
+    value: any,
+    config: any,
+    context: ValidationContext,
+  ): Promise<ValidationResult> {
+    const result: ValidationResult = { isValid: true, errors: [] };
+
+    if (typeof value === 'string') {
+      // Address format
+      if (value.length < 5) {
+        result.errors.push('Address must be at least 5 characters long');
+        result.isValid = false;
+      }
+    } else if (typeof value === 'object' && value !== null) {
+      // Coordinate format {lat, lng} or {latitude, longitude}
+      const lat = value.lat || value.latitude;
+      const lng = value.lng || value.longitude;
+      
+      if (typeof lat !== 'number' || typeof lng !== 'number') {
+        result.errors.push('Location coordinates must have numeric lat/lng or latitude/longitude');
+        result.isValid = false;
+      } else {
+        if (lat < -90 || lat > 90) {
+          result.errors.push('Latitude must be between -90 and 90');
+          result.isValid = false;
+        }
+        if (lng < -180 || lng > 180) {
+          result.errors.push('Longitude must be between -180 and 180');
+          result.isValid = false;
+        }
+      }
+    } else {
+      result.errors.push('Location must be a string (address) or object with coordinates');
+      result.isValid = false;
+    }
+
+    return result;
+  }
+
+  /**
+   * Validate duration field (in various formats)
+   */
+  async validateDurationField(
+    value: any,
+    config: any,
+    context: ValidationContext,
+  ): Promise<ValidationResult> {
+    const result: ValidationResult = { isValid: true, errors: [] };
+
+    if (typeof value === 'number') {
+      // Duration in minutes/seconds/hours (based on config)
+      const unit = config.unit || 'minutes';
+      const min = config.min || 0;
+      const max = config.max || (unit === 'hours' ? 24 : unit === 'minutes' ? 1440 : 86400);
+      
+      if (value < min) {
+        result.errors.push(`Duration must be at least ${min} ${unit}`);
+        result.isValid = false;
+      }
+      if (value > max) {
+        result.errors.push(`Duration cannot exceed ${max} ${unit}`);
+        result.isValid = false;
+      }
+    } else if (typeof value === 'string') {
+      // ISO 8601 duration format (PT30M) or simple format (30m, 2h, etc.)
+      if (value.startsWith('PT')) {
+        // ISO 8601 format validation
+        const iso8601Regex = /^PT(\d+H)?(\d+M)?(\d+S)?$/;
+        if (!iso8601Regex.test(value)) {
+          result.errors.push('Invalid ISO 8601 duration format (expected: PT1H30M or similar)');
+          result.isValid = false;
+        }
+      } else {
+        // Simple format validation (1h, 30m, 45s)
+        const simpleRegex = /^\d+[hms]$/;
+        if (!simpleRegex.test(value)) {
+          result.errors.push('Invalid duration format (expected: 1h, 30m, 45s, etc.)');
+          result.isValid = false;
+        }
+      }
+    } else {
+      result.errors.push('Duration must be a number or string');
+      result.isValid = false;
+    }
+
+    return result;
+  }
+
+  /**
+   * Get the actual value from an attribute based on its field type
+   */
+  private getAttributeValue(attribute: any): any {
+    return (
+      attribute.stringValue ||
+      attribute.numberValue ||
+      attribute.booleanValue ||
+      attribute.dateValue ||
+      attribute.relationshipValue ||
+      attribute.selectValue ||
+      attribute.fileValue ||
+      attribute.moneyValue ||
+      attribute.jsonValue
+    );
+  }
+
   private async evaluateCrossFieldRule(
     rule: any,
     attributes: any[],

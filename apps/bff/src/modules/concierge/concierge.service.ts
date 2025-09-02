@@ -183,7 +183,15 @@ export class ConciergeService {
     });
     
     if (objectType && Array.isArray(attributes)) {
-      await this.validateAttributes(attributes, objectType);
+      const validationResult = await this.fieldValidation.validateObjectAttributes(
+        attributes, 
+        objectType, 
+        { organizationId: ctx.organizationId, propertyId: ctx.propertyId, userId: ctx.userId }
+      );
+      
+      if (!validationResult.isValid) {
+        throw new BadRequestException(`Validation failed: ${validationResult.errors.join(', ')}`);
+      }
     }
 
     // Use Prisma transaction to ensure atomicity
@@ -213,6 +221,12 @@ export class ConciergeService {
             booleanValue: attr.booleanValue || null,
             dateValue: attr.dateValue ? new Date(attr.dateValue) : null,
             jsonValue: attr.jsonValue ? JSON.parse(JSON.stringify(attr.jsonValue)) : null,
+            relationshipValue: attr.relationshipValue || null,
+            selectValue: attr.selectValue || null,
+            fileValue: attr.fileValue || null,
+            quantityUnit: attr.quantityUnit || null,
+            moneyValue: attr.moneyValue || null,
+            moneyCurrency: attr.moneyCurrency || 'USD',
           })),
         });
       }
@@ -270,7 +284,15 @@ export class ConciergeService {
       });
       
       if (objectType) {
-        await this.validateAttributes(attributes, objectType);
+        const validationResult = await this.fieldValidation.validateObjectAttributes(
+          attributes, 
+          objectType, 
+          { organizationId: ctx.organizationId, propertyId: ctx.propertyId, userId: ctx.userId }
+        );
+        
+        if (!validationResult.isValid) {
+          throw new BadRequestException(`Validation failed: ${validationResult.errors.join(', ')}`);
+        }
       }
     }
 
@@ -305,6 +327,12 @@ export class ConciergeService {
               booleanValue: attr.booleanValue || null,
               dateValue: attr.dateValue ? new Date(attr.dateValue) : null,
               jsonValue: attr.jsonValue ? JSON.parse(JSON.stringify(attr.jsonValue)) : null,
+              relationshipValue: attr.relationshipValue || null,
+              selectValue: attr.selectValue || null,
+              fileValue: attr.fileValue || null,
+              quantityUnit: attr.quantityUnit || null,
+              moneyValue: attr.moneyValue || null,
+              moneyCurrency: attr.moneyCurrency || 'USD',
             })),
           });
         }
