@@ -610,18 +610,18 @@ export class MLPredictionService {
   }
 
   // Missing helper methods implementation
-  private identifyKeyFactors(features: any, prediction: any): Array<{factor: string; importance: number}> {
+  private identifyKeyFactors(features: any, prediction: any): Array<{feature: string; importance: number; value: any}> {
     return [
-      { factor: 'occupancy_rate', importance: 0.3 },
-      { factor: 'staff_availability', importance: 0.25 },
-      { factor: 'historical_performance', importance: 0.2 }
+      { feature: 'occupancy_rate', importance: 0.3, value: features?.occupancy || 0.5 },
+      { feature: 'staff_availability', importance: 0.25, value: features?.staff || 0.7 },
+      { feature: 'historical_performance', importance: 0.2, value: features?.history || 0.6 }
     ];
   }
 
-  private generateSLARecommendations(prediction: any): Array<{action: string; priority: number}> {
+  private generateSLARecommendations(prediction: any): Array<{action: string; priority: number; reasoning: string}> {
     return [
-      { action: 'increase_staff_allocation', priority: 0.8 },
-      { action: 'adjust_sla_thresholds', priority: 0.6 }
+      { action: 'increase_staff_allocation', priority: 0.8, reasoning: 'High workload detected, additional staff needed' },
+      { action: 'adjust_sla_thresholds', priority: 0.6, reasoning: 'Current SLA targets may be unrealistic' }
     ];
   }
 
@@ -663,10 +663,10 @@ export class MLPredictionService {
     };
   }
 
-  private generateWorkflowRecommendations(prediction: any): Array<{action: string; impact: number}> {
+  private generateWorkflowRecommendations(prediction: any): Array<{action: string; priority: number; reasoning: string}> {
     return [
-      { action: 'implement_parallel_processing', impact: 0.7 },
-      { action: 'automate_approval_step', impact: 0.5 }
+      { action: 'implement_parallel_processing', priority: 0.7, reasoning: 'Parallel processing can reduce completion time' },
+      { action: 'automate_approval_step', priority: 0.5, reasoning: 'Automation eliminates manual bottlenecks' }
     ];
   }
 
@@ -746,6 +746,47 @@ export class MLPredictionService {
   private calculateHistoricalAverage(history: any[]): number {
     if (!history?.length) return 0.5;
     return history.reduce((sum, h) => sum + (h.value || 0.5), 0) / history.length;
+  }
+
+  private getDefaultWorkloadPrediction(): PredictionResult {
+    return {
+      prediction: { workload: 'medium', estimatedHours: 6 },
+      confidence: 0.3,
+      factors: [
+        { feature: 'historical_average', importance: 0.5, value: 0.6 }
+      ],
+      recommendations: [
+        { action: 'monitor_closely', priority: 0.5, reasoning: 'Insufficient data for accurate prediction' }
+      ],
+      uncertainty: 0.7,
+      modelVersion: '1.0.0'
+    };
+  }
+
+  private async getConciergeObjectData(objectId: string, tenant: any): Promise<any> {
+    // Stub implementation - would fetch from database
+    return {
+      id: objectId,
+      type: 'service_request',
+      status: 'open',
+      createdAt: new Date(),
+      assignments: [],
+      dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+    };
+  }
+
+  private extractSLAFeatures(objectData: any): Record<string, any> {
+    const now = new Date();
+    const created = new Date(objectData.createdAt);
+    const due = new Date(objectData.dueAt);
+    
+    return {
+      timeElapsed: (now.getTime() - created.getTime()) / (1000 * 60 * 60), // hours
+      remainingTime: (due.getTime() - now.getTime()) / (1000 * 60 * 60), // hours
+      complexity: objectData.type === 'complex_request' ? 1 : 0,
+      assignmentCount: objectData.assignments?.length || 0,
+      priority: objectData.priority || 'medium'
+    };
   }
 
   // ... Many more helper methods would be implemented

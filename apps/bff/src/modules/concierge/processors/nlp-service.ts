@@ -688,9 +688,9 @@ export class NLPService {
     return fields;
   }
 
-  private mapUrgencyToPriority(urgency: any): string {
-    switch (urgency.level) {
-      case 'urgent': return 'critical';
+  private mapUrgencyToPriority(urgency: any): 'low' | 'medium' | 'high' | 'urgent' {
+    switch (urgency?.level) {
+      case 'urgent': return 'urgent';
       case 'high': return 'high';
       case 'medium': return 'medium';
       case 'low': return 'low';
@@ -713,30 +713,48 @@ export class NLPService {
     return Math.round(base * complexity);
   }
 
-  private async suggestAssignments(analysisResult: any, context: any): Promise<string[]> {
-    const suggestions: string[] = [];
+  private async suggestAssignments(analysisResult: any, context: any): Promise<Array<{userId: string; role: string; confidence: number}>> {
+    const assignments: Array<{userId: string; role: string; confidence: number}> = [];
     
     switch (analysisResult.intent.category) {
       case 'room_service':
-        suggestions.push('Kitchen Staff', 'Room Service Team');
+        assignments.push(
+          { userId: 'kitchen-staff-1', role: 'Kitchen Staff', confidence: 0.8 },
+          { userId: 'room-service-1', role: 'Room Service Team', confidence: 0.9 }
+        );
         break;
       case 'housekeeping':
-        suggestions.push('Housekeeping Team', 'Cleaning Staff');
+        assignments.push(
+          { userId: 'housekeeping-1', role: 'Housekeeping Team', confidence: 0.85 },
+          { userId: 'cleaning-staff-1', role: 'Cleaning Staff', confidence: 0.7 }
+        );
         break;
       case 'maintenance':
-        suggestions.push('Maintenance Team', 'Technical Support');
+        assignments.push(
+          { userId: 'maintenance-1', role: 'Maintenance Team', confidence: 0.9 },
+          { userId: 'tech-support-1', role: 'Technical Support', confidence: 0.6 }
+        );
         break;
       case 'concierge':
-        suggestions.push('Concierge Staff', 'Guest Relations');
+        assignments.push(
+          { userId: 'concierge-1', role: 'Concierge Staff', confidence: 0.95 },
+          { userId: 'guest-relations-1', role: 'Guest Relations', confidence: 0.8 }
+        );
         break;
       case 'complaint':
-        suggestions.push('Guest Relations Manager', 'Department Supervisor');
+        assignments.push(
+          { userId: 'manager-1', role: 'Guest Relations Manager', confidence: 0.9 },
+          { userId: 'supervisor-1', role: 'Department Supervisor', confidence: 0.7 }
+        );
         break;
       default:
-        suggestions.push('Front Desk', 'General Staff');
+        assignments.push(
+          { userId: 'front-desk-1', role: 'Front Desk', confidence: 0.6 },
+          { userId: 'general-staff-1', role: 'General Staff', confidence: 0.5 }
+        );
     }
     
-    return suggestions;
+    return assignments;
   }
 
   private calculateDueDate(urgency: any): Date {
@@ -887,15 +905,28 @@ export class NLPService {
     ];
   }
 
-  private async extractTopics(conversation: string): Promise<string[]> {
+  private async extractTopics(conversation: string): Promise<Array<{topic: string; relevance: number; mentions: number}>> {
     // Simple topic extraction based on keywords
-    const topics = [];
-    if (conversation.includes('room')) topics.push('Room Issues');
-    if (conversation.includes('service')) topics.push('Service Quality');
-    if (conversation.includes('food')) topics.push('Food & Beverage');
-    if (conversation.includes('clean')) topics.push('Cleanliness');
+    const topics: Array<{topic: string; relevance: number; mentions: number}> = [];
     
-    return topics.length > 0 ? topics : ['General Discussion'];
+    if (conversation.includes('room')) {
+      const mentions = (conversation.match(/room/gi) || []).length;
+      topics.push({ topic: 'Room Issues', relevance: 0.8, mentions });
+    }
+    if (conversation.includes('service')) {
+      const mentions = (conversation.match(/service/gi) || []).length;
+      topics.push({ topic: 'Service Quality', relevance: 0.7, mentions });
+    }
+    if (conversation.includes('food')) {
+      const mentions = (conversation.match(/food/gi) || []).length;
+      topics.push({ topic: 'Food & Beverage', relevance: 0.6, mentions });
+    }
+    if (conversation.includes('clean')) {
+      const mentions = (conversation.match(/clean/gi) || []).length;
+      topics.push({ topic: 'Cleanliness', relevance: 0.75, mentions });
+    }
+    
+    return topics.length > 0 ? topics : [{ topic: 'General Discussion', relevance: 0.3, mentions: 1 }];
   }
 
   private async extractActionItems(messages: any[]): Promise<any[]> {

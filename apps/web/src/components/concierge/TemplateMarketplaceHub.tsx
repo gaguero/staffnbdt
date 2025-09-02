@@ -199,11 +199,6 @@ const TemplateMarketplaceHub: React.FC<TemplateMarketplaceHubProps> = ({ onTempl
     toastService.success('Template cloned successfully!');
   };
 
-  const handlePreviewTemplate = (template: TemplateData) => {
-    setSelectedTemplate(template);
-    setShowPreviewModal(true);
-  };
-
   // Filter and search logic
   const getFilteredTemplates = () => {
     let filtered = SAMPLE_TEMPLATES;

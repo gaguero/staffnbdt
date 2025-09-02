@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { TemplateData } from './TemplateMarketplaceHub';
 import TemplateCard from './TemplateCard';
 
