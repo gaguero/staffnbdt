@@ -108,6 +108,14 @@ const getDefaultNavigation = (userType: UserType): NavigationSection[] => {
         moduleId: 'concierge',
       },
       {
+        id: 'object-types',
+        label: 'nav.objectTypes',
+        path: '/concierge/object-types',
+        icon: '🔧',
+        requiredPermissions: ['concierge.object-types.manage.property'],
+        moduleId: 'concierge',
+      },
+      {
         id: 'playbooks',
         label: 'nav.playbooks',
         path: '/concierge/playbooks',

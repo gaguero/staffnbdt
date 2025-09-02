@@ -28,9 +28,14 @@ const translations = {
     
     // Hotel Operations
     'nav.rooms': 'Rooms',
+    'nav.roomTypes': 'Room Types',
     'nav.guests': 'Guests', 
     'nav.reservations': 'Reservations',
     'nav.concierge': 'Concierge',
+    'nav.todayBoard': 'Today Board',
+    'nav.reservation360': 'Reservation 360',
+    'nav.objectTypes': 'Object Types',
+    'nav.playbooks': 'Playbooks',
     'nav.vendors': 'Vendors',
     
     // Admin
@@ -296,9 +301,14 @@ const translations = {
     
     // Hotel Operations
     'nav.rooms': 'Habitaciones',
+    'nav.roomTypes': 'Tipos de Habitación',
     'nav.guests': 'Huéspedes',
     'nav.reservations': 'Reservaciones',
     'nav.concierge': 'Conserjería',
+    'nav.todayBoard': 'Tablero de Hoy',
+    'nav.reservation360': 'Reservación 360',
+    'nav.objectTypes': 'Tipos de Objeto',
+    'nav.playbooks': 'Guías de Proceso',
     'nav.vendors': 'Proveedores',
     
     // Admin
