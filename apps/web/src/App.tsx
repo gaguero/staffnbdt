@@ -38,6 +38,7 @@ import TodayBoardPage from './pages/modules/TodayBoardPage';
 import Reservation360Page from './pages/modules/Reservation360Page';
 import GuestTimelinePage from './pages/modules/GuestTimelinePage';
 import ObjectTypesPage from './pages/modules/ObjectTypesPage';
+import PlaybooksPage from './pages/modules/PlaybooksPage';
 
 // Vendors Module Pages
 import VendorLinksPage from './pages/modules/VendorLinksPage';

@@ -173,8 +173,41 @@ class ConciergeService {
     return response.data;
   }
 
+  async getPlaybook(id: string): Promise<ApiResponse<Playbook>> {
+    const response = await api.get(`/concierge/playbooks/${id}`);
+    return response.data;
+  }
+
+  async createPlaybook(input: CreatePlaybookInput): Promise<ApiResponse<Playbook>> {
+    const response = await api.post('/concierge/playbooks', input);
+    return response.data;
+  }
+
+  async updatePlaybook(id: string, input: Partial<CreatePlaybookInput>): Promise<ApiResponse<Playbook>> {
+    const response = await api.patch(`/concierge/playbooks/${id}`, input);
+    return response.data;
+  }
+
+  async deletePlaybook(id: string): Promise<ApiResponse<void>> {
+    const response = await api.delete(`/concierge/playbooks/${id}`);
+    return response.data;
+  }
+
   async executePlaybook(input: ExecutePlaybookInput): Promise<ApiResponse<any>> {
     const response = await api.post('/concierge/playbooks/execute', input);
+    return response.data;
+  }
+
+  async validatePlaybook(playbookData: Partial<Playbook>): Promise<ApiResponse<PlaybookValidationResult>> {
+    const response = await api.post('/concierge/playbooks/validate', playbookData);
+    return response.data;
+  }
+
+  async previewPlaybook(playbookData: Partial<Playbook>, triggerData: any): Promise<ApiResponse<PlaybookPreviewResult>> {
+    const response = await api.post('/concierge/playbooks/preview', {
+      playbookData,
+      triggerData
+    });
     return response.data;
   }
 
@@ -289,7 +322,101 @@ class ConciergeService {
     };
   }
 
-  // Template Creation
+  // Template Management
+  async getTemplates(): Promise<ApiResponse<any[]>> {
+    // For now, return mock data until backend implements template endpoints
+    const mockTemplates = [
+      {
+        id: 'template-airport-transfer',
+        name: 'Airport Transfer',
+        category: 'Transportation',
+        description: 'Complete airport transfer request with pickup time, flight details, and special requirements.',
+        fieldsSchema: {
+          fields: [
+            { key: 'pickup_time', type: 'date', label: 'Pickup Time', required: true },
+            { key: 'flight_number', type: 'string', label: 'Flight Number', required: true },
+            { key: 'passenger_count', type: 'number', label: 'Number of Passengers', required: true },
+            { key: 'special_requests', type: 'string', label: 'Special Requests', required: false },
+            { key: 'contact_number', type: 'string', label: 'Contact Number', required: true }
+          ]
+        },
+        usageCount: 245,
+        rating: 4.8,
+        tags: ['transportation', 'airport', 'transfer'],
+        isOfficial: true
+      }
+    ];
+    
+    return {
+      data: mockTemplates,
+      message: 'Templates retrieved successfully',
+      success: true
+    };
+  }
+
+  async cloneTemplate(templateId: string, customizations: CloneTemplateInput): Promise<ApiResponse<ObjectType>> {
+    const response = await api.post(`/concierge/templates/${templateId}/clone`, customizations);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: responseData,
+      message: 'Template cloned successfully',
+      success: true
+    };
+  }
+
+  async getTemplateChildren(parentId: string): Promise<ApiResponse<ObjectType[]>> {
+    const response = await api.get(`/concierge/object-types/${parentId}/children`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    
+    return {
+      data: responseData,
+      message: 'Template children retrieved successfully',
+      success: true
+    };
+  }
+
+  async createTemplateFromObjectType(objectTypeId: string, templateData: CreateTemplateInput): Promise<ApiResponse<ObjectType>> {
+    const response = await api.post(`/concierge/object-types/${objectTypeId}/create-template`, templateData);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: responseData,
+      message: 'Template created successfully',
+      success: true
+    };
+  }
+
+  async rateTemplate(templateId: string, rating: number): Promise<ApiResponse<{ success: boolean; newRating: number; ratingCount: number }>> {
+    const response = await api.post(`/concierge/templates/${templateId}/rate`, { rating });
+    
+    return {
+      data: response.data,
+      message: 'Template rated successfully',
+      success: true
+    };
+  }
+
+  async getTemplateAnalytics(): Promise<ApiResponse<TemplateAnalytics>> {
+    const response = await api.get('/concierge/templates/analytics');
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: responseData,
+      message: 'Template analytics retrieved successfully',
+      success: true
+    };
+  }
+
+  // Template Creation (legacy - for creating concierge objects from templates)
   async createFromTemplate(templateId: string, data: Record<string, any>): Promise<ApiResponse<ConciergeObject>> {
     const response = await api.post('/concierge/templates/create', {
       templateId,
@@ -316,10 +443,17 @@ export type {
   ConciergeObjectFilter,
   ObjectType,
   Playbook,
+  PlaybookFlowData,
+  PlaybookNode,
+  PlaybookNodeData,
+  PlaybookEdge,
   CreateConciergeObjectInput,
   UpdateConciergeObjectInput,
   CreateObjectTypeInput,
+  CreatePlaybookInput,
   ExecutePlaybookInput,
+  PlaybookValidationResult,
+  PlaybookPreviewResult,
   TodayBoardSection,
   ReservationChecklist,
   GuestTimelineEvent,
@@ -327,4 +461,10 @@ export type {
   ConciergeObjectStatus,
   AttributeFieldType,
   ObjectFieldDefinition,
+  MarketplaceTemplate,
+  TemplateMetadata,
+  TemplateAnalytics,
+  CloneTemplateInput,
+  CreateTemplateInput,
+  TemplateFilters,
 } from '../types/concierge';

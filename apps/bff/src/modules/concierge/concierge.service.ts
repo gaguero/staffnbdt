@@ -69,7 +69,7 @@ export class ConciergeService {
     };
   }
 
-  async getObjectTypes(req: any) {
+  async getObjectTypes(req: any, includeTemplates: boolean = false) {
     const ctx = this.tenantContext.getTenantContext(req);
     if (!ctx.propertyId) {
       throw new BadRequestException('Property context required for concierge operations');
@@ -81,7 +81,24 @@ export class ConciergeService {
       where: { 
         organizationId: ctx.organizationId, 
         propertyId: ctx.propertyId,
-        isActive: true 
+        isActive: true,
+        ...(includeTemplates ? {} : { isTemplate: false }),
+      },
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            isTemplate: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            isTemplate: true,
+          },
+        },
       },
       orderBy: { name: 'asc' },
     });
@@ -426,6 +443,48 @@ export class ConciergeService {
     };
   }
 
+  /**
+   * Get object type by ID with hierarchy information
+   */
+  async getObjectTypeById(req: any, id: string) {
+    const ctx = this.tenantContext.getTenantContext(req);
+    if (!ctx.propertyId) {
+      throw new BadRequestException('Property context required for concierge operations');
+    }
+
+    const objectType = await this.prisma.objectType.findFirst({
+      where: {
+        id,
+        organizationId: ctx.organizationId,
+        propertyId: ctx.propertyId,
+        isActive: true,
+      },
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            isTemplate: true,
+            fieldsSchema: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            isTemplate: true,
+          },
+        },
+      },
+    });
+
+    if (!objectType) {
+      throw new NotFoundException('Object type not found');
+    }
+
+    return objectType;
+  }
+
   private async validateAttributes(attributes: any[], objectType: any): Promise<void> {
     const schema: any = objectType.fieldsSchema || {};
     const schemaFields = schema.fields || [];
@@ -520,6 +579,206 @@ export class ConciergeService {
       },
       orderBy: {
         dueAt: 'asc',
+      },
+    });
+  }
+
+  /**
+   * Create a new object type (can be template or regular)
+   */
+  async createObjectType(req: any, data: {
+    name: string;
+    fieldsSchema: any;
+    validations?: any;
+    uiHints?: any;
+    isTemplate?: boolean;
+    parentId?: string;
+    templateMetadata?: any;
+  }) {
+    const ctx = this.tenantContext.getTenantContext(req);
+    if (!ctx.propertyId) {
+      throw new BadRequestException('Property context required for concierge operations');
+    }
+    if (!(await this.moduleRegistry.isModuleEnabledForProperty(ctx.organizationId, ctx.propertyId, 'concierge'))) {
+      throw new ForbiddenException('Concierge module not enabled for this property');
+    }
+
+    // Check for name uniqueness
+    const existing = await this.prisma.objectType.findFirst({
+      where: {
+        organizationId: ctx.organizationId,
+        propertyId: ctx.propertyId,
+        name: data.name,
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(`Object type with name '${data.name}' already exists`);
+    }
+
+    // Validate parent hierarchy if parentId provided
+    if (data.parentId) {
+      const parent = await this.prisma.objectType.findFirst({
+        where: {
+          id: data.parentId,
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+          isActive: true,
+        },
+      });
+
+      if (!parent) {
+        throw new BadRequestException('Parent object type not found');
+      }
+    }
+
+    return this.prisma.objectType.create({
+      data: {
+        organizationId: ctx.organizationId,
+        propertyId: ctx.propertyId,
+        name: data.name,
+        fieldsSchema: data.fieldsSchema,
+        validations: data.validations,
+        uiHints: data.uiHints,
+        isActive: true,
+        isTemplate: data.isTemplate || false,
+        parentId: data.parentId,
+        templateMetadata: data.templateMetadata,
+      },
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            isTemplate: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Update an object type
+   */
+  async updateObjectType(req: any, id: string, data: {
+    name?: string;
+    fieldsSchema?: any;
+    validations?: any;
+    uiHints?: any;
+    isActive?: boolean;
+    templateMetadata?: any;
+  }) {
+    const ctx = this.tenantContext.getTenantContext(req);
+    if (!ctx.propertyId) {
+      throw new BadRequestException('Property context required for concierge operations');
+    }
+
+    const existing = await this.prisma.objectType.findFirst({
+      where: {
+        id,
+        organizationId: ctx.organizationId,
+        propertyId: ctx.propertyId,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Object type not found');
+    }
+
+    // Check name uniqueness if name is being updated
+    if (data.name && data.name !== existing.name) {
+      const nameConflict = await this.prisma.objectType.findFirst({
+        where: {
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+          name: data.name,
+          id: { not: id },
+        },
+      });
+
+      if (nameConflict) {
+        throw new BadRequestException(`Object type with name '${data.name}' already exists`);
+      }
+    }
+
+    return this.prisma.objectType.update({
+      where: { id },
+      data,
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            isTemplate: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            isTemplate: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Delete an object type (soft delete)
+   */
+  async deleteObjectType(req: any, id: string) {
+    const ctx = this.tenantContext.getTenantContext(req);
+    if (!ctx.propertyId) {
+      throw new BadRequestException('Property context required for concierge operations');
+    }
+
+    const existing = await this.prisma.objectType.findFirst({
+      where: {
+        id,
+        organizationId: ctx.organizationId,
+        propertyId: ctx.propertyId,
+      },
+      include: {
+        children: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Object type not found');
+    }
+
+    // Check if there are any concierge objects using this type
+    const objectsUsing = await this.prisma.conciergeObject.count({
+      where: {
+        type: existing.name,
+        organizationId: ctx.organizationId,
+        propertyId: ctx.propertyId,
+        deletedAt: null,
+      },
+    });
+
+    if (objectsUsing > 0) {
+      throw new BadRequestException(
+        `Cannot delete object type '${existing.name}' because it is being used by ${objectsUsing} concierge objects`
+      );
+    }
+
+    // Check if there are child object types
+    if (existing.children.length > 0) {
+      throw new BadRequestException(
+        `Cannot delete object type '${existing.name}' because it has ${existing.children.length} child object types`
+      );
+    }
+
+    return this.prisma.objectType.update({
+      where: { id },
+      data: {
+        isActive: false,
+        // Add timestamp for soft delete tracking
+        templateMetadata: {
+          ...(existing.templateMetadata as any),
+          deletedAt: new Date().toISOString(),
+        },
       },
     });
   }

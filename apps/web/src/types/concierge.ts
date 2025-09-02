@@ -54,6 +54,13 @@ export interface ObjectType {
   validations?: Record<string, any>;
   uiHints?: Record<string, any>;
   isActive: boolean;
+  // Template system fields
+  isTemplate?: boolean;
+  parentId?: string;
+  templateMetadata?: TemplateMetadata;
+  // Relations
+  parent?: Partial<ObjectType>;
+  children?: Partial<ObjectType>[];
 }
 
 export interface ObjectTypeSchema {
@@ -84,6 +91,37 @@ export interface Playbook {
   actions: PlaybookAction[];
   enforcements?: PlaybookEnforcement[];
   isActive: boolean;
+  // Visual builder support
+  flowData?: PlaybookFlowData;
+}
+
+export interface PlaybookFlowData {
+  nodes: PlaybookNode[];
+  edges: PlaybookEdge[];
+  viewport?: { x: number; y: number; zoom: number };
+}
+
+export interface PlaybookNode {
+  id: string;
+  type: 'trigger' | 'condition' | 'action' | 'enforcement';
+  position: { x: number; y: number };
+  data: PlaybookNodeData;
+}
+
+export interface PlaybookNodeData {
+  label: string;
+  nodeType: 'trigger' | 'condition' | 'action' | 'enforcement';
+  config: PlaybookTrigger | PlaybookCondition | PlaybookAction | PlaybookEnforcement;
+  isValid?: boolean;
+  errors?: string[];
+}
+
+export interface PlaybookEdge {
+  id: string;
+  source: string;
+  target: string;
+  type?: string;
+  animated?: boolean;
 }
 
 export type PlaybookTrigger = 
@@ -110,6 +148,57 @@ export interface PlaybookEnforcement {
   };
 }
 
+// Template Types
+export interface TemplateMetadata {
+  usageCount?: number;
+  rating?: number;
+  ratingCount?: number;
+  category?: string;
+  tags?: string[];
+  description?: string;
+  author?: string;
+  version?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  clonedFrom?: string;
+  clonedAt?: string;
+  clonedBy?: string;
+  basedOn?: string;
+}
+
+export interface MarketplaceTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  tags: string[];
+  rating: number;
+  ratingCount: number;
+  usageCount: number;
+  author?: string;
+  version: string;
+  isSystem: boolean;
+  fieldCount: number;
+  hasChildren: boolean;
+  parentId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TemplateAnalytics {
+  totalTemplates: number;
+  myTemplates: number;
+  totalClones: number;
+  popularTemplates: PopularTemplate[];
+}
+
+export interface PopularTemplate {
+  id: string;
+  name: string;
+  usageCount: number;
+  rating: number;
+}
+
 // Form Types
 export interface CreateConciergeObjectInput {
   type: string;
@@ -130,11 +219,81 @@ export interface CreateObjectTypeInput {
   validations?: Record<string, any>;
   uiHints?: Record<string, any>;
   isActive?: boolean;
+  // Template fields
+  isTemplate?: boolean;
+  parentId?: string;
+  templateMetadata?: TemplateMetadata;
+}
+
+export interface CloneTemplateInput {
+  name?: string;
+  fieldsSchema?: ObjectTypeSchema;
+  description?: string;
+  category?: string;
+}
+
+export interface CreateTemplateInput {
+  name: string;
+  description?: string;
+  category?: string;
+  tags?: string[];
+  isPublic?: boolean;
+}
+
+export interface TemplateFilters {
+  category?: string;
+  minRating?: number;
+  tags?: string[];
 }
 
 export interface ExecutePlaybookInput {
   playbookId: string;
   triggerData: Record<string, any>;
+}
+
+export interface CreatePlaybookInput {
+  name: string;
+  trigger: PlaybookTrigger;
+  conditions?: PlaybookCondition[];
+  actions?: PlaybookAction[];
+  enforcements?: PlaybookEnforcement[];
+  isActive?: boolean;
+  flowData?: PlaybookFlowData;
+}
+
+export interface PlaybookValidationResult {
+  isValid: boolean;
+  errors: PlaybookValidationError[];
+  warnings: PlaybookValidationWarning[];
+}
+
+export interface PlaybookValidationError {
+  nodeId?: string;
+  field: string;
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+export interface PlaybookValidationWarning {
+  nodeId?: string;
+  field: string;
+  message: string;
+  suggestion?: string;
+}
+
+export interface PlaybookPreviewResult {
+  estimatedExecutionTime: number;
+  expectedActions: PlaybookPreviewAction[];
+  potentialIssues: string[];
+  resourceRequirements: Record<string, any>;
+}
+
+export interface PlaybookPreviewAction {
+  stepNumber: number;
+  actionType: string;
+  description: string;
+  estimatedDuration: number;
+  requiredResources: string[];
 }
 
 // Filter Types

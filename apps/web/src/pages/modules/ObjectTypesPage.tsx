@@ -5,18 +5,19 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import { ObjectType } from '../../types/concierge';
 import { PermissionGate, RoleBasedComponent } from '../../components';
 import toastService from '../../services/toastService';
-import CreateObjectTypeModal from '../../components/concierge/CreateObjectTypeModal';
-import EditObjectTypeModal from '../../components/concierge/EditObjectTypeModal';
+import ObjectTypeDesigner from '../../components/concierge/ObjectTypeDesigner';
 import ViewObjectTypeModal from '../../components/concierge/ViewObjectTypeModal';
+import TemplateMarketplaceHub from '../../components/concierge/TemplateMarketplaceHub';
 
 const ObjectTypesPage: React.FC = () => {
   const { user: currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<'myTypes' | 'templates'>('myTypes');
   const [objectTypes, setObjectTypes] = useState<ObjectType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedObjectType, setSelectedObjectType] = useState<ObjectType | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDesigner, setShowDesigner] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [designerMode, setDesignerMode] = useState<'create' | 'edit'>('create');
   const [filter, setFilter] = useState({
     search: '',
     active: 'all',
@@ -49,8 +50,10 @@ const ObjectTypesPage: React.FC = () => {
   }, [filter]);
 
   useEffect(() => {
-    loadObjectTypes();
-  }, [loadObjectTypes]);
+    if (activeTab === 'myTypes') {
+      loadObjectTypes();
+    }
+  }, [loadObjectTypes, activeTab]);
 
   const handleDelete = async (typeId: string) => {
     const type = objectTypes.find(t => t.id === typeId);
@@ -90,9 +93,10 @@ const ObjectTypesPage: React.FC = () => {
     }
   };
 
-  const openEditModal = (objectType: ObjectType) => {
+  const openEditDesigner = (objectType: ObjectType) => {
     setSelectedObjectType(objectType);
-    setShowEditModal(true);
+    setDesignerMode('edit');
+    setShowDesigner(true);
   };
 
   const openViewModal = (objectType: ObjectType) => {
@@ -108,7 +112,7 @@ const ObjectTypesPage: React.FC = () => {
     );
   };
 
-  if (loading && objectTypes.length === 0) {
+  if (loading && objectTypes.length === 0 && activeTab === 'myTypes') {
     return (
       <div className="flex justify-center items-center h-64">
         <LoadingSpinner size="lg" />
@@ -123,7 +127,10 @@ const ObjectTypesPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-charcoal">Object Type Management</h1>
           <p className="text-gray-600">
-            Configure concierge object types and their field schemas
+            {activeTab === 'myTypes' 
+              ? 'Configure concierge object types and their field schemas'
+              : 'Browse and clone pre-built templates for common hotel operations'
+            }
             {currentUser?.role === 'STAFF' && (
               <span className="ml-2 text-sm text-orange-600">(Limited access)</span>
             )}
@@ -141,49 +148,93 @@ const ObjectTypesPage: React.FC = () => {
                 hideOnDenied
               >
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => {
+                    setSelectedObjectType(null);
+                    setDesignerMode('create');
+                    setShowDesigner(true);
+                  }}
                   className="btn btn-primary"
                 >
-                  ➕ Create Object Type
+                  🎨 Design Object Type
                 </button>
               </RoleBasedComponent>
             }
           >
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                setSelectedObjectType(null);
+                setDesignerMode('create');
+                setShowDesigner(true);
+              }}
               className="btn btn-primary"
             >
-              ➕ Create Object Type
+              🎨 Design Object Type
             </button>
           </PermissionGate>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="card p-4">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <input
-            type="text"
-            placeholder="Search object types..."
-            value={filter.search}
-            onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-            className="form-input flex-1"
-          />
-          <select
-            value={filter.active}
-            onChange={(e) => setFilter({ ...filter, active: e.target.value })}
-            className="form-input"
-          >
-            <option value="all">All Types</option>
-            <option value="active">Active Only</option>
-            <option value="inactive">Inactive Only</option>
-          </select>
-        </div>
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {[
+            { id: 'myTypes' as const, name: 'My Object Types', icon: '📋', count: objectTypes.length },
+            { id: 'templates' as const, name: 'Template Gallery', icon: '🏪', count: 25 }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`
+                flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap
+                ${activeTab === tab.id
+                  ? 'border-warm-gold text-warm-gold'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.name}</span>
+              <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* Object Types Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {objectTypes.map((objectType) => (
+      {/* Tab Content */}
+      <div className="min-h-96">
+        {activeTab === 'templates' && (
+          <TemplateMarketplaceHub onTemplateCreated={() => loadObjectTypes()} />
+        )}
+
+        {activeTab === 'myTypes' && (
+          <div className="space-y-6">
+            {/* Filters */}
+            <div className="card p-4">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <input
+                  type="text"
+                  placeholder="Search object types..."
+                  value={filter.search}
+                  onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+                  className="form-input flex-1"
+                />
+                <select
+                  value={filter.active}
+                  onChange={(e) => setFilter({ ...filter, active: e.target.value })}
+                  className="form-input"
+                >
+                  <option value="all">All Types</option>
+                  <option value="active">Active Only</option>
+                  <option value="inactive">Inactive Only</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Object Types Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {objectTypes.map((objectType) => (
           <div key={objectType.id} className="card p-6 hover:shadow-md transition-shadow">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
@@ -262,10 +313,10 @@ const ObjectTypesPage: React.FC = () => {
                   hideOnDenied
                 >
                   <button
-                    onClick={() => openEditModal(objectType)}
+                    onClick={() => openEditDesigner(objectType)}
                     className="text-blue-600 hover:text-blue-800 text-sm"
                   >
-                    Edit
+                    🎨 Design
                   </button>
                 </PermissionGate>
                 
@@ -299,71 +350,84 @@ const ObjectTypesPage: React.FC = () => {
               </div>
             </div>
           </div>
-        ))}
+              ))}
+            </div>
+
+            {objectTypes.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🏗️</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No Object Types Found
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  {filter.search || filter.active !== 'all'
+                    ? 'No object types match your current filters.'
+                    : 'Create your first object type to get started with concierge objects.'
+                  }
+                </p>
+                {(filter.search || filter.active !== 'all') ? (
+                  <div className="space-x-2">
+                    <button
+                      onClick={() => setFilter({ search: '', active: 'all' })}
+                      className="btn btn-secondary"
+                    >
+                      Clear Filters
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('templates')}
+                      className="btn btn-primary"
+                    >
+                      Browse Templates
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-x-2">
+                    <PermissionGate
+                      resource="concierge"
+                      action="manage"
+                      scope="property"
+                      hideOnDenied
+                    >
+                      <button
+                        onClick={() => {
+                          setSelectedObjectType(null);
+                          setDesignerMode('create');
+                          setShowDesigner(true);
+                        }}
+                        className="btn btn-primary"
+                      >
+                        Design First Object Type
+                      </button>
+                    </PermissionGate>
+                    <button
+                      onClick={() => setActiveTab('templates')}
+                      className="btn btn-secondary"
+                    >
+                      Browse Templates Instead
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {objectTypes.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🏗️</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No Object Types Found
-          </h3>
-          <p className="text-gray-600 mb-4">
-            {filter.search || filter.active !== 'all'
-              ? 'No object types match your current filters.'
-              : 'Create your first object type to get started with concierge objects.'
-            }
-          </p>
-          {(filter.search || filter.active !== 'all') ? (
-            <button
-              onClick={() => setFilter({ search: '', active: 'all' })}
-              className="btn btn-secondary"
-            >
-              Clear Filters
-            </button>
-          ) : (
-            <PermissionGate
-              resource="concierge"
-              action="manage"
-              scope="property"
-              hideOnDenied
-            >
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="btn btn-primary"
-              >
-                Create First Object Type
-              </button>
-            </PermissionGate>
-          )}
-        </div>
-      )}
-
-      {/* Modals */}
-      {showCreateModal && (
-        <CreateObjectTypeModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={() => {
-            setShowCreateModal(false);
-            loadObjectTypes();
-          }}
-        />
-      )}
-
-      {showEditModal && selectedObjectType && (
-        <EditObjectTypeModal
-          isOpen={showEditModal}
+      {/* Object Type Designer */}
+      {showDesigner && (
+        <ObjectTypeDesigner
+          isOpen={showDesigner}
           onClose={() => {
-            setShowEditModal(false);
+            setShowDesigner(false);
             setSelectedObjectType(null);
           }}
-          objectType={selectedObjectType}
           onSuccess={() => {
-            setShowEditModal(false);
+            setShowDesigner(false);
             setSelectedObjectType(null);
             loadObjectTypes();
           }}
+          existingObjectType={designerMode === 'edit' ? selectedObjectType || undefined : undefined}
+          allObjectTypes={objectTypes}
         />
       )}
 

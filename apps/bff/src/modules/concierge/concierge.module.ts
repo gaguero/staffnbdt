@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConciergeController } from './concierge.controller';
 import { ConciergeService } from './concierge.service';
+import { TemplateService } from './template.service';
 import { SLAEnforcementProcessor } from './processors/sla-enforcement.processor';
 import { ConciergeEventHandler } from './handlers/concierge-event.handler';
 import { DatabaseModule } from '../../shared/database/database.module';
@@ -13,11 +14,12 @@ import { ModuleRegistryModule } from '../module-registry/module-registry.module'
   controllers: [ConciergeController],
   providers: [
     ConciergeService,
+    TemplateService,
     SLAEnforcementProcessor,
     ConciergeEventHandler,
     DomainEventBus,
   ],
-  exports: [ConciergeService, SLAEnforcementProcessor],
+  exports: [ConciergeService, TemplateService, SLAEnforcementProcessor],
 })
 export class ConciergeModule {}
 

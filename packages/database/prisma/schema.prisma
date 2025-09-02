@@ -148,8 +148,19 @@ model ObjectType {
   validations    Json?
   uiHints        Json?
   isActive       Boolean  @default(true)
+  
+  // Template system fields
+  isTemplate     Boolean  @default(false)
+  parentId       String?  // Reference to parent template
+  templateMetadata Json?  // Usage count, rating, category, etc.
+  
+  // Self-referencing relation for template hierarchy
+  parent         ObjectType? @relation("TemplateHierarchy", fields: [parentId], references: [id])
+  children       ObjectType[] @relation("TemplateHierarchy")
 
   @@index([organizationId, propertyId])
+  @@index([isTemplate])
+  @@index([parentId])
   @@unique([organizationId, propertyId, name])
 }
 
