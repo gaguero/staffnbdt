@@ -18,9 +18,21 @@ interface FieldTypeOption {
 
 const FIELD_TYPES: FieldTypeOption[] = [
   { value: 'string', label: 'Text', icon: '📝', description: 'Single line text input' },
-  { value: 'number', label: 'Number', icon: '🔢', description: 'Numeric values with validation' },
-  { value: 'boolean', label: 'Yes/No', icon: '✅', description: 'Toggle or checkbox field' },
+  { value: 'number', label: 'Number', icon: '🔢', description: 'Numeric values' },
+  { value: 'boolean', label: 'Yes/No', icon: '✅', description: 'Toggle or checkbox' },
   { value: 'date', label: 'Date/Time', icon: '📅', description: 'Date and time picker' },
+  { value: 'relationship', label: 'Link to...', icon: '🔗', description: 'Link to guests, reservations, units, etc.' },
+  { value: 'select', label: 'Dropdown', icon: '📋', description: 'Single choice from options' },
+  { value: 'multiselect', label: 'Multi-Select', icon: '☑️', description: 'Multiple choices' },
+  { value: 'quantity', label: 'Quantity', icon: '📏', description: 'Numbers with units (kg, cm, etc.)' },
+  { value: 'money', label: 'Money', icon: '💰', description: 'Currency amounts' },
+  { value: 'file', label: 'File Upload', icon: '📎', description: 'File attachments' },
+  { value: 'url', label: 'Website Link', icon: '🌐', description: 'Web URLs' },
+  { value: 'email', label: 'Email', icon: '📧', description: 'Email addresses' },
+  { value: 'phone', label: 'Phone', icon: '📞', description: 'Phone numbers' },
+  { value: 'location', label: 'Location', icon: '📍', description: 'Address or coordinates' },
+  { value: 'richtext', label: 'Rich Text', icon: '📄', description: 'Formatted text editor' },
+  { value: 'rating', label: 'Rating', icon: '⭐', description: 'Star ratings or scores' },
   { value: 'json', label: 'Rich Data', icon: '📊', description: 'Complex structured data' },
 ];
 
@@ -138,6 +150,133 @@ const FieldBuilder: React.FC<FieldBuilderProps> = ({ fields, onChange, draggedIn
       
       case 'date':
         return <input type="datetime-local" className="form-input text-sm" disabled />;
+        
+      case 'select':
+        return (
+          <select className="form-input text-sm" disabled>
+            <option>Choose an option...</option>
+            {field.options?.map((option, idx) => (
+              <option key={idx}>{option}</option>
+            ))}
+          </select>
+        );
+        
+      case 'multiselect':
+        return (
+          <div className="form-input text-sm bg-gray-50 min-h-[2.5rem] flex flex-wrap gap-1 p-2">
+            {field.options?.slice(0, 2).map((option, idx) => (
+              <span key={idx} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                {option}
+              </span>
+            ))}
+            {field.options && field.options.length > 2 && (
+              <span className="text-gray-500 text-xs">+{field.options.length - 2} more</span>
+            )}
+          </div>
+        );
+        
+      case 'relationship':
+        const relType = field.config?.relationshipType || 'guest';
+        const relIcon = {
+          guest: '👤',
+          reservation: '📅',
+          unit: '🏠',
+          vendor: '🏪',
+          object: '📋'
+        }[relType];
+        return (
+          <div className="form-input text-sm bg-gray-50 flex items-center text-gray-600">
+            <span className="mr-2">{relIcon}</span>
+            Select {relType}(s)...
+            {field.config?.multiple && <span className="ml-auto text-xs">(multiple)</span>}
+          </div>
+        );
+        
+      case 'quantity':
+        const units = field.config?.units || ['kg', 'g', 'lbs'];
+        return (
+          <div className="flex gap-2">
+            <input type="number" className="form-input text-sm flex-1" placeholder="Amount" disabled />
+            <select className="form-input text-sm w-20" disabled>
+              {units.slice(0, 3).map((unit, idx) => (
+                <option key={idx}>{unit}</option>
+              ))}
+            </select>
+          </div>
+        );
+        
+      case 'money':
+        const currencies = field.config?.currencies || ['USD', 'EUR'];
+        return (
+          <div className="flex gap-2">
+            <select className="form-input text-sm w-20" disabled>
+              {currencies.slice(0, 2).map((currency, idx) => (
+                <option key={idx}>{currency}</option>
+              ))}
+            </select>
+            <input type="number" className="form-input text-sm flex-1" placeholder="0.00" step="0.01" disabled />
+          </div>
+        );
+        
+      case 'file':
+        return (
+          <div className="form-input text-sm bg-gray-50 border-dashed flex items-center justify-center py-4 text-gray-500">
+            <span className="mr-2">📎</span>
+            Click to upload or drag and drop
+          </div>
+        );
+        
+      case 'url':
+        return <input type="url" className="form-input text-sm" placeholder="https://example.com" disabled />;
+        
+      case 'email':
+        return <input type="email" className="form-input text-sm" placeholder="user@example.com" disabled />;
+        
+      case 'phone':
+        return <input type="tel" className="form-input text-sm" placeholder="+1 (555) 123-4567" disabled />;
+        
+      case 'location':
+        return (
+          <div className="form-input text-sm bg-gray-50 flex items-center text-gray-600">
+            <span className="mr-2">📍</span>
+            Enter address or coordinates...
+          </div>
+        );
+        
+      case 'richtext':
+        return (
+          <div className="border rounded text-sm">
+            <div className="bg-gray-100 border-b px-3 py-2 flex gap-2">
+              <span className="text-xs text-gray-500">B I U</span>
+            </div>
+            <div className="p-3 h-20 text-gray-500">
+              Rich text content...
+            </div>
+          </div>
+        );
+        
+      case 'rating':
+        const maxRating = field.config?.maxRating || 5;
+        const ratingType = field.config?.ratingType || 'stars';
+        
+        if (ratingType === 'stars') {
+          return (
+            <div className="flex items-center gap-1">
+              {Array.from({ length: maxRating }).map((_, idx) => (
+                <span key={idx} className="text-yellow-400">⭐</span>
+              ))}
+            </div>
+          );
+        } else if (ratingType === 'slider') {
+          return <input type="range" min="1" max={maxRating} className="form-input text-sm" disabled />;
+        } else {
+          return (
+            <div className="flex gap-2">
+              <span className="text-green-500">👍</span>
+              <span className="text-red-500">👎</span>
+            </div>
+          );
+        }
       
       case 'json':
         return (
@@ -227,9 +366,11 @@ const FieldBuilder: React.FC<FieldBuilderProps> = ({ fields, onChange, draggedIn
             />
           </div>
           
-          {currentField.type === 'string' && (
+          {(currentField.type === 'string' || currentField.type === 'select' || currentField.type === 'multiselect') && (
             <div className="md:col-span-2">
-              <label className="form-label">Options (for dropdown)</label>
+              <label className="form-label">
+                Options {currentField.type !== 'string' && '(required)'}
+              </label>
               <input
                 type="text"
                 value={currentField.options?.join(', ') || ''}
@@ -242,10 +383,168 @@ const FieldBuilder: React.FC<FieldBuilderProps> = ({ fields, onChange, draggedIn
                 })}
                 className="form-input"
                 placeholder="Option 1, Option 2, Option 3"
+                required={currentField.type === 'select' || currentField.type === 'multiselect'}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Leave empty for free text input, or provide comma-separated options for dropdown
+                {currentField.type === 'string' 
+                  ? 'Leave empty for free text input, or provide comma-separated options for dropdown'
+                  : 'Comma-separated list of available options'
+                }
               </p>
+            </div>
+          )}
+          
+          {/* Field Type Specific Configuration */}
+          {currentField.type === 'relationship' && (
+            <div className="md:col-span-2">
+              <label className="form-label">Relationship Configuration</label>
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={currentField.config?.relationshipType || 'guest'}
+                  onChange={(e) => setField({
+                    ...currentField,
+                    config: {
+                      ...currentField.config,
+                      relationshipType: e.target.value as any,
+                    },
+                  })}
+                  className="form-input"
+                >
+                  <option value="guest">👤 Guest</option>
+                  <option value="reservation">📅 Reservation</option>
+                  <option value="unit">🏠 Unit/Room</option>
+                  <option value="vendor">🏪 Vendor</option>
+                  <option value="object">📋 Other Object</option>
+                </select>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={currentField.config?.multiple || false}
+                    onChange={(e) => setField({
+                      ...currentField,
+                      config: {
+                        ...currentField.config,
+                        multiple: e.target.checked,
+                      },
+                    })}
+                    className="mr-2"
+                  />
+                  Allow multiple selections
+                </label>
+              </div>
+            </div>
+          )}
+          
+          {currentField.type === 'quantity' && (
+            <div className="md:col-span-2">
+              <label className="form-label">Quantity Units</label>
+              <input
+                type="text"
+                value={currentField.config?.units?.join(', ') || 'kg, g, lbs'}
+                onChange={(e) => setField({
+                  ...currentField,
+                  config: {
+                    ...currentField.config,
+                    units: e.target.value.split(',').map(u => u.trim()),
+                  },
+                })}
+                className="form-input"
+                placeholder="kg, g, lbs, cm, m, ft, in"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Comma-separated list of available units
+              </p>
+            </div>
+          )}
+          
+          {currentField.type === 'money' && (
+            <div className="md:col-span-2">
+              <label className="form-label">Currency Options</label>
+              <input
+                type="text"
+                value={currentField.config?.currencies?.join(', ') || 'USD, EUR, GBP'}
+                onChange={(e) => setField({
+                  ...currentField,
+                  config: {
+                    ...currentField.config,
+                    currencies: e.target.value.split(',').map(c => c.trim().toUpperCase()),
+                  },
+                })}
+                className="form-input"
+                placeholder="USD, EUR, GBP, CAD, AUD"
+              />
+            </div>
+          )}
+          
+          {currentField.type === 'file' && (
+            <div className="md:col-span-2">
+              <label className="form-label">File Configuration</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={currentField.config?.acceptedTypes?.join(', ') || ''}
+                  onChange={(e) => setField({
+                    ...currentField,
+                    config: {
+                      ...currentField.config,
+                      acceptedTypes: e.target.value.split(',').map(t => t.trim()),
+                    },
+                  })}
+                  className="form-input"
+                  placeholder="pdf, jpg, png, docx"
+                />
+                <input
+                  type="number"
+                  value={currentField.config?.maxSize || ''}
+                  onChange={(e) => setField({
+                    ...currentField,
+                    config: {
+                      ...currentField.config,
+                      maxSize: e.target.value ? parseInt(e.target.value) : undefined,
+                    },
+                  })}
+                  className="form-input"
+                  placeholder="Max size (MB)"
+                />
+              </div>
+            </div>
+          )}
+          
+          {currentField.type === 'rating' && (
+            <div className="md:col-span-2">
+              <label className="form-label">Rating Configuration</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={currentField.config?.maxRating || 5}
+                  onChange={(e) => setField({
+                    ...currentField,
+                    config: {
+                      ...currentField.config,
+                      maxRating: parseInt(e.target.value) || 5,
+                    },
+                  })}
+                  className="form-input"
+                  placeholder="Max rating (1-10)"
+                />
+                <select
+                  value={currentField.config?.ratingType || 'stars'}
+                  onChange={(e) => setField({
+                    ...currentField,
+                    config: {
+                      ...currentField.config,
+                      ratingType: e.target.value as any,
+                    },
+                  })}
+                  className="form-input"
+                >
+                  <option value="stars">⭐ Stars</option>
+                  <option value="slider">🎚️ Slider</option>
+                  <option value="thumbs">👍 Thumbs</option>
+                </select>
+              </div>
             </div>
           )}
           
@@ -310,7 +609,8 @@ const FieldBuilder: React.FC<FieldBuilderProps> = ({ fields, onChange, draggedIn
                 <button
                   onClick={handleAddField}
                   className="btn btn-primary btn-sm"
-                  disabled={!currentField.key || !currentField.label}
+                  disabled={!currentField.key || !currentField.label || 
+                    (['select', 'multiselect'].includes(currentField.type) && (!currentField.options || currentField.options.length === 0))}
                 >
                   Add Field
                 </button>
@@ -331,7 +631,8 @@ const FieldBuilder: React.FC<FieldBuilderProps> = ({ fields, onChange, draggedIn
                     }
                   }}
                   className="btn btn-primary btn-sm"
-                  disabled={!currentField.key || !currentField.label}
+                  disabled={!currentField.key || !currentField.label || 
+                    (['select', 'multiselect'].includes(currentField.type) && (!currentField.options || currentField.options.length === 0))}
                 >
                   Save Changes
                 </button>

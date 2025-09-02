@@ -117,26 +117,36 @@ model ConciergeObject {
 
   property       Property @relation(fields: [propertyId], references: [id])
   attributes     ConciergeAttribute[]
+  executions     PlaybookExecution[]
 
   @@index([organizationId, propertyId, type])
   @@index([organizationId, propertyId, status, dueAt])
 }
 
 model ConciergeAttribute {
-  id           String   @id @default(cuid())
-  objectId     String
-  fieldKey     String
-  fieldType    String
-  stringValue  String?
-  numberValue  Float?
-  booleanValue Boolean?
-  dateValue    DateTime?
-  jsonValue    Json?
+  id                String   @id @default(cuid())
+  objectId          String
+  fieldKey          String
+  fieldType         AttributeFieldType
+  stringValue       String?
+  numberValue       Float?
+  booleanValue      Boolean?
+  dateValue         DateTime?
+  jsonValue         Json?
+  relationshipValue String?
+  selectValue       String?
+  fileValue         String?
+  quantityUnit      String?
+  moneyValue        Decimal?  @db.Decimal(15,4)
+  moneyCurrency     String?   @default("USD")
 
-  object       ConciergeObject @relation(fields: [objectId], references: [id])
+  object            ConciergeObject @relation(fields: [objectId], references: [id])
 
   @@index([objectId, fieldKey])
   @@index([fieldKey, fieldType])
+  @@index([fieldKey, relationshipValue])
+  @@index([fieldKey, selectValue])
+  @@index([fieldKey, moneyValue, moneyCurrency])
 }
 
 model ObjectType {
@@ -174,9 +184,29 @@ model Playbook {
   actions        Json
   enforcements   Json?
   isActive       Boolean  @default(true)
+  
+  executions     PlaybookExecution[]
 
   @@index([organizationId, propertyId])
   @@unique([organizationId, propertyId, name])
+}
+
+model PlaybookExecution {
+  id           String   @id @default(cuid())
+  playbookId   String
+  objectId     String
+  status       String   @default("pending")
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  results      Json?
+  errors       Json?
+  retryCount   Int      @default(0)
+  
+  playbook     Playbook @relation(fields: [playbookId], references: [id])
+  object       ConciergeObject @relation(fields: [objectId], references: [id])
+  
+  @@index([playbookId, status])
+  @@index([objectId, startedAt])
 }
 
 model Vendor {
@@ -917,6 +947,7 @@ enum Role {
   ORGANIZATION_ADMIN
   PROPERTY_MANAGER
   DEPARTMENT_ADMIN
+  CONCIERGE_MANAGER
   STAFF
   CLIENT
   VENDOR
@@ -1036,6 +1067,29 @@ enum TaskStatus {
   COMPLETED
   CANCELLED
   ON_HOLD
+}
+
+enum AttributeFieldType {
+  string
+  number
+  boolean
+  date
+  json
+  relationship
+  select
+  multiselect
+  quantity
+  money
+  file
+  url
+  email
+  phone
+  location
+  richtext
+  time
+  duration
+  percentage
+  rating
 }
 
 model ModuleManifest {

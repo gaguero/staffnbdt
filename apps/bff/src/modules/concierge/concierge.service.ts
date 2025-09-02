@@ -6,6 +6,9 @@ import { ModuleRegistryService } from '../module-registry/module-registry.servic
 import { CreateConciergeObjectDto } from './dto/create-concierge-object.dto';
 import { UpdateConciergeObjectDto } from './dto/update-concierge-object.dto';
 import { ExecutePlaybookDto } from './dto/execute-playbook.dto';
+import { BulkCreateObjectsDto, ObjectTimelineDto } from './dto/relationship-search.dto';
+import { FieldValidationService } from './services/field-validation.service';
+import { PlaybookExecutionService } from './services/playbook-execution.service';
 
 @Injectable()
 export class ConciergeService {
@@ -14,6 +17,8 @@ export class ConciergeService {
     private readonly tenantContext: TenantContextService,
     private readonly eventBus: DomainEventBus,
     private readonly moduleRegistry: ModuleRegistryService,
+    private readonly fieldValidation: FieldValidationService,
+    private readonly playbookExecution: PlaybookExecutionService,
   ) {}
 
   async getStats(req: any) {
@@ -581,6 +586,300 @@ export class ConciergeService {
         dueAt: 'asc',
       },
     });
+  }
+
+  /**
+   * Bulk create multiple concierge objects from a template
+   */
+  async bulkCreateObjects(dto: BulkCreateObjectsDto, req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
+    if (!ctx.propertyId) {
+      throw new BadRequestException('Property context required for concierge operations');
+    }
+    if (!(await this.moduleRegistry.isModuleEnabledForProperty(ctx.organizationId, ctx.propertyId, 'concierge'))) {
+      throw new ForbiddenException('Concierge module not enabled for this property');
+    }
+
+    if (dto.count > 50) {
+      throw new BadRequestException('Cannot create more than 50 objects at once');
+    }
+
+    // Get template if provided
+    let template;
+    if (dto.templateId) {
+      template = await this.prisma.objectType.findFirst({
+        where: {
+          id: dto.templateId,
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+          isTemplate: true,
+          isActive: true,
+        },
+      });
+
+      if (!template) {
+        throw new NotFoundException('Template not found');
+      }
+    }
+
+    const createdObjects = [];
+    
+    // Use transaction to ensure atomicity
+    await this.prisma.$transaction(async (tx) => {
+      for (let i = 0; i < dto.count; i++) {
+        // Create base object
+        const objectData = {
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+          type: dto.objectType,
+          status: 'open',
+          reservationId: dto.reservationId,
+          guestId: dto.guestId,
+          assignments: dto.assignments as any,
+        };
+
+        const createdObject = await tx.conciergeObject.create({
+          data: objectData,
+        });
+
+        // Add default attributes from template or provided defaults
+        if (template && template.fieldsSchema) {
+          const schema = template.fieldsSchema as any;
+          const templateFields = schema.fields || [];
+          
+          const attributeData = templateFields.map((field: any) => {
+            const defaultValue = dto.defaultAttributes?.[field.key] || field.defaultValue;
+            
+            return {
+              objectId: createdObject.id,
+              fieldKey: field.key,
+              fieldType: field.type,
+              stringValue: field.type === 'string' ? defaultValue : null,
+              numberValue: field.type === 'number' ? defaultValue : null,
+              booleanValue: field.type === 'boolean' ? defaultValue : null,
+              dateValue: field.type === 'date' ? (defaultValue ? new Date(defaultValue) : null) : null,
+              relationshipValue: field.type === 'relationship' ? defaultValue : null,
+              selectValue: field.type === 'select' ? defaultValue : null,
+              fileValue: field.type === 'file' ? defaultValue : null,
+              moneyValue: field.type === 'money' ? defaultValue : null,
+              moneyCurrency: field.type === 'money' ? (dto.defaultAttributes?.[`${field.key}_currency`] || 'USD') : null,
+            };
+          }).filter((attr: any) => 
+            attr.stringValue !== null || attr.numberValue !== null || 
+            attr.booleanValue !== null || attr.dateValue !== null ||
+            attr.relationshipValue !== null || attr.selectValue !== null ||
+            attr.fileValue !== null || attr.moneyValue !== null
+          );
+
+          if (attributeData.length > 0) {
+            await tx.conciergeAttribute.createMany({
+              data: attributeData,
+            });
+          }
+        }
+
+        createdObjects.push({
+          id: createdObject.id,
+          type: createdObject.type,
+          index: i + 1,
+        });
+      }
+    });
+
+    // Emit bulk creation event
+    await this.eventBus.emit({
+      type: 'concierge.objects.bulk.created',
+      payload: {
+        count: dto.count,
+        objectType: dto.objectType,
+        templateId: dto.templateId,
+        reservationId: dto.reservationId,
+        guestId: dto.guestId,
+        objectIds: createdObjects.map(obj => obj.id),
+      },
+      tenant: { organizationId: ctx.organizationId, propertyId: ctx.propertyId },
+      correlationId: `bulk-create-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      success: true,
+      created: createdObjects.length,
+      objects: createdObjects,
+    };
+  }
+
+  /**
+   * Get timeline of events for a specific object
+   */
+  async getObjectTimeline(id: string, timelineDto: ObjectTimelineDto, req: any) {
+    const ctx = this.tenantContext.getTenantContext(req);
+    if (!ctx.propertyId) {
+      throw new BadRequestException('Property context required for concierge operations');
+    }
+
+    // Verify object exists and is accessible
+    const object = await this.getConciergeObject(id, req);
+
+    const limit = Math.min(timelineDto.limit || 50, 100);
+    const offset = timelineDto.offset || 0;
+
+    // Build timeline from multiple sources
+    const timelineEvents = [];
+
+    // 1. Audit logs for this object
+    const auditLogs = await this.prisma.auditLog.findMany({
+      where: {
+        entity: 'ConciergeObject',
+        entityId: id,
+        propertyId: ctx.propertyId,
+        ...(timelineDto.startDate && { createdAt: { gte: new Date(timelineDto.startDate) } }),
+        ...(timelineDto.endDate && { createdAt: { lte: new Date(timelineDto.endDate) } }),
+      },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    timelineEvents.push(...auditLogs.map(log => ({
+      id: log.id,
+      type: 'audit',
+      action: log.action,
+      timestamp: log.createdAt,
+      user: log.user ? `${log.user.firstName} ${log.user.lastName}` : 'System',
+      data: {
+        oldData: log.oldData,
+        newData: log.newData,
+      },
+      metadata: {
+        ipAddress: log.ipAddress,
+        userAgent: log.userAgent,
+      },
+    })));
+
+    // 2. Playbook executions
+    const executions = await this.prisma.playbookExecution.findMany({
+      where: {
+        objectId: id,
+        object: {
+          organizationId: ctx.organizationId,
+          propertyId: ctx.propertyId,
+        },
+        ...(timelineDto.startDate && { startedAt: { gte: new Date(timelineDto.startDate) } }),
+        ...(timelineDto.endDate && { startedAt: { lte: new Date(timelineDto.endDate) } }),
+      },
+      include: {
+        playbook: {
+          select: {
+            name: true,
+            trigger: true,
+          },
+        },
+      },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    timelineEvents.push(...executions.map(exec => ({
+      id: exec.id,
+      type: 'playbook_execution',
+      action: `Playbook: ${exec.playbook.name}`,
+      timestamp: exec.startedAt,
+      user: 'System',
+      data: {
+        status: exec.status,
+        trigger: exec.playbook.trigger,
+        results: exec.results,
+        errors: exec.errors,
+        retryCount: exec.retryCount,
+      },
+      metadata: {
+        playbookId: exec.playbookId,
+        completedAt: exec.completedAt,
+      },
+    })));
+
+    // 3. Related tasks if object is linked to tasks
+    const relatedTasks = await this.prisma.task.findMany({
+      where: {
+        relatedEntity: 'ConciergeObject',
+        relatedId: id,
+        propertyId: ctx.propertyId,
+        ...(timelineDto.startDate && { createdAt: { gte: new Date(timelineDto.startDate) } }),
+        ...(timelineDto.endDate && { createdAt: { lte: new Date(timelineDto.endDate) } }),
+      },
+      include: {
+        assignedTo: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+        createdByUser: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    timelineEvents.push(...relatedTasks.map(task => ({
+      id: task.id,
+      type: 'task',
+      action: `Task ${task.status}: ${task.title}`,
+      timestamp: task.createdAt,
+      user: task.createdByUser ? `${task.createdByUser.firstName} ${task.createdByUser.lastName}` : 'System',
+      data: {
+        title: task.title,
+        description: task.description,
+        taskType: task.taskType,
+        priority: task.priority,
+        status: task.status,
+        assignedTo: task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : null,
+        dueDate: task.dueDate,
+        completedAt: task.completedAt,
+      },
+      metadata: {
+        taskId: task.id,
+      },
+    })));
+
+    // Sort all events by timestamp
+    timelineEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    // Filter by event type if specified
+    const filteredEvents = timelineDto.eventType 
+      ? timelineEvents.filter(event => event.type === timelineDto.eventType)
+      : timelineEvents;
+
+    // Apply pagination
+    const paginatedEvents = filteredEvents.slice(offset, offset + limit);
+
+    return {
+      object: {
+        id: object.id,
+        type: object.type,
+        status: object.status,
+        dueAt: object.dueAt,
+        createdAt: object.createdAt,
+        updatedAt: object.updatedAt,
+      },
+      timeline: paginatedEvents,
+      pagination: {
+        total: filteredEvents.length,
+        limit,
+        offset,
+        hasMore: offset + limit < filteredEvents.length,
+      },
+    };
   }
 
   /**

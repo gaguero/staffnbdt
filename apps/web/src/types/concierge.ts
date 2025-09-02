@@ -43,7 +43,19 @@ export type AttributeFieldType =
   | 'number'
   | 'boolean'
   | 'date'
-  | 'json';
+  | 'json'
+  | 'relationship'
+  | 'select'
+  | 'multiselect'
+  | 'quantity'
+  | 'money'
+  | 'file'
+  | 'url'
+  | 'email'
+  | 'phone'
+  | 'location'
+  | 'richtext'
+  | 'rating';
 
 export interface ObjectType {
   id: string;
@@ -78,6 +90,26 @@ export interface ObjectFieldDefinition {
     min?: number;
     max?: number;
     pattern?: string;
+  };
+  // Enhanced field configuration
+  config?: {
+    // For relationship fields
+    relationshipType?: 'guest' | 'reservation' | 'unit' | 'vendor' | 'object';
+    multiple?: boolean;
+    // For quantity fields
+    unit?: string;
+    units?: string[];
+    // For money fields
+    currency?: string;
+    currencies?: string[];
+    // For file fields
+    acceptedTypes?: string[];
+    maxSize?: number;
+    // For rating fields
+    maxRating?: number;
+    ratingType?: 'stars' | 'slider' | 'thumbs';
+    // For rich text
+    toolbar?: string[];
   };
 }
 

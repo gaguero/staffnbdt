@@ -150,6 +150,15 @@ const TemplateMarketplaceHub: React.FC<TemplateMarketplaceHubProps> = ({ onTempl
   const [loading, setLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateData | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  
+  // Enhanced search and filtering state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'rating' | 'usage' | 'recent'>('rating');
+  const [minRating, setMinRating] = useState(0);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // Load user's existing object types
   const loadMyTemplates = async () => {
@@ -185,6 +194,97 @@ const TemplateMarketplaceHub: React.FC<TemplateMarketplaceHubProps> = ({ onTempl
     toastService.success('Template cloned successfully!');
   };
 
+  const handlePreviewTemplate = (template: TemplateData) => {
+    setSelectedTemplate(template);
+    setShowPreviewModal(true);
+  };
+
+  // Filter and search logic
+  const getFilteredTemplates = () => {
+    let filtered = SAMPLE_TEMPLATES;
+    
+    // Search by name, description, or tags
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(template => 
+        template.name.toLowerCase().includes(search) ||
+        template.description.toLowerCase().includes(search) ||
+        template.category.toLowerCase().includes(search) ||
+        template.tags.some(tag => tag.toLowerCase().includes(search))
+      );
+    }
+    
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(template => 
+        template.category.toLowerCase() === selectedCategory.toLowerCase()
+      );
+    }
+    
+    // Filter by rating
+    if (minRating > 0) {
+      filtered = filtered.filter(template => template.rating >= minRating);
+    }
+    
+    // Filter by selected tags
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(template => 
+        selectedTags.some(tag => template.tags.includes(tag))
+      );
+    }
+    
+    // Sort results
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'rating':
+          return b.rating - a.rating;
+        case 'usage':
+          return b.usageCount - a.usageCount;
+        case 'recent':
+          return b.id.localeCompare(a.id); // Mock recent sort
+        default:
+          return 0;
+      }
+    });
+    
+    return filtered;
+  };
+  
+  const getUniqueCategories = () => {
+    return Array.from(new Set(SAMPLE_TEMPLATES.map(t => t.category)));
+  };
+  
+  const getAllTags = () => {
+    const allTags = SAMPLE_TEMPLATES.flatMap(t => t.tags);
+    return Array.from(new Set(allTags)).sort();
+  };
+  
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('all');
+    setMinRating(0);
+    setSelectedTags([]);
+  };
+  
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+  
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (selectedCategory !== 'all') count++;
+    if (minRating > 0) count++;
+    if (selectedTags.length > 0) count += selectedTags.length;
+    return count;
+  };
+
   const tabs = [
     { id: 'gallery' as const, name: 'Template Gallery', icon: '🏪', count: SAMPLE_TEMPLATES.length },
     { id: 'myTemplates' as const, name: 'My Templates', icon: '📋', count: myTemplates.length },
@@ -201,7 +301,155 @@ const TemplateMarketplaceHub: React.FC<TemplateMarketplaceHubProps> = ({ onTempl
             Discover and clone pre-built object types to streamline your concierge operations
           </p>
         </div>
+        
+        {/* Template Stats */}
+        <div className="flex items-center gap-4 text-sm text-gray-600">
+          <div className="flex items-center gap-1">
+            <span className="text-lg">📊</span>
+            <span>{SAMPLE_TEMPLATES.length} templates</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-lg">⭐</span>
+            <span>{(SAMPLE_TEMPLATES.reduce((sum, t) => sum + t.rating, 0) / SAMPLE_TEMPLATES.length).toFixed(1)} avg rating</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-lg">🔥</span>
+            <span>{SAMPLE_TEMPLATES.reduce((sum, t) => sum + t.usageCount, 0).toLocaleString()} uses</span>
+          </div>
+        </div>
       </div>
+      
+      {/* Enhanced Search and Filters for Gallery Tab */}
+      {activeTab === 'gallery' && (
+        <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+          {/* Search Bar */}
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search templates by name, category, or tags..."
+                className="w-full form-input pl-10 pr-4"
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                🔍
+              </div>
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            
+            {/* View Mode Toggle */}
+            <div className="flex bg-white rounded-lg border p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-3 py-1 rounded text-sm ${viewMode === 'grid' ? 'bg-blue-100 text-blue-700' : 'text-gray-600'}`}
+              >
+                ⊞ Grid
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1 rounded text-sm ${viewMode === 'list' ? 'bg-blue-100 text-blue-700' : 'text-gray-600'}`}
+              >
+                ☰ List
+              </button>
+            </div>
+          </div>
+          
+          {/* Filters Row */}
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+            {/* Category Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Category:</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="form-input text-sm"
+              >
+                <option value="all">All Categories</option>
+                {getUniqueCategories().map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Sort By */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Sort by:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="form-input text-sm"
+              >
+                <option value="rating">⭐ Rating</option>
+                <option value="usage">🔥 Most Used</option>
+                <option value="name">📝 Name</option>
+                <option value="recent">🆕 Recent</option>
+              </select>
+            </div>
+            
+            {/* Rating Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Min Rating:</label>
+              <select
+                value={minRating}
+                onChange={(e) => setMinRating(parseFloat(e.target.value))}
+                className="form-input text-sm"
+              >
+                <option value={0}>Any Rating</option>
+                <option value={4}>4⭐+ and above</option>
+                <option value={4.5}>4.5⭐+ and above</option>
+              </select>
+            </div>
+            
+            {/* Clear Filters */}
+            {getActiveFiltersCount() > 0 && (
+              <button
+                onClick={clearAllFilters}
+                className="text-sm text-red-600 hover:text-red-800 flex items-center gap-1"
+              >
+                🗑️ Clear ({getActiveFiltersCount()})
+              </button>
+            )}
+          </div>
+          
+          {/* Tags Filter */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Filter by tags:</label>
+            <div className="flex flex-wrap gap-2">
+              {getAllTags().map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={`px-3 py-1 rounded-full text-sm border ${
+                    selectedTags.includes(tag)
+                      ? 'bg-blue-100 text-blue-800 border-blue-300'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Results Count */}
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <span>Showing {getFilteredTemplates().length} of {SAMPLE_TEMPLATES.length} templates</span>
+            {getActiveFiltersCount() > 0 && (
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                {getActiveFiltersCount()} filter{getActiveFiltersCount() !== 1 ? 's' : ''} applied
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
@@ -232,8 +480,11 @@ const TemplateMarketplaceHub: React.FC<TemplateMarketplaceHubProps> = ({ onTempl
       <div className="min-h-96">
         {activeTab === 'gallery' && (
           <TemplateGallery
-            templates={SAMPLE_TEMPLATES}
+            templates={getFilteredTemplates()}
             onCloneTemplate={handleCloneTemplate}
+            onPreviewTemplate={handlePreviewTemplate}
+            viewMode={viewMode}
+            searchTerm={searchTerm}
           />
         )}
 
