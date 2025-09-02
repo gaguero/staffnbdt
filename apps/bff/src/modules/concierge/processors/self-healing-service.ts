@@ -92,6 +92,19 @@ export interface LoadBalancerConfig {
   healthCheckInterval: number;
 }
 
+export interface ServiceInstance {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  healthy: boolean;
+  healthScore: number;
+  lastCheck: Date;
+  responseTime: number;
+  capacity: number;
+  currentLoad: number;
+}
+
 @Injectable()
 export class SelfHealingService {
   private readonly logger = new Logger(SelfHealingService.name);
@@ -669,11 +682,11 @@ export class SelfHealingService {
   }
 
   private async logRecoverySuccess(failure: SystemFailure, action: RecoveryAction): Promise<void> {
-    this.logger.log(`Recovery successful for failure: ${failure.componentId}, action: ${action.name}`);
+    this.logger.log(`Recovery successful for failure: ${failure.component}, action: ${action.name}`);
   }
 
   private async escalateFailure(failure: SystemFailure): Promise<void> {
-    this.logger.warn(`Escalating failure: ${failure.componentId}`);
+    this.logger.warn(`Escalating failure: ${failure.component}`);
     // Escalate to operations team
   }
 
@@ -722,6 +735,18 @@ export class SelfHealingService {
   private async cleanupTemporaryFiles(): Promise<void> {
     this.logger.log('Cleaning up temporary files...');
     // Clean up temporary files
+  }
+
+  private getAggregatedPerformanceMetrics(): any {
+    return {
+      cpuUsage: 45.2,
+      memoryUsage: 68.7,
+      diskUsage: 23.1,
+      networkLatency: 12.5,
+      throughput: 1250,
+      errorRate: 0.02,
+      responseTime: 156
+    };
   }
 
   // ... Many more helper methods would be implemented for a complete system

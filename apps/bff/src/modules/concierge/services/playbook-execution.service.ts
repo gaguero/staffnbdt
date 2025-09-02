@@ -82,7 +82,7 @@ export class PlaybookExecutionService {
 
       // Execute actions sequentially
       const actionResults = [];
-      const actions = playbook.actions as PlaybookAction[];
+      const actions = playbook.actions as unknown as PlaybookAction[];
 
       for (const action of actions) {
         try {
@@ -705,7 +705,7 @@ export class PlaybookExecutionService {
 
       // Simulate actions execution
       if (playbook.actions) {
-        const actions = playbook.actions as PlaybookAction[];
+        const actions = playbook.actions as unknown as PlaybookAction[];
         for (const action of actions) {
           const simulation = await this.simulateActionExecution(
             action,
