@@ -207,78 +207,108 @@ class VendorsService {
   // Magic Link Management
   async generateMagicLink(input: GenerateMagicLinkInput): Promise<ApiResponse<{ magicLink: string; expiresAt: Date }>> {
     const response = await api.post('/vendors/magic-links', input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
       data: {
-        ...response.data.data,
-        expiresAt: new Date(response.data.data.expiresAt)
-      }
+        ...responseData,
+        expiresAt: new Date(responseData.expiresAt)
+      },
+      message: 'Magic link generated successfully',
+      success: true
     };
   }
 
   async validatePortalToken(token: string): Promise<ApiResponse<VendorPortalSession>> {
     const response = await api.get(`/vendors/portal/${token}`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
       data: {
-        ...response.data.data,
-        expiresAt: new Date(response.data.data.expiresAt)
-      }
+        ...responseData,
+        expiresAt: new Date(responseData.expiresAt)
+      },
+      message: 'Portal token validated successfully',
+      success: true
     };
   }
 
   async getPortalData(token: string): Promise<ApiResponse<VendorPortalData>> {
     const response = await api.get(`/vendors/portal/${token}/data`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
       data: {
-        ...response.data.data,
-        vendor: this.transformVendor(response.data.data.vendor),
-        link: this.transformVendorLink(response.data.data.link)
-      }
+        ...responseData,
+        vendor: this.transformVendor(responseData.vendor),
+        link: this.transformVendorLink(responseData.link)
+      },
+      message: 'Portal data retrieved successfully',
+      success: true
     };
   }
 
   // Vendor Directory
   async getVendorDirectory(): Promise<ApiResponse<VendorDirectory>> {
     const response = await api.get('/vendors/directory');
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
       data: {
-        ...response.data.data,
-        vendors: response.data.data.vendors.map((vendor: any) => this.transformVendor(vendor))
-      }
+        ...responseData,
+        vendors: (responseData.vendors || []).map((vendor: any) => this.transformVendor(vendor))
+      },
+      message: 'Vendor directory retrieved successfully',
+      success: true
     };
   }
 
   // Link Tracking
   async getVendorLinkTracking(linkId: string): Promise<ApiResponse<VendorLinkTracking>> {
     const response = await api.get(`/vendors/links/${linkId}/tracking`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
       data: {
-        ...response.data.data,
-        vendor: this.transformVendor(response.data.data.vendor),
-        createdAt: new Date(response.data.data.createdAt),
-        confirmationAt: response.data.data.confirmationAt ? new Date(response.data.data.confirmationAt) : undefined,
-        expiresAt: response.data.data.expiresAt ? new Date(response.data.data.expiresAt) : undefined,
-        lastNotificationAt: response.data.data.lastNotificationAt ? new Date(response.data.data.lastNotificationAt) : undefined,
-        lastPortalAccessAt: response.data.data.lastPortalAccessAt ? new Date(response.data.data.lastPortalAccessAt) : undefined,
-      }
+        ...responseData,
+        vendor: this.transformVendor(responseData.vendor),
+        createdAt: new Date(responseData.createdAt),
+        confirmationAt: responseData.confirmationAt ? new Date(responseData.confirmationAt) : undefined,
+        expiresAt: responseData.expiresAt ? new Date(responseData.expiresAt) : undefined,
+        lastNotificationAt: responseData.lastNotificationAt ? new Date(responseData.lastNotificationAt) : undefined,
+        lastPortalAccessAt: responseData.lastPortalAccessAt ? new Date(responseData.lastPortalAccessAt) : undefined,
+      },
+      message: 'Vendor link tracking retrieved successfully',
+      success: true
     };
   }
 
   // Notifications Management
   async getVendorNotifications(linkId: string): Promise<ApiResponse<VendorNotification[]>> {
     const response = await api.get(`/vendors/links/${linkId}/notifications`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    
     return {
-      ...response.data,
-      data: response.data.data.map((notification: any) => ({
+      data: responseData.map((notification: any) => ({
         ...notification,
         sentAt: notification.sentAt ? new Date(notification.sentAt) : undefined,
         deliveredAt: notification.deliveredAt ? new Date(notification.deliveredAt) : undefined,
         nextRetryAt: notification.nextRetryAt ? new Date(notification.nextRetryAt) : undefined,
-      }))
+      })),
+      message: 'Vendor notifications retrieved successfully',
+      success: true
     };
   }
 
@@ -356,9 +386,14 @@ class VendorsService {
       objectType,
       metadata
     });
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    
     return {
-      ...response.data,
-      data: response.data.data.map((vendor: any) => this.transformVendor(vendor))
+      data: responseData.map((vendor: any) => this.transformVendor(vendor)),
+      message: 'Vendor suggestions retrieved successfully',
+      success: true
     };
   }
 
