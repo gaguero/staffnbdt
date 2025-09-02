@@ -45,36 +45,60 @@ class VendorsService {
     }
 
     const response = await api.get(`/vendors?${params.toString()}`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    const transformedVendors = responseData.map((vendor: any) => this.transformVendor(vendor));
+    
     return {
-      ...response.data,
       data: {
-        ...response.data.data,
-        data: response.data.data.data.map((vendor: any) => this.transformVendor(vendor))
-      }
+        data: transformedVendors,
+        total: transformedVendors.length,
+        page: 1,
+        limit: transformedVendors.length,
+        totalPages: 1
+      },
+      message: 'Vendors retrieved successfully',
+      success: true
     };
   }
 
   async getVendor(id: string): Promise<ApiResponse<Vendor>> {
     const response = await api.get(`/vendors/${id}`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformVendor(response.data.data)
+      data: this.transformVendor(responseData),
+      message: 'Vendor retrieved successfully',
+      success: true
     };
   }
 
   async createVendor(input: CreateVendorInput): Promise<ApiResponse<Vendor>> {
     const response = await api.post('/vendors', input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformVendor(response.data.data)
+      data: this.transformVendor(responseData),
+      message: 'Vendor created successfully',
+      success: true
     };
   }
 
   async updateVendor(id: string, input: UpdateVendorInput): Promise<ApiResponse<Vendor>> {
     const response = await api.patch(`/vendors/${id}`, input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformVendor(response.data.data)
+      data: this.transformVendor(responseData),
+      message: 'Vendor updated successfully',
+      success: true
     };
   }
 
@@ -85,9 +109,14 @@ class VendorsService {
 
   async toggleVendorStatus(id: string): Promise<ApiResponse<Vendor>> {
     const response = await api.post(`/vendors/${id}/toggle-status`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformVendor(response.data.data)
+      data: this.transformVendor(responseData),
+      message: 'Vendor status updated successfully',
+      success: true
     };
   }
 
@@ -105,44 +134,73 @@ class VendorsService {
     }
 
     const response = await api.get(`/vendors/links?${params.toString()}`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    const transformedLinks = responseData.map((link: any) => this.transformVendorLink(link));
+    
     return {
-      ...response.data,
       data: {
-        ...response.data.data,
-        data: response.data.data.data.map((link: any) => this.transformVendorLink(link))
-      }
+        data: transformedLinks,
+        total: transformedLinks.length,
+        page: 1,
+        limit: transformedLinks.length,
+        totalPages: 1
+      },
+      message: 'Vendor links retrieved successfully',
+      success: true
     };
   }
 
   async getVendorLink(id: string): Promise<ApiResponse<VendorLink>> {
     const response = await api.get(`/vendors/links/${id}`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformVendorLink(response.data.data)
+      data: this.transformVendorLink(responseData),
+      message: 'Vendor link retrieved successfully',
+      success: true
     };
   }
 
   async createVendorLink(input: CreateVendorLinkInput): Promise<ApiResponse<VendorLink>> {
     const response = await api.post('/vendors/links', input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformVendorLink(response.data.data)
+      data: this.transformVendorLink(responseData),
+      message: 'Vendor link created successfully',
+      success: true
     };
   }
 
   async confirmVendorLink(linkId: string, input: ConfirmVendorLinkInput): Promise<ApiResponse<VendorLink>> {
     const response = await api.post(`/vendors/links/${linkId}/confirm`, input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformVendorLink(response.data.data)
+      data: this.transformVendorLink(responseData),
+      message: 'Vendor link confirmed successfully',
+      success: true
     };
   }
 
   async cancelVendorLink(linkId: string, reason?: string): Promise<ApiResponse<VendorLink>> {
     const response = await api.post(`/vendors/links/${linkId}/cancel`, { reason });
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformVendorLink(response.data.data)
+      data: this.transformVendorLink(responseData),
+      message: 'Vendor link cancelled successfully',
+      success: true
     };
   }
 
@@ -237,7 +295,15 @@ class VendorsService {
   // Statistics
   async getVendorStats(): Promise<ApiResponse<VendorStats>> {
     const response = await api.get('/vendors/stats');
-    return response.data;
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: responseData,
+      message: 'Vendor stats retrieved successfully',
+      success: true
+    };
   }
 
   // Bulk Operations
@@ -273,8 +339,13 @@ class VendorsService {
     params.append('limit', '10');
     
     const response = await api.get(`/vendors?${params.toString()}`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    const transformedVendors = responseData.map((vendor: any) => this.transformVendor(vendor));
+    
     return {
-      data: response.data.data?.data || [],
+      data: transformedVendors,
       message: 'Vendor search completed successfully',
       success: true
     };

@@ -45,36 +45,60 @@ class ConciergeService {
     }
 
     const response = await api.get(`/concierge/objects?${params.toString()}`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    const transformedObjects = responseData.map((obj: any) => this.transformConciergeObject(obj));
+    
     return {
-      ...response.data,
       data: {
-        ...response.data.data,
-        data: response.data.data.data.map((obj: any) => this.transformConciergeObject(obj))
-      }
+        data: transformedObjects,
+        total: transformedObjects.length,
+        page: 1,
+        limit: transformedObjects.length,
+        totalPages: 1
+      },
+      message: 'Concierge objects retrieved successfully',
+      success: true
     };
   }
 
   async getObject(id: string): Promise<ApiResponse<ConciergeObject>> {
     const response = await api.get(`/concierge/objects/${id}`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformConciergeObject(response.data.data)
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object retrieved successfully',
+      success: true
     };
   }
 
   async createObject(input: CreateConciergeObjectInput): Promise<ApiResponse<ConciergeObject>> {
     const response = await api.post('/concierge/objects', input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformConciergeObject(response.data.data)
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object created successfully',
+      success: true
     };
   }
 
   async updateObject(id: string, input: UpdateConciergeObjectInput): Promise<ApiResponse<ConciergeObject>> {
     const response = await api.patch(`/concierge/objects/${id}`, input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformConciergeObject(response.data.data)
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object updated successfully',
+      success: true
     };
   }
 
@@ -85,24 +109,42 @@ class ConciergeService {
 
   async completeObject(id: string, completionNotes?: string): Promise<ApiResponse<ConciergeObject>> {
     const response = await api.post(`/concierge/objects/${id}/complete`, { notes: completionNotes });
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformConciergeObject(response.data.data)
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object completed successfully',
+      success: true
     };
   }
 
   async assignObject(id: string, userId: string): Promise<ApiResponse<ConciergeObject>> {
     const response = await api.post(`/concierge/objects/${id}/assign`, { userId });
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformConciergeObject(response.data.data)
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object assigned successfully',
+      success: true
     };
   }
 
   // Object Types Management
   async getObjectTypes(): Promise<ApiResponse<ObjectType[]>> {
     const response = await api.get('/concierge/object-types');
-    return response.data;
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    
+    return {
+      data: responseData,
+      message: 'Object types retrieved successfully',
+      success: true
+    };
   }
 
   async getObjectType(id: string): Promise<ApiResponse<ObjectType>> {
@@ -197,7 +239,15 @@ class ConciergeService {
 
   async getStats(): Promise<ApiResponse<ConciergeStats>> {
     const response = await api.get('/concierge/stats');
-    return response.data;
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: responseData,
+      message: 'Concierge stats retrieved successfully',
+      success: true
+    };
   }
 
   // Bulk Operations
@@ -245,9 +295,14 @@ class ConciergeService {
       templateId,
       data
     });
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
     return {
-      ...response.data,
-      data: this.transformConciergeObject(response.data.data)
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object created from template successfully',
+      success: true
     };
   }
 }
