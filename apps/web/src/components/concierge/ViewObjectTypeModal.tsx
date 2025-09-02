@@ -1,5 +1,5 @@
 import React from 'react';
-import { ObjectType } from '../../services/conciergeService';
+import { ObjectType } from '../../types/concierge';
 
 interface ViewObjectTypeModalProps {
   isOpen: boolean;

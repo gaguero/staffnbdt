@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useTenant } from '../../contexts/TenantContext';
 import { 
   useVendorLinks, 
@@ -214,7 +214,6 @@ const CreateVendorLinkModal: React.FC<CreateVendorLinkModalProps> = ({ isOpen, o
 const VendorLinksPage: React.FC = () => {
   const { getCurrentPropertyName } = useTenant();
   const [filter, setFilter] = useState<VendorLinkFilter>({});
-  const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set());
   const [showCreateModal, setShowCreateModal] = useState(false);
   
   const { data: linksData, isLoading, error, refetch } = useVendorLinks(filter);
@@ -249,35 +248,33 @@ const VendorLinksPage: React.FC = () => {
     }
   };
 
-  const handleBulkNotify = async () => {
-    const selectedArray = Array.from(selectedLinks);
-    if (selectedArray.length === 0) return;
+  const handleBulkNotify = async (selectedItems: VendorLink[]) => {
+    if (selectedItems.length === 0) return;
+    const selectedIds = selectedItems.map(item => item.id);
 
     try {
       await bulkNotifyLinks.mutateAsync({ 
-        linkIds: selectedArray, 
+        linkIds: selectedIds, 
         channels: ['email'] 
       });
-      setSelectedLinks(new Set());
     } catch (error: any) {
       toastService.error('Failed to send notifications');
     }
   };
 
-  const handleBulkCancel = async () => {
-    const selectedArray = Array.from(selectedLinks);
-    if (selectedArray.length === 0) return;
+  const handleBulkCancel = async (selectedItems: VendorLink[]) => {
+    if (selectedItems.length === 0) return;
+    const selectedIds = selectedItems.map(item => item.id);
 
-    if (!window.confirm(`Cancel ${selectedArray.length} vendor links?`)) {
+    if (!window.confirm(`Cancel ${selectedIds.length} vendor links?`)) {
       return;
     }
 
     try {
       await bulkCancelLinks.mutateAsync({ 
-        linkIds: selectedArray,
+        linkIds: selectedIds,
         reason: 'Bulk cancellation from admin'
       });
-      setSelectedLinks(new Set());
     } catch (error: any) {
       toastService.error('Failed to cancel links');
     }
@@ -535,45 +532,24 @@ const VendorLinksPage: React.FC = () => {
 
         {/* Main Table */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          {/* Bulk Actions */}
-          {selectedLinks.size > 0 && (
-            <div className="p-4 border-b border-gray-200 bg-blue-50">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-blue-700">
-                  {selectedLinks.size} link{selectedLinks.size > 1 ? 's' : ''} selected
-                </span>
-                <div className="flex space-x-2">
-                  <PermissionGate resource="vendors" action="create" scope="property" hideOnDenied>
-                    <button
-                      onClick={handleBulkNotify}
-                      disabled={bulkNotifyLinks.isPending}
-                      className="btn btn-sm btn-outline"
-                    >
-                      Notify
-                    </button>
-                  </PermissionGate>
-                  <PermissionGate resource="vendors" action="update" scope="property" hideOnDenied>
-                    <button
-                      onClick={handleBulkCancel}
-                      disabled={bulkCancelLinks.isPending}
-                      className="btn btn-sm btn-outline text-red-600 border-red-300 hover:bg-red-50"
-                    >
-                      Cancel
-                    </button>
-                  </PermissionGate>
-                </div>
-              </div>
-            </div>
-          )}
-          
           <EnhancedTable
             data={links}
             columns={linkColumns}
             getItemId={(link: VendorLink) => link.id}
             loading={isLoading}
             emptyMessage="🔗 No vendor links found. Create links to start vendor collaborations!"
-            selectedIds={selectedLinks}
-            onSelectionChange={setSelectedLinks}
+            enableBulkSelection={true}
+            bulkActions={[
+              { id: 'notify', label: 'Send Notifications', icon: '📤' },
+              { id: 'cancel', label: 'Cancel Links', icon: '❌', variant: 'danger' }
+            ]}
+            onBulkAction={(actionId, selectedItems) => {
+              if (actionId === 'notify') {
+                handleBulkNotify(selectedItems);
+              } else if (actionId === 'cancel') {
+                handleBulkCancel(selectedItems);
+              }
+            }}
           />
         </div>
 

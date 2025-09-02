@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import LoadingSpinner from '../LoadingSpinner';
-import { conciergeService } from '../../services/conciergeService';
+import conciergeService from '../../services/conciergeService';
 import { CreateObjectTypeInput, ObjectFieldDefinition, AttributeFieldType } from '../../types/concierge';
 import toastService from '../../services/toastService';
 

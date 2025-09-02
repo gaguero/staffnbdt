@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useValidatePortalToken, useVendorPortalData, useConfirmVendorLink } from '../../hooks/useVendors';
 import { ConfirmVendorLinkInput } from '../../types/vendors';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -7,7 +7,6 @@ import toastService from '../../services/toastService';
 
 const VendorPortalPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
-  const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   

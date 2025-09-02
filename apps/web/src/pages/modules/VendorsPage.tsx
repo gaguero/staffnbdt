@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useTenant } from '../../contexts/TenantContext';
-import { useVendors, useCreateVendor, useUpdateVendor, useDeleteVendor, useToggleVendorStatus, useVendorStats, useVendorLinks, useGenerateMagicLink, useCreateVendorLink, useBulkUpdateVendors } from '../../hooks/useVendors';
+import { useVendors, useCreateVendor, useUpdateVendor, useDeleteVendor, useToggleVendorStatus, useVendorStats, useVendorLinks, useGenerateMagicLink, useBulkUpdateVendors } from '../../hooks/useVendors';
 import { Vendor, VendorFilter, VendorLink, VendorLinkFilter, CreateVendorInput, UpdateVendorInput, VendorCategory, VendorChannel } from '../../types/vendors';
 import PermissionGate from '../../components/PermissionGate';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -377,17 +377,11 @@ const VendorsPage: React.FC = () => {
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>();
   
   const { data: vendorsData, isLoading, error, refetch } = useVendors(filter);
-  const { data: linksData, isLoading: linksLoading } = useVendorLinks();
   const createVendor = useCreateVendor();
   const updateVendor = useUpdateVendor();
   const deleteVendor = useDeleteVendor();
   const toggleStatus = useToggleVendorStatus();
-  const generateMagicLink = useGenerateMagicLink();
-  const createVendorLink = useCreateVendorLink();
   const bulkUpdateVendors = useBulkUpdateVendors();
-  const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
-  const [showCreateLinkModal, setShowCreateLinkModal] = useState(false);
-  const [linkModalVendor, setLinkModalVendor] = useState<Vendor | undefined>();
 
   const handleCreateVendor = async (input: CreateVendorInput) => {
     await createVendor.mutateAsync(input);
@@ -410,39 +404,30 @@ const VendorsPage: React.FC = () => {
     await toggleStatus.mutateAsync(id);
   };
 
-  const handleGenerateMagicLink = async (vendorId: string, linkId: string) => {
-    try {
-      await generateMagicLink.mutateAsync({ vendorId, linkId });
-    } catch (error: any) {
-      toastService.error('Failed to generate magic link');
-    }
-  };
 
-  const handleBulkActivate = async () => {
-    const selectedArray = Array.from(selectedVendors);
-    if (selectedArray.length === 0) return;
+  const handleBulkActivate = async (selectedItems: Vendor[]) => {
+    if (selectedItems.length === 0) return;
+    const selectedIds = selectedItems.map(item => item.id);
     
     try {
       await bulkUpdateVendors.mutateAsync({ 
-        vendorIds: selectedArray, 
+        vendorIds: selectedIds, 
         updates: { isActive: true } 
       });
-      setSelectedVendors(new Set());
     } catch (error: any) {
       toastService.error('Failed to activate vendors');
     }
   };
 
-  const handleBulkDeactivate = async () => {
-    const selectedArray = Array.from(selectedVendors);
-    if (selectedArray.length === 0) return;
+  const handleBulkDeactivate = async (selectedItems: Vendor[]) => {
+    if (selectedItems.length === 0) return;
+    const selectedIds = selectedItems.map(item => item.id);
     
     try {
       await bulkUpdateVendors.mutateAsync({ 
-        vendorIds: selectedArray, 
+        vendorIds: selectedIds, 
         updates: { isActive: false } 
       });
-      setSelectedVendors(new Set());
     } catch (error: any) {
       toastService.error('Failed to deactivate vendors');
     }
@@ -472,7 +457,6 @@ const VendorsPage: React.FC = () => {
   }
 
   const vendors = vendorsData?.data?.data || [];
-  const links = linksData?.data?.data || [];
 
   const vendorColumns = [
     {
@@ -538,17 +522,6 @@ const VendorsPage: React.FC = () => {
               className="text-yellow-600 hover:text-yellow-800"
             >
               {vendor.isActive ? 'Deactivate' : 'Activate'}
-            </button>
-          </PermissionGate>
-          <PermissionGate resource="vendors" action="create" scope="property" hideOnDenied>
-            <button
-              onClick={() => {
-                setLinkModalVendor(vendor);
-                setShowCreateLinkModal(true);
-              }}
-              className="text-green-600 hover:text-green-800"
-            >
-              Link
             </button>
           </PermissionGate>
           <PermissionGate resource="vendors" action="delete" scope="property" hideOnDenied>
@@ -650,41 +623,24 @@ const VendorsPage: React.FC = () => {
                 <p className="text-sm text-gray-600">Manage your partner network and vendor relationships</p>
               </div>
               
-              {/* Bulk Actions */}
-              {selectedVendors.size > 0 && (
-                <div className="p-4 border-b border-gray-200 bg-blue-50">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-blue-700">
-                      {selectedVendors.size} vendor{selectedVendors.size > 1 ? 's' : ''} selected
-                    </span>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={handleBulkActivate}
-                        disabled={bulkUpdateVendors.isPending}
-                        className="btn btn-sm btn-outline"
-                      >
-                        Activate
-                      </button>
-                      <button
-                        onClick={handleBulkDeactivate}
-                        disabled={bulkUpdateVendors.isPending}
-                        className="btn btn-sm btn-outline"
-                      >
-                        Deactivate
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
               <EnhancedTable
                 data={vendors}
                 columns={vendorColumns}
                 getItemId={(vendor: Vendor) => vendor.id}
                 loading={isLoading}
                 emptyMessage="🌟 Ready to build your vendor network! Add your first trusted partner to get started."
-                selectedIds={selectedVendors}
-                onSelectionChange={setSelectedVendors}
+                enableBulkSelection={true}
+                bulkActions={[
+                  { id: 'activate', label: 'Activate', icon: '✅' },
+                  { id: 'deactivate', label: 'Deactivate', icon: '⏸️' }
+                ]}
+                onBulkAction={(actionId, selectedItems) => {
+                  if (actionId === 'activate') {
+                    handleBulkActivate(selectedItems);
+                  } else if (actionId === 'deactivate') {
+                    handleBulkDeactivate(selectedItems);
+                  }
+                }}
               />
             </div>
           )}
@@ -724,7 +680,6 @@ const VendorsPage: React.FC = () => {
 const VendorLinksView: React.FC = () => {
   const [linkFilter, setLinkFilter] = useState<VendorLinkFilter>({});
   const { data: linksData, isLoading, error, refetch } = useVendorLinks(linkFilter);
-  const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set());
   const generateMagicLink = useGenerateMagicLink();
   
   const links = linksData?.data?.data || [];
@@ -935,8 +890,6 @@ const VendorLinksView: React.FC = () => {
         getItemId={(link: VendorLink) => link.id}
         loading={isLoading}
         emptyMessage="🔗 No vendor links found. Create links to start vendor collaborations!"
-        selectedIds={selectedLinks}
-        onSelectionChange={setSelectedLinks}
       />
     </div>
   );

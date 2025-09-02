@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { conciergeService } from '../../services/conciergeService';
+import conciergeService from '../../services/conciergeService';
 import { ReservationChecklist, ChecklistItem } from '../../types/concierge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { PermissionGate } from '../../components';

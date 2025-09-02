@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { conciergeService, ConciergeObject, ConciergeObjectFilter, ConciergeStats } from '../../services/conciergeService';
+import conciergeService from '../../services/conciergeService';
 import { userService, User } from '../../services/userService';
+import { ConciergeObject, ConciergeObjectFilter, ConciergeStats } from '../../types/concierge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { PermissionGate, RoleBasedComponent } from '../../components';
 import toastService from '../../services/toastService';

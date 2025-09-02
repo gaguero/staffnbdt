@@ -254,3 +254,22 @@ class ConciergeService {
 
 export const conciergeService = new ConciergeService();
 export default conciergeService;
+
+// Re-export types for backward compatibility
+export type {
+  ConciergeObject,
+  ConciergeObjectFilter,
+  ObjectType,
+  Playbook,
+  CreateConciergeObjectInput,
+  UpdateConciergeObjectInput,
+  CreateObjectTypeInput,
+  ExecutePlaybookInput,
+  TodayBoardSection,
+  ReservationChecklist,
+  GuestTimelineEvent,
+  ConciergeStats,
+  ConciergeObjectStatus,
+  AttributeFieldType,
+  ObjectFieldDefinition,
+} from '../types/concierge';

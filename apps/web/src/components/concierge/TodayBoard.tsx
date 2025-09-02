@@ -351,7 +351,7 @@ const TodayBoard: React.FC<TodayBoardProps> = ({ onObjectClick = () => {} }) => 
               count={section.count}
               variant={variant}
               onObjectClick={onObjectClick}
-              selectedObjects={new Set(bulkSelection.state.selectedItems.map((obj: any) => obj.id))}
+              selectedObjects={new Set(bulkSelection.state.selectedItems.map((obj: ConciergeObject) => obj.id))}
               onObjectSelect={(objectId, selected) => {
                 const object = sections.flatMap(s => s.objects).find(obj => obj.id === objectId);
                 if (object) {

@@ -143,11 +143,10 @@ const VendorPerformancePage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'rating' | 'responseTime' | 'confirmationRate'>('rating');
   
   const { data: vendorsData, isLoading: vendorsLoading, error: vendorsError } = useVendors({ isActive: true });
-  const { data: statsData, isLoading: statsLoading } = useVendorStats();
+  const { isLoading: statsLoading } = useVendorStats();
   const { data: linksData } = useVendorLinks();
 
   const vendors = vendorsData?.data?.data || [];
-  const stats = statsData?.data;
   const links = linksData?.data?.data || [];
   
   const propertyName = getCurrentPropertyName();

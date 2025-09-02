@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../LoadingSpinner';
-import { conciergeService, ObjectType } from '../../services/conciergeService';
-import { ConciergeObject, UpdateConciergeObjectInput, ObjectFieldDefinition, ConciergeObjectStatus } from '../../types/concierge';
+import conciergeService from '../../services/conciergeService';
+import { ConciergeObject, UpdateConciergeObjectInput, ObjectFieldDefinition, ConciergeObjectStatus, ObjectType } from '../../types/concierge';
 import toastService from '../../services/toastService';
 
 interface EditConciergeObjectModalProps {
@@ -88,7 +88,7 @@ const EditConciergeObjectModal: React.FC<EditConciergeObjectModalProps> = ({
     });
   };
 
-  const handleAttributeChange = (fieldKey: string, value: any, fieldType: string) => {
+  const handleAttributeChange = (fieldKey: string, value: any, _fieldType: string) => {
     setFormData({
       ...formData,
       attributes: {

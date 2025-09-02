@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../LoadingSpinner';
-import { conciergeService, ObjectType } from '../../services/conciergeService';
-import { CreateConciergeObjectInput, ObjectFieldDefinition } from '../../types/concierge';
+import conciergeService from '../../services/conciergeService';
+import { CreateConciergeObjectInput, ObjectFieldDefinition, ObjectType } from '../../types/concierge';
 import toastService from '../../services/toastService';
 
 interface CreateConciergeObjectModalProps {
@@ -55,7 +55,7 @@ const CreateConciergeObjectModal: React.FC<CreateConciergeObjectModalProps> = ({
     });
   };
 
-  const handleAttributeChange = (fieldKey: string, value: any, fieldType: string) => {
+  const handleAttributeChange = (fieldKey: string, value: any, _fieldType: string) => {
     setFormData({
       ...formData,
       attributes: {

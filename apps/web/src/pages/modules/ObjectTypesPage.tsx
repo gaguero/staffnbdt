@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { conciergeService, ObjectType } from '../../services/conciergeService';
+import conciergeService from '../../services/conciergeService';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { ObjectType } from '../../types/concierge';
 import { PermissionGate, RoleBasedComponent } from '../../components';
 import toastService from '../../services/toastService';
 import CreateObjectTypeModal from '../../components/concierge/CreateObjectTypeModal';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useVendorLinks, useVendorLinkTracking, useGenerateMagicLink } from '../../hooks/useVendors';
+import { useVendorLinks, useGenerateMagicLink } from '../../hooks/useVendors';
 import { Vendor, VendorLink } from '../../types/vendors';
 import LoadingSpinner from '../LoadingSpinner';
 import toastService from '../../services/toastService';
