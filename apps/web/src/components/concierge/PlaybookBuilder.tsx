@@ -14,27 +14,20 @@ import {
   Panel,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Playbook, PlaybookFlowData, PlaybookNode, PlaybookNodeData } from '../../types/concierge';
+import { Playbook, PlaybookNode, PlaybookNodeData } from '../../types/concierge';
 import { conciergeService } from '../../services/conciergeService';
 import toastService from '../../services/toastService';
 import LoadingSpinner from '../LoadingSpinner';
 import NodeLibrary from './NodeLibrary';
 import NodeEditor from './NodeEditor';
 import PlaybookPreview from './PlaybookPreview';
-import { Trash2, Save, Play, Eye, Settings } from 'lucide-react';
+import { Trash2, Save, Eye, Settings } from 'lucide-react';
 
 interface PlaybookBuilderProps {
   playbook?: Playbook;
   onSave?: (playbook: Playbook) => void;
   onClose?: () => void;
 }
-
-const nodeTypes = {
-  trigger: 'trigger',
-  condition: 'condition', 
-  action: 'action',
-  enforcement: 'enforcement',
-};
 
 const PlaybookBuilder: React.FC<PlaybookBuilderProps> = ({
   playbook,
@@ -96,7 +89,7 @@ const PlaybookBuilder: React.FC<PlaybookBuilderProps> = ({
 
   // Convert our nodes to React Flow format
   const reactFlowNodes = useMemo(() => 
-    nodes.map((node: PlaybookNode) => ({
+    (nodes as PlaybookNode[]).map((node: PlaybookNode) => ({
       id: node.id,
       type: 'default',
       position: node.position,
@@ -145,8 +138,8 @@ const PlaybookBuilder: React.FC<PlaybookBuilderProps> = ({
         position,
         data: {
           label: `New ${nodeType}`,
-          nodeType: nodeType as any,
-          config: {},
+          nodeType: nodeType as 'trigger' | 'condition' | 'action' | 'enforcement',
+          config: {} as any,
           isValid: false,
           errors: ['Node configuration is required'],
         },
@@ -204,7 +197,7 @@ const PlaybookBuilder: React.FC<PlaybookBuilderProps> = ({
       const response = await conciergeService.validatePlaybook(playbookData);
       
       const errors: Record<string, string[]> = {};
-      response.data.errors.forEach(error => {
+      response.data.errors.forEach((error: any) => {
         if (error.nodeId) {
           if (!errors[error.nodeId]) errors[error.nodeId] = [];
           errors[error.nodeId].push(error.message);
@@ -218,7 +211,7 @@ const PlaybookBuilder: React.FC<PlaybookBuilderProps> = ({
       } else {
         toastService.error(`Validation failed with ${response.data.errors.length} errors`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Validation failed:', error);
       toastService.error('Failed to validate playbook');
     } finally {

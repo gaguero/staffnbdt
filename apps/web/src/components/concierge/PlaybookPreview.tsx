@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Playbook, PlaybookPreviewResult } from '../../types/concierge';
 import { conciergeService } from '../../services/conciergeService';
 import LoadingSpinner from '../LoadingSpinner';
-import { X, Play, Clock, AlertTriangle, CheckCircle, Zap } from 'lucide-react';
+import { X, Play, Clock, AlertTriangle, Zap, Eye } from 'lucide-react';
 
 interface PlaybookPreviewProps {
   playbook: Playbook;

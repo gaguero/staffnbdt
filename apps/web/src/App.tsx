@@ -442,6 +442,16 @@ const App: React.FC = () => {
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/concierge/playbooks" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'playbooks', scope: 'manage.property' }]}>
+              <Layout>
+                <PlaybooksPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
         
         {/* Modules - Vendors */}
         <Route 

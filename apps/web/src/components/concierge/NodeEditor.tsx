@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Node } from 'reactflow';
-import { PlaybookNodeData, PlaybookTrigger, PlaybookCondition, PlaybookAction, PlaybookEnforcement } from '../../types/concierge';
+import { PlaybookNodeData } from '../../types/concierge';
 import { Settings, AlertTriangle, CheckCircle, X } from 'lucide-react';
 
 interface NodeEditorProps {
@@ -35,7 +35,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ node, onUpdate, validationError
     onUpdate({ label: newLabel });
   };
 
-  const validateConfig = (nodeType: string, config: any): boolean => {
+  const validateConfig = (nodeType: string | undefined, config: any): boolean => {
     switch (nodeType) {
       case 'trigger':
         return !!(config.triggerType);
@@ -50,7 +50,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ node, onUpdate, validationError
     }
   };
 
-  const getConfigErrors = (nodeType: string, config: any): string[] => {
+  const getConfigErrors = (nodeType: string | undefined, config: any): string[] => {
     const errors: string[] = [];
     
     switch (nodeType) {

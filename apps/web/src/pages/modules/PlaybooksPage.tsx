@@ -5,8 +5,8 @@ import { Playbook } from '../../types/concierge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { PermissionGate } from '../../components';
 import toastService from '../../services/toastService';
-import PlaybookBuilder from '../../components/concierge/PlaybookBuilder';
-import { Plus, Edit, Eye, Trash2, Play, Clock, Users, Settings, Calendar, CheckCircle } from 'lucide-react';
+import PlaybookBuilderSimple from '../../components/concierge/PlaybookBuilderSimple';
+import { Plus, Edit, Trash2, Play, Clock, Calendar, CheckCircle } from 'lucide-react';
 
 const PlaybooksPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -53,10 +53,10 @@ const PlaybooksPage: React.FC = () => {
     }
   };
 
-  const handleExecute = async (playbook: Playbook) => {
+  const handleExecute = async (_playbook: Playbook) => {
     try {
       await conciergeService.executePlaybook({
-        playbookId: playbook.id,
+        playbookId: _playbook.id,
         triggerData: { manual: true }
       });
       toastService.success('Playbook executed successfully');
@@ -76,7 +76,7 @@ const PlaybooksPage: React.FC = () => {
     setSelectedPlaybook(null);
   };
 
-  const handleSavePlaybook = (playbook: Playbook) => {
+  const handleSavePlaybook = (_playbook: Playbook) => {
     loadPlaybooks();
     closeBuilder();
     toastService.success(`Playbook ${selectedPlaybook ? 'updated' : 'created'} successfully`);
@@ -109,7 +109,7 @@ const PlaybooksPage: React.FC = () => {
 
   if (showBuilder) {
     return (
-      <PlaybookBuilder
+      <PlaybookBuilderSimple
         playbook={selectedPlaybook || undefined}
         onSave={handleSavePlaybook}
         onClose={closeBuilder}
