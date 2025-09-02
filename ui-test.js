@@ -1,4 +1,4 @@
-// UI Login Test Script for Nayara HR Portal
+// UI Login Test Script for Hotel Operations Hub
 // This script tests the login flow through the actual frontend UI
 
 const API_URL = 'https://backend-production-2251.up.railway.app';
@@ -6,9 +6,9 @@ const FRONTEND_URL = 'https://frontend-production-55d3.up.railway.app';
 
 // Test accounts
 const accounts = [
-  { email: 'admin@nayara.com', password: 'password123', role: 'SUPERADMIN' },
-  { email: 'hr@nayara.com', password: 'password123', role: 'DEPARTMENT_ADMIN' },
-  { email: 'staff@nayara.com', password: 'password123', role: 'STAFF' }
+  { email: 'admin@hoteloperationshub.com', password: 'password123', role: 'SUPERADMIN' },
+  { email: 'hr@hoteloperationshub.com', password: 'password123', role: 'DEPARTMENT_ADMIN' },
+  { email: 'staff@hoteloperationshub.com', password: 'password123', role: 'STAFF' }
 ];
 
 async function testLogin(email, password, role) {

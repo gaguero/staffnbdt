@@ -542,6 +542,22 @@ export class PermissionService {
         'training.*.department',
         'documents.*.department',
       ],
+      [Role.CONCIERGE_MANAGER]: [
+        // Property-level concierge operations
+        '*.read.property', // Can read property-level data
+        'concierge.*.property',
+        'vendors.*.property',
+        'guests.read.property',
+        'reservations.read.property',
+        'units.read.property',
+        // Department operations
+        '*.*.department',
+        '*.*.own',
+        // User management within concierge
+        'user.*.department',
+        'training.*.department',
+        'documents.*.department',
+      ],
       [Role.STAFF]: [
         // Own data only, plus some department reads
         'profile.read.department', // Can see department colleagues' basic profiles
@@ -632,6 +648,13 @@ export class PermissionService {
         level: 6,
         userType: 'INTERNAL' as const,
         capabilities: ['Department management', 'Team coordination', 'Training oversight']
+      },
+      [Role.CONCIERGE_MANAGER]: {
+        name: 'Concierge Manager',
+        description: 'Manages concierge services and guest experience',
+        level: 6,
+        userType: 'INTERNAL' as const,
+        capabilities: ['Concierge operations', 'Guest experience', 'Vendor coordination', 'Service management']
       },
       [Role.STAFF]: {
         name: 'Staff',

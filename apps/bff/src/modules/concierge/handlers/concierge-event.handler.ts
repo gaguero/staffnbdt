@@ -1,14 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DomainEvent } from '../../../shared/events/domain-event-bus.service';
-import { SLAEnforcementProcessor, PlaybookExecutionData } from '../processors/sla-enforcement.processor';
+
+export interface PlaybookExecutionData {
+  playbookId: string;
+  playbookName?: string;
+  trigger: string;
+  triggerData?: any;
+  actions?: any[];
+  conditions?: any;
+  enforcements?: any;
+  tenant: {
+    organizationId: string;
+    propertyId: string;
+  };
+}
 
 @Injectable()
 export class ConciergeEventHandler {
   private readonly logger = new Logger(ConciergeEventHandler.name);
-
-  constructor(
-    private readonly slaProcessor: SLAEnforcementProcessor,
-  ) {}
 
   async handleEvent(event: DomainEvent<any>): Promise<void> {
     try {
@@ -43,18 +52,12 @@ export class ConciergeEventHandler {
       },
     };
 
-    await this.slaProcessor.executePlaybook();
+    this.logger.log('Playbook execution requested but processor not available');
+    // TODO: Implement playbook execution when processors are ready
   }
 
   private async handleSLACheck(event: DomainEvent): Promise<void> {
-    const mockJob = {
-      id: 'sla-check-' + Date.now(),
-      data: {
-        checkType: 'overdue' as const,
-        organizationId: event.tenant?.organizationId,
-        propertyId: event.tenant?.propertyId
-      }
-    };
-    await this.slaProcessor.checkOverdueObjects(mockJob);
+    this.logger.log('SLA check requested but processor not available');
+    // TODO: Implement SLA checking when processors are ready
   }
 }

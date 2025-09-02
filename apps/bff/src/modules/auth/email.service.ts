@@ -23,17 +23,17 @@ export class EmailService {
   async sendMagicLink(email: string, firstName: string, magicLink: string): Promise<void> {
     try {
       const mailOptions = {
-        from: this.configService.get('FROM_EMAIL') || 'noreply@nayara.com',
+        from: this.configService.get('FROM_EMAIL') || 'noreply@hoteloperationshub.com',
         to: email,
-        subject: 'Your Nayara HR Portal Magic Link',
+        subject: 'Your Hotel Operations Hub Magic Link',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #4A4A4A;">Welcome back, ${firstName}!</h1>
-            <p>Click the link below to securely access your Nayara HR Portal:</p>
+            <p>Click the link below to securely access Hotel Operations Hub:</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${magicLink}" 
                  style="background-color: #AA8E67; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                Access HR Portal
+                Access Portal
               </a>
             </div>
             <p style="color: #666; font-size: 14px;">
@@ -57,14 +57,14 @@ export class EmailService {
   async sendPasswordReset(email: string, firstName: string, resetLink: string): Promise<void> {
     try {
       const mailOptions = {
-        from: this.configService.get('FROM_EMAIL') || 'noreply@nayara.com',
+        from: this.configService.get('FROM_EMAIL') || 'noreply@hoteloperationshub.com',
         to: email,
-        subject: 'Reset Your Nayara HR Portal Password',
+        subject: 'Reset Your Hotel Operations Hub Password',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #4A4A4A;">Password Reset Request</h1>
             <p>Hi ${firstName},</p>
-            <p>We received a request to reset your password for the Nayara HR Portal.</p>
+            <p>We received a request to reset your password for Hotel Operations Hub.</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${resetLink}" 
                  style="background-color: #AA8E67; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
@@ -91,13 +91,13 @@ export class EmailService {
   async sendWelcomeEmail(email: string, firstName: string): Promise<void> {
     try {
       const mailOptions = {
-        from: this.configService.get('FROM_EMAIL') || 'noreply@nayara.com',
+        from: this.configService.get('FROM_EMAIL') || 'noreply@hoteloperationshub.com',
         to: email,
-        subject: 'Welcome to Nayara HR Portal',
+        subject: 'Welcome to Hotel Operations Hub',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #4A4A4A;">Welcome to Nayara, ${firstName}!</h1>
-            <p>Your account has been created successfully. You can now access the HR Portal to:</p>
+            <h1 style="color: #4A4A4A;">Welcome to Hotel Operations Hub, ${firstName}!</h1>
+            <p>Your account has been created successfully. You can now access Hotel Operations Hub to:</p>
             <ul>
               <li>View and download important documents</li>
               <li>Access your payslips</li>
@@ -107,7 +107,7 @@ export class EmailService {
             </ul>
             <p>If you have any questions, please contact HR.</p>
             <p style="color: #666; font-size: 12px;">
-              This is an automated message from the Nayara HR Portal.
+              This is an automated message from Hotel Operations Hub.
             </p>
           </div>
         `,

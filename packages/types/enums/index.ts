@@ -5,6 +5,7 @@ export enum Role {
   ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN', // Manages organization settings
   PROPERTY_MANAGER = 'PROPERTY_MANAGER',     // Manages individual hotel property
   DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',     // Manages department within property
+  CONCIERGE_MANAGER = 'CONCIERGE_MANAGER',   // Manages concierge services
   STAFF = 'STAFF',                          // Self-service access to own resources
   CLIENT = 'CLIENT',                        // External clients, guests
   VENDOR = 'VENDOR'                         // External vendors, suppliers

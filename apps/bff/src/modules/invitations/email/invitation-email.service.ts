@@ -27,7 +27,7 @@ export class InvitationEmailService {
       const template = createInvitationEmailTemplate(data);
       
       const mailOptions = {
-        from: this.configService.get('FROM_EMAIL') || 'hr@nayara.com',
+        from: this.configService.get('FROM_EMAIL') || 'hr@hoteloperationshub.com',
         to: data.email,
         subject: template.subject,
         html: template.html,
@@ -48,7 +48,7 @@ export class InvitationEmailService {
       const template = this.createReminderTemplate(data);
       
       const mailOptions = {
-        from: this.configService.get('FROM_EMAIL') || 'hr@nayara.com',
+        from: this.configService.get('FROM_EMAIL') || 'hr@hoteloperationshub.com',
         to: data.email,
         subject: template.subject,
         html: template.html,
@@ -71,9 +71,9 @@ export class InvitationEmailService {
     };
 
     return `
-Welcome to Nayara Bocas del Toro HR Portal!
+Welcome to Hotel Operations Hub!
 
-${data.inviterName} has invited you to join our HR Portal.
+${data.inviterName} has invited you to join Hotel Operations Hub.
 
 Role: ${roleDisplayNames[data.role] || data.role}
 ${data.departmentName ? `Department: ${data.departmentName}` : ''}
@@ -89,25 +89,25 @@ This invitation will expire in ${data.expiryDays} days.
 
 If you have any questions, please contact HR.
 
-This is an automated message from the Nayara Bocas del Toro HR Portal.
+This is an automated message from Hotel Operations Hub.
     `.trim();
   }
 
   private createReminderTemplate(data: InvitationEmailData) {
-    const subject = `Reminder: Your Nayara HR Portal Invitation is Waiting`;
+    const subject = `Reminder: Your Hotel Operations Hub Invitation is Waiting`;
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #AA8E67, #7C8E67); color: white; padding: 30px; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px;">Nayara Bocas del Toro</h1>
-          <p style="margin: 10px 0 0 0;">HR Portal Invitation Reminder</p>
+          <h1 style="margin: 0; font-size: 24px;">Hotel Operations Hub</h1>
+          <p style="margin: 10px 0 0 0;">Staff Invitation Reminder</p>
         </div>
         
         <div style="padding: 30px;">
           <h2 style="color: #4A4A4A; margin-top: 0;">Don't forget to accept your invitation!</h2>
           
           <p style="color: #666; line-height: 1.6;">
-            You were invited to join the Nayara Bocas del Toro HR Portal by ${data.inviterName}, 
+            You were invited to join Hotel Operations Hub by ${data.inviterName}, 
             but we noticed you haven't accepted your invitation yet.
           </p>
           
@@ -129,7 +129,7 @@ This is an automated message from the Nayara Bocas del Toro HR Portal.
         
         <div style="background-color: #F5EBD7; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
           <p style="margin: 0; font-size: 12px; color: #999;">
-            This is an automated reminder from the Nayara Bocas del Toro HR Portal.
+            This is an automated reminder from Hotel Operations Hub.
           </p>
         </div>
       </div>
@@ -140,9 +140,9 @@ This is an automated message from the Nayara Bocas del Toro HR Portal.
 
   private createReminderTextVersion(data: InvitationEmailData): string {
     return `
-Reminder: Your Nayara HR Portal Invitation is Waiting
+Reminder: Your Hotel Operations Hub Invitation is Waiting
 
-Don't forget to accept your invitation to join the Nayara Bocas del Toro HR Portal!
+Don't forget to accept your invitation to join Hotel Operations Hub!
 
 You were invited by ${data.inviterName}, but we noticed you haven't accepted your invitation yet.
 

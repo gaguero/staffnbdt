@@ -1,5 +1,5 @@
 /**
- * Profile-related TypeScript types for the Nayara HR Portal
+ * Profile-related TypeScript types for Hotel Operations Hub
  * These types match the backend API interfaces and ensure type safety
  */
 
