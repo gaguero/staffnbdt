@@ -488,7 +488,7 @@ const OperationalDashboard: React.FC<OperationalDashboardProps> = ({
                         <span className="text-gray-600">{attr.fieldKey}:</span>
                         <span className="text-gray-900">
                           {attr.stringValue || attr.numberValue || attr.booleanValue?.toString() || 
-                           attr.dateValue || JSON.stringify(attr.jsonValue)}
+                           attr.dateValue?.toLocaleDateString('en-US') || JSON.stringify(attr.jsonValue)}
                         </span>
                       </div>
                     ))}

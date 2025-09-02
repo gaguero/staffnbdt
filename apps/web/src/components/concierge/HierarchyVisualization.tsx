@@ -35,7 +35,6 @@ const HierarchyVisualization: React.FC<HierarchyVisualizationProps> = ({
     
     // Create all nodes
     [...allObjectTypes, currentObjectType].forEach(objectType => {
-      const parentId = objectType.uiHints?.parentObjectTypeId;
       nodeMap.set(objectType.id, {
         id: objectType.id,
         name: objectType.name,

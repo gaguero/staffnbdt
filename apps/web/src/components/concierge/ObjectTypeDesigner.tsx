@@ -303,6 +303,7 @@ const ObjectTypeDesigner: React.FC<ObjectTypeDesignerProps> = ({
                 id: existingObjectType?.id || 'new',
                 organizationId: '',
                 propertyId: '',
+                isActive: formData.isActive ?? true,
               }}
               allObjectTypes={allObjectTypes}
               parentObjectType={parentObjectType}
@@ -317,6 +318,7 @@ const ObjectTypeDesigner: React.FC<ObjectTypeDesignerProps> = ({
                 id: existingObjectType?.id || 'preview',
                 organizationId: '',
                 propertyId: '',
+                isActive: formData.isActive ?? true,
               }}
               parentObjectType={parentObjectType ? 
                 allObjectTypes.find(ot => ot.id === parentObjectType) : 
