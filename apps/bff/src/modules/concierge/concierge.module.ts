@@ -4,15 +4,18 @@ import { ConciergeController } from './concierge.controller';
 import { ConciergeService } from './concierge.service';
 import { TemplateService } from './template.service';
 import { ConciergeEventHandler } from './handlers/concierge-event.handler';
+import { FieldValidationService } from './services/field-validation.service';
+import { PlaybookExecutionService } from './services/playbook-execution.service';
 import { DatabaseModule } from '../../shared/database/database.module';
 import { TenantModule } from '../../shared/tenant/tenant.module';
-import { DomainEventBus } from '../../shared/events/domain-event-bus.service';
+import { EventsModule } from '../../shared/events/events.module';
 import { ModuleRegistryModule } from '../module-registry/module-registry.module';
 
 @Module({
   imports: [
     DatabaseModule,
     TenantModule,
+    EventsModule,
     ModuleRegistryModule,
     ScheduleModule.forRoot(),
   ],
@@ -23,7 +26,8 @@ import { ModuleRegistryModule } from '../module-registry/module-registry.module'
     ConciergeService,
     TemplateService,
     ConciergeEventHandler,
-    DomainEventBus,
+    FieldValidationService,
+    PlaybookExecutionService,
   ],
   exports: [
     ConciergeService,
