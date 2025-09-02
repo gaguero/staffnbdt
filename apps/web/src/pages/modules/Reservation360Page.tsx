@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import conciergeService from '../../services/conciergeService';
-import { ReservationChecklist, ChecklistItem } from '../../types/concierge';
+import { ReservationChecklist } from '../../types/concierge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { PermissionGate } from '../../components';
 import toastService from '../../services/toastService';
@@ -18,7 +18,7 @@ const Reservation360Page: React.FC<Reservation360PageProps> = ({ reservationId: 
   const [loading, setLoading] = useState(true);
   const [checklist, setChecklist] = useState<ReservationChecklist | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [_selectedTemplate, setSelectedTemplate] = useState<string>('');
 
   // Mock reservation data - in real app this would come from API
   const mockReservation = {

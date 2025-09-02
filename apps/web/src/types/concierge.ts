@@ -129,6 +129,7 @@ export interface CreateObjectTypeInput {
   fieldsSchema: ObjectTypeSchema;
   validations?: Record<string, any>;
   uiHints?: Record<string, any>;
+  isActive?: boolean;
 }
 
 export interface ExecutePlaybookInput {

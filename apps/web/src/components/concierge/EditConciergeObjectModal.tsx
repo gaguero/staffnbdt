@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../LoadingSpinner';
 import conciergeService from '../../services/conciergeService';
-import { ConciergeObject, UpdateConciergeObjectInput, ObjectFieldDefinition, ConciergeObjectStatus, ObjectType } from '../../types/concierge';
+import { ConciergeObject, UpdateConciergeObjectInput, ObjectFieldDefinition, ObjectType } from '../../types/concierge';
 import toastService from '../../services/toastService';
 
 interface EditConciergeObjectModalProps {

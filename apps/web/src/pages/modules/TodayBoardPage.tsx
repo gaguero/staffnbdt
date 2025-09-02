@@ -16,12 +16,12 @@ interface TodayBoardColumn {
 }
 
 const TodayBoardPage: React.FC = () => {
-  const { user: currentUser } = useAuth();
+  const { user: _currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [columns, setColumns] = useState<TodayBoardColumn[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedObjects, setSelectedObjects] = useState<string[]>([]);
-  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [_showBulkActions, setShowBulkActions] = useState(false);
 
   // Initialize columns
   const initializeColumns = useCallback((): TodayBoardColumn[] => {

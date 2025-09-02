@@ -4,7 +4,6 @@ import conciergeService from '../../services/conciergeService';
 import { GuestTimelineEvent } from '../../types/concierge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { PermissionGate } from '../../components';
-import toastService from '../../services/toastService';
 
 interface GuestTimelinePageProps {
   guestId?: string; // Optional prop, falls back to URL params

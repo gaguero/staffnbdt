@@ -224,7 +224,7 @@ const VendorLinkTimelineModal: React.FC<VendorLinkTimelineModalProps> = ({ isOpe
                   <div className="relative">
                     <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-300"></div>
                     <div className="space-y-6">
-                      {timelineEvents.map((event, index) => (
+                      {timelineEvents.map((event) => (
                         <div key={event.id} className="relative flex items-start">
                           {/* Timeline dot */}
                           <div className={`flex items-center justify-center w-16 h-16 rounded-full text-2xl ${

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import conciergeService from '../../services/conciergeService';
 import { userService, User } from '../../services/userService';
-import { ConciergeObject, ConciergeObjectFilter, ConciergeStats } from '../../types/concierge';
+import { ConciergeObject, ConciergeObjectFilter, ConciergeStats, ConciergeObjectStatus } from '../../types/concierge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { PermissionGate, RoleBasedComponent } from '../../components';
 import toastService from '../../services/toastService';
@@ -13,7 +13,7 @@ import ViewConciergeObjectModal from '../../components/concierge/ViewConciergeOb
 const ConciergePage: React.FC = () => {
   const { user: currentUser } = useAuth();
   const [objects, setObjects] = useState<ConciergeObject[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [_users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedObject, setSelectedObject] = useState<ConciergeObject | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -279,7 +279,7 @@ const ConciergePage: React.FC = () => {
           />
           <select
             value={filter.status?.[0] || ''}
-            onChange={(e) => setFilter({ ...filter, status: e.target.value ? [e.target.value] : undefined })}
+            onChange={(e) => setFilter({ ...filter, status: e.target.value ? [e.target.value as ConciergeObjectStatus] : undefined })}
             className="form-input"
           >
             <option value="">All Status</option>
