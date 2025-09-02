@@ -1,0 +1,440 @@
+import api from './api';
+import {
+  Vendor,
+  VendorLink,
+  VendorFilter,
+  VendorLinkFilter,
+  CreateVendorInput,
+  UpdateVendorInput,
+  CreateVendorLinkInput,
+  ConfirmVendorLinkInput,
+  GenerateMagicLinkInput,
+  VendorDirectory,
+  VendorLinkTracking,
+  VendorPortalData,
+  VendorPortalSession,
+  VendorStats,
+  VendorNotification,
+} from '../types/vendors';
+
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  success: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+class VendorsService {
+  // Vendors Management
+  async getVendors(filter?: VendorFilter): Promise<ApiResponse<PaginatedResponse<Vendor>>> {
+    const params = new URLSearchParams();
+    if (filter?.category) params.append('category', filter.category.join(','));
+    if (filter?.search) params.append('search', filter.search);
+    if (filter?.isActive !== undefined) params.append('isActive', filter.isActive.toString());
+    if (filter?.hasActiveLinks !== undefined) params.append('hasActiveLinks', filter.hasActiveLinks.toString());
+    if (filter?.performanceRating) {
+      params.append('minRating', filter.performanceRating.min.toString());
+      params.append('maxRating', filter.performanceRating.max.toString());
+    }
+
+    const response = await api.get(`/vendors?${params.toString()}`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    const transformedVendors = responseData.map((vendor: any) => this.transformVendor(vendor));
+    
+    return {
+      data: {
+        data: transformedVendors,
+        total: transformedVendors.length,
+        page: 1,
+        limit: transformedVendors.length,
+        totalPages: 1
+      },
+      message: 'Vendors retrieved successfully',
+      success: true
+    };
+  }
+
+  async getVendor(id: string): Promise<ApiResponse<Vendor>> {
+    const response = await api.get(`/vendors/${id}`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformVendor(responseData),
+      message: 'Vendor retrieved successfully',
+      success: true
+    };
+  }
+
+  async createVendor(input: CreateVendorInput): Promise<ApiResponse<Vendor>> {
+    const response = await api.post('/vendors', input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformVendor(responseData),
+      message: 'Vendor created successfully',
+      success: true
+    };
+  }
+
+  async updateVendor(id: string, input: UpdateVendorInput): Promise<ApiResponse<Vendor>> {
+    const response = await api.patch(`/vendors/${id}`, input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformVendor(responseData),
+      message: 'Vendor updated successfully',
+      success: true
+    };
+  }
+
+  async deleteVendor(id: string): Promise<ApiResponse<void>> {
+    const response = await api.delete(`/vendors/${id}`);
+    return response.data;
+  }
+
+  async toggleVendorStatus(id: string): Promise<ApiResponse<Vendor>> {
+    const response = await api.post(`/vendors/${id}/toggle-status`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformVendor(responseData),
+      message: 'Vendor status updated successfully',
+      success: true
+    };
+  }
+
+  // Vendor Links Management
+  async getVendorLinks(filter?: VendorLinkFilter): Promise<ApiResponse<PaginatedResponse<VendorLink>>> {
+    const params = new URLSearchParams();
+    if (filter?.status) params.append('status', filter.status.join(','));
+    if (filter?.vendorId) params.append('vendorId', filter.vendorId);
+    if (filter?.objectType) params.append('objectType', filter.objectType);
+    if (filter?.search) params.append('search', filter.search);
+    if (filter?.expiringWithinHours) params.append('expiringWithinHours', filter.expiringWithinHours.toString());
+    if (filter?.dateRange) {
+      params.append('startDate', filter.dateRange.start.toISOString());
+      params.append('endDate', filter.dateRange.end.toISOString());
+    }
+
+    const response = await api.get(`/vendors/links?${params.toString()}`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    const transformedLinks = responseData.map((link: any) => this.transformVendorLink(link));
+    
+    return {
+      data: {
+        data: transformedLinks,
+        total: transformedLinks.length,
+        page: 1,
+        limit: transformedLinks.length,
+        totalPages: 1
+      },
+      message: 'Vendor links retrieved successfully',
+      success: true
+    };
+  }
+
+  async getVendorLink(id: string): Promise<ApiResponse<VendorLink>> {
+    const response = await api.get(`/vendors/links/${id}`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformVendorLink(responseData),
+      message: 'Vendor link retrieved successfully',
+      success: true
+    };
+  }
+
+  async createVendorLink(input: CreateVendorLinkInput): Promise<ApiResponse<VendorLink>> {
+    const response = await api.post('/vendors/links', input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformVendorLink(responseData),
+      message: 'Vendor link created successfully',
+      success: true
+    };
+  }
+
+  async confirmVendorLink(linkId: string, input: ConfirmVendorLinkInput): Promise<ApiResponse<VendorLink>> {
+    const response = await api.post(`/vendors/links/${linkId}/confirm`, input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformVendorLink(responseData),
+      message: 'Vendor link confirmed successfully',
+      success: true
+    };
+  }
+
+  async cancelVendorLink(linkId: string, reason?: string): Promise<ApiResponse<VendorLink>> {
+    const response = await api.post(`/vendors/links/${linkId}/cancel`, { reason });
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformVendorLink(responseData),
+      message: 'Vendor link cancelled successfully',
+      success: true
+    };
+  }
+
+  // Magic Link Management
+  async generateMagicLink(input: GenerateMagicLinkInput): Promise<ApiResponse<{ magicLink: string; expiresAt: Date }>> {
+    const response = await api.post('/vendors/magic-links', input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: {
+        ...responseData,
+        expiresAt: new Date(responseData.expiresAt)
+      },
+      message: 'Magic link generated successfully',
+      success: true
+    };
+  }
+
+  async validatePortalToken(token: string): Promise<ApiResponse<VendorPortalSession>> {
+    const response = await api.get(`/vendors/portal/${token}`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: {
+        ...responseData,
+        expiresAt: new Date(responseData.expiresAt)
+      },
+      message: 'Portal token validated successfully',
+      success: true
+    };
+  }
+
+  async getPortalData(token: string): Promise<ApiResponse<VendorPortalData>> {
+    const response = await api.get(`/vendors/portal/${token}/data`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: {
+        ...responseData,
+        vendor: this.transformVendor(responseData.vendor),
+        link: this.transformVendorLink(responseData.link)
+      },
+      message: 'Portal data retrieved successfully',
+      success: true
+    };
+  }
+
+  // Vendor Directory
+  async getVendorDirectory(): Promise<ApiResponse<VendorDirectory>> {
+    const response = await api.get('/vendors/directory');
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: {
+        ...responseData,
+        vendors: (responseData.vendors || []).map((vendor: any) => this.transformVendor(vendor))
+      },
+      message: 'Vendor directory retrieved successfully',
+      success: true
+    };
+  }
+
+  // Link Tracking
+  async getVendorLinkTracking(linkId: string): Promise<ApiResponse<VendorLinkTracking>> {
+    const response = await api.get(`/vendors/links/${linkId}/tracking`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: {
+        ...responseData,
+        vendor: this.transformVendor(responseData.vendor),
+        createdAt: new Date(responseData.createdAt),
+        confirmationAt: responseData.confirmationAt ? new Date(responseData.confirmationAt) : undefined,
+        expiresAt: responseData.expiresAt ? new Date(responseData.expiresAt) : undefined,
+        lastNotificationAt: responseData.lastNotificationAt ? new Date(responseData.lastNotificationAt) : undefined,
+        lastPortalAccessAt: responseData.lastPortalAccessAt ? new Date(responseData.lastPortalAccessAt) : undefined,
+      },
+      message: 'Vendor link tracking retrieved successfully',
+      success: true
+    };
+  }
+
+  // Notifications Management
+  async getVendorNotifications(linkId: string): Promise<ApiResponse<VendorNotification[]>> {
+    const response = await api.get(`/vendors/links/${linkId}/notifications`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    
+    return {
+      data: responseData.map((notification: any) => ({
+        ...notification,
+        sentAt: notification.sentAt ? new Date(notification.sentAt) : undefined,
+        deliveredAt: notification.deliveredAt ? new Date(notification.deliveredAt) : undefined,
+        nextRetryAt: notification.nextRetryAt ? new Date(notification.nextRetryAt) : undefined,
+      })),
+      message: 'Vendor notifications retrieved successfully',
+      success: true
+    };
+  }
+
+  async sendNotification(linkId: string, channels: string[]): Promise<ApiResponse<void>> {
+    const response = await api.post(`/vendors/links/${linkId}/notify`, { channels });
+    return response.data;
+  }
+
+  async resendNotification(notificationId: string): Promise<ApiResponse<void>> {
+    const response = await api.post(`/vendors/notifications/${notificationId}/resend`);
+    return response.data;
+  }
+
+  // Statistics
+  async getVendorStats(): Promise<ApiResponse<VendorStats>> {
+    const response = await api.get('/vendors/stats');
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: responseData,
+      message: 'Vendor stats retrieved successfully',
+      success: true
+    };
+  }
+
+  // Bulk Operations
+  async bulkUpdateVendors(vendorIds: string[], updates: Partial<UpdateVendorInput>): Promise<ApiResponse<void>> {
+    const response = await api.post('/vendors/bulk/update', {
+      vendorIds,
+      updates
+    });
+    return response.data;
+  }
+
+  async bulkNotifyLinks(linkIds: string[], channels: string[]): Promise<ApiResponse<void>> {
+    const response = await api.post('/vendors/links/bulk/notify', {
+      linkIds,
+      channels
+    });
+    return response.data;
+  }
+
+  async bulkCancelLinks(linkIds: string[], reason?: string): Promise<ApiResponse<void>> {
+    const response = await api.post('/vendors/links/bulk/cancel', {
+      linkIds,
+      reason
+    });
+    return response.data;
+  }
+
+  // Search and Suggestions
+  async searchVendors(query: string, category?: string): Promise<ApiResponse<Vendor[]>> {
+    const params = new URLSearchParams();
+    params.append('search', query);
+    if (category) params.append('category', category);
+    params.append('limit', '10');
+    
+    const response = await api.get(`/vendors?${params.toString()}`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    const transformedVendors = responseData.map((vendor: any) => this.transformVendor(vendor));
+    
+    return {
+      data: transformedVendors,
+      message: 'Vendor search completed successfully',
+      success: true
+    };
+  }
+
+  async getVendorSuggestions(objectType: string, metadata?: Record<string, any>): Promise<ApiResponse<Vendor[]>> {
+    const response = await api.post('/vendors/suggestions', {
+      objectType,
+      metadata
+    });
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    
+    return {
+      data: responseData.map((vendor: any) => this.transformVendor(vendor)),
+      message: 'Vendor suggestions retrieved successfully',
+      success: true
+    };
+  }
+
+  // Helper methods
+  private transformVendor(vendor: any): Vendor {
+    return {
+      ...vendor,
+      createdAt: new Date(vendor.createdAt),
+      updatedAt: new Date(vendor.updatedAt),
+      policies: vendor.policies || {
+        responseTime: 24,
+        cancellationPolicy: '',
+        paymentTerms: '',
+        requiresConfirmation: true,
+        allowsModification: false,
+        channels: ['email']
+      },
+      performance: vendor.performance || {
+        averageResponseTime: 0,
+        confirmationRate: 0,
+        totalBookings: 0,
+        lastBookingDate: undefined,
+        rating: undefined,
+        notes: []
+      },
+      links: vendor.links ? vendor.links.map((link: any) => this.transformVendorLink(link)) : []
+    };
+  }
+
+  private transformVendorLink(link: any): VendorLink {
+    return {
+      ...link,
+      confirmationAt: link.confirmationAt ? new Date(link.confirmationAt) : undefined,
+      expiresAt: link.expiresAt ? new Date(link.expiresAt) : undefined,
+      createdAt: new Date(link.createdAt),
+      updatedAt: new Date(link.updatedAt),
+      notificationChannels: link.notificationChannels || ['email'],
+      metadata: link.metadata || {}
+    };
+  }
+}
+
+export const vendorsService = new VendorsService();
+export default vendorsService;

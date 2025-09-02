@@ -140,13 +140,7 @@ export class PermissionService implements OnModuleInit {
 
       const permissions = new Map<string, Permission>();
 
-      // Get permissions from role assignments in database
-      const rolePermissions = await this.getRolePermissionsFromDatabase(user.role, user.userType);
-      this.logger.log(`User ${userId} with role ${user.role} gets ${rolePermissions.length} permissions from role assignments`);
-      
-      rolePermissions.forEach(permission => {
-        permissions.set(permission.id, permission);
-      });
+      // Skip legacy role permissions - all permissions now come from custom roles
       
       // Get permissions from enabled modules for this user type
       if (user.organizationId) {
@@ -227,12 +221,15 @@ export class PermissionService implements OnModuleInit {
         return { allowed: false, reason: 'User not found', source: 'default' };
       }
 
-      // PLATFORM_ADMIN users have unrestricted access to all resources
-      if (user.role === Role.PLATFORM_ADMIN) {
+      // Check if user has platform admin custom role
+      const hasPlatformAdminRole = user.userCustomRoles.some(
+        ucr => ucr.role.name === 'Platform Administrator' && ucr.isActive
+      );
+      if (hasPlatformAdminRole) {
         return { 
           allowed: true, 
-          reason: 'PLATFORM_ADMIN has unrestricted access', 
-          source: 'default' 
+          reason: 'Platform Administrator role has unrestricted access', 
+          source: 'role' 
         };
       }
       
@@ -267,15 +264,7 @@ export class PermissionService implements OnModuleInit {
         return { allowed: false, reason: 'Permission not found', source: 'default' };
       }
 
-      // Check role permissions from database
-      const hasRolePermission = await this.checkRolePermissionFromDatabase(user.role, permission.id);
-      if (hasRolePermission) {
-        const result = await this.evaluatePermissionConditions(permission, evaluationContext);
-        if (result.allowed) {
-          await this.cachePermissionResult(cacheKey, result, evaluationContext, resource, action, scope);
-          return { ...result, source: 'role' };
-        }
-      }
+      // Skip legacy role permission checks - all permissions come from custom roles
 
       // Check custom role permissions
       for (const userRole of user.userCustomRoles) {
@@ -913,9 +902,12 @@ export class PermissionService implements OnModuleInit {
       const user = await this.getUserWithRoles(userId);
       if (!user) return false;
       
-      // Internal users can access based on their role hierarchy
+      // Internal users can access based on their permissions
       if (user.userType === UserType.INTERNAL) {
-        return user.organizationId === targetOrgId || user.role === Role.PLATFORM_ADMIN;
+        const hasPlatformAdminRole = user.userCustomRoles.some(
+          ucr => ucr.role.name === 'Platform Administrator' && ucr.isActive
+        );
+        return user.organizationId === targetOrgId || hasPlatformAdminRole;
       }
       
       // External users can only access their own organization's data by default
@@ -1014,17 +1006,28 @@ export class PermissionService implements OnModuleInit {
    */
   private async getRolePermissionsFromDatabase(role: Role, userType: UserType = UserType.INTERNAL): Promise<Permission[]> {
     try {
-      // First find the custom role by name (assuming role enum maps to role name)
+      // For legacy roles, find matching custom roles by mapping
+      const roleNameMappings: Record<string, string[]> = {
+        'PLATFORM_ADMIN': ['Platform Administrator'],
+        'ORGANIZATION_OWNER': ['Organization Owner'],
+        'ORGANIZATION_ADMIN': ['Organization Administrator'],
+        'PROPERTY_MANAGER': ['Property Manager'],
+        'DEPARTMENT_ADMIN': ['Department Admin', 'Front Desk Manager', 'Housekeeping Supervisor'],
+        'STAFF': ['Basic Staff', 'Training Coordinator'],
+      };
+
+      const possibleNames = roleNameMappings[role] || [role];
       const customRoles = await this.prisma.customRole.findMany({
         where: {
-          name: role,
+          name: {
+            in: possibleNames
+          },
           isActive: true,
-          userType: userType,
         },
       });
 
       if (customRoles.length === 0) {
-        this.logger.debug(`No custom roles found for role ${role} and userType ${userType}`);
+        this.logger.debug(`No custom roles found for role ${role} with names: ${possibleNames.join(', ')}`);
         return [];
       }
 
@@ -1047,7 +1050,7 @@ export class PermissionService implements OnModuleInit {
         .map(rp => rp.permission)
         .filter(p => p !== null);
 
-      this.logger.debug(`Role ${role}: Retrieved ${permissions.length} permissions from database`);
+      this.logger.debug(`Role ${role}: Retrieved ${permissions.length} permissions from ${customRoles.length} matching custom roles`);
       return permissions;
     } catch (error) {
       this.logger.error(`Error fetching permissions for role ${role}:`, error);
@@ -1440,15 +1443,15 @@ export class PermissionService implements OnModuleInit {
       
       // Get or create default organization for system roles
       let defaultOrg = await this.prisma.organization.findFirst({
-        where: { slug: 'nayara-group' }
+        where: { slug: 'hotel-operations-hub' }
       });
 
       if (!defaultOrg) {
         this.logger.log('Creating default organization for system roles...');
         defaultOrg = await this.prisma.organization.create({
           data: {
-            name: 'Nayara Group',
-            slug: 'nayara-group',
+            name: 'Hotel Operations Hub',
+            slug: 'hotel-operations-hub',
             description: 'Default organization for Hotel Operations Hub',
             timezone: 'America/Costa_Rica',
             settings: {
@@ -1506,7 +1509,42 @@ export class PermissionService implements OnModuleInit {
           throw roleError;
         }
       }
-      
+
+      // Assign all platform-level permissions to Platform Administrator
+      const platformAdminFromDb = await this.prisma.customRole.findFirst({
+        where: {
+          organizationId: defaultOrg.id,
+          propertyId: null,
+          name: 'Platform Administrator'
+        }
+      });
+
+      if (platformAdminFromDb) {
+        const platformPermissions = await this.prisma.permission.findMany({
+          where: { scope: 'platform' }
+        });
+
+        for (const permission of platformPermissions) {
+          await this.prisma.rolePermission.upsert({
+            where: {
+              roleId_permissionId: {
+                roleId: platformAdminFromDb.id,
+                permissionId: permission.id,
+              },
+            },
+            create: {
+              roleId: platformAdminFromDb.id,
+              permissionId: permission.id,
+              granted: true,
+            },
+            update: {
+              granted: true,
+            },
+          });
+        }
+        this.logger.log(`✓ Assigned ${platformPermissions.length} platform permissions to Platform Administrator`);
+      }
+
       this.logger.log('System roles initialization completed successfully');
     } catch (error) {
       this.logger.error('Error ensuring system roles:', {

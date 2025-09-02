@@ -5,7 +5,7 @@ import IDDocumentUpload from './IDDocumentUpload';
  * Example usage of IDDocumentUpload component
  * 
  * This component provides secure ID document upload and verification functionality
- * for the Nayara HR Portal with the following features:
+ * for Hotel Operations Hub with the following features:
  * 
  * SECURITY FEATURES:
  * - Documents are encrypted before storage (AES-256-CBC)

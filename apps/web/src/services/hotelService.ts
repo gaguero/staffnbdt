@@ -121,7 +121,28 @@ class HotelService {
   }
 
   async createRoom(room: CreateRoomInput): Promise<ApiResponse<Room>> {
-    const response = await api.post('/units', room);
+    // Map frontend CreateRoomInput to backend CreateUnitDto
+    const enumValues = ['STANDARD','DELUXE','SUITE','PRESIDENTIAL','FAMILY','ACCESSIBLE','STUDIO','APARTMENT','VILLA','OTHER'];
+    const isEnum = enumValues.includes(room.typeId);
+    const payload: any = {
+      unitNumber: room.number,
+      unitType: (isEnum ? room.typeId : 'STANDARD') as any,
+      roomTypeId: !isEnum ? room.typeId : undefined,
+      building: undefined,
+      floor: room.floor ?? 1,
+      bedrooms: 1,
+      bathrooms: 1,
+      maxOccupancy: room.capacity,
+      size: undefined,
+      amenities: room.amenities || [],
+      status: 'AVAILABLE',
+      isActive: true,
+      description: room.description || undefined,
+      notes: undefined,
+      dailyRate: Number(room.rate ?? 0).toFixed(2),
+    };
+
+    const response = await api.post('/units', payload);
     
     // Transform the backend unit data to match frontend Room interface
     const transformedData = {
@@ -133,7 +154,23 @@ class HotelService {
   }
 
   async updateRoom(id: string, room: UpdateRoomInput): Promise<ApiResponse<Room>> {
-    const response = await api.patch(`/units/${id}`, room);
+    // Map partial frontend fields to backend UpdateUnitDto
+    const enumValues = ['STANDARD','DELUXE','SUITE','PRESIDENTIAL','FAMILY','ACCESSIBLE','STUDIO','APARTMENT','VILLA','OTHER'];
+    const payload: any = {};
+    if (room.number !== undefined) payload.unitNumber = room.number;
+    if (room.typeId !== undefined) {
+      const isEnum = enumValues.includes(room.typeId);
+      payload.unitType = (isEnum ? room.typeId : 'STANDARD') as any;
+      payload.roomTypeId = !isEnum ? room.typeId : undefined;
+    }
+    if (room.floor !== undefined) payload.floor = room.floor;
+    if (room.capacity !== undefined) payload.maxOccupancy = room.capacity;
+    if (room.amenities !== undefined) payload.amenities = room.amenities;
+    if (room.description !== undefined) payload.description = room.description;
+    if (room.rate !== undefined) payload.dailyRate = Number(room.rate).toFixed(2);
+    if ((room as any).status !== undefined) payload.status = (room as any).status;
+    
+    const response = await api.patch(`/units/${id}`, payload);
     
     // Transform the backend unit data to match frontend Room interface
     const transformedData = {
@@ -162,13 +199,43 @@ class HotelService {
   }
 
   async getRoomTypes(): Promise<ApiResponse<RoomType[]>> {
-    // Room types are handled through unit filtering - return empty for now
-    // TODO: Implement unit types endpoint or derive from units
-    return {
-      data: [],
-      message: 'Room types endpoint not implemented',
-      success: true
-    };
+    try {
+      const resp = await api.get('/room-types');
+      if (Array.isArray(resp?.data?.data)) {
+        const normalized = resp.data.data.map((rt: any) => ({
+          id: rt.id,
+          name: rt.name,
+          description: rt.description || '',
+          baseRate: Number(rt.baseRate ?? 0),
+          maxCapacity: Number(rt.maxCapacity ?? 2),
+          amenities: Array.isArray(rt.amenities) ? rt.amenities : [],
+        }));
+        return { data: normalized, message: 'Room types retrieved', success: true };
+      }
+    } catch (e) {
+      // Fallback to enum-derived if endpoint not present yet
+    }
+    const enumValues = ['STANDARD','DELUXE','SUITE','PRESIDENTIAL','FAMILY','ACCESSIBLE','STUDIO','APARTMENT','VILLA','OTHER'];
+    const toLabel = (v: string) => v.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    const types: RoomType[] = enumValues.map(v => ({ id: v, name: toLabel(v), description: '', baseRate: 0, maxCapacity: 2, amenities: [] }));
+    return { data: types, message: 'Derived from UnitType enum', success: true };
+  }
+
+  async createRoomType(input: any): Promise<ApiResponse<RoomType>> {
+    const resp = await api.post('/room-types', input);
+    const rt = resp.data?.data;
+    return { data: { ...rt, baseRate: Number(rt?.baseRate ?? 0) }, message: 'Created', success: true };
+  }
+
+  async updateRoomType(id: string, input: any): Promise<ApiResponse<RoomType>> {
+    const resp = await api.patch(`/room-types/${id}`, input);
+    const rt = resp.data?.data;
+    return { data: { ...rt, baseRate: Number(rt?.baseRate ?? 0) }, message: 'Updated', success: true };
+  }
+
+  async deleteRoomType(id: string): Promise<ApiResponse<void>> {
+    const resp = await api.delete(`/room-types/${id}`);
+    return resp.data;
   }
 
   async getRoomAvailability(startDate: Date, endDate: Date): Promise<ApiResponse<RoomAvailability[]>> {
@@ -260,7 +327,40 @@ class HotelService {
   }
 
   async createReservation(reservation: CreateReservationInput): Promise<ApiResponse<Reservation>> {
-    const response = await api.post('/reservations', reservation);
+    // Map frontend payload to backend expectations
+    if (!reservation.guestId) {
+      throw new Error('Guest selection is required');
+    }
+    if (!reservation.roomId) {
+      // Allow auto-assign later by backend? For now, require explicit unit to avoid 400s
+      throw new Error('Please select a specific room');
+    }
+    const checkInISO = new Date(reservation.checkInDate).toISOString();
+    const checkOutISO = new Date(reservation.checkOutDate).toISOString();
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const nights = Math.max(1, Math.ceil((new Date(checkOutISO).getTime() - new Date(checkInISO).getTime()) / msPerDay));
+    const computedTotal = Number(reservation.rate ?? 0) * nights;
+
+    const payload: any = {
+      unitId: String(reservation.roomId), // backend expects unitId
+      guestId: String(reservation.guestId), // required by backend
+      checkInDate: checkInISO,
+      checkOutDate: checkOutISO,
+      adults: Number(reservation.adults ?? 1),
+      children: Number(reservation.children ?? 0),
+      status: 'CONFIRMED',
+      paymentStatus: 'PENDING',
+      totalAmount: computedTotal,
+      paidAmount: 0,
+      currency: 'USD',
+      paymentMethod: reservation.paymentMethod,
+      source: reservation.source,
+      specialRequests: Array.isArray(reservation.specialRequests) ? reservation.specialRequests.join(', ') : undefined,
+      notes: Array.isArray(reservation.notes) ? reservation.notes.join(', ') : undefined,
+      confirmationCode: (reservation as any).confirmationCode,
+    };
+
+    const response = await api.post('/reservations', payload);
     return {
       ...response.data,
       data: this.transformReservation(response.data?.data)

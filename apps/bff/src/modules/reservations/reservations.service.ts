@@ -4,7 +4,7 @@ import { AuditService } from '../../shared/audit/audit.service';
 import { PaginatedResponse } from '../../shared/dto/pagination.dto';
 import { CreateReservationDto, UpdateReservationDto, ReservationFilterDto, CheckInDto, CheckOutDto } from './dto';
 import { ReservationWithDetails, ReservationStats, ConflictCheckResult } from './interfaces';
-import { User, Reservation, ReservationStatus, UnitStatus, PaymentStatus } from '@prisma/client';
+import { User, Reservation, ReservationStatus, UnitStatus, PaymentStatus, Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -29,6 +29,14 @@ export class ReservationsService {
     currentUser: User,
   ): Promise<ReservationWithDetails> {
     const { unitId, guestId, checkInDate, checkOutDate } = createReservationDto;
+
+    // Required fields guards
+    if (!unitId) {
+      throw new BadRequestException('Unit is required');
+    }
+    if (!guestId) {
+      throw new BadRequestException('Guest is required');
+    }
 
     // Validate dates
     const checkIn = new Date(checkInDate);
@@ -90,15 +98,29 @@ export class ReservationsService {
     const reservationNumber = this.generateReservationNumber();
     const confirmationCode = createReservationDto.confirmationCode || this.generateConfirmationCode();
 
+    // Coerce numeric/decimal fields
+    const totalAmount = createReservationDto.totalAmount ?? 0;
+    const paidAmount = createReservationDto.paidAmount ?? 0;
+
     const reservation = await this.prisma.reservation.create({
       data: {
-        ...createReservationDto,
+        unitId,
+        guestId,
+        status: createReservationDto.status,
+        paymentStatus: createReservationDto.paymentStatus,
+        totalAmount: new Prisma.Decimal(totalAmount),
+        paidAmount: new Prisma.Decimal(paidAmount),
+        currency: createReservationDto.currency || 'USD',
+        paymentMethod: createReservationDto.paymentMethod,
+        source: createReservationDto.source,
+        specialRequests: createReservationDto.specialRequests,
+        notes: createReservationDto.notes,
+        confirmationCode,
         propertyId: currentUser.propertyId!,
         checkInDate: checkIn,
         checkOutDate: checkOut,
-        reservationNumber,
-        confirmationCode,
         children: createReservationDto.children || 0,
+        reservationNumber,
       },
       include: {
         unit: true,

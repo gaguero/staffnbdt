@@ -37,7 +37,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF';
+  role: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF' | 'CLIENT' | 'VENDOR';
   userType: UserType;
   departmentId?: string;
   profilePhoto?: string;
@@ -66,6 +66,7 @@ interface AuthContextType {
   switchProperty: (propertyId: string) => Promise<void>;
   refreshPermissions: () => Promise<void>;
   clearPermissionCache: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -356,6 +357,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Refresh auth (alias for refreshPermissions for backward compatibility)
+  const refreshAuth = async () => {
+    await refreshPermissions();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -373,6 +379,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         switchProperty,
         refreshPermissions,
         clearPermissionCache,
+        refreshAuth,
       }}
     >
       {children}

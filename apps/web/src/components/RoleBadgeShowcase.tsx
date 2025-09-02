@@ -32,7 +32,7 @@ const RoleBadgeShowcase: React.FC = () => {
     email: 'john.doe@hotel.com',
     firstName: 'John',
     lastName: 'Doe',
-    role: Role.PROPERTY_MANAGER,
+    role: 'PROPERTY_MANAGER' as const,
     position: 'Senior Property Manager',
     phoneNumber: '+1 (555) 123-4567',
     hireDate: '2023-01-15',

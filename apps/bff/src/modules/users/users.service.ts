@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../shared/database/prisma.service';
 import { AuditService } from '../../shared/audit/audit.service';
+import { PermissionService } from '../../shared/services/permission.service';
 import { PaginatedResponse } from '../../shared/dto/pagination.dto';
 import { applySoftDelete } from '../../shared/utils/soft-delete';
 import { CreateUserDto, UpdateUserDto, UserFilterDto, ChangeRoleDto, ChangeStatusDto, ChangeDepartmentDto, BulkImportDto, BulkImportResultDto, BulkImportUserDto } from './dto';
@@ -12,6 +13,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly permissionService: PermissionService,
   ) {}
 
   async create(
@@ -194,40 +196,8 @@ export class UsersService {
   ): Promise<UserWithDepartment> {
     const existingUser = await this.findOne(id, currentUser);
 
-    // Permission checks
-    if (currentUser.role === Role.STAFF && currentUser.id !== id) {
-      throw new ForbiddenException('Can only update your own profile');
-    }
-
-    // Staff users can only update certain fields
-    if (currentUser.role === Role.STAFF) {
-      const allowedFields = ['firstName', 'lastName', 'phoneNumber', 'emergencyContact', 'profilePhoto'];
-      const attemptedFields = Object.keys(updateUserDto);
-      const forbiddenFields = attemptedFields.filter(field => !allowedFields.includes(field));
-      
-      if (forbiddenFields.length > 0) {
-        throw new ForbiddenException(`Staff users cannot update: ${forbiddenFields.join(', ')}`);
-      }
-    }
-
-    // Department admin cannot change roles or move users to other departments
-    if (currentUser.role === Role.DEPARTMENT_ADMIN) {
-      if (updateUserDto.role && updateUserDto.role !== existingUser.role) {
-        throw new ForbiddenException('Department admins cannot change user roles');
-      }
-      
-      if (updateUserDto.departmentId && updateUserDto.departmentId !== currentUser.departmentId) {
-        throw new ForbiddenException('Cannot move users to other departments');
-      }
-    }
-
-    // Validate department assignment if role is being changed
-    if (updateUserDto.role) {
-      this.validateDepartmentAssignment(
-        updateUserDto.role,
-        updateUserDto.departmentId || existingUser.departmentId,
-      );
-    }
+    // Permission-based access control is handled by @RequirePermission decorator
+    // Additional business logic validations can be added here
 
     // Validate department exists if provided
     if (updateUserDto.departmentId) {
@@ -470,26 +440,53 @@ export class UsersService {
     id: string,
     changeRoleDto: ChangeRoleDto,
     currentUser: User,
-  ): Promise<UserWithDepartment> {
-    // Only platform admins can change roles
-    if (currentUser.role !== Role.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Only platform admins can change user roles');
+  ): Promise<UserWithDepartment & { effectivePermissions: string[] }> {
+    // Validate that current user can assign this role using enhanced permission system
+    if (!this.permissionService.canAssignRole(currentUser.role, changeRoleDto.role)) {
+      throw new ForbiddenException(
+        `You cannot assign role ${changeRoleDto.role}. Your role ${currentUser.role} does not have sufficient privileges.`
+      );
     }
 
-    // Cannot change own role
+    // Prevent users from elevating their own role beyond their level
     if (currentUser.id === id) {
-      throw new BadRequestException('Cannot change your own role');
+      const currentLevel = this.permissionService.getSystemRoleInfo(currentUser.role).level;
+      const targetLevel = this.permissionService.getSystemRoleInfo(changeRoleDto.role).level;
+      
+      if (targetLevel > currentLevel) {
+        throw new BadRequestException('You cannot assign yourself a role higher than your current role');
+      }
     }
 
     const existingUser = await this.prisma.user.findFirst({
       where: applySoftDelete({ where: { id } }).where,
       include: {
         department: true,
+        organization: true,
+        property: true,
+        userCustomRoles: {
+          include: { role: true }
+        }
       },
     });
 
     if (!existingUser) {
       throw new NotFoundException('User not found');
+    }
+
+    // Apply tenant access validation
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
+      if (existingUser.organizationId !== currentUser.organizationId) {
+        throw new ForbiddenException('Cannot modify user from different organization');
+      }
+    }
+
+    // Validate role compatibility
+    const roleInfo = this.permissionService.getSystemRoleInfo(changeRoleDto.role);
+    if (!this.isRoleCompatibleWithUser(existingUser, changeRoleDto.role)) {
+      throw new BadRequestException(
+        `Role ${changeRoleDto.role} is not compatible with user's current configuration`
+      );
     }
 
     // Validate the new role assignment
@@ -501,7 +498,7 @@ export class UsersService {
       changeRoleDto.role !== Role.DEPARTMENT_ADMIN &&
       existingUser.departmentId
     ) {
-        const hasOtherAdmins = await this.validateDepartmentAdminRemoval(
+      const hasOtherAdmins = await this.validateDepartmentAdminRemoval(
         existingUser.departmentId,
         id,
       );
@@ -513,28 +510,61 @@ export class UsersService {
       }
     }
 
+    // Clear permission cache BEFORE updating role
+    this.permissionService.clearUserPermissionCache(id);
+
+    // Update user role and user type if needed
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
         role: changeRoleDto.role,
+        // Update userType based on role
+        userType: roleInfo.userType === 'INTERNAL' ? 'INTERNAL' : 
+                  roleInfo.userType === 'CLIENT' ? 'CLIENT' : 'VENDOR',
         // If changing to PLATFORM_ADMIN, remove department assignment
         departmentId: changeRoleDto.role === Role.PLATFORM_ADMIN ? null : existingUser.departmentId,
       },
       include: {
         department: true,
+        organization: true,
+        property: true,
+        userCustomRoles: {
+          include: { role: true }
+        }
       },
     });
 
-    // Log role change
+    // Get updated permissions immediately
+    const effectivePermissions = await this.permissionService.getUserPermissions({
+      id: updatedUser.id,
+      role: updatedUser.role,
+      organizationId: updatedUser.organizationId,
+      propertyId: updatedUser.propertyId,
+      departmentId: updatedUser.departmentId
+    } as any);
+
+    // Log role change with detailed information
     await this.auditService.logUpdate(
       currentUser.id,
       'User',
       id,
-      { role: existingUser.role },
-      { role: updatedUser.role },
+      { 
+        role: existingUser.role,
+        userType: existingUser.userType,
+        departmentId: existingUser.departmentId 
+      },
+      { 
+        role: updatedUser.role,
+        userType: updatedUser.userType,
+        departmentId: updatedUser.departmentId,
+        reason: changeRoleDto.reason || 'Role change'
+      } as any,
     );
 
-    return updatedUser;
+    return {
+      ...updatedUser,
+      effectivePermissions
+    };
   }
 
   async changeStatus(
@@ -785,13 +815,19 @@ export class UsersService {
   }
 
   /**
-   * Get user permissions for the current user context
+   * Get user action permissions for the current user context
    * This helps frontend determine what actions are available
    */
-  async getUserPermissions(
+  async getUserActionPermissions(
     targetUserId: string,
     currentUser: User,
-  ): Promise<UserPermissions> {
+  ): Promise<{
+    canView: boolean;
+    canEdit: boolean;
+    canDelete: boolean;
+    canChangeRole: boolean;
+    canChangeStatus: boolean;
+  }> {
     const isSuperAdmin = currentUser.role === Role.PLATFORM_ADMIN;
     const isDepartmentAdmin = currentUser.role === Role.DEPARTMENT_ADMIN;
     const isSelf = currentUser.id === targetUserId;
@@ -1257,5 +1293,102 @@ export class UsersService {
     });
 
     return csvContent;
+  }
+
+  /**
+   * Validate if role is compatible with user configuration
+   */
+  private isRoleCompatibleWithUser(user: User, role: Role): boolean {
+    const roleInfo = this.permissionService.getSystemRoleInfo(role);
+    
+    // External roles (CLIENT, VENDOR) should have appropriate user types
+    if (roleInfo.userType === 'CLIENT' && user.userType !== 'CLIENT') {
+      return false;
+    }
+    
+    if (roleInfo.userType === 'VENDOR' && user.userType !== 'VENDOR') {
+      return false;
+    }
+
+    // Internal roles should be INTERNAL user type (allow PARTNER as well)
+    if (roleInfo.userType === 'INTERNAL' && !['INTERNAL', 'PARTNER'].includes(user.userType)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Get user's current effective permissions
+   */
+  async getUserPermissions(
+    id: string,
+    currentUser: User,
+  ): Promise<UserPermissions> {
+    // Find the target user
+    const targetUser = await this.prisma.user.findFirst({
+      where: applySoftDelete({ where: { id } }).where,
+      include: {
+        organization: true,
+        property: true,
+        department: true,
+        userCustomRoles: {
+          include: { role: true }
+        }
+      },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Apply access control
+    if (currentUser.role !== Role.PLATFORM_ADMIN) {
+      if (targetUser.organizationId !== currentUser.organizationId) {
+        throw new ForbiddenException('Cannot access user from different organization');
+      }
+      
+      // Additional checks for property and department level access
+      if (currentUser.role === Role.PROPERTY_MANAGER || currentUser.role === Role.DEPARTMENT_ADMIN) {
+        if (targetUser.propertyId !== currentUser.propertyId) {
+          throw new ForbiddenException('Cannot access user from different property');
+        }
+      }
+    }
+
+    // Get effective permissions
+    const permissions = await this.permissionService.getUserPermissions({
+      id: targetUser.id,
+      role: targetUser.role,
+      organizationId: targetUser.organizationId,
+      propertyId: targetUser.propertyId,
+      departmentId: targetUser.departmentId
+    } as any);
+
+    // Get role information
+    const roleInfo = this.permissionService.getSystemRoleInfo(targetUser.role);
+
+    return {
+      userId: targetUser.id,
+      systemRole: targetUser.role,
+      roleInfo,
+      permissions,
+      customRoles: targetUser.userCustomRoles.map(ucr => ucr.role),
+      lastUpdated: new Date()
+    };
+  }
+
+  /**
+   * Refresh user permissions after role change
+   */
+  async refreshUserPermissions(userId: string): Promise<UserPermissions> {
+    // Clear cache first
+    this.permissionService.clearUserPermissionCache(userId);
+    
+    // Get current user as system user for permission check
+    const systemUser = { role: Role.PLATFORM_ADMIN } as User;
+    
+    // Return fresh permissions
+    return this.getUserPermissions(userId, systemUser);
   }
 }

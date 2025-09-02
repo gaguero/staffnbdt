@@ -4,10 +4,11 @@ import { ModuleRegistryController } from './module-registry.controller';
 import { DatabaseModule } from '../../shared/database/database.module';
 import { AuditModule } from '../../shared/audit/audit.module';
 import { PermissionModule } from '../permissions/permission.module';
+import { ModuleRegistryBootstrap } from './module-registry.bootstrap';
 
 @Module({
   imports: [DatabaseModule, AuditModule, PermissionModule],
-  providers: [ModuleRegistryService],
+  providers: [ModuleRegistryService, ModuleRegistryBootstrap],
   controllers: [ModuleRegistryController],
   exports: [ModuleRegistryService],
 })

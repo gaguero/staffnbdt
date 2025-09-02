@@ -17,6 +17,22 @@ export interface UserStats {
 }
 
 export interface UserPermissions {
+  userId: string;
+  systemRole: Role;
+  roleInfo: {
+    name: string;
+    description: string;
+    level: number;
+    userType: string;
+    capabilities: string[];
+  };
+  permissions: string[];
+  customRoles: any[];
+  lastUpdated: Date;
+}
+
+// Legacy permissions interface for backwards compatibility
+export interface UserActionPermissions {
   canView: boolean;
   canEdit: boolean;
   canDelete: boolean;

@@ -37,6 +37,7 @@ export class UnitsService {
         propertyId: currentUser.propertyId!,
         amenities: createUnitDto.amenities || [],
         isActive: createUnitDto.isActive ?? true,
+        roomTypeId: (createUnitDto as any).roomTypeId || undefined,
       },
     });
 
@@ -163,7 +164,10 @@ export class UnitsService {
 
     const unit = await this.prisma.unit.update({
       where: { id },
-      data: updateUnitDto,
+      data: {
+        ...updateUnitDto,
+        roomTypeId: (updateUnitDto as any).roomTypeId ?? existingUnit.roomTypeId,
+      },
     });
 
     // Log unit update

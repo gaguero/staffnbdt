@@ -29,9 +29,25 @@ import EnhancedOrganizationsPagePhase4 from './pages/EnhancedOrganizationsPagePh
 import RoomsPage from './pages/hotel/RoomsPage';
 import GuestsPage from './pages/hotel/GuestsPage';
 import ReservationsPage from './pages/hotel/ReservationsPage';
+import RoomTypesPage from './pages/hotel/RoomTypesPage';
+import ConciergePage from './pages/modules/ConciergePage';
+import VendorsPage from './pages/modules/VendorsPage';
+
+// Concierge Module Pages
+import TodayBoardPage from './pages/modules/TodayBoardPage';
+import Reservation360Page from './pages/modules/Reservation360Page';
+import GuestTimelinePage from './pages/modules/GuestTimelinePage';
+import ObjectTypesPage from './pages/modules/ObjectTypesPage';
+import PlaybooksPage from './pages/modules/PlaybooksPage';
+
+// Vendors Module Pages
+import VendorLinksPage from './pages/modules/VendorLinksPage';
+import VendorPerformancePage from './pages/modules/VendorPerformancePage';
+import VendorPortalPage from './pages/modules/VendorPortalPage';
 
 // Admin Pages
 import RolesManagementPage from './pages/admin/RolesManagementPage';
+import ModuleManagementPage from './pages/admin/ModuleManagementPage';
 import RoleStatsDashboardPage from './pages/RoleStatsDashboardPage';
 
 // Login component
@@ -233,7 +249,7 @@ const App: React.FC = () => {
         <Route 
           path="/users" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'user', action: 'read', scope: 'property' }] }>
               <Layout>
                 <UsersPage />
               </Layout>
@@ -243,7 +259,7 @@ const App: React.FC = () => {
         <Route 
           path="/departments" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'system', action: 'manage', scope: 'department' }]}>
               <Layout>
                 <DepartmentsPage />
               </Layout>
@@ -273,7 +289,7 @@ const App: React.FC = () => {
         <Route 
           path="/properties" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'system', action: 'manage', scope: 'property' }]}>
               <Layout>
                 <PropertiesPage />
               </Layout>
@@ -283,7 +299,7 @@ const App: React.FC = () => {
         <Route 
           path="/brand-studio" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'system', action: 'manage', scope: 'organization' }]}>
               <Layout>
                 <BrandStudioPage />
               </Layout>
@@ -295,7 +311,7 @@ const App: React.FC = () => {
         <Route 
           path="/hotel/rooms" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'user', action: 'read', scope: 'department' }]}>
               <Layout>
                 <RoomsPage />
               </Layout>
@@ -305,7 +321,7 @@ const App: React.FC = () => {
         <Route 
           path="/hotel/guests" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'user', action: 'read', scope: 'department' }]}>
               <Layout>
                 <GuestsPage />
               </Layout>
@@ -315,9 +331,20 @@ const App: React.FC = () => {
         <Route 
           path="/hotel/reservations" 
           element={
-            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+            <ProtectedRoute permissionsAny={[{ resource: 'user', action: 'read', scope: 'department' }]}>
               <Layout>
                 <ReservationsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/hotel/room-types" 
+          element={
+            <ProtectedRoute roles={['PLATFORM_ADMIN', 'ORGANIZATION_OWNER', 'ORGANIZATION_ADMIN', 'PROPERTY_MANAGER', 'DEPARTMENT_ADMIN']}>
+              <Layout>
+                <RoomTypesPage />
               </Layout>
             </ProtectedRoute>
           } 
@@ -345,6 +372,16 @@ const App: React.FC = () => {
           } 
         />
         <Route 
+          path="/admin/modules" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'module', action: 'manage', scope: 'organization' }]}>
+              <Layout>
+                <ModuleManagementPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="/components-test" 
           element={
             <ProtectedRoute>
@@ -353,6 +390,105 @@ const App: React.FC = () => {
               </Layout>
             </ProtectedRoute>
           } 
+        />
+        {/* Modules - Concierge */}
+        <Route 
+          path="/concierge" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'objects', scope: 'read.property' }]}>
+              <Layout>
+                <ConciergePage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/concierge/today" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'objects', scope: 'read.property' }]}>
+              <Layout>
+                <TodayBoardPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/concierge/reservation-360" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'objects', scope: 'read.property' }]}>
+              <Layout>
+                <Reservation360Page />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/concierge/timeline/:guestId" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'objects', scope: 'read.property' }]}>
+              <Layout>
+                <GuestTimelinePage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/concierge/object-types" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'object-types', scope: 'manage.property' }]}>
+              <Layout>
+                <ObjectTypesPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/concierge/playbooks" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'concierge', action: 'playbooks', scope: 'manage.property' }]}>
+              <Layout>
+                <PlaybooksPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Modules - Vendors */}
+        <Route 
+          path="/vendors" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'vendors', action: 'read', scope: 'property' }]}>
+              <Layout>
+                <VendorsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/vendors/links" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'vendors', action: 'links', scope: 'read.property' }]}>
+              <Layout>
+                <VendorLinksPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/vendors/performance" 
+          element={
+            <ProtectedRoute permissionsAny={[{ resource: 'vendors', action: 'performance', scope: 'read.property' }]}>
+              <Layout>
+                <VendorPerformancePage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Vendor Portal - No Layout, Special Route */}
+        <Route 
+          path="/vendor-portal/:token" 
+          element={<VendorPortalPage />} 
         />
         
         {/* Default redirect */}

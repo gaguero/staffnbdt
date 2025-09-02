@@ -5,6 +5,8 @@ export enum UserRole {
   PROPERTY_MANAGER = 'PROPERTY_MANAGER',       // Hotel property manager
   DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',       // Department manager
   STAFF = 'STAFF',                             // Regular employees
+  CLIENT = 'CLIENT',                           // External client users
+  VENDOR = 'VENDOR',                           // External vendor users
 }
 
 // Re-export auth types
@@ -17,7 +19,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: UserRole;
+  role: 'PLATFORM_ADMIN' | 'ORGANIZATION_OWNER' | 'ORGANIZATION_ADMIN' | 'PROPERTY_MANAGER' | 'DEPARTMENT_ADMIN' | 'STAFF' | 'CLIENT' | 'VENDOR';
   departmentId?: string;
   position?: string;
   phoneNumber?: string;

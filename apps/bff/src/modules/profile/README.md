@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Profile module handles user profiles, emergency contacts, photo uploads, and ID document verification for the Nayara Bocas del Toro HR Portal. This module provides comprehensive profile management with role-based access control and audit logging.
+The Profile module handles user profiles, emergency contacts, photo uploads, and ID document verification for Hotel Operations Hub. This module provides comprehensive profile management with role-based access control and audit logging.
 
 ## Features
 

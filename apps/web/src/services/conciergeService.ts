@@ -1,0 +1,476 @@
+import api from './api';
+import {
+  ConciergeObject,
+  ConciergeObjectFilter,
+  ObjectType,
+  Playbook,
+  CreateConciergeObjectInput,
+  UpdateConciergeObjectInput,
+  CreateObjectTypeInput,
+  ExecutePlaybookInput,
+  CreatePlaybookInput,
+  PlaybookValidationResult,
+  PlaybookPreviewResult,
+  CloneTemplateInput,
+  CreateTemplateInput,
+  TemplateAnalytics,
+  TodayBoardSection,
+  ReservationChecklist,
+  GuestTimelineEvent,
+  ConciergeStats,
+} from '../types/concierge';
+
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  success: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+class ConciergeService {
+  // Concierge Objects Management
+  async getObjects(filter?: ConciergeObjectFilter): Promise<ApiResponse<PaginatedResponse<ConciergeObject>>> {
+    const params = new URLSearchParams();
+    if (filter?.type) params.append('type', filter.type.join(','));
+    if (filter?.status) params.append('status', filter.status.join(','));
+    if (filter?.search) params.append('search', filter.search);
+    if (filter?.reservationId) params.append('reservationId', filter.reservationId);
+    if (filter?.guestId) params.append('guestId', filter.guestId);
+    if (filter?.assignedTo) params.append('assignedTo', filter.assignedTo);
+    if (filter?.overdue !== undefined) params.append('overdue', filter.overdue.toString());
+    if (filter?.dueRange) {
+      params.append('dueStart', filter.dueRange.start.toISOString());
+      params.append('dueEnd', filter.dueRange.end.toISOString());
+    }
+
+    const response = await api.get(`/concierge/objects?${params.toString()}`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    const transformedObjects = responseData.map((obj: any) => this.transformConciergeObject(obj));
+    
+    return {
+      data: {
+        data: transformedObjects,
+        total: transformedObjects.length,
+        page: 1,
+        limit: transformedObjects.length,
+        totalPages: 1
+      },
+      message: 'Concierge objects retrieved successfully',
+      success: true
+    };
+  }
+
+  async getObject(id: string): Promise<ApiResponse<ConciergeObject>> {
+    const response = await api.get(`/concierge/objects/${id}`);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object retrieved successfully',
+      success: true
+    };
+  }
+
+  async createObject(input: CreateConciergeObjectInput): Promise<ApiResponse<ConciergeObject>> {
+    const response = await api.post('/concierge/objects', input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object created successfully',
+      success: true
+    };
+  }
+
+  async updateObject(id: string, input: UpdateConciergeObjectInput): Promise<ApiResponse<ConciergeObject>> {
+    const response = await api.patch(`/concierge/objects/${id}`, input);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object updated successfully',
+      success: true
+    };
+  }
+
+  async deleteObject(id: string): Promise<ApiResponse<void>> {
+    const response = await api.delete(`/concierge/objects/${id}`);
+    return response.data;
+  }
+
+  async completeObject(id: string, completionNotes?: string): Promise<ApiResponse<ConciergeObject>> {
+    const response = await api.post(`/concierge/objects/${id}/complete`, { notes: completionNotes });
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object completed successfully',
+      success: true
+    };
+  }
+
+  async assignObject(id: string, userId: string): Promise<ApiResponse<ConciergeObject>> {
+    const response = await api.post(`/concierge/objects/${id}/assign`, { userId });
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object assigned successfully',
+      success: true
+    };
+  }
+
+  // Object Types Management
+  async getObjectTypes(): Promise<ApiResponse<ObjectType[]>> {
+    const response = await api.get('/concierge/object-types');
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    
+    return {
+      data: responseData,
+      message: 'Object types retrieved successfully',
+      success: true
+    };
+  }
+
+  async getObjectType(id: string): Promise<ApiResponse<ObjectType>> {
+    const response = await api.get(`/concierge/object-types/${id}`);
+    return response.data;
+  }
+
+  async createObjectType(input: CreateObjectTypeInput): Promise<ApiResponse<ObjectType>> {
+    const response = await api.post('/concierge/object-types', input);
+    return response.data;
+  }
+
+  async updateObjectType(id: string, input: Partial<CreateObjectTypeInput>): Promise<ApiResponse<ObjectType>> {
+    const response = await api.patch(`/concierge/object-types/${id}`, input);
+    return response.data;
+  }
+
+  async deleteObjectType(id: string): Promise<ApiResponse<void>> {
+    const response = await api.delete(`/concierge/object-types/${id}`);
+    return response.data;
+  }
+
+  // Playbooks Management
+  async getPlaybooks(): Promise<ApiResponse<Playbook[]>> {
+    const response = await api.get('/concierge/playbooks');
+    return response.data;
+  }
+
+  async getPlaybook(id: string): Promise<ApiResponse<Playbook>> {
+    const response = await api.get(`/concierge/playbooks/${id}`);
+    return response.data;
+  }
+
+  async createPlaybook(input: CreatePlaybookInput): Promise<ApiResponse<Playbook>> {
+    const response = await api.post('/concierge/playbooks', input);
+    return response.data;
+  }
+
+  async updatePlaybook(id: string, input: Partial<CreatePlaybookInput>): Promise<ApiResponse<Playbook>> {
+    const response = await api.patch(`/concierge/playbooks/${id}`, input);
+    return response.data;
+  }
+
+  async deletePlaybook(id: string): Promise<ApiResponse<void>> {
+    const response = await api.delete(`/concierge/playbooks/${id}`);
+    return response.data;
+  }
+
+  async executePlaybook(input: ExecutePlaybookInput): Promise<ApiResponse<any>> {
+    const response = await api.post('/concierge/playbooks/execute', input);
+    return response.data;
+  }
+
+  async validatePlaybook(playbookData: Partial<Playbook>): Promise<ApiResponse<PlaybookValidationResult>> {
+    const response = await api.post('/concierge/playbooks/validate', playbookData);
+    return response.data;
+  }
+
+  async previewPlaybook(playbookData: Partial<Playbook>, triggerData: any): Promise<ApiResponse<PlaybookPreviewResult>> {
+    const response = await api.post('/concierge/playbooks/preview', {
+      playbookData,
+      triggerData
+    });
+    return response.data;
+  }
+
+  // View-specific API calls
+  async getTodayBoard(): Promise<ApiResponse<TodayBoardSection[]>> {
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    
+    const [overdue, dueToday, upcoming] = await Promise.all([
+      this.getObjects({ 
+        overdue: true,
+        status: ['open', 'in_progress'] 
+      }),
+      this.getObjects({ 
+        dueRange: { start: startOfDay, end: endOfDay },
+        status: ['open', 'in_progress'] 
+      }),
+      this.getObjects({ 
+        dueRange: { start: endOfDay, end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+        status: ['open', 'in_progress'] 
+      })
+    ]);
+
+    const sections: TodayBoardSection[] = [
+      {
+        title: 'Overdue',
+        status: ['overdue'],
+        objects: overdue.data.data,
+        count: overdue.data.total
+      },
+      {
+        title: 'Due Today', 
+        status: ['open', 'in_progress'],
+        objects: dueToday.data.data,
+        count: dueToday.data.total
+      },
+      {
+        title: 'Upcoming',
+        status: ['open'],
+        objects: upcoming.data.data,
+        count: upcoming.data.total
+      }
+    ];
+
+    return {
+      data: sections,
+      message: 'Today board data retrieved successfully',
+      success: true
+    };
+  }
+
+  async getReservationChecklist(reservationId: string): Promise<ApiResponse<ReservationChecklist>> {
+    const response = await api.get(`/concierge/reservations/${reservationId}/checklist`);
+    return response.data;
+  }
+
+  async getGuestTimeline(guestId: string): Promise<ApiResponse<GuestTimelineEvent[]>> {
+    const response = await api.get(`/concierge/guests/${guestId}/timeline`);
+    return response.data;
+  }
+
+  async getStats(): Promise<ApiResponse<ConciergeStats>> {
+    const response = await api.get('/concierge/stats');
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: responseData,
+      message: 'Concierge stats retrieved successfully',
+      success: true
+    };
+  }
+
+  // Bulk Operations
+  async bulkUpdateStatus(objectIds: string[], status: string): Promise<ApiResponse<void>> {
+    const response = await api.post('/concierge/objects/bulk/status', {
+      objectIds,
+      status
+    });
+    return response.data;
+  }
+
+  async bulkAssign(objectIds: string[], userId: string): Promise<ApiResponse<void>> {
+    const response = await api.post('/concierge/objects/bulk/assign', {
+      objectIds,
+      userId
+    });
+    return response.data;
+  }
+
+  async bulkComplete(objectIds: string[], completionNotes?: string): Promise<ApiResponse<void>> {
+    const response = await api.post('/concierge/objects/bulk/complete', {
+      objectIds,
+      notes: completionNotes
+    });
+    return response.data;
+  }
+
+  // Helper methods
+  private transformConciergeObject(obj: any): ConciergeObject {
+    return {
+      ...obj,
+      dueAt: obj.dueAt ? new Date(obj.dueAt) : undefined,
+      createdAt: new Date(obj.createdAt),
+      updatedAt: new Date(obj.updatedAt),
+      deletedAt: obj.deletedAt ? new Date(obj.deletedAt) : undefined,
+      attributes: obj.attributes || [],
+      assignments: obj.assignments || {},
+      files: obj.files || {}
+    };
+  }
+
+  // Template Management
+  async getTemplates(): Promise<ApiResponse<any[]>> {
+    // For now, return mock data until backend implements template endpoints
+    const mockTemplates = [
+      {
+        id: 'template-airport-transfer',
+        name: 'Airport Transfer',
+        category: 'Transportation',
+        description: 'Complete airport transfer request with pickup time, flight details, and special requirements.',
+        fieldsSchema: {
+          fields: [
+            { key: 'pickup_time', type: 'date', label: 'Pickup Time', required: true },
+            { key: 'flight_number', type: 'string', label: 'Flight Number', required: true },
+            { key: 'passenger_count', type: 'number', label: 'Number of Passengers', required: true },
+            { key: 'special_requests', type: 'string', label: 'Special Requests', required: false },
+            { key: 'contact_number', type: 'string', label: 'Contact Number', required: true }
+          ]
+        },
+        usageCount: 245,
+        rating: 4.8,
+        tags: ['transportation', 'airport', 'transfer'],
+        isOfficial: true
+      }
+    ];
+    
+    return {
+      data: mockTemplates,
+      message: 'Templates retrieved successfully',
+      success: true
+    };
+  }
+
+  async cloneTemplate(templateId: string, customizations: CloneTemplateInput): Promise<ApiResponse<ObjectType>> {
+    const response = await api.post(`/concierge/templates/${templateId}/clone`, customizations);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: responseData,
+      message: 'Template cloned successfully',
+      success: true
+    };
+  }
+
+  async getTemplateChildren(parentId: string): Promise<ApiResponse<ObjectType[]>> {
+    const response = await api.get(`/concierge/object-types/${parentId}/children`);
+    
+    // Handle direct array response from backend
+    const responseData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    
+    return {
+      data: responseData,
+      message: 'Template children retrieved successfully',
+      success: true
+    };
+  }
+
+  async createTemplateFromObjectType(objectTypeId: string, templateData: CreateTemplateInput): Promise<ApiResponse<ObjectType>> {
+    const response = await api.post(`/concierge/object-types/${objectTypeId}/create-template`, templateData);
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: responseData,
+      message: 'Template created successfully',
+      success: true
+    };
+  }
+
+  async rateTemplate(templateId: string, rating: number): Promise<ApiResponse<{ success: boolean; newRating: number; ratingCount: number }>> {
+    const response = await api.post(`/concierge/templates/${templateId}/rate`, { rating });
+    
+    return {
+      data: response.data,
+      message: 'Template rated successfully',
+      success: true
+    };
+  }
+
+  async getTemplateAnalytics(): Promise<ApiResponse<TemplateAnalytics>> {
+    const response = await api.get('/concierge/templates/analytics');
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: responseData,
+      message: 'Template analytics retrieved successfully',
+      success: true
+    };
+  }
+
+  // Template Creation (legacy - for creating concierge objects from templates)
+  async createFromTemplate(templateId: string, data: Record<string, any>): Promise<ApiResponse<ConciergeObject>> {
+    const response = await api.post('/concierge/templates/create', {
+      templateId,
+      data
+    });
+    
+    // Handle direct object response from backend
+    const responseData = response.data?.data || response.data;
+    
+    return {
+      data: this.transformConciergeObject(responseData),
+      message: 'Concierge object created from template successfully',
+      success: true
+    };
+  }
+}
+
+export const conciergeService = new ConciergeService();
+export default conciergeService;
+
+// Re-export types for backward compatibility
+export type {
+  ConciergeObject,
+  ConciergeObjectFilter,
+  ObjectType,
+  Playbook,
+  PlaybookFlowData,
+  PlaybookNode,
+  PlaybookNodeData,
+  PlaybookEdge,
+  CreateConciergeObjectInput,
+  UpdateConciergeObjectInput,
+  CreateObjectTypeInput,
+  CreatePlaybookInput,
+  ExecutePlaybookInput,
+  PlaybookValidationResult,
+  PlaybookPreviewResult,
+  TodayBoardSection,
+  ReservationChecklist,
+  GuestTimelineEvent,
+  ConciergeStats,
+  ConciergeObjectStatus,
+  AttributeFieldType,
+  ObjectFieldDefinition,
+  MarketplaceTemplate,
+  TemplateMetadata,
+  TemplateAnalytics,
+  CloneTemplateInput,
+  CreateTemplateInput,
+  TemplateFilters,
+} from '../types/concierge';

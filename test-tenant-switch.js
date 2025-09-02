@@ -80,13 +80,13 @@ async function runTenantSwitchVerification() {
     await page.waitForTimeout(1000);
     await page.screenshot({ path: 'test-results/tenant-05-roles-taso.png', fullPage: true });
 
-    // Switch back to Nayara Group
+    // Switch back to Default Organization
     await page.goto(`${baseUrl}/dashboard`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(800);
-    await switchOrganization('Nayara Group');
-    await page.screenshot({ path: 'test-results/tenant-06-dashboard-nayara.png', fullPage: true });
+    await switchOrganization('Default Organization');
+    await page.screenshot({ path: 'test-results/tenant-06-dashboard-default.png', fullPage: true });
 
-    // Re-visit key pages under Nayara
+    // Re-visit key pages under Default Organization
     for (const [route, name] of [
       ['/properties', 'properties'],
       ['/departments', 'departments'],

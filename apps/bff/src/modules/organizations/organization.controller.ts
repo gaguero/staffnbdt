@@ -26,13 +26,17 @@ import {
   RemoveUserFromOrganizationDto
 } from './dto';
 import { User } from '@prisma/client';
+import { ModuleRegistryService } from '../module-registry/module-registry.service';
 
 @ApiTags('Organizations')
 @Controller('organizations')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @ApiBearerAuth()
 export class OrganizationController {
-  constructor(private readonly organizationService: OrganizationService) {}
+  constructor(
+    private readonly organizationService: OrganizationService,
+    private readonly moduleRegistryService: ModuleRegistryService,
+  ) {}
 
   @Post()
   @RequirePermission('organization.create.platform')
@@ -172,5 +176,81 @@ export class OrganizationController {
     removeUserDto.userId = userId;
     const result = await this.organizationService.removeUser(id, removeUserDto, currentUser);
     return CustomApiResponse.success(result, 'User removed successfully');
+  }
+
+  // Module management endpoints for organizations
+
+  @Get(':id/modules')
+  @RequirePermission('module.read.organization')
+  @ApiOperation({ summary: 'Get module subscriptions for organization' })
+  @ApiResponse({ status: 200, description: 'Organization module subscriptions retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Access denied to this organization' })
+  async getOrganizationModules(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    // Verify user has access to this organization
+    await this.organizationService.findOne(id, currentUser);
+    
+    const moduleStatus = await this.moduleRegistryService.getOrganizationModuleStatus(id);
+    return CustomApiResponse.success(moduleStatus, 'Organization module subscriptions retrieved successfully');
+  }
+
+  @Post(':id/modules/:moduleId/enable')
+  @RequirePermission('module.manage.organization')
+  @Audit({ action: 'ENABLE_MODULE', entity: 'Organization' })
+  @ApiOperation({ summary: 'Enable a module for organization' })
+  @ApiResponse({ status: 200, description: 'Module enabled for organization successfully' })
+  @ApiResponse({ status: 404, description: 'Organization or module not found' })
+  @ApiResponse({ status: 400, description: 'Module has unmet dependencies' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  async enableModuleForOrganization(
+    @Param('id') id: string,
+    @Param('moduleId') moduleId: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    // Verify user has access to this organization
+    await this.organizationService.findOne(id, currentUser);
+    
+    await this.moduleRegistryService.enableModule(id, moduleId);
+    return CustomApiResponse.success(null, 'Module enabled for organization successfully');
+  }
+
+  @Post(':id/modules/:moduleId/disable')
+  @RequirePermission('module.manage.organization')
+  @Audit({ action: 'DISABLE_MODULE', entity: 'Organization' })
+  @ApiOperation({ summary: 'Disable a module for organization' })
+  @ApiResponse({ status: 200, description: 'Module disabled for organization successfully' })
+  @ApiResponse({ status: 404, description: 'Module subscription not found' })
+  @ApiResponse({ status: 400, description: 'Cannot disable system module' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  async disableModuleForOrganization(
+    @Param('id') id: string,
+    @Param('moduleId') moduleId: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    // Verify user has access to this organization
+    await this.organizationService.findOne(id, currentUser);
+    
+    await this.moduleRegistryService.disableModule(id, moduleId);
+    return CustomApiResponse.success(null, 'Module disabled for organization successfully');
+  }
+
+  @Get(':id/modules/enabled')
+  @RequirePermission('module.read.organization')
+  @ApiOperation({ summary: 'Get enabled modules for organization' })
+  @ApiResponse({ status: 200, description: 'Enabled modules retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Access denied to this organization' })
+  async getEnabledModulesForOrganization(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    // Verify user has access to this organization
+    await this.organizationService.findOne(id, currentUser);
+    
+    const enabledModules = await this.moduleRegistryService.getEnabledModules(id);
+    return CustomApiResponse.success(enabledModules, 'Enabled modules retrieved successfully');
   }
 }

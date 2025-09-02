@@ -1,7 +1,7 @@
-import { IsString, IsEnum, IsOptional, IsInt, IsDecimal, IsArray, IsBoolean, Min, Max } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsInt, IsArray, IsBoolean, Min, Max, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UnitType, UnitStatus } from '@prisma/client';
-import { Transform } from 'class-transformer';
+import { Type } from 'class-transformer';
 
 export class CreateUnitDto {
   @ApiProperty({ example: '101' })
@@ -11,6 +11,11 @@ export class CreateUnitDto {
   @ApiProperty({ enum: UnitType, example: UnitType.STANDARD })
   @IsEnum(UnitType)
   unitType: UnitType;
+
+  @ApiPropertyOptional({ example: 'cmf123abc456...' })
+  @IsOptional()
+  @IsString()
+  roomTypeId?: string;
 
   @ApiPropertyOptional({ example: 'Building A' })
   @IsOptional()
@@ -44,8 +49,8 @@ export class CreateUnitDto {
 
   @ApiPropertyOptional({ example: 45.5 })
   @IsOptional()
-  @Transform(({ value }) => parseFloat(value))
-  @IsDecimal()
+  @Type(() => Number)
+  @IsNumber()
   size?: number;
 
   @ApiPropertyOptional({ example: ['WiFi', 'Air Conditioning', 'Mini Bar'] })
@@ -75,7 +80,7 @@ export class CreateUnitDto {
 
   @ApiPropertyOptional({ example: 150.00 })
   @IsOptional()
-  @Transform(({ value }) => parseFloat(value))
-  @IsDecimal()
+  @Type(() => Number)
+  @IsNumber()
   dailyRate?: number;
 }

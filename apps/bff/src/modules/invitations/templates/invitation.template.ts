@@ -7,7 +7,7 @@ export function createInvitationEmailTemplate(data: InvitationEmailData): EmailT
     STAFF: 'Staff Member',
   };
 
-  const subject = `Welcome to Nayara Bocas del Toro - HR Portal Invitation`;
+  const subject = `Welcome to Hotel Operations Hub - Invitation`;
 
   const html = `
     <!DOCTYPE html>
@@ -15,7 +15,7 @@ export function createInvitationEmailTemplate(data: InvitationEmailData): EmailT
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nayara HR Portal Invitation</title>
+        <title>Hotel Operations Hub Invitation</title>
         <style>
             body {
                 font-family: 'Proxima Nova', Tahoma, Arial, sans-serif;
@@ -152,8 +152,8 @@ export function createInvitationEmailTemplate(data: InvitationEmailData): EmailT
     <body>
         <div class="container">
             <div class="header">
-                <h1>Nayara Bocas del Toro</h1>
-                <p>HR Portal Invitation</p>
+                <h1>Hotel Operations Hub</h1>
+                <p>Staff Invitation</p>
             </div>
             
             <div class="content">
@@ -162,7 +162,7 @@ export function createInvitationEmailTemplate(data: InvitationEmailData): EmailT
                 </div>
                 
                 <div class="message">
-                    ${data.inviterName} has invited you to join the Nayara Bocas del Toro HR Portal. 
+                    ${data.inviterName} has invited you to join Hotel Operations Hub.
                     You've been assigned the role of <strong>${roleDisplayNames[data.role] || data.role}</strong>
                     ${data.departmentName ? ` in the <strong>${data.departmentName}</strong> department` : ''}.
                 </div>
@@ -220,7 +220,7 @@ export function createInvitationEmailTemplate(data: InvitationEmailData): EmailT
             
             <div class="footer">
                 <p>If you have any questions, please contact HR or your department administrator.</p>
-                <p>This is an automated message from the Nayara Bocas del Toro HR Portal.</p>
+                <p>This is an automated message from Hotel Operations Hub.</p>
                 <p>If you didn't expect this invitation, please ignore this email.</p>
             </div>
         </div>

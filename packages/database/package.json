@@ -44,7 +44,12 @@
     "health:production:json": "JSON_OUTPUT=true tsx scripts/health-check-production.ts",
     "health:production:alert": "ALERT_ON_FAILURE=true tsx scripts/health-check-production.ts",
     "permissions:seed:remote": "tsx scripts/seed-remote-permissions.ts",
-    "permissions:seed:railway-dev": "DATABASE_URL=\"postgresql://postgres:FKoqzYFizlVtabOdDgfxykAwAZuExGbW@shuttle.proxy.rlwy.net:43481/railway\" tsx scripts/seed-remote-permissions.ts"
+    "permissions:seed:railway-dev": "DATABASE_URL=\"postgresql://postgres:FKoqzYFizlVtabOdDgfxykAwAZuExGbW@shuttle.proxy.rlwy.net:43481/railway\" tsx scripts/seed-remote-permissions.ts",
+    "fix:user-permissions": "tsx scripts/fix-user-permissions.ts",
+    "fix:railway-users": "tsx scripts/run-fix-on-railway.ts",
+    "migrate:concierge-vendors": "tsx scripts/apply-concierge-vendors-migration.ts",
+    "migrate:concierge-vendors:dry-run": "echo 'Would execute Concierge & Vendors migration' && tsx scripts/apply-concierge-vendors-migration.ts --dry-run",
+    "verify:concierge-vendors": "tsx scripts/verify-concierge-vendors-schema.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -56,6 +61,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",
+    "dotenv": "^16.0.0",
     "dotenv-cli": "^7.3.0",
     "prisma": "^5.22.0",
     "tsx": "^4.7.0"

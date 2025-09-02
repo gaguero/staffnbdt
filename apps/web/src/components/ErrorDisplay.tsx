@@ -1,10 +1,11 @@
 import React from 'react';
 
 export interface ErrorDisplayProps {
-  error: Error | null;
+  error?: Error | null;
+  message?: string;
   title?: string;
   showDetails?: boolean;
-  onRetry?: () => void;
+  onRetry?: (() => void) | (() => Promise<any>);
   onDismiss?: () => void;
   variant?: 'inline' | 'modal' | 'banner';
   className?: string;
@@ -12,6 +13,7 @@ export interface ErrorDisplayProps {
 
 const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   error,
+  message,
   title = 'Error',
   showDetails = false,
   onRetry,
@@ -19,7 +21,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   variant = 'inline',
   className = '',
 }) => {
-  if (!error) return null;
+  if (!error && !message) return null;
 
   const getErrorMessage = (error: Error): string => {
     const response = (error as any).response;
@@ -47,7 +49,10 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
     return error.message || 'An unexpected error occurred';
   };
 
-  const getErrorIcon = (error: Error): string => {
+  const displayMessage = message || (error ? getErrorMessage(error) : 'An error occurred');
+
+  const getErrorIcon = (error?: Error | null): string => {
+    if (!error) return '❌';
     const response = (error as any).response;
     
     if (response?.status === 404) return '🔍';
@@ -96,7 +101,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
             {title}
           </h3>
           <p className={textClasses[variant].message}>
-            {getErrorMessage(error)}
+            {displayMessage}
           </p>
           
           {showDetails && (
@@ -105,7 +110,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
                 Technical Details
               </summary>
               <pre className={`${textClasses[variant].details} bg-red-100 p-2 rounded mt-1 overflow-auto max-h-32`}>
-                {error.stack || error.message}
+                {error?.stack || error?.message || 'No additional details available'}
               </pre>
             </details>
           )}

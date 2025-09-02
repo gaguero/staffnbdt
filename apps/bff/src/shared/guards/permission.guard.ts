@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
+import { PrismaClient } from '@prisma/client';
 import { PermissionService, PermissionContext } from '../services/permission.service';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import {
@@ -20,6 +21,7 @@ import {
 @Injectable()
 export class PermissionGuard implements CanActivate {
   private readonly logger = new Logger(PermissionGuard.name);
+  private readonly prisma = new PrismaClient();
 
   constructor(
     private reflector: Reflector,
@@ -59,10 +61,25 @@ export class PermissionGuard implements CanActivate {
         throw new ForbiddenException('Authentication required');
       }
 
-      // PLATFORM_ADMIN bypass: full access to all resources/actions/scopes
-      if (user.role === 'PLATFORM_ADMIN') {
-        this.logger.debug(`Platform Admin bypass granted for user ${user.id}`);
-        return true;
+      // Check if user has Platform Administrator custom role for bypass
+      try {
+        const userCustomRoles = await this.prisma.userCustomRole.findMany({
+          where: {
+            userId: user.id,
+            isActive: true,
+            role: {
+              name: 'Platform Administrator',
+              isActive: true,
+            },
+          },
+        });
+
+        if (userCustomRoles.length > 0) {
+          this.logger.debug(`Platform Administrator custom role bypass granted for user ${user.id}`);
+          return true;
+        }
+      } catch (error) {
+        this.logger.warn(`Error checking Platform Administrator role for user ${user.id}:`, error.message);
       }
 
       // Create permission context

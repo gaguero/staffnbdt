@@ -110,7 +110,7 @@ export class PermissionService {
   }
 
   /**
-   * Get user permissions from database custom roles
+   * Get user permissions from database (both custom roles and direct permissions)
    */
   private async getUserPermissionsFromDatabase(user: CurrentUser): Promise<string[]> {
     const cacheKey = `user_perms_${user.id}`;
@@ -122,6 +122,8 @@ export class PermissionService {
     }
 
     try {
+      const allPermissions: string[] = [];
+
       // Get user's active role assignments
       const userRoles = await this.prisma.userCustomRole.findMany({
         where: {
@@ -144,17 +146,40 @@ export class PermissionService {
         }
       });
 
-      if (userRoles.length === 0) {
-        this.logger.debug(`User ${user.id} has no active custom roles assigned`);
-        return [];
-      }
-
-      // Collect all permissions from all active roles
-      const allPermissions: string[] = [];
+      // Collect all permissions from custom roles
       userRoles.forEach(userRole => {
         userRole.role.permissions.forEach(rp => {
           allPermissions.push(`${rp.permission.resource}.${rp.permission.action}.${rp.permission.scope}`);
         });
+      });
+
+      // Get user's direct permissions
+      const directPermissions = await this.prisma.userPermission.findMany({
+        where: {
+          userId: user.id,
+          isActive: true,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } }
+          ]
+        },
+        include: {
+          permission: true
+        }
+      });
+
+      // Process direct permissions (granted permissions are added, denied permissions remove from the list)
+      directPermissions.forEach(userPerm => {
+        const permissionKey = `${userPerm.permission.resource}.${userPerm.permission.action}.${userPerm.permission.scope}`;
+        if (userPerm.granted) {
+          allPermissions.push(permissionKey);
+        } else {
+          // Remove denied permission from the list
+          const index = allPermissions.indexOf(permissionKey);
+          if (index > -1) {
+            allPermissions.splice(index, 1);
+          }
+        }
       });
 
       const permissions = [...new Set(allPermissions)]; // Remove duplicates
@@ -163,7 +188,7 @@ export class PermissionService {
       this.permissionCache.set(cacheKey, permissions);
       this.cacheExpiry.set(cacheKey, now + this.CACHE_TTL);
 
-      this.logger.debug(`User ${user.id} has ${permissions.length} database permissions from ${userRoles.length} custom roles`);
+      this.logger.debug(`User ${user.id} has ${permissions.length} database permissions from ${userRoles.length} custom roles and ${directPermissions.length} direct permissions`);
       return permissions;
     } catch (error) {
       this.logger.error(`Error fetching user permissions from database: ${error.message}`);
@@ -451,18 +476,22 @@ export class PermissionService {
   }
 
   /**
-   * Legacy role permissions (fallback only)
+   * Legacy role permissions (fallback only) - Updated for Hotel Operations Hub
    */
   private getLegacyRolePermissions(role: Role): string[] {
     const rolePermissionMap: Record<Role, string[]> = {
       [Role.PLATFORM_ADMIN]: [
         // Full platform access
-        '*.*.all',
         '*.*.platform',
         '*.*.organization',
         '*.*.property',
         '*.*.department',
         '*.*.own',
+        // Role management
+        'role.*.platform',
+        'role.assign.platform',
+        // System administration
+        'system.*.platform',
       ],
       [Role.ORGANIZATION_OWNER]: [
         // Organization and below
@@ -470,6 +499,10 @@ export class PermissionService {
         '*.*.property', 
         '*.*.department',
         '*.*.own',
+        // Role management within organization
+        'role.create.organization',
+        'role.assign.organization',
+        'role.read.organization',
       ],
       [Role.ORGANIZATION_ADMIN]: [
         // Organization administration (limited creation/deletion)
@@ -479,12 +512,24 @@ export class PermissionService {
         '*.*.property',
         '*.*.department',
         '*.*.own',
+        // Limited role management
+        'role.read.organization',
+        'role.assign.property',
       ],
       [Role.PROPERTY_MANAGER]: [
         // Property and below - INCLUDING user.read.property for stats
         '*.*.property',
         '*.*.department',
         '*.*.own',
+        // Hotel operations
+        'units.*.property',
+        'guests.*.property',
+        'reservations.*.property',
+        'concierge.*.property',
+        'vendors.*.property',
+        // Role management within property
+        'role.assign.department',
+        'role.read.property',
       ],
       [Role.DEPARTMENT_ADMIN]: [
         // Department and own
@@ -492,6 +537,26 @@ export class PermissionService {
         'departments.read.property', // Can see all departments in property
         '*.*.department',
         '*.*.own',
+        // Department-specific operations
+        'user.*.department',
+        'training.*.department',
+        'documents.*.department',
+      ],
+      [Role.CONCIERGE_MANAGER]: [
+        // Property-level concierge operations
+        '*.read.property', // Can read property-level data
+        'concierge.*.property',
+        'vendors.*.property',
+        'guests.read.property',
+        'reservations.read.property',
+        'units.read.property',
+        // Department operations
+        '*.*.department',
+        '*.*.own',
+        // User management within concierge
+        'user.*.department',
+        'training.*.department',
+        'documents.*.department',
       ],
       [Role.STAFF]: [
         // Own data only, plus some department reads
@@ -501,6 +566,30 @@ export class PermissionService {
         'benefits.read.property', // Can see property benefits
         'vacation.read.department', // Can see department vacation calendar
         '*.*.own',
+        // Limited hotel operations access
+        'units.read.property',
+        'guests.read.property',
+        'reservations.read.property',
+      ],
+      [Role.CLIENT]: [
+        // Very limited access for external clients
+        'profile.read.own',
+        'profile.update.own',
+        'reservations.read.own',
+        'documents.read.own',
+        // Client portal access
+        'portal.access.client',
+      ],
+      [Role.VENDOR]: [
+        // Limited access for vendors
+        'profile.read.own',
+        'profile.update.own',
+        'vendors.read.own',
+        'vendors.update.own',
+        // Vendor portal access
+        'portal.access.vendor',
+        'concierge.read.property', // Can see relevant concierge requests
+        'concierge.update.property', // Can update their assigned items
       ],
     };
 
@@ -512,5 +601,130 @@ export class PermissionService {
    */
   mapRoleToPermissions(role: Role): string[] {
     return this.getLegacyRolePermissions(role);
+  }
+
+  /**
+   * Get system role information including hierarchy level
+   */
+  getSystemRoleInfo(role: Role): { 
+    name: string;
+    description: string; 
+    level: number;
+    userType: 'INTERNAL' | 'CLIENT' | 'VENDOR';
+    capabilities: string[];
+  } {
+    const roleInfo = {
+      [Role.PLATFORM_ADMIN]: {
+        name: 'Platform Admin',
+        description: 'Full system access across all organizations and properties',
+        level: 10,
+        userType: 'INTERNAL' as const,
+        capabilities: ['Manage all users', 'Manage all roles', 'System configuration', 'Cross-tenant access']
+      },
+      [Role.ORGANIZATION_OWNER]: {
+        name: 'Organization Owner',
+        description: 'Owns and manages entire hotel chains or groups',
+        level: 9,
+        userType: 'INTERNAL' as const,
+        capabilities: ['Manage organization', 'Create properties', 'Manage org users', 'Assign org roles']
+      },
+      [Role.ORGANIZATION_ADMIN]: {
+        name: 'Organization Admin',
+        description: 'Administers organization settings and properties',
+        level: 8,
+        userType: 'INTERNAL' as const,
+        capabilities: ['Update organization', 'Manage properties', 'Limited user management']
+      },
+      [Role.PROPERTY_MANAGER]: {
+        name: 'Property Manager',
+        description: 'Manages individual hotel properties and operations',
+        level: 7,
+        userType: 'INTERNAL' as const,
+        capabilities: ['Hotel operations', 'Property staff', 'Guest management', 'Vendor coordination']
+      },
+      [Role.DEPARTMENT_ADMIN]: {
+        name: 'Department Admin',
+        description: 'Manages specific departments within properties',
+        level: 6,
+        userType: 'INTERNAL' as const,
+        capabilities: ['Department management', 'Team coordination', 'Training oversight']
+      },
+      [Role.CONCIERGE_MANAGER]: {
+        name: 'Concierge Manager',
+        description: 'Manages concierge services and guest experience',
+        level: 6,
+        userType: 'INTERNAL' as const,
+        capabilities: ['Concierge operations', 'Guest experience', 'Vendor coordination', 'Service management']
+      },
+      [Role.STAFF]: {
+        name: 'Staff',
+        description: 'Regular hotel staff with operational access',
+        level: 5,
+        userType: 'INTERNAL' as const,
+        capabilities: ['Daily operations', 'Guest service', 'Basic reporting']
+      },
+      [Role.CLIENT]: {
+        name: 'Client',
+        description: 'External clients with limited access to their data',
+        level: 2,
+        userType: 'CLIENT' as const,
+        capabilities: ['View own reservations', 'Update profile', 'Access client portal']
+      },
+      [Role.VENDOR]: {
+        name: 'Vendor',
+        description: 'External vendors and suppliers with work-related access',
+        level: 3,
+        userType: 'VENDOR' as const,
+        capabilities: ['Vendor portal access', 'Update work status', 'Receive notifications']
+      }
+    };
+
+    return roleInfo[role] || {
+      name: 'Unknown Role',
+      description: 'Role information not found',
+      level: 0,
+      userType: 'INTERNAL' as const,
+      capabilities: []
+    };
+  }
+
+  /**
+   * Check if a user can assign a specific role (hierarchy validation)
+   */
+  canAssignRole(currentUserRole: Role, targetRole: Role): boolean {
+    const currentLevel = this.getSystemRoleInfo(currentUserRole).level;
+    const targetLevel = this.getSystemRoleInfo(targetRole).level;
+    
+    // Users can only assign roles at or below their level
+    // Platform admins can assign any role
+    return currentUserRole === Role.PLATFORM_ADMIN || currentLevel > targetLevel;
+  }
+
+  /**
+   * Get all available system roles for a user to assign
+   */
+  getAssignableRoles(currentUserRole: Role): Role[] {
+    const allRoles = Object.values(Role);
+    return allRoles.filter(role => this.canAssignRole(currentUserRole, role));
+  }
+
+  /**
+   * Clear user permissions cache when role changes
+   */
+  clearUserPermissionCache(userId: string): void {
+    const cacheKey = `user_perms_${userId}`;
+    this.permissionCache.delete(cacheKey);
+    this.cacheExpiry.delete(cacheKey);
+    this.logger.debug(`Cleared permission cache for user ${userId}`);
+  }
+
+  /**
+   * Get all system roles with their information
+   */
+  getAllSystemRoles(): Array<{ role: Role; info: ReturnType<typeof this.getSystemRoleInfo> }> {
+    return Object.values(Role).map(role => ({
+      role,
+      info: this.getSystemRoleInfo(role)
+    }));
   }
 }

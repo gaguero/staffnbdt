@@ -133,7 +133,7 @@ export class EmailService {
       
       // Parse the rendered content to extract subject and body
       const subjectMatch = rendered.match(/{{!-- subject: (.*?) --}}/);
-      const subject = subjectMatch ? subjectMatch[1] : `Nayara HR Portal - ${templateName}`;
+      const subject = subjectMatch ? subjectMatch[1] : `Hotel Operations Hub - ${templateName}`;
       
       // Remove subject comment from HTML
       const html = rendered.replace(/{{!-- subject: .*? --}}/g, '').trim();

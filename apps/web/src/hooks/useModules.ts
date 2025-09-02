@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { moduleRegistryService } from '../services/moduleRegistryService';
+import moduleManagementService from '../services/moduleManagementService';
 import { UserType } from '../types/auth';
 import { usePermissions } from './usePermissions';
 import { useMemo } from 'react';
@@ -19,6 +20,8 @@ export const MODULE_QUERY_KEYS = {
     [...MODULE_QUERY_KEYS.all, 'navigation', organizationId, userType] as const,
   modulePermissions: (organizationId: string, userType: UserType) => 
     [...MODULE_QUERY_KEYS.all, 'modulePermissions', organizationId, userType] as const,
+  propertyModules: (organizationId: string, propertyId: string) => 
+    [...MODULE_QUERY_KEYS.all, 'property', organizationId, propertyId] as const,
 };
 
 /**
@@ -26,6 +29,7 @@ export const MODULE_QUERY_KEYS = {
  */
 export function useModules() {
   const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
   
   // Get enabled modules for current user's organization
@@ -54,7 +58,7 @@ export function useModules() {
   } = useQuery({
     queryKey: MODULE_QUERY_KEYS.allModules(),
     queryFn: () => moduleRegistryService.getAllModules(),
-    enabled: user?.role === 'PLATFORM_ADMIN' || user?.role === 'ORGANIZATION_OWNER',
+    enabled: hasPermission('module', 'read', 'organization') || hasPermission('module', 'manage', 'organization'),
     staleTime: 15 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -152,18 +156,21 @@ export function useModuleNavigation(userType?: UserType) {
   // Filter navigation items based on user permissions
   const filteredNavigationItems = useMemo(() => {
     return navigationItems.filter(item => {
-      // If no required permissions, show the item
+      // If no required permissions, always show
       if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
         return true;
       }
-      
-      // Check if user has all required permissions
-      return item.requiredPermissions.every(permission => {
+
+      // Platform admin bypass is handled by the hasPermission hook
+      // which checks for platform-level permissions
+
+      // OR logic: show if user has any of the required permissions
+      return item.requiredPermissions.some(permission => {
         const [resource, action, scope] = permission.split('.');
         return hasPermission(resource, action, scope || 'own');
       });
     });
-  }, [navigationItems, hasPermission]);
+  }, [navigationItems, hasPermission, user]);
 
   return {
     navigationItems: filteredNavigationItems,
@@ -231,6 +238,61 @@ export function useModuleDependencies(moduleId: string | undefined) {
     enabled: !!moduleId,
     staleTime: 5 * 60 * 1000, // 5 minutes (shorter since dependencies can change)
   });
+}
+
+/**
+ * Hook to check property-level module enablement
+ */
+export function usePropertyModules() {
+  const { user } = useAuth();
+  const organizationId = user?.organizationId;
+  const propertyId = user?.propertyId;
+
+  const {
+    data: propertyModules,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: MODULE_QUERY_KEYS.propertyModules(organizationId || '', propertyId || ''),
+    queryFn: () => {
+      if (!organizationId || !propertyId) return Promise.resolve(null);
+      return moduleManagementService.getPropertyModules(organizationId, propertyId);
+    },
+    enabled: !!organizationId && !!propertyId,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 20 * 60 * 1000, // 20 minutes
+    refetchOnWindowFocus: false,
+  });
+
+  // Create a function to check if a specific module is enabled
+  const isModuleEnabled = useMemo(() => {
+    return (moduleId: string): boolean => {
+      if (!propertyModules?.statusDetails) return false;
+      
+      const moduleStatus = propertyModules.statusDetails.find(
+        detail => detail.moduleId === moduleId
+      );
+      
+      return moduleStatus?.effectiveStatus ?? false;
+    };
+  }, [propertyModules]);
+
+  // Get list of enabled module IDs
+  const enabledModuleIds = useMemo(() => {
+    if (!propertyModules?.statusDetails) return [];
+    
+    return propertyModules.statusDetails
+      .filter(detail => detail.effectiveStatus)
+      .map(detail => detail.moduleId);
+  }, [propertyModules]);
+
+  return {
+    propertyModules,
+    isLoading,
+    error: error?.message || null,
+    isModuleEnabled,
+    enabledModuleIds,
+  };
 }
 
 export default useModules;

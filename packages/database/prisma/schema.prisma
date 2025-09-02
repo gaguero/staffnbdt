@@ -70,6 +70,11 @@ model Property {
   users              User[]
   profilePhotos      ProfilePhoto[]
   vacations          Vacation[]
+  // Back-relations
+  moduleSubscriptions ModuleSubscription[]
+  conciergeObjects    ConciergeObject[]
+  vendors             Vendor[]
+  roomTypes          RoomType[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -87,10 +92,174 @@ model ModuleSubscription {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id])
+  propertyId     String?
+  property       Property?    @relation(fields: [propertyId], references: [id])
 
-  @@unique([organizationId, moduleName])
   @@index([organizationId])
   @@index([moduleName])
+  @@unique([organizationId, moduleName, propertyId])
+}
+
+model ConciergeObject {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  type           String
+  reservationId  String?
+  guestId        String?
+  status         String   @default("open")
+  dueAt          DateTime?
+  assignments    Json?
+  files          Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  property       Property @relation(fields: [propertyId], references: [id])
+  attributes     ConciergeAttribute[]
+  executions     PlaybookExecution[]
+
+  @@index([organizationId, propertyId, type])
+  @@index([organizationId, propertyId, status, dueAt])
+}
+
+model ConciergeAttribute {
+  id                String   @id @default(cuid())
+  objectId          String
+  fieldKey          String
+  fieldType         AttributeFieldType
+  stringValue       String?
+  numberValue       Float?
+  booleanValue      Boolean?
+  dateValue         DateTime?
+  jsonValue         Json?
+  relationshipValue String?
+  selectValue       String?
+  fileValue         String?
+  quantityUnit      String?
+  moneyValue        Decimal?  @db.Decimal(15,4)
+  moneyCurrency     String?   @default("USD")
+
+  object            ConciergeObject @relation(fields: [objectId], references: [id])
+
+  @@index([objectId, fieldKey])
+  @@index([fieldKey, fieldType])
+  @@index([fieldKey, relationshipValue])
+  @@index([fieldKey, selectValue])
+  @@index([fieldKey, moneyValue, moneyCurrency])
+}
+
+model ObjectType {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  fieldsSchema   Json
+  validations    Json?
+  uiHints        Json?
+  isActive       Boolean  @default(true)
+  
+  // Template system fields
+  isTemplate     Boolean  @default(false)
+  parentId       String?  // Reference to parent template
+  templateMetadata Json?  // Usage count, rating, category, etc.
+  
+  // Self-referencing relation for template hierarchy
+  parent         ObjectType? @relation("TemplateHierarchy", fields: [parentId], references: [id])
+  children       ObjectType[] @relation("TemplateHierarchy")
+
+  @@index([organizationId, propertyId])
+  @@index([isTemplate])
+  @@index([parentId])
+  @@unique([organizationId, propertyId, name])
+}
+
+model Playbook {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  trigger        String
+  conditions     Json
+  actions        Json
+  enforcements   Json?
+  isActive       Boolean  @default(true)
+  
+  executions     PlaybookExecution[]
+
+  @@index([organizationId, propertyId])
+  @@unique([organizationId, propertyId, name])
+}
+
+model PlaybookExecution {
+  id           String   @id @default(cuid())
+  playbookId   String
+  objectId     String
+  status       String   @default("pending")
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  results      Json?
+  errors       Json?
+  retryCount   Int      @default(0)
+  
+  playbook     Playbook @relation(fields: [playbookId], references: [id])
+  object       ConciergeObject @relation(fields: [objectId], references: [id])
+  
+  @@index([playbookId, status])
+  @@index([objectId, startedAt])
+}
+
+model Vendor {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  email          String?
+  phone          String?
+  category       String
+  policies       Json?
+  performance    Json?
+  isActive       Boolean  @default(true)
+
+  property       Property @relation(fields: [propertyId], references: [id])
+  links          VendorLink[]
+
+  @@index([organizationId, propertyId])
+  @@index([isActive])
+}
+
+model VendorLink {
+  id             String   @id @default(cuid())
+  vendorId       String
+  objectId       String
+  objectType     String
+  policyRef      String?
+  status         String   @default("pending")
+  confirmationAt DateTime?
+  expiresAt      DateTime?
+
+  vendor         Vendor   @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId, status])
+  @@index([objectId, objectType])
+}
+
+model VendorPortalToken {
+  id             String   @id @default(cuid())
+  vendorId       String
+  organizationId String
+  propertyId     String
+  linkId         String
+  tokenHash      String
+  expiresAt      DateTime
+  usedAt         DateTime?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([vendorId])
+  @@index([organizationId, propertyId])
+  @@index([expiresAt])
+  @@unique([linkId, tokenHash])
 }
 
 model TenantSettings {
@@ -444,12 +613,36 @@ model Unit {
   reservations Reservation[]
   tasks        Task[]        @relation("UnitTasks")
   property     Property      @relation(fields: [propertyId], references: [id])
+  roomType     RoomType?     @relation(fields: [roomTypeId], references: [id])
+  roomTypeId   String?
 
   @@unique([propertyId, unitNumber])
   @@index([propertyId])
   @@index([status])
   @@index([isActive])
   @@index([building, floor])
+}
+
+model RoomType {
+  id           String   @id @default(cuid())
+  organizationId String?
+  propertyId   String
+  code         String
+  name         String
+  description  String?
+  baseRate     Decimal? @db.Decimal(10, 2)
+  maxCapacity  Int      @default(2)
+  amenities    String[]
+  images       String[]
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  property     Property @relation(fields: [propertyId], references: [id])
+  units        Unit[]
+
+  @@unique([propertyId, code])
+  @@index([propertyId])
+  @@index([isActive])
 }
 
 model Guest {
@@ -754,7 +947,10 @@ enum Role {
   ORGANIZATION_ADMIN
   PROPERTY_MANAGER
   DEPARTMENT_ADMIN
+  CONCIERGE_MANAGER
   STAFF
+  CLIENT
+  VENDOR
 }
 
 enum UserType {
@@ -871,6 +1067,29 @@ enum TaskStatus {
   COMPLETED
   CANCELLED
   ON_HOLD
+}
+
+enum AttributeFieldType {
+  string
+  number
+  boolean
+  date
+  json
+  relationship
+  select
+  multiselect
+  quantity
+  money
+  file
+  url
+  email
+  phone
+  location
+  richtext
+  time
+  duration
+  percentage
+  rating
 }
 
 model ModuleManifest {

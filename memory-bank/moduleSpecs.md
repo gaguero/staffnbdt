@@ -934,6 +934,16 @@ POST /api/concierge/playbooks/execute
 **UX Surfaces**:
 - Reservation 360 (checklist), Guest Timeline, Today Board
 
+### Concierge (Validation & Constraints - Context7)
+- Validate attributes against `ObjectType.fieldsSchema` at API boundary
+- DB constraint: exactly one typed value per attribute (CHECK)
+- Indexes: `(objectId, fieldKey)`, `(fieldKey, fieldType)`; add targeted by usage
+
+### Vendors (Portal Security - Context7)
+- Magic-link token stored as hash with `expiresAt`, `usedAt`
+- POST exchange → short-lived portal JWT scoped to vendor+tenant; one-time use
+- Full audit on confirm/decline; rate limits and TTL enforced
+
 ---
 
 ## 14. Vendors Module (Planned - v1)

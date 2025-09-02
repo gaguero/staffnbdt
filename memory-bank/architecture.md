@@ -975,3 +975,19 @@ flowchart TD
 **Notes**:
 - All events enriched with tenant context (orgId, propertyId)
 - Audit logging on status transitions and portal actions
+
+## Context7 Architecture Notes
+
+### Event Bus & Correlation
+- All events carry `tenantContext` and `correlationId`
+- Handlers are idempotent and side-effects guarded by dedup keys
+
+### Worker Scheduling & Idempotency
+- SLA checks use periodic scans of `dueAt` windows
+- Playbook execution uses deterministic `jobId` (objectId+playbookId) to avoid duplicates
+
+### Vendor Portal Token Exchange (Sequence)
+1. User triggers send → system creates random token, stores hash with `expiresAt`, `usedAt: null`
+2. Vendor opens link (GET): render portal but no action performed
+3. Vendor submits action (POST): exchange token → short-lived portal JWT; mark token used
+4. Portal JWT authorizes confirm/decline; emit vendor events; audit all steps

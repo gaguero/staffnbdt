@@ -1,6 +1,6 @@
-import { IsOptional, IsString, IsDateString, IsDecimal } from 'class-validator';
+import { IsOptional, IsString, IsDateString, IsNumber } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Type } from 'class-transformer';
 
 export class CheckOutDto {
   @ApiPropertyOptional({ example: '2024-03-18T11:00:00Z' })
@@ -10,8 +10,8 @@ export class CheckOutDto {
 
   @ApiPropertyOptional({ example: 25.00 })
   @IsOptional()
-  @Transform(({ value }) => parseFloat(value))
-  @IsDecimal()
+  @Type(() => Number)
+  @IsNumber()
   additionalCharges?: number;
 
   @ApiPropertyOptional({ example: 'Mini bar consumption, late checkout fee' })

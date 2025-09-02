@@ -889,3 +889,19 @@ This deployment guide ensures reliable, secure, and scalable deployment of the H
 - Reservation 360 checklist completeness and exceptions
 - Vendor confirmation flow (portal + back-office status)
 - Console is clean (no errors) and screenshots saved
+
+## Playwright Testing Protocol (Context7)
+
+### Console & Network
+- Fail test on any `page.on('console', msg.type() === 'error')`
+- Assert 2xx for Concierge/Vendors critical calls
+
+### Responsive Viewports
+- Mobile: 390x844; Desktop: 1366x768 (or larger)
+- Capture screenshots for each major step
+
+### Required Flows
+- Concierge: create object → validate EAV fields → complete → events visible
+- Today Board: due/overdue visibility and bulk actions
+- Reservation 360: checklist completeness and exceptions panel
+- Vendors: magic-link open → confirm/decline → status reflected in Concierge

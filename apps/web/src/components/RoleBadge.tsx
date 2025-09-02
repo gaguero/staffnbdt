@@ -45,6 +45,14 @@ const SYSTEM_ROLE_CONFIG = {
   [Role.STAFF]: {
     colorClasses: 'bg-gray-100 text-gray-800 border-gray-200',
     darkColorClasses: 'dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600'
+  },
+  [Role.CLIENT]: {
+    colorClasses: 'bg-orange-100 text-orange-800 border-orange-200',
+    darkColorClasses: 'dark:bg-orange-900 dark:text-orange-200 dark:border-orange-700'
+  },
+  [Role.VENDOR]: {
+    colorClasses: 'bg-teal-100 text-teal-800 border-teal-200',
+    darkColorClasses: 'dark:bg-teal-900 dark:text-teal-200 dark:border-teal-700'
   }
 };
 

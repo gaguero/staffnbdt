@@ -5,7 +5,9 @@ export enum Role {
   ORGANIZATION_ADMIN = 'ORGANIZATION_ADMIN',
   PROPERTY_MANAGER = 'PROPERTY_MANAGER',
   DEPARTMENT_ADMIN = 'DEPARTMENT_ADMIN',
-  STAFF = 'STAFF'
+  STAFF = 'STAFF',
+  CLIENT = 'CLIENT',
+  VENDOR = 'VENDOR'
 }
 
 export interface SystemRole {
@@ -88,6 +90,16 @@ export interface RoleHierarchy {
     canManage: Role[];
     inheritsFrom: Role[];
   };
+  [Role.CLIENT]: {
+    level: 6;
+    canManage: Role[];
+    inheritsFrom: Role[];
+  };
+  [Role.VENDOR]: {
+    level: 7;
+    canManage: Role[];
+    inheritsFrom: Role[];
+  };
 }
 
 export interface RolePermissionMatrix {
@@ -156,6 +168,20 @@ export const SYSTEM_ROLES: Record<Role, SystemRole> = {
     description: 'Self-service access to own resources',
     level: 5,
     icon: '👤'
+  },
+  [Role.CLIENT]: {
+    id: Role.CLIENT,
+    label: 'Client',
+    description: 'External client with limited access',
+    level: 6,
+    icon: '🏢'
+  },
+  [Role.VENDOR]: {
+    id: Role.VENDOR,
+    label: 'Vendor',
+    description: 'External vendor with restricted access',
+    level: 7,
+    icon: '🤝'
   }
 };
 
@@ -167,7 +193,9 @@ export const ROLE_HIERARCHY: RoleHierarchy = {
       Role.ORGANIZATION_ADMIN,
       Role.PROPERTY_MANAGER,
       Role.DEPARTMENT_ADMIN,
-      Role.STAFF
+      Role.STAFF,
+      Role.CLIENT,
+      Role.VENDOR
     ],
     inheritsFrom: []
   },
@@ -177,7 +205,9 @@ export const ROLE_HIERARCHY: RoleHierarchy = {
       Role.ORGANIZATION_ADMIN,
       Role.PROPERTY_MANAGER,
       Role.DEPARTMENT_ADMIN,
-      Role.STAFF
+      Role.STAFF,
+      Role.CLIENT,
+      Role.VENDOR
     ],
     inheritsFrom: []
   },
@@ -186,7 +216,9 @@ export const ROLE_HIERARCHY: RoleHierarchy = {
     canManage: [
       Role.PROPERTY_MANAGER,
       Role.DEPARTMENT_ADMIN,
-      Role.STAFF
+      Role.STAFF,
+      Role.CLIENT,
+      Role.VENDOR
     ],
     inheritsFrom: [Role.ORGANIZATION_OWNER]
   },
@@ -194,7 +226,9 @@ export const ROLE_HIERARCHY: RoleHierarchy = {
     level: 3,
     canManage: [
       Role.DEPARTMENT_ADMIN,
-      Role.STAFF
+      Role.STAFF,
+      Role.CLIENT,
+      Role.VENDOR
     ],
     inheritsFrom: [Role.ORGANIZATION_ADMIN]
   },
@@ -207,6 +241,16 @@ export const ROLE_HIERARCHY: RoleHierarchy = {
     level: 5,
     canManage: [],
     inheritsFrom: [Role.DEPARTMENT_ADMIN]
+  },
+  [Role.CLIENT]: {
+    level: 6,
+    canManage: [],
+    inheritsFrom: []
+  },
+  [Role.VENDOR]: {
+    level: 7,
+    canManage: [],
+    inheritsFrom: []
   }
 };
 

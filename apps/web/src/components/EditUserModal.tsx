@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { userService, User } from '../services/userService';
 import { departmentService, Department } from '../services/departmentService';
+import { useAuth } from '../contexts/AuthContext';
+import { Role, SYSTEM_ROLES, canManageRole } from '../types/role';
+import RoleBadge from './RoleBadge';
+import UserSystemRoleManagement from './UserSystemRoleManagement';
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -19,7 +23,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     firstName: '',
     lastName: '',
     email: '',
-    role: '',
     departmentId: '',
     position: '',
     phoneNumber: '',
@@ -32,6 +35,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showRoleManagement, setShowRoleManagement] = useState(false);
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     if (isOpen && user) {
@@ -39,7 +44,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        role: user.role || '',
         departmentId: user.departmentId || '',
         position: user.position || '',
         phoneNumber: user.phoneNumber || '',
@@ -83,7 +87,6 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        role: formData.role,
         departmentId: formData.departmentId || null,
         position: formData.position || null,
         phoneNumber: formData.phoneNumber || null,
@@ -112,11 +115,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
   if (!isOpen) return null;
 
-  const formatRole = (role: string) => {
-    return role.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
-  };
-
-  const availableRoles = ['STAFF', 'DEPARTMENT_ADMIN', 'PROPERTY_MANAGER'];
+  // Roles are managed in a dedicated access modal; no role formatting needed here
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -201,25 +200,37 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                   />
                 </div>
 
+                {/* System Role Display and Management */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Role *
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    System Role
                   </label>
-                  <select
-                    name="role"
-                    value={formData.role}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-warm-gold"
-                    disabled={saving}
-                    required
-                  >
-                    <option value="">Select Role</option>
-                    {availableRoles.map(role => (
-                      <option key={role} value={role}>
-                        {formatRole(role)}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md">
+                    <div className="flex items-center space-x-3">
+                      <RoleBadge role={user.role || 'STAFF'} size="sm" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {SYSTEM_ROLES[user.role as Role]?.label || user.role || 'Staff'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Level {SYSTEM_ROLES[user.role as Role]?.level || 5}
+                        </div>
+                      </div>
+                    </div>
+                    {currentUser && canManageRole(currentUser.role as Role, user.role as Role) && (
+                      <button
+                        type="button"
+                        onClick={() => setShowRoleManagement(true)}
+                        disabled={saving}
+                        className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        Change Role
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    System roles determine platform-wide permissions and access levels
+                  </p>
                 </div>
 
                 <div>
@@ -348,28 +359,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             </div>
           </div>
 
-          {/* Role Assignment Warning */}
-          {formData.role === 'PROPERTY_MANAGER' && formData.departmentId && (
-            <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <div className="flex items-start space-x-2">
-                <div className="text-yellow-600">⚠️</div>
-                <div className="text-sm text-yellow-800">
-                  <strong>Warning:</strong> Superadmins typically don't belong to specific departments.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(formData.role === 'STAFF' || formData.role === 'DEPARTMENT_ADMIN') && !formData.departmentId && (
-            <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="flex items-start space-x-2">
-                <div className="text-red-600">❌</div>
-                <div className="text-sm text-red-800">
-                  <strong>Required:</strong> {formatRole(formData.role)} users must be assigned to a department.
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Role assignment warnings removed; access is managed in the dedicated modal */}
 
           {error && (
             <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-3">
@@ -393,7 +383,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             </button>
             <button
               onClick={handleSave}
-              disabled={saving || !formData.firstName || !formData.lastName || !formData.email || !formData.role}
+              disabled={saving || !formData.firstName || !formData.lastName || !formData.email}
               className="px-4 py-2 bg-warm-gold text-white rounded-md hover:bg-opacity-90 disabled:opacity-50 font-medium"
             >
               {saving ? 'Saving...' : 'Save Changes'}
@@ -401,6 +391,21 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* System Role Management Modal */}
+      {showRoleManagement && (
+        <UserSystemRoleManagement
+          user={user}
+          isOpen={showRoleManagement}
+          onClose={() => setShowRoleManagement(false)}
+          onRoleChanged={(_, newRole) => {
+            // Update the user object locally
+            user.role = newRole as any;
+            onSuccess(); // Trigger refresh in parent
+            setShowRoleManagement(false);
+          }}
+        />
+      )}
     </div>
   );
 };

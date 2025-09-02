@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hotelService } from '../services/hotelService';
+import { useTenant } from '../contexts/TenantContext';
 import {
   RoomFilter,
   GuestFilter,
@@ -54,10 +55,44 @@ export function useRoom(id: string) {
 }
 
 export function useRoomTypes() {
+  const { tenantKey } = useTenant();
   return useQuery({
-    queryKey: hotelQueryKeys.roomTypes(),
+    queryKey: [...hotelQueryKeys.roomTypes(), tenantKey],
     queryFn: () => hotelService.getRoomTypes(),
     select: (data) => data.data,
+  });
+}
+
+export function useCreateRoomType() {
+  const queryClient = useQueryClient();
+  const { tenantKey } = useTenant();
+  return useMutation({
+    mutationFn: (input: any) => hotelService.createRoomType(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...hotelQueryKeys.roomTypes(), tenantKey] });
+    },
+  });
+}
+
+export function useUpdateRoomType() {
+  const queryClient = useQueryClient();
+  const { tenantKey } = useTenant();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: any }) => hotelService.updateRoomType(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...hotelQueryKeys.roomTypes(), tenantKey] });
+    },
+  });
+}
+
+export function useDeleteRoomType() {
+  const queryClient = useQueryClient();
+  const { tenantKey } = useTenant();
+  return useMutation({
+    mutationFn: (id: string) => hotelService.deleteRoomType(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...hotelQueryKeys.roomTypes(), tenantKey] });
+    },
   });
 }
 

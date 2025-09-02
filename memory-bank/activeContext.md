@@ -1,9 +1,9 @@
 # Hotel Operations Hub - Active Context
 
 ## Current Work Focus
-**Date**: August 27, 2025  
+**Date**: September 1, 2025  
 **Phase**: Permission System Optimization & Hotel Operations Integration Complete ✅  
-**Priority**: System stability achieved, ready for next development phase
+**Priority**: Tenant reactivity stabilized; Platform Admin controls consolidated
 
 ## ✅ LATEST MAJOR SUCCESS - Permission System Optimization Complete - August 27, 2025
 **Achievement**: Critical permission system enhancements resolving all access control and hotel operations integration issues
@@ -116,14 +116,14 @@ User's console logs revealed:
 - **Production Environment**: https://frontend-production-55d3.up.railway.app (main branch)
 - **Always test on dev environment first** (user corrected me on this previously)
 
-### TODO LIST STATUS
-Current todos when session ended:
-1. ✅ Property API 400 errors - COMPLETED
-2. 🔄 Tenant context display - IN PROGRESS  
-3. ⏳ Property Selector integration - PENDING
-4. ⏳ Permission API optimization - PENDING  
-5. ⏳ Documentation updates - PENDING
-6. ⏳ Browser testing of all fixes - PENDING
+### Tenant Reactivity & Selector Consolidation (Completed)
+Key updates to ensure consistent tenant switching for Platform Admins:
+1. Property is the single source of truth; org is inferred from selected property
+2. Axios headers derived from tenant storage; property overrides organization header
+3. Organization switch simplified to single-phase (clear property + reload)
+4. Sidebar shows one Property selector; header includes compact Organization selector
+5. TenantContext reconciles ids vs cached objects to prevent stale names
+6. Pages refetch on `tenantKey` and block content until property selected
 
 ## Recent Changes & Decisions
 
