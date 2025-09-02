@@ -250,7 +250,7 @@ const OperationalDashboard: React.FC<OperationalDashboardProps> = ({
         
         <div className="flex items-center space-x-3">
           <span className="text-sm text-gray-500">
-            {new Date().toLocaleDateString([], { 
+            {new Date().toLocaleDateString('en-US', { 
               weekday: 'long', 
               year: 'numeric', 
               month: 'long', 

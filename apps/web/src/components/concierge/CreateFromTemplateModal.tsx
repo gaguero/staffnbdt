@@ -3,7 +3,6 @@ import LoadingSpinner from '../LoadingSpinner';
 import conciergeService from '../../services/conciergeService';
 import { CreateObjectTypeInput, ObjectFieldDefinition, AttributeFieldType } from '../../types/concierge';
 import { TemplateData } from './TemplateMarketplaceHub';
-import toastService from '../../services/toastService';
 
 interface CreateFromTemplateModalProps {
   isOpen: boolean;

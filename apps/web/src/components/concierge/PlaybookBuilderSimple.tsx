@@ -57,7 +57,7 @@ const PlaybookBuilderSimple: React.FC<PlaybookBuilderSimpleProps> = ({
       data: {
         label: `New ${type}`,
         nodeType: type,
-        config: {},
+        config: 'manual' as any,
         isValid: false,
         errors: ['Node configuration required']
       }

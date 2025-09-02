@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import { ObjectType } from '../../types/concierge';
 import conciergeService from '../../services/conciergeService';
 import toastService from '../../services/toastService';
 import LoadingSpinner from '../LoadingSpinner';
-import { PermissionGate } from '../index';
 import TemplateGallery from './TemplateGallery';
 import CreateFromTemplateModal from './CreateFromTemplateModal';
 
@@ -147,7 +145,6 @@ const SAMPLE_TEMPLATES: TemplateData[] = [
 ];
 
 const TemplateMarketplaceHub: React.FC<TemplateMarketplaceHubProps> = ({ onTemplateCreated }) => {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'myTemplates' | 'gallery' | 'categories'>('gallery');
   const [myTemplates, setMyTemplates] = useState<ObjectType[]>([]);
   const [loading, setLoading] = useState(false);

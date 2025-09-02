@@ -1,10 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { ObjectType, ObjectFieldDefinition, AttributeFieldType, CreateObjectTypeInput } from '../../types/concierge';
+import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+import { ObjectType, ObjectFieldDefinition, CreateObjectTypeInput } from '../../types/concierge';
 import FieldBuilder from './FieldBuilder';
 import HierarchyVisualization from './HierarchyVisualization';
 import TemplatePreview from './TemplatePreview';
-import ParentSelector from './ParentSelector';
 import LoadingSpinner from '../LoadingSpinner';
 import toastService from '../../services/toastService';
 import conciergeService from '../../services/conciergeService';
