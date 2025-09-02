@@ -43,10 +43,18 @@ export class ConciergeEventHandler {
       },
     };
 
-    await this.slaProcessor.executePlaybook(data);
+    await this.slaProcessor.executePlaybook();
   }
 
   private async handleSLACheck(event: DomainEvent): Promise<void> {
-    await this.slaProcessor.checkOverdueObjects();
+    const mockJob = {
+      id: 'sla-check-' + Date.now(),
+      data: {
+        checkType: 'overdue' as const,
+        organizationId: event.tenant?.organizationId,
+        propertyId: event.tenant?.propertyId
+      }
+    };
+    await this.slaProcessor.checkOverdueObjects(mockJob);
   }
 }

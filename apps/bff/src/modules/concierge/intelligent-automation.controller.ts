@@ -11,9 +11,9 @@ import {
   HttpException,
   Logger
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { PermissionGuard } from '../../auth/permission.guard';
-import { RequirePermission } from '../../auth/require-permission.decorator';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { PermissionGuard } from '../permissions/guards/permission.guard';
+import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
 import { TenantContextService } from '../../shared/tenant/tenant-context.service';
 import { IntelligentPlaybookEngine } from './processors/intelligent-playbook-engine';
 import { SmartNotificationEngine, SmartNotification } from './processors/smart-notification-engine';
@@ -197,8 +197,16 @@ export class IntelligentAutomationController {
     try {
       const tenant = this.tenantContext.getTenantContext(req);
       
-      // Analyze the text
-      const analysis = await this.nlpService.analyzeText(dto.text, dto.context);
+      // Analyze the text with proper context
+      const contextWithDefaults = {
+        source: dto.context?.source || 'chat' as const,
+        language: dto.context?.language,
+        metadata: {
+          guestId: dto.context?.guestId,
+          reservationId: dto.context?.reservationId
+        }
+      };
+      const analysis = await this.nlpService.analyzeText(dto.text, contextWithDefaults);
       
       let suggestions = [];
       if (dto.generateSuggestions !== false) {

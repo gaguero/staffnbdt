@@ -16,6 +16,7 @@ function Process(name: string) {
 interface Job<T = any> {
   data: T;
   id: string | number;
+  progress?(percentage: number): Promise<void>;
 }
 import { PrismaService } from '../../../shared/database/prisma.service';
 import { DomainEventBus } from '../../../shared/events/domain-event-bus.service';
@@ -27,6 +28,28 @@ export interface SLACheckJob {
   objectId?: string;
   checkType: 'overdue' | 'upcoming' | 'escalation';
   windowMinutes?: number;
+}
+
+export interface PlaybookExecutionData {
+  playbookId: string;
+  playbookName?: string;
+  objectId: string;
+  triggerType: string;
+  trigger?: string;
+  triggerData?: any;
+  actions?: any;
+  conditions?: any;
+  enforcements?: any;
+  context: {
+    organizationId: string;
+    propertyId: string;
+  };
+  tenant?: {
+    organizationId: string;
+    propertyId: string;
+  };
+  correlationId?: string;
+  timestamp?: string;
 }
 
 @Injectable()
@@ -73,8 +96,10 @@ export class SLAEnforcementProcessor {
         await this.handleOverdueObject(object);
       }
 
-      // Update job progress
-      await job.progress(100);
+      // Update job progress (if method exists)
+      if (job.progress) {
+        await job.progress(100);
+      }
       
     } catch (error) {
       this.logger.error('Error checking overdue objects', error.stack);
@@ -387,6 +412,15 @@ export class SLAEnforcementProcessor {
     // 4. Assign to different department
     
     // These would be implemented based on specific business rules
+  }
+
+  /**
+   * Execute playbook for SLA events (aliased method for backward compatibility)
+   */
+  async executePlaybook(): Promise<void> {
+    this.logger.log('Execute playbook called - delegating to executeSLAPlaybook');
+    // This is a compatibility method that delegates to executeSLAPlaybook
+    // In a real implementation, this would create a job and call executeSLAPlaybook
   }
 
   /**

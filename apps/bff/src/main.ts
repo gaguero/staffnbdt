@@ -104,8 +104,8 @@ async function bootstrap() {
     // Swagger documentation (only in development)
     if (nodeEnv !== 'production') {
       const config = new DocumentBuilder()
-        .setTitle('Nayara HR Portal API')
-        .setDescription('Backend API for Nayara Bocas del Toro HR Portal')
+        .setTitle('Hotel Operations Hub API')
+        .setDescription('Backend API for Hotel Operations Hub - Multi-tenant ERP platform for hotel operations management')
         .setVersion('1.0')
         .addBearerAuth()
         .build();

@@ -82,7 +82,7 @@ export class PlaybookExecutionService {
 
       // Execute actions sequentially
       const actionResults = [];
-      const actions = playbook.actions as unknown as PlaybookAction[];
+      const actions = (playbook.actions as any) as PlaybookAction[] || [];
 
       for (const action of actions) {
         try {
@@ -151,7 +151,7 @@ export class PlaybookExecutionService {
       data: {
         status: result.success ? 'completed' : 'failed',
         completedAt: new Date(),
-        results: result.results ? JSON.parse(JSON.stringify(result.results)) : null,
+        results: result.results ? (typeof result.results === 'object' ? result.results : JSON.parse(JSON.stringify(result.results))) : null,
         errors: error ? { message: error.message, stack: error.stack } : result.errors,
       },
     });
@@ -368,7 +368,7 @@ export class PlaybookExecutionService {
         numberValue: attr.numberValue || null,
         booleanValue: attr.booleanValue || null,
         dateValue: attr.dateValue ? new Date(attr.dateValue) : null,
-        jsonValue: attr.jsonValue ? JSON.parse(JSON.stringify(attr.jsonValue)) : null,
+        jsonValue: attr.jsonValue ? (typeof attr.jsonValue === 'object' ? attr.jsonValue : JSON.parse(JSON.stringify(attr.jsonValue))) : null,
         relationshipValue: attr.relationshipValue || null,
         selectValue: attr.selectValue || null,
         fileValue: attr.fileValue || null,
@@ -433,7 +433,7 @@ export class PlaybookExecutionService {
 
     await this.prisma.conciergeObject.update({
       where: { id: objectId },
-      data: { assignments: JSON.parse(JSON.stringify(assignments)) },
+      data: { assignments: assignments as any },
     });
 
     return { assignedUsers: assignments.assignedUsers };

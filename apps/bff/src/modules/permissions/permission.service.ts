@@ -1443,15 +1443,15 @@ export class PermissionService implements OnModuleInit {
       
       // Get or create default organization for system roles
       let defaultOrg = await this.prisma.organization.findFirst({
-        where: { slug: 'nayara-group' }
+        where: { slug: 'hotel-operations-hub' }
       });
 
       if (!defaultOrg) {
         this.logger.log('Creating default organization for system roles...');
         defaultOrg = await this.prisma.organization.create({
           data: {
-            name: 'Nayara Group',
-            slug: 'nayara-group',
+            name: 'Hotel Operations Hub',
+            slug: 'hotel-operations-hub',
             description: 'Default organization for Hotel Operations Hub',
             timezone: 'America/Costa_Rica',
             settings: {

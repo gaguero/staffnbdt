@@ -1,0 +1,1135 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "C:\\Users\\jovy2\\Documents\\VTF\\staffnbdt\\apps\\bff\\node_modules\\.prisma\\client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  description         String?
+  logoUrl             String?
+  website             String?
+  contactEmail        String?
+  contactPhone        String?
+  address             Json?
+  timezone            String               @default("UTC")
+  settings            Json?
+  branding            Json?
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?
+  customRoles         CustomRole[]
+  moduleSubscriptions ModuleSubscription[]
+  properties          Property[]
+  profilePhotos       ProfilePhoto[]
+  users               User[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model Property {
+  id                 String              @id @default(cuid())
+  organizationId     String
+  name               String
+  slug               String
+  description        String?
+  propertyType       PropertyType        @default(HOTEL)
+  address            Json?
+  timezone           String              @default("UTC")
+  phoneNumber        String?
+  email              String?
+  website            String?
+  settings           Json?
+  branding           Json?
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+  auditLogs          AuditLog[]
+  commercialBenefits CommercialBenefit[]
+  customRoles        CustomRole[]
+  departments        Department[]
+  documents          Document[]
+  guests             Guest[]
+  invitations        Invitation[]
+  notifications      Notification[]
+  payslips           Payslip[]
+  organization       Organization        @relation(fields: [organizationId], references: [id])
+  reservations       Reservation[]
+  tasks              Task[]
+  trainingSessions   TrainingSession[]
+  units              Unit[]
+  users              User[]
+  profilePhotos      ProfilePhoto[]
+  vacations          Vacation[]
+  // Back-relations
+  moduleSubscriptions ModuleSubscription[]
+  conciergeObjects    ConciergeObject[]
+  vendors             Vendor[]
+  roomTypes          RoomType[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model ModuleSubscription {
+  id             String       @id @default(cuid())
+  organizationId String
+  moduleName     String
+  isEnabled      Boolean      @default(true)
+  enabledAt      DateTime?
+  disabledAt     DateTime?
+  settings       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  propertyId     String?
+  property       Property?    @relation(fields: [propertyId], references: [id])
+
+  @@index([organizationId])
+  @@index([moduleName])
+  @@unique([organizationId, moduleName, propertyId])
+}
+
+model ConciergeObject {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  type           String
+  reservationId  String?
+  guestId        String?
+  status         String   @default("open")
+  dueAt          DateTime?
+  assignments    Json?
+  files          Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  property       Property @relation(fields: [propertyId], references: [id])
+  attributes     ConciergeAttribute[]
+  executions     PlaybookExecution[]
+
+  @@index([organizationId, propertyId, type])
+  @@index([organizationId, propertyId, status, dueAt])
+}
+
+model ConciergeAttribute {
+  id                String   @id @default(cuid())
+  objectId          String
+  fieldKey          String
+  fieldType         AttributeFieldType
+  stringValue       String?
+  numberValue       Float?
+  booleanValue      Boolean?
+  dateValue         DateTime?
+  jsonValue         Json?
+  relationshipValue String?
+  selectValue       String?
+  fileValue         String?
+  quantityUnit      String?
+  moneyValue        Decimal?  @db.Decimal(15,4)
+  moneyCurrency     String?   @default("USD")
+
+  object            ConciergeObject @relation(fields: [objectId], references: [id])
+
+  @@index([objectId, fieldKey])
+  @@index([fieldKey, fieldType])
+  @@index([fieldKey, relationshipValue])
+  @@index([fieldKey, selectValue])
+  @@index([fieldKey, moneyValue, moneyCurrency])
+}
+
+model ObjectType {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  fieldsSchema   Json
+  validations    Json?
+  uiHints        Json?
+  isActive       Boolean  @default(true)
+  
+  // Template system fields
+  isTemplate     Boolean  @default(false)
+  parentId       String?  // Reference to parent template
+  templateMetadata Json?  // Usage count, rating, category, etc.
+  
+  // Self-referencing relation for template hierarchy
+  parent         ObjectType? @relation("TemplateHierarchy", fields: [parentId], references: [id])
+  children       ObjectType[] @relation("TemplateHierarchy")
+
+  @@index([organizationId, propertyId])
+  @@index([isTemplate])
+  @@index([parentId])
+  @@unique([organizationId, propertyId, name])
+}
+
+model Playbook {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  trigger        String
+  conditions     Json
+  actions        Json
+  enforcements   Json?
+  isActive       Boolean  @default(true)
+  
+  executions     PlaybookExecution[]
+
+  @@index([organizationId, propertyId])
+  @@unique([organizationId, propertyId, name])
+}
+
+model PlaybookExecution {
+  id           String   @id @default(cuid())
+  playbookId   String
+  objectId     String
+  status       String   @default("pending")
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  results      Json?
+  errors       Json?
+  retryCount   Int      @default(0)
+  
+  playbook     Playbook @relation(fields: [playbookId], references: [id])
+  object       ConciergeObject @relation(fields: [objectId], references: [id])
+  
+  @@index([playbookId, status])
+  @@index([objectId, startedAt])
+}
+
+model Vendor {
+  id             String   @id @default(cuid())
+  organizationId String
+  propertyId     String
+  name           String
+  email          String?
+  phone          String?
+  category       String
+  policies       Json?
+  performance    Json?
+  isActive       Boolean  @default(true)
+
+  property       Property @relation(fields: [propertyId], references: [id])
+  links          VendorLink[]
+
+  @@index([organizationId, propertyId])
+  @@index([isActive])
+}
+
+model VendorLink {
+  id             String   @id @default(cuid())
+  vendorId       String
+  objectId       String
+  objectType     String
+  policyRef      String?
+  status         String   @default("pending")
+  confirmationAt DateTime?
+  expiresAt      DateTime?
+
+  vendor         Vendor   @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId, status])
+  @@index([objectId, objectType])
+}
+
+model VendorPortalToken {
+  id             String   @id @default(cuid())
+  vendorId       String
+  organizationId String
+  propertyId     String
+  linkId         String
+  tokenHash      String
+  expiresAt      DateTime
+  usedAt         DateTime?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([vendorId])
+  @@index([organizationId, propertyId])
+  @@index([expiresAt])
+  @@unique([linkId, tokenHash])
+}
+
+model TenantSettings {
+  id             String   @id @default(cuid())
+  organizationId String?
+  propertyId     String?
+  key            String
+  value          Json
+  category       String?
+  description    String?
+  isPublic       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, propertyId, key])
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([category])
+}
+
+model User {
+  id                    String            @id @default(cuid())
+  email                 String            @unique
+  firstName             String
+  lastName              String
+  role                  Role
+  userType              UserType          @default(INTERNAL)
+  externalOrganization  String?
+  accessPortal          String?           @default("staff")
+  departmentId          String?
+  position              String?
+  hireDate              DateTime?
+  phoneNumber           String?
+  emergencyContact      Json?
+  idDocument            String?
+  profilePhoto          String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  deletedAt             DateTime?
+  organizationId        String?
+  propertyId            String?
+  password              String?
+  auditLogs           AuditLog[]
+  managedDepartments  Department[]      @relation("DepartmentManager")
+  documents           Document[]
+  enrollments         Enrollment[]
+  invitationsAccepted Invitation[]      @relation("AcceptedBy")
+  invitationsSent     Invitation[]      @relation("InvitedBy")
+  notifications       Notification[]
+  payslips            Payslip[]
+  permissionCaches    PermissionCache[]
+  assignedTasks       Task[]
+  completedTasks      Task[]            @relation("CompletedTasks")
+  createdTasks        Task[]            @relation("CreatedTasks")
+  department          Department?       @relation(fields: [departmentId], references: [id])
+  organization        Organization?     @relation(fields: [organizationId], references: [id])
+  property            Property?         @relation(fields: [propertyId], references: [id])
+  userPermissions     UserPermission[]
+  userCustomRoles     UserCustomRole[]
+  profilePhotos       ProfilePhoto[]
+  vacations           Vacation[]
+
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([departmentId])
+}
+
+model ProfilePhoto {
+  id             String        @id @default(cuid())
+  userId         String
+  organizationId String?
+  propertyId     String?
+  fileKey        String
+  fileName       String
+  mimeType       String
+  size           Int
+  photoType      PhotoType     @default(FORMAL)
+  isActive       Boolean       @default(true)
+  isPrimary      Boolean       @default(false)
+  description    String?
+  metadata       Json?
+  uploadedAt     DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  property       Property?     @relation(fields: [propertyId], references: [id])
+
+  @@unique([userId, photoType, isActive, deletedAt])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([photoType])
+  @@index([isActive])
+  @@index([isPrimary])
+  @@index([deletedAt])
+}
+
+model Department {
+  id               String            @id @default(cuid())
+  name             String
+  description      String?
+  location         String?
+  budget           Decimal?          @db.Decimal(12, 2)
+  managerId        String?
+  parentId         String?
+  level            Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  propertyId       String?
+  manager          User?             @relation("DepartmentManager", fields: [managerId], references: [id])
+  parent           Department?       @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children         Department[]      @relation("DepartmentHierarchy")
+  property         Property?         @relation(fields: [propertyId], references: [id])
+  documents        Document[]
+  invitations      Invitation[]
+  tasks            Task[]
+  trainingSessions TrainingSession[]
+  users            User[]
+
+  @@index([propertyId])
+  @@index([parentId])
+  @@index([level])
+}
+
+model Document {
+  id           String        @id @default(cuid())
+  title        String
+  description  String?
+  fileUrl      String?
+  fileKey      String?
+  fileSize     Int
+  mimeType     String
+  scope        DocumentScope
+  departmentId String?
+  userId       String?
+  uploadedBy   String
+  tags         String[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+  propertyId   String?
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  property     Property?     @relation(fields: [propertyId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+
+  @@index([propertyId])
+  @@index([departmentId])
+  @@index([scope])
+}
+
+model Payslip {
+  id          String    @id @default(cuid())
+  userId      String
+  period      String
+  grossSalary Decimal   @db.Decimal(10, 2)
+  deductions  Json
+  netSalary   Decimal   @db.Decimal(10, 2)
+  currency    String    @default("USD")
+  pdfUrl      String?
+  fileKey     String?
+  importBatch String?
+  createdAt   DateTime  @default(now())
+  viewedAt    DateTime?
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, period])
+  @@index([propertyId])
+  @@index([period])
+  @@index([importBatch])
+}
+
+model Vacation {
+  id             String         @id @default(cuid())
+  userId         String
+  type           VacationType
+  startDate      DateTime
+  endDate        DateTime
+  reason         String?
+  status         VacationStatus @default(PENDING)
+  approvedBy     String?
+  approvedAt     DateTime?
+  rejectedReason String?
+  attachments    String[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  propertyId     String?
+  property       Property?      @relation(fields: [propertyId], references: [id])
+  user           User           @relation(fields: [userId], references: [id])
+
+  @@index([propertyId])
+  @@index([userId, status])
+  @@index([startDate, endDate])
+}
+
+model TrainingSession {
+  id            String       @id @default(cuid())
+  title         String
+  description   String
+  category      String
+  version       Int          @default(1)
+  isActive      Boolean      @default(true)
+  passingScore  Int?
+  duration      Int?
+  contentBlocks Json
+  departmentId  String?
+  createdBy     String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  propertyId    String?
+  enrollments   Enrollment[]
+  department    Department?  @relation(fields: [departmentId], references: [id])
+  property      Property?    @relation(fields: [propertyId], references: [id])
+
+  @@unique([title, version])
+  @@index([propertyId])
+  @@index([isActive])
+  @@index([departmentId])
+}
+
+model Enrollment {
+  id             String           @id @default(cuid())
+  userId         String
+  sessionId      String
+  status         EnrollmentStatus @default(IN_PROGRESS)
+  progress       Json
+  answers        Json?
+  score          Int?
+  completedAt    DateTime?
+  certificateUrl String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  session        TrainingSession  @relation(fields: [sessionId], references: [id])
+  user           User             @relation(fields: [userId], references: [id])
+
+  @@unique([userId, sessionId])
+  @@index([status])
+}
+
+model CommercialBenefit {
+  id          String    @id @default(cuid())
+  partnerName String
+  category    String
+  description String
+  discount    String
+  imageUrl    String?
+  websiteUrl  String?
+  contactInfo String?
+  validFrom   DateTime?
+  validUntil  DateTime?
+  isActive    Boolean   @default(true)
+  terms       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([isActive, category])
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String
+  type       String
+  title      String
+  message    String
+  data       Json?
+  read       Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id])
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@index([propertyId])
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+model Invitation {
+  id            String           @id @default(cuid())
+  email         String
+  token         String           @unique
+  role          Role
+  departmentId  String?
+  invitedBy     String
+  status        InvitationStatus @default(PENDING)
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  acceptedBy    String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  propertyId    String?
+  acceptedUser  User?            @relation("AcceptedBy", fields: [acceptedBy], references: [id])
+  department    Department?      @relation(fields: [departmentId], references: [id])
+  invitedByUser User             @relation("InvitedBy", fields: [invitedBy], references: [id])
+  property      Property?        @relation(fields: [propertyId], references: [id])
+
+  @@unique([email, status])
+  @@index([propertyId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([invitedBy])
+}
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  userId     String
+  action     String
+  entity     String
+  entityId   String
+  oldData    Json?
+  newData    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id])
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@index([propertyId])
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model Unit {
+  id           String        @id @default(cuid())
+  propertyId   String
+  unitNumber   String
+  unitType     UnitType      @default(STANDARD)
+  building     String?
+  floor        Int?
+  bedrooms     Int           @default(1)
+  bathrooms    Int           @default(1)
+  maxOccupancy Int           @default(2)
+  size         Decimal?      @db.Decimal(8, 2)
+  amenities    String[]
+  status       UnitStatus    @default(AVAILABLE)
+  isActive     Boolean       @default(true)
+  description  String?
+  notes        String?
+  dailyRate    Decimal?      @db.Decimal(10, 2)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+  reservations Reservation[]
+  tasks        Task[]        @relation("UnitTasks")
+  property     Property      @relation(fields: [propertyId], references: [id])
+  roomType     RoomType?     @relation(fields: [roomTypeId], references: [id])
+  roomTypeId   String?
+
+  @@unique([propertyId, unitNumber])
+  @@index([propertyId])
+  @@index([status])
+  @@index([isActive])
+  @@index([building, floor])
+}
+
+model RoomType {
+  id           String   @id @default(cuid())
+  organizationId String?
+  propertyId   String
+  code         String
+  name         String
+  description  String?
+  baseRate     Decimal? @db.Decimal(10, 2)
+  maxCapacity  Int      @default(2)
+  amenities    String[]
+  images       String[]
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  property     Property @relation(fields: [propertyId], references: [id])
+  units        Unit[]
+
+  @@unique([propertyId, code])
+  @@index([propertyId])
+  @@index([isActive])
+}
+
+model Guest {
+  id              String        @id @default(cuid())
+  propertyId      String
+  firstName       String
+  lastName        String
+  email           String?
+  phoneNumber     String?
+  nationality     String?
+  dateOfBirth     DateTime?
+  passportNumber  String?
+  idNumber        String?
+  address         Json?
+  preferences     Json?
+  vipStatus       VipStatus     @default(STANDARD)
+  notes           String?
+  blacklisted     Boolean       @default(false)
+  blacklistReason String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+  property        Property      @relation(fields: [propertyId], references: [id])
+  reservations    Reservation[]
+
+  @@index([propertyId])
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([vipStatus])
+  @@index([blacklisted])
+}
+
+model Reservation {
+  id                 String            @id @default(cuid())
+  propertyId         String
+  unitId             String
+  guestId            String
+  reservationNumber  String            @unique
+  checkInDate        DateTime
+  checkOutDate       DateTime
+  adults             Int               @default(1)
+  children           Int               @default(0)
+  status             ReservationStatus @default(CONFIRMED)
+  totalAmount        Decimal           @db.Decimal(10, 2)
+  paidAmount         Decimal           @default(0) @db.Decimal(10, 2)
+  currency           String            @default("USD")
+  paymentStatus      PaymentStatus     @default(PENDING)
+  paymentMethod      String?
+  specialRequests    String?
+  notes              String?
+  source             String?
+  confirmationCode   String?
+  checkedInAt        DateTime?
+  checkedOutAt       DateTime?
+  checkedInBy        String?
+  checkedOutBy       String?
+  cancelledAt        DateTime?
+  cancelledBy        String?
+  cancellationReason String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  guest              Guest             @relation(fields: [guestId], references: [id])
+  property           Property          @relation(fields: [propertyId], references: [id])
+  unit               Unit              @relation(fields: [unitId], references: [id])
+  tasks              Task[]            @relation("ReservationTasks")
+
+  @@index([propertyId])
+  @@index([unitId])
+  @@index([guestId])
+  @@index([status])
+  @@index([checkInDate, checkOutDate])
+  @@index([reservationNumber])
+  @@index([paymentStatus])
+}
+
+model Task {
+  id              String       @id @default(cuid())
+  propertyId      String
+  title           String
+  description     String?
+  taskType        TaskType
+  priority        TaskPriority @default(MEDIUM)
+  status          TaskStatus   @default(PENDING)
+  assignedToId    String?
+  departmentId    String?
+  relatedEntity   String?
+  relatedId       String?
+  unitId          String?
+  reservationId   String?
+  dueDate         DateTime?
+  completedAt     DateTime?
+  completedBy     String?
+  estimatedTime   Int?
+  actualTime      Int?
+  attachments     String[]
+  notes           String?
+  createdBy       String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  assignedTo      User?        @relation(fields: [assignedToId], references: [id])
+  completedByUser User?        @relation("CompletedTasks", fields: [completedBy], references: [id])
+  createdByUser   User         @relation("CreatedTasks", fields: [createdBy], references: [id])
+  department      Department?  @relation(fields: [departmentId], references: [id])
+  property        Property     @relation(fields: [propertyId], references: [id])
+  reservation     Reservation? @relation("ReservationTasks", fields: [reservationId], references: [id])
+  unit            Unit?        @relation("UnitTasks", fields: [unitId], references: [id])
+
+  @@index([propertyId])
+  @@index([taskType])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedToId])
+  @@index([departmentId])
+  @@index([dueDate])
+  @@index([unitId])
+  @@index([reservationId])
+  @@index([relatedEntity, relatedId])
+}
+
+model CustomRole {
+  id             String           @id @default(cuid())
+  name           String
+  description    String?
+  userType       UserType         @default(INTERNAL)
+  allowedModules Json?
+  organizationId String?
+  propertyId     String?
+  isActive       Boolean          @default(true)
+  isSystemRole   Boolean          @default(false)
+  priority       Int              @default(0)
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?
+  organization   Organization?    @relation(fields: [organizationId], references: [id])
+  property       Property?        @relation(fields: [propertyId], references: [id])
+  permissions    RolePermission[]
+  userRoles      UserCustomRole[]
+
+  @@unique([organizationId, propertyId, name])
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([isActive])
+  @@index([priority])
+  @@index([userType])
+  uiRestrictions UIRestriction[]
+}
+
+model Permission {
+  id              String                @id @default(cuid())
+  resource        String
+  action          String
+  scope           String
+  name            String
+  description     String?
+  category        String?
+  isSystem        Boolean               @default(true)
+  metadata        Json?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  conditions      PermissionCondition[]
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([resource, action, scope])
+  @@index([resource])
+  @@index([action])
+  @@index([scope])
+  @@index([category])
+  @@index([isSystem])
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  granted      Boolean    @default(true)
+  conditions   Json?
+  metadata     Json?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@index([granted])
+}
+
+model UserPermission {
+  id           String     @id @default(cuid())
+  userId       String
+  permissionId String
+  granted      Boolean    @default(true)
+  grantedBy    String?
+  conditions   Json?
+  expiresAt    DateTime?
+  isActive     Boolean    @default(true)
+  metadata     Json?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+  @@index([granted])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+model UserCustomRole {
+  id         String     @id @default(cuid())
+  userId     String
+  roleId     String
+  assignedBy String?
+  assignedAt DateTime   @default(now())
+  expiresAt  DateTime?
+  isActive   Boolean    @default(true)
+  conditions Json?
+  metadata   Json?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  role       CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+model PermissionCondition {
+  id            String     @id @default(cuid())
+  permissionId  String
+  conditionType String
+  operator      String
+  value         Json
+  isActive      Boolean    @default(true)
+  description   String?
+  metadata      Json?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  permission    Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@index([permissionId])
+  @@index([conditionType])
+  @@index([isActive])
+}
+
+model PermissionCache {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String?
+  propertyId     String?
+  resource       String
+  action         String
+  scope          String
+  allowed        Boolean
+  conditions     Json?
+  cacheKey       String   @unique
+  expiresAt      DateTime
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId, propertyId, resource, action, scope])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([resource, action, scope])
+  @@index([expiresAt])
+  @@index([allowed])
+}
+
+enum PropertyType {
+  HOTEL
+  RESORT
+  BOUTIQUE_HOTEL
+  CHAIN_HOTEL
+  MOTEL
+  BNB
+  HOSTEL
+  APARTMENT
+  VILLA
+  OTHER
+}
+
+enum PhotoType {
+  FORMAL
+  CASUAL
+  UNIFORM
+  FUNNY
+}
+
+enum Role {
+  PLATFORM_ADMIN
+  ORGANIZATION_OWNER
+  ORGANIZATION_ADMIN
+  PROPERTY_MANAGER
+  DEPARTMENT_ADMIN
+  CONCIERGE_MANAGER
+  STAFF
+  CLIENT
+  VENDOR
+}
+
+enum UserType {
+  INTERNAL  // Staff, managers, admins
+  CLIENT    // Hotel guests, corporate clients  
+  VENDOR    // Suppliers, contractors, partners
+  PARTNER   // Business partners, franchisees
+}
+
+enum DocumentScope {
+  GENERAL
+  DEPARTMENT
+  USER
+}
+
+enum VacationType {
+  ANNUAL
+  SICK
+  PERSONAL
+  UNPAID
+}
+
+enum VacationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum EnrollmentStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+enum UnitType {
+  STANDARD
+  DELUXE
+  SUITE
+  PRESIDENTIAL
+  FAMILY
+  ACCESSIBLE
+  STUDIO
+  APARTMENT
+  VILLA
+  OTHER
+}
+
+enum UnitStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  CLEANING
+  OUT_OF_ORDER
+  RESERVED
+}
+
+enum VipStatus {
+  STANDARD
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+enum ReservationStatus {
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+  CANCELLED
+}
+
+enum TaskType {
+  MAINTENANCE
+  HOUSEKEEPING
+  FRONT_DESK
+  GUEST_REQUEST
+  INSPECTION
+  REPAIR
+  PREVENTIVE
+  CLEANING
+  CHECKIN
+  CHECKOUT
+  OTHER
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum AttributeFieldType {
+  string
+  number
+  boolean
+  date
+  json
+  relationship
+  select
+  multiselect
+  quantity
+  money
+  file
+  url
+  email
+  phone
+  location
+  richtext
+  time
+  duration
+  percentage
+  rating
+}
+
+model ModuleManifest {
+  id          String   @id @default(cuid())
+  moduleId    String   @unique
+  name        String
+  version     String
+  category    String
+  description String?
+  
+  // Permission definitions stored as JSON
+  internalPermissions Json  // Permissions for internal users
+  externalPermissions Json  // Permissions for external users
+  
+  // UI definitions stored as JSON  
+  internalNavigation  Json  // Navigation for internal users
+  externalNavigation  Json  // Navigation for external users
+  
+  // Module metadata
+  dependencies        Json? // Array of required module IDs
+  isSystemModule      Boolean @default(false)
+  isActive            Boolean @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("module_manifests")
+}
+
+model UIRestriction {
+  id             String @id @default(cuid())
+  roleId         String
+  hiddenModules  Json?  // Array of module IDs to hide
+  hiddenFeatures Json?  // Array of feature IDs to hide  
+  readOnlyFields Json?  // Array of field paths that are read-only
+  
+  role           CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@map("ui_restrictions")
+}

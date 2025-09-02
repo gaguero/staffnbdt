@@ -483,15 +483,15 @@ export async function seedPermissions() {
 
   // Get or create default organization for custom roles
   let defaultOrg = await prisma.organization.findFirst({
-    where: { slug: 'nayara-group' }
+    where: { slug: 'hotel-operations-hub' }
   });
 
   if (!defaultOrg) {
     console.log('Creating default organization for custom roles...');
     defaultOrg = await prisma.organization.create({
       data: {
-        name: 'Nayara Group',
-        slug: 'nayara-group',
+        name: 'Hotel Operations Hub',
+        slug: 'hotel-operations-hub',
         description: 'Default organization for Hotel Operations Hub',
         timezone: 'America/Costa_Rica',
         settings: {
